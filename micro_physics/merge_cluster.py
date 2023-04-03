@@ -25,6 +25,7 @@ class cluster_merging(strax.Plugin):
     depends_on = ("geant4_interactions", "cluster_index")
     
     provides = "clustered_interactions"
+    data_kind = "clustered_interactions"
     
     dtype = [('x', np.float32),
              ('y', np.float32),

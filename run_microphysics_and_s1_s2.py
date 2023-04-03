@@ -4,7 +4,7 @@ import cutax
 from micro_physics.input import input_plugin 
 from micro_physics.find_cluster import find_cluster 
 from micro_physics.merge_cluster import cluster_merging
-from micro_physics.electric_field import electic_field
+from micro_physics.electric_field import ElectricField
 from micro_physics.yields import nest_yields, bbf_yields
 from micro_physics.output import output_plugin
 
@@ -20,7 +20,7 @@ st = cutax.contexts.xenonnt_sim_SR0v3_cmt_v9()
 st.register(input_plugin)
 st.register(find_cluster)
 st.register(cluster_merging)
-st.register(electic_field)
+st.register(ElectricField)
 st.register(nest_yields)
 st.register(output_plugin)
 

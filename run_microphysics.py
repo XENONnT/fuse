@@ -3,7 +3,7 @@ import strax
 from micro_physics.input import input_plugin 
 from micro_physics.find_cluster import find_cluster 
 from micro_physics.merge_cluster import cluster_merging
-from micro_physics.electric_field import electic_field
+from micro_physics.electric_field import ElectricField
 from micro_physics.yields import nest_yields, bbf_yields
 from micro_physics.output import output_plugin
 
@@ -11,7 +11,7 @@ from micro_physics.output import output_plugin
 st = strax.Context(register = [input_plugin,
                                find_cluster,
                                cluster_merging,
-                               electic_field,
+                               ElectricField,
                                nest_yields,
                                #bbf_yields,
                                output_plugin],

@@ -34,9 +34,9 @@ class output_plugin(strax.Plugin):
                      (('Z position of the primary particle [cm]', 'z_pri'), np.float32),
                     ]
 
-    def compute(self, geant4_interactions):
+    def compute(self, clustered_interactions):
         
-        instructions = self.awkward_to_wfsim_row_style(geant4_interactions)
+        instructions = self.awkward_to_wfsim_row_style(clustered_interactions)
         
         return instructions
     

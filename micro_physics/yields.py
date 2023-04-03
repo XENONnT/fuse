@@ -16,6 +16,7 @@ class nest_yields(strax.Plugin):
     
     depends_on = ["clustered_interactions", "electic_field_values"]
     provides = "quanta"
+    data_kind = "clustered_interactions"
     
     dtype = [('photons', np.float64),
              ('electrons', np.float64),
@@ -28,22 +29,22 @@ class nest_yields(strax.Plugin):
 
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
     
-    def compute(self, geant4_interactions):
+    def compute(self, clustered_interactions):
         
-        result = np.zeros(len(geant4_interactions), dtype=self.dtype)
-        result["time"] = geant4_interactions["time"]
-        result["endtime"] = geant4_interactions["endtime"]
+        result = np.zeros(len(clustered_interactions), dtype=self.dtype)
+        result["time"] = clustered_interactions["time"]
+        result["endtime"] = clustered_interactions["endtime"]
 
         # Generate quanta:
-        if len(geant4_interactions) > 0:
+        if len(clustered_interactions) > 0:
             
-            photons, electrons, excitons = self.quanta_from_NEST(geant4_interactions['ed'],
-                                                                 geant4_interactions['nestid'],
-                                                                 geant4_interactions['e_field'],
-                                                                 geant4_interactions['A'],
-                                                                 geant4_interactions['Z'],
-                                                                 geant4_interactions['create_S2'],
-                                                                 density=geant4_interactions['xe_density'])
+            photons, electrons, excitons = self.quanta_from_NEST(clustered_interactions['ed'],
+                                                                 clustered_interactions['nestid'],
+                                                                 clustered_interactions['e_field'],
+                                                                 clustered_interactions['A'],
+                                                                 clustered_interactions['Z'],
+                                                                 clustered_interactions['create_S2'],
+                                                                 density=clustered_interactions['xe_density'])
             
             
             result['photons'] = photons
