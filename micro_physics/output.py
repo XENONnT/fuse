@@ -10,7 +10,7 @@ class output_plugin(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ["clustered_interactions", "quanta", "electic_field_values"] #Add times later
+    depends_on = ["clustered_interactions", "quanta", "electric_field_values"] #Add times later
     
     provides = "wfsim_instructions"
     data_kind = 'wfsim_instructions'

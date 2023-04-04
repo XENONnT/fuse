@@ -14,7 +14,7 @@ class nest_yields(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ["clustered_interactions", "electic_field_values"]
+    depends_on = ["clustered_interactions", "electric_field_values"]
     provides = "quanta"
     data_kind = "clustered_interactions"
     
@@ -133,7 +133,7 @@ class bbf_yields(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ["clustered_interactions", "electic_field_values"]
+    depends_on = ["clustered_interactions", "electric_field_values"]
     provides = "quanta"
     
     dtype = [('photons', np.float64),
