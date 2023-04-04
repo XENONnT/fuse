@@ -335,3 +335,4 @@ class BBF_quanta_generator:
         Ne = np.random.binomial(Ni, 1.-recomb)
         Nph = Ni + Nex - Ne
         return Nph, Ne, Nex
+    

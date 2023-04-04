@@ -6,6 +6,7 @@ import warnings
 import numpy as np
 import awkward as ak
 
+import epix
 from epix.common import awkward_to_flat_numpy, offset_range, reshape_awkward
 
 @strax.takes_config(

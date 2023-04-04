@@ -68,3 +68,4 @@ class ElectricField(strax.Plugin):
         electric_field_array['e_field'] = efields
 
         return electric_field_array
+
