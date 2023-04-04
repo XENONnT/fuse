@@ -36,7 +36,7 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="digitizer_bits"),
     strax.Option('pmt_circuit_load_resistor', default=config['pmt_circuit_load_resistor'], track=False, infer_type=False,
                  help="pmt_circuit_load_resistor"),
-    strax.Option('to_pe_file', default="./private_nt_aux_files/sim_files/to_pe_nt.npy", track=False, infer_type=False,
+    strax.Option('to_pe_file', default=os.path.join(private_files_path, "sim_files/to_pe_nt.npy"), track=False, infer_type=False,
                  help="to_pe file"),
     strax.Option('s1_model_type', default=config['s1_model_type'], track=True, infer_type=False,
                  help="s1_model_type"),
