@@ -1,6 +1,7 @@
 import strax
 import straxen
 import numpy as np
+import os
 
 from scipy.stats import skewnorm
 
@@ -8,7 +9,8 @@ import wfsim
 from wfsim.load_resource import DummyMap
 from numba import njit
 
-config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_design.json', fmt='json')
+private_files_path = "path/to/private/files"
+config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_design.json') , fmt='json')
 
 @strax.takes_config(
     strax.Option('s2_aft_sigma', default=config["s2_aft_sigma"], track=False, infer_type=False,
@@ -23,7 +25,7 @@ config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_de
                  help="n_tpc_pmts"),
     strax.Option('tpc_radius', default=config["tpc_radius"], track=False, infer_type=False,
                  help="tpc_radius"),
-    strax.Option('to_pe_file', default="./private_nt_aux_files/sim_files/to_pe_nt.npy", track=False, infer_type=False,
+    strax.Option('to_pe_file', default=os.path.join(private_files_path,"sim_files/to_pe_nt.npy"), track=False, infer_type=False,
                  help="to_pe file"),
     strax.Option('digitizer_voltage_range', default=config['digitizer_voltage_range'], track=False, infer_type=False,
                  help="digitizer_voltage_range"),
@@ -32,12 +34,12 @@ config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_de
     strax.Option('pmt_circuit_load_resistor', default=config['pmt_circuit_load_resistor'], track=False, infer_type=False,
                  help="pmt_circuit_load_resistor"),
     strax.Option('s2_pattern_map_file',
-                 default="./private_nt_aux_files/sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl",
+                 default=os.path.join(private_files_path,"sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl"),
                  track=False,
                  infer_type=False,
                  help="s2_pattern_map"),
     strax.Option('field_dependencies_map',
-                 default="./private_nt_aux_files/sim_files/field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz",
+                 default=os.path.join(private_files_path,"sim_files/field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz"),
                  track=False,
                  infer_type=False,
                  help="field_dependencies_map"),
@@ -120,11 +122,11 @@ class S2_photon_distributions_and_timing(strax.Plugin):
             #garfield_gas_gap option is using (x,y) -> gas gap (from the map) -> s2 luminescence
             #from garfield. This s2_luminescence_gg is indexed only by the gas gap, and
             #corresponds to electrons drawn directly below the anode
-            self.s2_luminescence_map = straxen.get_resource("./private_nt_aux_files/sim_files/garfield_timing_map_gas_gap_sr0.npy", fmt='npy')
-            self.garfield_gas_gap_map = make_map("./private_nt_aux_files/sim_files/garfield_gas_gap_map_sr0.json", fmt = 'json')
+            self.s2_luminescence_map = straxen.get_resource(os.path.join(private_files_path,"sim_files/garfield_timing_map_gas_gap_sr0.npy", fmt='npy'))
+            self.garfield_gas_gap_map = make_map(os.path.join(private_files_path,"sim_files/garfield_gas_gap_map_sr0.json", fmt = 'json'))
         
         if self.s2_time_spline:
-            self.s2_optical_propagation_spline = make_map("./private_nt_aux_files/sim_files/XENONnT_s2_opticalprop_time_v0.json.gz", fmt="json.gz")
+            self.s2_optical_propagation_spline = make_map(os.path.join(private_files_path,"sim_files/XENONnT_s2_opticalprop_time_v0.json.gz", fmt="json.gz"))
     
     def compute(self, individual_electrons, electron_cloud):
         

@@ -2,13 +2,15 @@ import strax
 import numpy as np
 import straxen
 from copy import deepcopy
+import os
 
 
 import wfsim
 from wfsim.load_resource import DummyMap
 
 
-config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_sr0_v4.json', fmt='json')
+private_files_path = "path/to/private/files"
+config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_design.json') , fmt='json')
 
 @strax.takes_config(
     strax.Option('p_double_pe_emision', default=config["p_double_pe_emision"], track=False, infer_type=False,
@@ -16,16 +18,16 @@ config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_sr
     strax.Option('se_gain_from_map', default=config["se_gain_from_map"], track=False, infer_type=False,
                  help="se_gain_from_map"),
     strax.Option('se_gain_map',
-                 default="./private_nt_aux_files/strax_files/XENONnT_se_xy_map_v1_mlp.json",
+                 default=os.path.join(private_files_path,"strax_files/XENONnT_se_xy_map_v1_mlp.json"),
                  track=False,
                  infer_type=False,
                  help="se_gain_map"),
     strax.Option('s2_correction_map_file',
-                 default="./private_nt_aux_files/strax_files/XENONnT_s2_xy_map_v4_210503_mlp_3_in_1_iterated.json",
+                 default=os.path.join(private_files_path,"strax_files/XENONnT_s2_xy_map_v4_210503_mlp_3_in_1_iterated.json"),
                  track=False,
                  infer_type=False,
                  help="s2_correction_map"),
-    strax.Option('to_pe_file', default="./private_nt_aux_files/sim_files/to_pe_nt.npy", track=False, infer_type=False,
+    strax.Option('to_pe_file', default=os.path.join(private_files_path,"sim_files/to_pe_nt.npy"), track=False, infer_type=False,
                  help="to_pe file"),
     strax.Option('digitizer_voltage_range', default=config['digitizer_voltage_range'], track=False, infer_type=False,
                  help="digitizer_voltage_range"),
@@ -34,7 +36,7 @@ config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_sr
     strax.Option('pmt_circuit_load_resistor', default=config['pmt_circuit_load_resistor'], track=False, infer_type=False,
                  help="pmt_circuit_load_resistor"),
     strax.Option('s2_pattern_map_file',
-                 default="./private_nt_aux_files/sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl",
+                 default=os.path.join(private_files_path,"sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl"),
                  track=False,
                  infer_type=False,
                  help="s2_pattern_map"),

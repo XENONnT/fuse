@@ -1,11 +1,12 @@
 import strax
 import numpy as np
 import straxen
+import os
 
 from wfsim.load_resource import DummyMap
 
-
-config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_sr0_v4.json', fmt='json')
+private_files_path = "path/to/private/files"
+config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_design.json') , fmt='json')
 
 @strax.takes_config(
     strax.Option('field_distortion_model', default=config["field_distortion_model"], track=False, infer_type=False,
@@ -15,26 +16,26 @@ config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_sr
     strax.Option('field_distortion_model', default=config["field_distortion_model"], track=False, infer_type=False,
                  help="field_distortion_model"),
     strax.Option('fdc_3d',
-                 default="./private_nt_aux_files/sim_files/XnT_3D_FDC_xyz_24_Jun_2022_MC.json.gz",
+                 default=os.path.join(private_files_path,"sim_files/XnT_3D_FDC_xyz_24_Jun_2022_MC.json.gz"),
                  track=False,
                  infer_type=False,
                  help="fdc_3d map"),
     strax.Option('field_distortion_comsol_map',
-                 default="./private_nt_aux_files/sim_files/init_to_final_position_mapping_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz",
+                 default=os.path.join(private_files_path,"sim_files/init_to_final_position_mapping_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz"),
                  track=False,
                  infer_type=False,
                  help="field_distortion_comsol_map"),
     strax.Option('tpc_length', default=config["tpc_length"], track=False, infer_type=False,
                  help="tpc_length"),
     strax.Option('field_dependencies_map',
-                 default="./private_nt_aux_files/sim_files/field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz",
+                 default=os.path.join(private_files_path,"sim_files/field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz"),
                  track=False,
                  infer_type=False,
                  help="field_dependencies_map"),
     strax.Option('electron_lifetime_liquid', default=config["electron_lifetime_liquid"], track=False, infer_type=False,
                  help="electron_lifetime_liquid"),
     strax.Option('diffusion_longitudinal_map',
-                 default="./private_nt_aux_files/sim_files/data_driven_diffusion_map_XENONnTSR0V2.json.gz",
+                 default=os.path.join(private_files_path,"sim_files/data_driven_diffusion_map_XENONnTSR0V2.json.gz"),
                  track=False,
                  infer_type=False,
                  help="diffusion_longitudinal_map"),

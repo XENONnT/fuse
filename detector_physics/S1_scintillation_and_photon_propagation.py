@@ -4,12 +4,12 @@ import straxen
 import wfsim
 import logging 
 import nestpy
+import os
 
 from wfsim.load_resource import DummyMap
 
-
-config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_design.json', fmt='json')
-
+private_files_path = "path/to/private/files"
+config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_design.json') , fmt='json')
 
 @strax.takes_config(
     strax.Option('s1_detection_efficiency', default=1, track=False, infer_type=False,
@@ -17,12 +17,12 @@ config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_de
     strax.Option('p_double_pe_emision', default=0.2, track=False, infer_type=False,
                  help="Some placeholder for p_double_pe_emision"),
     strax.Option('s1_lce_correction_map',
-                 default="./private_nt_aux_files/sim_files/XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz",
+                 default=os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz"),
                  track=False,
                  infer_type=False,
                  help="S1 LCE correction map"),
     strax.Option('s1_pattern_map',
-                 default="./private_nt_aux_files/sim_files/XENONnT_s1_xyz_patterns_corrected_qes_MCva43fa9b_wires.pkl",
+                 default=os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_patterns_corrected_qes_MCva43fa9b_wires.pkl"),
                  track=False,
                  infer_type=False,
                  help="S1 pattern map"),
@@ -41,7 +41,7 @@ config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_de
     strax.Option('s1_model_type', default=config['s1_model_type'], track=True, infer_type=False,
                  help="s1_model_type"),
     strax.Option('s1_time_spline',
-                 default="./private_nt_aux_files/sim_files/XENONnT_s1_proponly_va43fa9b_wires_20200625.json.gz",
+                 default=os.path.join(private_files_path, "sim_files/XENONnT_s1_proponly_va43fa9b_wires_20200625.json.gz"),
                  track=False,
                  infer_type=False,
                  help="S1 Time Spline"),
@@ -95,14 +95,11 @@ class S1_scintillation_and_propagation(strax.Plugin):
             #         'Creating new nestpy calculator')
             self.nestpy_calc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
 
+
+    def compute(self, wfsim_instructions):
         
- 
-    #Why is geant4_interactions given from straxen? It should be called wfsim_instructions or??
-    def compute(self, geant4_interactions):
-        
-        # Dont want to rename everything....
         #And do this part only for S1 signals
-        instruction = geant4_interactions[geant4_interactions["type"] == 1]
+        instruction = wfsim_instructions[wfsim_instructions["type"] == 1]
         
         t = instruction['time']
         x = instruction['x']

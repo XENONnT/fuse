@@ -1,8 +1,11 @@
 import strax
 import numpy as np
+import straxen
+import os
 
 
-config = straxen.get_resource('./private_nt_aux_files/sim_files/fax_config_nt_sr0_v4.json', fmt='json')
+private_files_path = "path/to/private/files"
+config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_design.json') , fmt='json')
 
 
 @strax.takes_config(
