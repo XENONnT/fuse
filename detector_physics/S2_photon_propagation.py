@@ -10,7 +10,7 @@ from wfsim.load_resource import DummyMap
 from numba import njit
 
 private_files_path = "path/to/private/files"
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_design.json') , fmt='json')
+config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
 @strax.takes_config(
     strax.Option('s2_aft_sigma', default=config["s2_aft_sigma"], track=False, infer_type=False,
@@ -49,7 +49,7 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="drift_velocity_liquid"),
     strax.Option('s2_luminescence_model', default=config['s2_luminescence_model'], track=False, infer_type=False,
                  help="s2_luminescence_model"),
-    strax.Option('phase', default="gas", track=False, infer_type=False,
+    strax.Option('phase_s2', default="gas", track=False, infer_type=False,
                  help="phase"),
     strax.Option('singlet_fraction_gas', default=config['singlet_fraction_gas'], track=False, infer_type=False,
                  help="singlet_fraction_gas"),
@@ -122,11 +122,11 @@ class S2_photon_distributions_and_timing(strax.Plugin):
             #garfield_gas_gap option is using (x,y) -> gas gap (from the map) -> s2 luminescence
             #from garfield. This s2_luminescence_gg is indexed only by the gas gap, and
             #corresponds to electrons drawn directly below the anode
-            self.s2_luminescence_map = straxen.get_resource(os.path.join(private_files_path,"sim_files/garfield_timing_map_gas_gap_sr0.npy", fmt='npy'))
-            self.garfield_gas_gap_map = make_map(os.path.join(private_files_path,"sim_files/garfield_gas_gap_map_sr0.json", fmt = 'json'))
+            self.s2_luminescence_map = straxen.get_resource(os.path.join(private_files_path,"sim_files/garfield_timing_map_gas_gap_sr0.npy"), fmt='npy')
+            self.garfield_gas_gap_map = make_map(os.path.join(private_files_path,"sim_files/garfield_gas_gap_map_sr0.json"), fmt = 'json')
         
         if self.s2_time_spline:
-            self.s2_optical_propagation_spline = make_map(os.path.join(private_files_path,"sim_files/XENONnT_s2_opticalprop_time_v0.json.gz", fmt="json.gz"))
+            self.s2_optical_propagation_spline = make_map(os.path.join(private_files_path,"sim_files/XENONnT_s2_opticalprop_time_v0.json.gz"), fmt="json.gz")
     
     def compute(self, individual_electrons, electron_cloud):
         
@@ -304,10 +304,10 @@ class S2_photon_distributions_and_timing(strax.Plugin):
         singlet_ratio  - fraction of excimers that become singlets
                          (NOT the ratio of singlets/triplets!)
         """
-        if self.phase == 'liquid':
+        if self.phase_s2 == 'liquid':
             t1, t3 = (self.singlet_lifetime_liquid,
                       self.triplet_lifetime_liquid)
-        elif self.phase == 'gas':
+        elif self.phase_s2 == 'gas':
             t1, t3 = (self.singlet_lifetime_gas,
                       self.triplet_lifetime_gas)
         else:

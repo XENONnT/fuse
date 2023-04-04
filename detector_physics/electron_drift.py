@@ -6,7 +6,7 @@ import os
 from wfsim.load_resource import DummyMap
 
 private_files_path = "path/to/private/files"
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_design.json') , fmt='json')
+config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
 @strax.takes_config(
     strax.Option('field_distortion_model', default=config["field_distortion_model"], track=False, infer_type=False,
