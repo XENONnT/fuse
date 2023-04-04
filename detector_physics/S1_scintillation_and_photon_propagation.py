@@ -14,7 +14,7 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
 @strax.takes_config(
     strax.Option('s1_detection_efficiency', default=1, track=False, infer_type=False,
                  help="Some placeholder for s1_detection_efficiency"),
-    strax.Option('p_double_pe_emision', default=0.2, track=False, infer_type=False,
+    strax.Option('p_double_pe_emision', default=config["p_double_pe_emision"], track=False, infer_type=False,
                  help="Some placeholder for p_double_pe_emision"),
     strax.Option('s1_lce_correction_map',
                  default=os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz"),
