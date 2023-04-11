@@ -26,6 +26,9 @@ class cluster_merging(strax.Plugin):
     
     provides = "clustered_interactions"
     data_kind = "clustered_interactions"
+
+    #Forbid rechunking
+    rechunk_on_save = False
     
     dtype = [('x', np.float32),
              ('y', np.float32),

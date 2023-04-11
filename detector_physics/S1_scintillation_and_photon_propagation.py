@@ -65,6 +65,10 @@ class S1_scintillation_and_propagation(strax.Plugin):
     dtype = [('photon_channel', np.int64),
             ]
     
+    #Forbid rechunking
+    rechunk_on_save = False
+    
+
     dtype = dtype + strax.time_fields
     
     def setup(self):

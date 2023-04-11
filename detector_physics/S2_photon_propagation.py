@@ -75,6 +75,10 @@ class S2_photon_distributions_and_timing(strax.Plugin):
     depends_on = ("photons", "extracted_electrons", "drifted_electrons", "sum_photons")
     provides = "photon_channels_and_timeing"
     
+    #Forbid rechunking
+    rechunk_on_save = False
+    
+
     dtype = [('channel', np.int64),
             ]
     data_kind = "S2_photons"

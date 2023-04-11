@@ -62,6 +62,8 @@ class scintillation(strax.Plugin):
     dtype["photons"] = dtype_photons
     dtype["sum_photons"] = dtype_sum_photons
 
+    #Forbid rechunking
+    rechunk_on_save = False
     
     def setup(self):
         

@@ -19,6 +19,10 @@ class electron_timing(strax.Plugin):
     depends_on = ("drifted_electrons", "extracted_electrons")
     provides = "electron_time"
     
+    #Forbid rechunking
+    rechunk_on_save = False
+    
+
     data_kind = "individual_electrons"
     
     dtype = [('x', np.float64),

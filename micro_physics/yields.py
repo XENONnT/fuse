@@ -24,6 +24,9 @@ class nest_yields(strax.Plugin):
             ]
     
     dtype = dtype + strax.time_fields
+
+    #Forbid rechunking
+    rechunk_on_save = False
     
     def setup(self):
 

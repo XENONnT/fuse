@@ -60,6 +60,9 @@ class electron_drift(strax.Plugin):
              ('z_obs', np.float64),
             ]
     
+    #Forbid rechunking
+    rechunk_on_save = False
+    
     dtype = dtype + strax.time_fields
     
     def setup(self):

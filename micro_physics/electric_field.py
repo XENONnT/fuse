@@ -22,6 +22,9 @@ class ElectricField(strax.Plugin):
     provides = "electric_field_values"
     data_kind = "clustered_interactions"
 
+    #Forbid rechunking
+    rechunk_on_save = False
+
     dtype = [
         ('e_field', np.int64),
         *strax.time_fields

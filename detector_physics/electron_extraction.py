@@ -54,6 +54,10 @@ class electron_extraction(strax.Plugin):
     provides = "extracted_electrons"
     data_kind = "electron_cloud"
     
+    #Forbid rechunking
+    rechunk_on_save = False
+    
+
     dtype = [('n_electron_extracted', np.int64),
             ]
     

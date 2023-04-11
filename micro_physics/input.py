@@ -38,6 +38,9 @@ class input_plugin(strax.Plugin):
     depends_on = tuple()
     provides = "geant4_interactions"
     
+    #Forbid rechunking
+    rechunk_on_save = False
+
     source_done = False
     
     dtype = [('x', np.float32),

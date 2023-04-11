@@ -27,6 +27,9 @@ class find_cluster(strax.Plugin):
     dtype = [('cluster_ids', np.int64),
             ]
     dtype = dtype + strax.time_fields
+
+    #Forbid rechunking
+    rechunk_on_save = False
     
 
     def compute(self, geant4_interactions):
