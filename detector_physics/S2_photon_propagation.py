@@ -77,6 +77,7 @@ class S2_photon_distributions_and_timing(strax.Plugin):
     
     dtype = [('channel', np.int64),
             ]
+    data_kind = "S2_photons"
     
     dtype = dtype + strax.time_fields
     

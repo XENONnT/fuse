@@ -60,6 +60,7 @@ class S1_scintillation_and_propagation(strax.Plugin):
     
     depends_on = ("wfsim_instructions")
     provides = "S1_channel_and_timings"
+    data_kind = "S1_photons"
     
     dtype = [('photon_channel', np.int64),
             ]
