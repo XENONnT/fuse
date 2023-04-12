@@ -102,6 +102,9 @@ class S1_scintillation_and_propagation(strax.Plugin):
 
 
     def compute(self, wfsim_instructions):
+
+        if len(wfsim_instructions) == 0:
+            return np.zeros(0, self.dtype)
         
         #And do this part only for S1 signals
         instruction = wfsim_instructions[wfsim_instructions["type"] == 1]

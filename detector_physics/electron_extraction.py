@@ -97,6 +97,9 @@ class electron_extraction(strax.Plugin):
     
     def compute(self, wfsim_instructions, electron_cloud):
 
+        if len(wfsim_instructions) == 0:
+            return np.zeros(0, self.dtype)
+
         x = wfsim_instructions[wfsim_instructions["type"] == 2]["x"]
         y = wfsim_instructions[wfsim_instructions["type"] == 2]["y"]
         

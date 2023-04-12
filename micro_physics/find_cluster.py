@@ -33,21 +33,24 @@ class find_cluster(strax.Plugin):
     
 
     def compute(self, geant4_interactions):
+
+        if len(geant4_interactions) == 0:
+            return np.zeros(0, dtype=self.dtype)
         
         inter = ak.from_numpy(np.empty(1, dtype=geant4_interactions.dtype))
-        structure = geant4_interactions["structure"][geant4_interactions["structure"]>=0]
+        structure = np.unique(geant4_interactions['evtid'], return_counts=True)[1]
         
         for field in inter.fields:
             inter[field] = epix.reshape_awkward(geant4_interactions[field], structure)
-        
+            
         #We can optimize the find_cluster function for the refactor! No need to return more than cluster_ids , no need to bring it into awkward again
         inter = self.find_cluster(inter, self.micro_separation/10, self.micro_separation_time)
         cluster_ids = inter['cluster_ids']
-        
+            
         len_output = len(epix.awkward_to_flat_numpy(cluster_ids))
         numpy_data = np.zeros(len_output, dtype=self.dtype)
         numpy_data["cluster_ids"] = epix.awkward_to_flat_numpy(cluster_ids)
-        
+            
         numpy_data["time"] = geant4_interactions["time"]
         numpy_data["endtime"] = geant4_interactions["endtime"]
         

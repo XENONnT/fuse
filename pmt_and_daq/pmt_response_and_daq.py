@@ -123,6 +123,11 @@ class pmt_response_and_daq(strax.Plugin):
         self._cached_uniform_to_pe_arr = {}
         
     def compute(self, S1_photons, S2_photons):
+
+        if len(S1_photons) == 0 and len(S2_photons) == 0:
+            return dict(raw_records=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)),
+                        raw_records_he=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)),
+                        raw_records_aqmon=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)))
         
         merged_photons = np.concatenate([S1_photons, S2_photons])
         S1_photons = None

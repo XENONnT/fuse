@@ -51,6 +51,9 @@ class ElectricField(strax.Plugin):
         Returns:
             numpy.ndarray: array of electric field values.
         """
+        if len(clustered_interactions) == 0:
+            return np.zeros(0, dtype=self.dtype)
+
         electric_field_array = np.zeros(len(clustered_interactions), dtype=self.dtype)
         electric_field_array['time'] = clustered_interactions['time']
         electric_field_array['endtime'] = clustered_interactions['endtime']

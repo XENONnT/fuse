@@ -45,7 +45,6 @@ class cluster_merging(strax.Plugin):
              ('xe_density', np.float32),
              ('vol_id', np.int64),
              ('create_S2', np.bool8),
-             ('structure', np.int64),
             ]
     
     dtype = dtype + strax.time_fields
@@ -57,22 +56,22 @@ class cluster_merging(strax.Plugin):
     def full_array_to_numpy(self, array):
     
         len_output = len(epix.awkward_to_flat_numpy(array["x"]))
-        array_structure = np.array(epix.ak_num(array["x"]))
-        array_structure = np.pad(array_structure, [0, len_output-len(array_structure)],constant_values = -1)
 
         numpy_data = np.zeros(len_output, dtype=self.dtype)
 
         for field in array.fields:
             numpy_data[field] = epix.awkward_to_flat_numpy(array[field])
-        numpy_data["structure"] = array_structure
         
         return numpy_data
 
 
     def compute(self, geant4_interactions):
+
+        if len(geant4_interactions) == 0:
+            return np.zeros(0, dtype=self.dtype)
         
         inter = ak.from_numpy(np.empty(1, dtype=geant4_interactions.dtype))
-        structure = geant4_interactions["structure"][geant4_interactions["structure"]>=0]
+        structure = np.unique(geant4_interactions['evtid'], return_counts=True)[1]
         
         for field in inter.fields:
             inter[field] = epix.reshape_awkward(geant4_interactions[field], structure)

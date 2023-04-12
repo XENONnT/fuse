@@ -134,6 +134,9 @@ class S2_photon_distributions_and_timing(strax.Plugin):
             self.s2_optical_propagation_spline = make_map(os.path.join(private_files_path,"sim_files/XENONnT_s2_opticalprop_time_v0.json.gz"), fmt="json.gz")
     
     def compute(self, individual_electrons, electron_cloud):
+
+        if len(individual_electrons) == 0:
+            return np.zeros(0, dtype=self.dtype)
         
         positions = np.array([electron_cloud["x"], electron_cloud["y"]]).T
         

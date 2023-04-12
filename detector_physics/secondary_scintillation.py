@@ -101,6 +101,10 @@ class scintillation(strax.Plugin):
                 self.s2_correction_map = s2cmap
     
     def compute(self, electron_cloud, individual_electrons ):
+
+        if len(electron_cloud) == 0:
+            return dict(photons=np.zeros(0, self.dtype_photons),
+                        sum_photons=np.zeros(0, self.dtype_sum_photons))
         
         positions = np.array([electron_cloud["x"], electron_cloud["y"]]).T
         

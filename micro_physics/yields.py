@@ -33,6 +33,9 @@ class nest_yields(strax.Plugin):
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
     
     def compute(self, clustered_interactions):
+
+        if len(clustered_interactions) == 0:
+            return np.zeros(0, dtype=self.dtype)
         
         result = np.zeros(len(clustered_interactions), dtype=self.dtype)
         result["time"] = clustered_interactions["time"]

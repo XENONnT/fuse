@@ -104,6 +104,9 @@ class electron_drift(strax.Plugin):
     
     #Why is geant4_interactions given from straxen? It should be called wfsim_instructions or??
     def compute(self, wfsim_instructions):
+
+        if len(wfsim_instructions) == 0:
+            return np.zeros(0, self.dtype)
         
         #Dont want to rename it yet
         instruction = wfsim_instructions[wfsim_instructions["type"] == 2]

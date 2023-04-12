@@ -36,6 +36,9 @@ class electron_timing(strax.Plugin):
     
     def compute(self, electron_cloud):
         
+        if len(electron_cloud) == 0:
+            return np.zeros(0, dtype=self.dtype)
+
         timing = self.electron_timing(electron_cloud["time"],
                                       electron_cloud["n_electron_extracted"],
                                       electron_cloud["drift_time_mean"],

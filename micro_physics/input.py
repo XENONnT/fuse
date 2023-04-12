@@ -58,7 +58,6 @@ class input_plugin(strax.Plugin):
              ('x_pri', np.float32),
              ('y_pri', np.float32),
              ('z_pri', np.float32),
-             ('structure', np.int64),
             ]
     
     dtype = dtype + strax.time_fields
@@ -92,14 +91,11 @@ class input_plugin(strax.Plugin):
     def full_array_to_numpy(self, array):
     
         len_output = len(epix.awkward_to_flat_numpy(array["x"]))
-        array_structure = np.array(epix.ak_num(array["x"]))
-        array_structure = np.pad(array_structure, [0, len_output-len(array_structure)],constant_values = -1)
 
         numpy_data = np.zeros(len_output, dtype=self.dtype)
 
         for field in array.fields:
             numpy_data[field] = epix.awkward_to_flat_numpy(array[field])
-        numpy_data["structure"] = array_structure
         
         return numpy_data
     
