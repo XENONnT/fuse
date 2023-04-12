@@ -62,7 +62,7 @@ class S1_scintillation_and_propagation(strax.Plugin):
     provides = "S1_channel_and_timings"
     data_kind = "S1_photons"
     
-    dtype = [('photon_channel', np.int64),
+    dtype = [('channel', np.int64),
             ]
     
     #Forbid rechunking
@@ -148,7 +148,7 @@ class S1_scintillation_and_propagation(strax.Plugin):
         _photon_timings = _photon_timings[sortind]
         
         result = np.zeros(_photon_channels.shape[0], dtype = self.dtype)
-        result["photon_channel"] = _photon_channels
+        result["channel"] = _photon_channels
         result["time"] = _photon_timings
         result["endtime"] = result["time"]
         

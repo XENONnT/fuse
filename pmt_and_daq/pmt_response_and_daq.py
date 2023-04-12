@@ -101,7 +101,20 @@ class pmt_response_and_daq(strax.Plugin):
                 / (self.digitizer_voltage_range / 2 ** (self.digitizer_bits))
         
         self.channels_bottom = np.arange(self.n_top_pmts, self.n_tpc_pmts)
-        self.channel_map = dict(st.config['channel_map'])
+        #self.channel_map = dict(st.config['channel_map'])
+        self.channel_map = {'tpc': (0, 493),
+                            'he': (500, 752),
+                            'aqmon': (790, 807),
+                            'aqmon_nv': (808, 815),
+                            'tpc_blank': (999, 999),
+                            'mv': (1000, 1083),
+                            'aux_mv': (1084, 1087),
+                            'mv_blank': (1999, 1999),
+                            'nveto': (2000, 2119),
+                            'nveto_blank': (2999, 2999)
+                           } #I can get this from the context...but how??
+        
+        
         self.channel_map['sum_signal'] = 800
         self.channels_bottom = np.arange(self.n_top_pmts, self.n_tpc_pmts)
         
@@ -112,8 +125,8 @@ class pmt_response_and_daq(strax.Plugin):
         #ZLE Part (Now building actual raw_records data!)
 
         self.samples_per_record = strax.DEFAULT_RECORD_LENGTH
-        self.blevel = 0  # buffer_filled_level
-        self.record_buffer = np.zeros(500000, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH))
+        #self.blevel = 0  # buffer_filled_level
+        self.record_buffer = np.zeros(5000000, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH))
         
         self.special_thresholds = config.get('special_thresholds', {})
         
@@ -139,6 +152,8 @@ class pmt_response_and_daq(strax.Plugin):
         
         #Split the photons into groups that will be simualted at once
         split_photons = np.split(merged_photons, np.where(np.diff(merged_photons["time"]) > self.rext)[0]+1)
+        
+        self.blevel = 0  # buffer_filled_level
         
         #Start the first loop.... so many loops in this plugin :-(
         for photon_group in split_photons:
@@ -327,11 +342,12 @@ class pmt_response_and_daq(strax.Plugin):
 
                     pulse_length = right_tmp - left_tmp + 1
                     records_needed = int(np.ceil(pulse_length / self.samples_per_record))
-
+                    
                     #Leave out the if cases for now
 
                     # WARNING baseline and area fields are zeros before finish_results
                     s = slice(self.blevel, self.blevel + records_needed)
+                    
                     self.record_buffer[s]['channel'] = channel
                     self.record_buffer[s]['dt'] = self.dt
                     self.record_buffer[s]['time'] = self.dt * (left_tmp + self.samples_per_record * np.arange(records_needed))
