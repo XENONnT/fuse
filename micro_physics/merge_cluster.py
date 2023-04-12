@@ -104,7 +104,7 @@ class cluster_merging(strax.Plugin):
         
         result = self.full_array_to_numpy(result)
         
-        result["time"] = (result["evtid"]+1) *1e9
+        #result["time"] = result
         result["endtime"] = result["time"] +1e7
         
         return result
@@ -139,7 +139,9 @@ class cluster_merging(strax.Plugin):
                                     ('ed', 'float64'),
                                     ('nestid', 'int64'),
                                     ('A', 'int64'),
-                                    ('Z', 'int64')]
+                                    ('Z', 'int64'),
+                                    ('time', 'int64')
+                                   ]
             return ak.from_numpy(np.empty(0, dtype=result_cluster_dtype))
         # Sort interactions by cluster_ids to simplify looping
         inds = ak.argsort(inter['cluster_ids'])
@@ -151,6 +153,7 @@ class cluster_merging(strax.Plugin):
         z = inter['z']
         ed = inter['ed']
         time = inter['t']
+        strax_time = inter['time']
         ci = inter['cluster_ids']
         types = inter['type']
         parenttype = inter['parenttype']
@@ -161,14 +164,14 @@ class cluster_merging(strax.Plugin):
         res = ak.ArrayBuilder()
         _cluster(x, y, z, ed, time, ci,
                  types, parenttype, creaproc, edproc,
-                 classify_by_energy, res)
+                 classify_by_energy, res, strax_time)
         return res.snapshot()
 
 
 @numba.njit
 def _cluster(x, y, z, ed, time, ci,
              types, parenttype, creaproc, edproc,
-             classify_by_energy, res):
+             classify_by_energy, res, strax_time):
     # Loop over each event
     nevents = len(ed)
     for ei in range(nevents):
@@ -183,6 +186,7 @@ def _cluster(x, y, z, ed, time, ci,
         t_mean = 0
         ed_tot = 0
         event_time_min = min(time[ei])
+        strax_time_mean = 0
 
         current_ci = 0  # Current cluster id
         i_class = 0  # Index for classification (depends on users requirement)
@@ -208,7 +212,7 @@ def _cluster(x, y, z, ed, time, ci,
 
                 # Write result, simple but extensive with awkward...
                 _write_result(res, x_mean, y_mean, z_mean,
-                              ed_tot, t_mean, event_time_min, A, Z, nestid)
+                              ed_tot, t_mean, event_time_min, A, Z, nestid, strax_time_mean)
 
                 # Update cluster id and empty buffer
                 current_ci = ci[ei][ii]
@@ -217,6 +221,7 @@ def _cluster(x, y, z, ed, time, ci,
                 z_mean = 0
                 t_mean = 0
                 ed_tot = 0
+                strax_time_mean = 0
 
                 # Reset classifier:
                 if classify_by_energy:
@@ -232,6 +237,7 @@ def _cluster(x, y, z, ed, time, ci,
             z_mean += z[ei][ii] * e
             t_mean += t * e
             ed_tot += e
+            strax_time_mean += strax_time[ei][ii] * e
 
             if classify_by_energy:
                 # In case we want to classify the event by energy.
@@ -252,7 +258,7 @@ def _cluster(x, y, z, ed, time, ci,
                                 edproc[ei][i_class])
 
         _write_result(res, x_mean, y_mean, z_mean,
-                      ed_tot, t_mean, event_time_min, A, Z, nestid)
+                      ed_tot, t_mean, event_time_min, A, Z, nestid, strax_time_mean)
 
         res.end_list()
 
@@ -294,7 +300,7 @@ def classify(types, parenttype, creaproc, edproc):
 
 @numba.njit
 def _write_result(res, x_mean, y_mean, z_mean,
-                  ed_tot, t_mean, event_time_min, A, Z, nestid):
+                  ed_tot, t_mean, event_time_min, A, Z, nestid, strax_time_mean):
     """
     Helper to write result into record array.
     """
@@ -315,5 +321,7 @@ def _write_result(res, x_mean, y_mean, z_mean,
     res.integer(A)
     res.field('Z')
     res.integer(Z)
+    res.field('time')
+    res.real(strax_time_mean / ed_tot)
     res.end_record()
         

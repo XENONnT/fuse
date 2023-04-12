@@ -66,7 +66,7 @@ class output_plugin(strax.Plugin):
         # this super odd shape
         for i in range(2):
             
-            structure = interactions["structure"][interactions["structure"]>=0]
+            structure = np.unique(interactions['evtid'], return_counts=True)[1]
             evtid = epix.reshape_awkward(interactions["evtid"], structure)
             
             res['event_number'][i::2] = offset_range(ak.to_numpy(ak.num(evtid)))

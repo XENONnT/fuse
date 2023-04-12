@@ -64,7 +64,7 @@ class input_plugin(strax.Plugin):
     
     source_done = False
     
-    prev_chunk_stop = None
+    prev_chunk_stop = np.int64(0)
     prev_chunk_start = None
 
     def setup(self):
@@ -107,16 +107,16 @@ class input_plugin(strax.Plugin):
             
             inter_reshaped = self.full_array_to_numpy(inter)
         
-            inter_reshaped["time"] = (inter_reshaped["evtid"]+1) *1e9
+            inter_reshaped["time"] = np.int64((inter_reshaped["evtid"]+1) *1e9 + self.prev_chunk_stop)
             inter_reshaped["endtime"] = inter_reshaped["time"] +1e7
             
             
-            if self.prev_chunk_stop == None:
+            if self.prev_chunk_stop == 0:
                 chunk_start = inter_reshaped['time'][0]
             else:
                 chunk_start = self.prev_chunk_stop
             
-            chunk_stop  = inter_reshaped['endtime'][-1]
+            chunk_stop  = np.int64(inter_reshaped['endtime'][-1]+1e9)
             self.prev_chunk_stop = chunk_stop
             
             
