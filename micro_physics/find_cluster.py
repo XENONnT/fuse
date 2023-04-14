@@ -66,13 +66,12 @@ class find_cluster(strax.Plugin):
                 be inside a cluster [cm].
             cluster_size_time (float): Max time distance between two points to be 
                 inside a cluster [ns].
-
         Returns:
             awkward.array: Adds to interaction a cluster_ids record.
         """
         # TODO is there a better way to get the df?
         df = []
-        for key in ['x', 'y', 'z', 'ed', 't']:
+        for key in ['x', 'y', 'z', 'ed', 'time']:
             df.append(ak.to_pandas(interactions[key], anonymous=key))
         df = pd.concat(df, axis=1)
 
@@ -83,7 +82,7 @@ class find_cluster(strax.Plugin):
         # Splitting into individual events and apply time clustering:
         groups = df.groupby('entry')
 
-        df["time_cluster"] = np.concatenate(groups.apply(lambda x: simple_1d_clustering(x.t.values, cluster_size_time)))
+        df["time_cluster"] = np.concatenate(groups.apply(lambda x: simple_1d_clustering(x.time.values, cluster_size_time)))
 
         # Splitting into individual events and time cluster and apply space clustering space:
         df['cluster_id'] = np.zeros(len(df.index), dtype=np.int)
@@ -128,7 +127,6 @@ def simple_1d_clustering(data, scale):
         data (numpy.array): one dimensional array to be clusterd
         scale (float): Max distance between two points to
             be inside a cluster.
-
     Returns:
         clusters_undo_sort (np.array): Cluster Labels
     """

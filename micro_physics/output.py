@@ -93,12 +93,8 @@ class output_plugin(strax.Plugin):
                 if 'n_excitons' in res.dtype.names:
                     res['n_excitons'][i::2] = interactions['excitons']
             
-            
-            #Lets just hack some times for now
-            
-            res['time'][i::2] = interactions['time'] + interactions['t']
-            res['endtime'][i::2] = interactions['endtime'] + interactions['t']
+            res['time'][i::2] = interactions['time']
+            res['endtime'][i::2] = interactions['endtime']
         # Remove entries with no quanta
         res = res[res['amp'] > 0]
         return res
-        
