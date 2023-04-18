@@ -15,14 +15,10 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
 @strax.takes_config(
     strax.Option('rext', default=100000, track=False, infer_type=False,
                  help="right raw extension"),
-    strax.Option('pmt_transit_time_mean', default=config['pmt_transit_time_mean'], track=False, infer_type=False,
-                 help="pmt_transit_time_mean"),
     strax.Option('pmt_transit_time_spread', default=config['pmt_transit_time_spread'], track=False, infer_type=False,
                  help="pmt_transit_time_spread"),
     strax.Option('dt', default=config['sample_duration'], track=False, infer_type=False,
                  help="sample_duration"),
-    strax.Option('p_double_pe_emision', default=config['p_double_pe_emision'], track=False, infer_type=False,
-                 help="p_double_pe_emision"),
     strax.Option('to_pe_file', default=os.path.join(private_files_path,"sim_files/to_pe_nt.npy"), track=False, infer_type=False,
                  help="to_pe file"),
     strax.Option('digitizer_voltage_range', default=config['digitizer_voltage_range'], track=False, infer_type=False,
@@ -66,7 +62,7 @@ class pmt_response_and_daq(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("photon_channels_and_timeing", "S1_channel_and_timings")
+    depends_on = ("photon_channels_and_timeing", "S1_channel_and_timings", "pmt_afterpulses")
     
     provides = ('raw_records', 'raw_records_he', 'raw_records_aqmon')#, 'truth')
     data_kind = immutabledict(zip(provides, provides))
@@ -120,31 +116,28 @@ class pmt_response_and_daq(strax.Plugin):
         
         if self.enable_noise:
             self.noise_data = straxen.get_resource(config['noise_file'], fmt='npy')['arr_0']
-            
-            
+             
         #ZLE Part (Now building actual raw_records data!)
-
         self.samples_per_record = strax.DEFAULT_RECORD_LENGTH
         #self.blevel = 0  # buffer_filled_level
         self.record_buffer = np.zeros(5000000, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH))
         
         self.special_thresholds = config.get('special_thresholds', {})
-        
-        
+
         #Im sure there is a better way to handle this part
         self._cached_pmt_current_templates = {}
-        self._cached_uniform_to_pe_arr = {}
         
-    def compute(self, S1_photons, S2_photons):
+    def compute(self, S1_photons, S2_photons, AP_photons):
 
-        if len(S1_photons) == 0 and len(S2_photons) == 0:
+        if len(S1_photons) == 0 and len(S2_photons) == 0  and len(AP_photons) == 0:
             return dict(raw_records=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)),
                         raw_records_he=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)),
                         raw_records_aqmon=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)))
         
-        merged_photons = np.concatenate([S1_photons, S2_photons])
+        merged_photons = np.concatenate([S1_photons, S2_photons, AP_photons])
         S1_photons = None
         S2_photons = None
+        AP_photons = None
         
         #Sort all photons by time
         sortind = np.argsort(merged_photons["time"])
@@ -161,49 +154,22 @@ class pmt_response_and_daq(strax.Plugin):
             sort_idx = np.argsort(photon_group["channel"])
             _photon_timings = photon_group[sort_idx]["time"]
             _photon_channels = photon_group[sort_idx]["channel"]
+            _photon_gains = photon_group[sort_idx]["photon_gain"]
             
             _pulses = []
             
-            # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
-            # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-            #Why this if case?
-            #if '_photon_gains' not in self.__dict__:
-            _photon_timings += np.random.normal(self.pmt_transit_time_mean,
-                                                self.pmt_transit_time_spread / 2.35482,
-                                                len(_photon_timings)).astype(np.int64)
-            
-            
-            # Assign DPE, and save it for compute after-pulses
-            # How do we add afterpulses to the refactored wfsim??
-            _photon_is_dpe = np.random.binomial(n=1,
-                                                p=self.p_double_pe_emision,
-                                                size=len(_photon_timings)).astype(np.bool_)
-            
-            
             _pmt_current_templates, _template_length = self.init_pmt_current_templates()
-            self.__uniform_to_pe_arr = self.init_spe_scaling_factor_distributions()
-            
             
             #Hey! Now there is a loop in a loop! 
             counts_start = 0  # Secondary loop index for assigning channel
             for channel, counts in zip(*np.unique(_photon_channels, return_counts=True)):
                 # Use 'counts' amount of photon for this channel
                 _channel_photon_timings = _photon_timings[counts_start:counts_start+counts]
-                _channel_photon_is_dpe = _photon_is_dpe[counts_start:counts_start+counts]
+                _channel_photon_gains = _photon_gains[counts_start:counts_start+counts]
 
                 counts_start += counts
                 if channel in self.turned_off_pmts:
                     continue
-
-                #Again do no use the if case here that is only relevant for AP -> Deal with them later
-
-                _channel_photon_gains = self.gains[channel] \
-                                        * self.uniform_to_pe_arr(np.random.random(len(_channel_photon_timings)), channel)
-
-                # Add some double photoelectron emission by adding another sampled gain
-                n_double_pe = _channel_photon_is_dpe.sum()
-                _channel_photon_gains[_channel_photon_is_dpe] += self.gains[channel] \
-                                                                 * self.uniform_to_pe_arr(np.random.random(n_double_pe), channel)
 
                 #skip truth here
 
@@ -281,7 +247,6 @@ class pmt_response_and_daq(strax.Plugin):
                                    _pulse['right'] - left + 1,
                                    _raw_data[self.channel_map['sum_signal']])
                         
-            _pulses_cache = []
             _channel_mask['left'] -= left + config['trigger_window']
             _channel_mask['right'] -= left - config['trigger_window']
             
@@ -370,44 +335,6 @@ class pmt_response_and_daq(strax.Plugin):
                        raw_records_aqmon=records[records['channel'] == 800],
                        #truth=_truth
                     ) 
-            
-    def init_spe_scaling_factor_distributions(self):
-        
-        h = deterministic_hash(config) # What is this part doing?
-        #if h in self._cached_uniform_to_pe_arr:
-        #    __uniform_to_pe_arr = self._cached_uniform_to_pe_arr[h]
-        #    return __uniform_to_pe_arr
-
-        # Extract the spe pdf from a csv file into a pandas dataframe
-        spe_shapes = self.photon_area_distribution
-
-        # Create a converter array from uniform random numbers to SPE gains (one interpolator per channel)
-        # Scale the distributions so that they have an SPE mean of 1 and then calculate the cdf
-        uniform_to_pe_arr = []
-        for ch in spe_shapes.columns[1:]:  # skip the first element which is the 'charge' header
-            if spe_shapes[ch].sum() > 0:
-                # mean_spe = (spe_shapes['charge'].values * spe_shapes[ch]).sum() / spe_shapes[ch].sum()
-                scaled_bins = spe_shapes['charge'].values  # / mean_spe
-                cdf = np.cumsum(spe_shapes[ch]) / np.sum(spe_shapes[ch])
-            else:
-                # if sum is 0, just make some dummy axes to pass to interpolator
-                cdf = np.linspace(0, 1, 10)
-                scaled_bins = np.zeros_like(cdf)
-
-            grid_cdf = np.linspace(0, 1, 2001)
-            grid_scale = interp1d(cdf, scaled_bins,
-                                  kind='next',
-                                  bounds_error=False,
-                                  fill_value=(scaled_bins[0], scaled_bins[-1]))(grid_cdf)
-
-            uniform_to_pe_arr.append(grid_scale)
-
-        if len(uniform_to_pe_arr):
-            __uniform_to_pe_arr = np.stack(uniform_to_pe_arr)
-            self._cached_uniform_to_pe_arr[h] = __uniform_to_pe_arr
-
-        return __uniform_to_pe_arr
-        #log.debug('Spe scaling factors created, cached with key %s' % h)
         
     def init_pmt_current_templates(self):
         """
@@ -450,10 +377,6 @@ class pmt_response_and_daq(strax.Plugin):
         self._cached_pmt_current_templates[h] = _pmt_current_templates
 
         return _pmt_current_templates, _template_length
-    
-    def uniform_to_pe_arr(self, p, channel=0):
-        indices = (p * 2000).astype(np.int64) + 1
-        return self.__uniform_to_pe_arr[channel, indices]
     
     def infer_dtype(self):
         dtype = {data_type: strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)
