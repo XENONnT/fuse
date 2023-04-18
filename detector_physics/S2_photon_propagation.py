@@ -9,6 +9,9 @@ import wfsim
 from wfsim.load_resource import DummyMap
 from numba import njit
 
+from strax import deterministic_hash
+from scipy.interpolate import interp1d
+
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
@@ -67,6 +70,14 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="singlet_lifetime_gas"),
     strax.Option('triplet_lifetime_gas', default=config['triplet_lifetime_gas'], track=False, infer_type=False,
                  help="triplet_lifetime_gas"),
+    strax.Option('pmt_transit_time_mean', default=config['pmt_transit_time_mean'], track=False, infer_type=False,
+                 help="pmt_transit_time_mean"),
+    strax.Option('pmt_transit_time_spread', default=config['pmt_transit_time_spread'], track=False, infer_type=False,
+                 help="pmt_transit_time_spread"),
+    strax.Option('p_double_pe_emision', default=config['p_double_pe_emision'], track=False, infer_type=False,
+                 help="p_double_pe_emision"),
+    strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
+                 help="photon_area_distribution"),
 )
 class S2_photon_distributions_and_timing(strax.Plugin):
     
@@ -74,15 +85,15 @@ class S2_photon_distributions_and_timing(strax.Plugin):
     
     depends_on = ("photons", "extracted_electrons", "drifted_electrons", "sum_photons")
     provides = "photon_channels_and_timeing"
-    
+    data_kind = "S2_photons"
+
     #Forbid rechunking
     rechunk_on_save = False
-    
 
     dtype = [('channel', np.int64),
+             ('dpe', np.bool_),
+             ('photon_gain', np.int64),
             ]
-    data_kind = "S2_photons"
-    
     dtype = dtype + strax.time_fields
     
     def setup(self):
@@ -94,13 +105,13 @@ class S2_photon_distributions_and_timing(strax.Plugin):
                 / 2 ** (self.digitizer_bits)
                  / self.pmt_circuit_load_resistor)
 
-        gains = np.divide(adc_2_current,
+        self.gains = np.divide(adc_2_current,
                           self.to_pe,
                           out=np.zeros_like(self.to_pe),
                           where=self.to_pe != 0)
 
-        self.pmt_mask = np.array(gains) > 0  # Converted from to pe (from cmt by default)
-        self.turned_off_pmts = np.arange(len(gains))[np.array(gains) == 0]
+        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
+        self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
 
         self.s2_pattern_map = wfsim.make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
         
@@ -122,7 +133,6 @@ class S2_photon_distributions_and_timing(strax.Plugin):
                 return field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
             self.field_dependencies_map = rz_map
         
-        
         if 'garfield_gas_gap' in self.s2_luminescence_model:
             #garfield_gas_gap option is using (x,y) -> gas gap (from the map) -> s2 luminescence
             #from garfield. This s2_luminescence_gg is indexed only by the gas gap, and
@@ -132,7 +142,12 @@ class S2_photon_distributions_and_timing(strax.Plugin):
         
         if self.s2_time_spline:
             self.s2_optical_propagation_spline = make_map(os.path.join(private_files_path,"sim_files/XENONnT_s2_opticalprop_time_v0.json.gz"), fmt="json.gz")
-    
+
+        self.photon_area_distribution = straxen.get_resource(self.photon_area_distribution, fmt='csv')
+        self._cached_uniform_to_pe_arr = {}
+        self.__uniform_to_pe_arr = self.init_spe_scaling_factor_distributions()
+
+
     def compute(self, individual_electrons, electron_cloud):
 
         if len(individual_electrons) == 0:
@@ -146,7 +161,7 @@ class S2_photon_distributions_and_timing(strax.Plugin):
                                                 electron_cloud["drift_time_mean"] ,
                                                 electron_cloud["sum_photons"],
                                                )
-        
+        #_photon_channels = _photon_channels.astype(np.int64)
         _photon_timings = self.photon_timings(positions,
                                               electron_cloud["sum_photons"],
                                               _photon_channels,
@@ -155,12 +170,31 @@ class S2_photon_distributions_and_timing(strax.Plugin):
         #repeat for n photons per electron # Should this be before adding delays?
         _photon_timings += np.repeat(individual_electrons["time"], individual_electrons["n_photons"])
         
+        #Do i want to save both -> timings with and without pmt transition time spread?
+        # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
+        # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
+        _photon_timings += np.random.normal(self.pmt_transit_time_mean,
+                                            self.pmt_transit_time_spread / 2.35482,
+                                            len(_photon_timings)).astype(np.int64)
+        _photon_is_dpe = np.random.binomial(n=1,
+                                            p=self.p_double_pe_emision,
+                                            size=len(_photon_timings)).astype(np.bool_)
+        _photon_gains = self.gains[_photon_channels] \
+            * loop_uniform_to_pe_arr(np.random.random(len(_photon_channels)), _photon_channels, self.__uniform_to_pe_arr)
+
+        # Add some double photoelectron emission by adding another sampled gain
+        n_double_pe = _photon_is_dpe.sum()
+        _photon_gains[_photon_is_dpe] += self.gains[_photon_channels[_photon_is_dpe]] \
+            * loop_uniform_to_pe_arr(np.random.random(n_double_pe), _photon_channels[_photon_is_dpe], self.__uniform_to_pe_arr) 
+
         
         #we may need to sort this output by time and channel??
         result = np.zeros(len(_photon_channels), dtype = self.dtype)
         result["channel"] = _photon_channels
         result["time"] = _photon_timings
         result["endtime"] = _photon_timings
+        result["dpe"] = _photon_is_dpe
+        result["photon_gain"] = _photon_gains
         
         return result
     
@@ -217,7 +251,7 @@ class S2_photon_distributions_and_timing(strax.Plugin):
         
         _photon_channels = np.concatenate(_buffer_photon_channels)
         
-        return _photon_channels
+        return _photon_channels.astype(np.int64)
 
     
     def s2_pattern_map_diffuse(self, n_electron, z, xy, drift_time_mean):
@@ -366,6 +400,46 @@ class S2_photon_distributions_and_timing(strax.Plugin):
                                      d_gasgap
                                     )
     
+    def init_spe_scaling_factor_distributions(self):
+        #This code will be duplicate with the corresponding S2 class 
+        # Improve!!
+        
+        h = deterministic_hash(config) # What is this part doing?
+        #if h in self._cached_uniform_to_pe_arr:
+        #    __uniform_to_pe_arr = self._cached_uniform_to_pe_arr[h]
+        #    return __uniform_to_pe_arr
+
+        # Extract the spe pdf from a csv file into a pandas dataframe
+        spe_shapes = self.photon_area_distribution
+
+        # Create a converter array from uniform random numbers to SPE gains (one interpolator per channel)
+        # Scale the distributions so that they have an SPE mean of 1 and then calculate the cdf
+        uniform_to_pe_arr = []
+        for ch in spe_shapes.columns[1:]:  # skip the first element which is the 'charge' header
+            if spe_shapes[ch].sum() > 0:
+                # mean_spe = (spe_shapes['charge'].values * spe_shapes[ch]).sum() / spe_shapes[ch].sum()
+                scaled_bins = spe_shapes['charge'].values  # / mean_spe
+                cdf = np.cumsum(spe_shapes[ch]) / np.sum(spe_shapes[ch])
+            else:
+                # if sum is 0, just make some dummy axes to pass to interpolator
+                cdf = np.linspace(0, 1, 10)
+                scaled_bins = np.zeros_like(cdf)
+
+            grid_cdf = np.linspace(0, 1, 2001)
+            grid_scale = interp1d(cdf, scaled_bins,
+                                  kind='next',
+                                  bounds_error=False,
+                                  fill_value=(scaled_bins[0], scaled_bins[-1]))(grid_cdf)
+
+            uniform_to_pe_arr.append(grid_scale)
+
+        if len(uniform_to_pe_arr):
+            __uniform_to_pe_arr = np.stack(uniform_to_pe_arr)
+            self._cached_uniform_to_pe_arr[h] = __uniform_to_pe_arr
+
+        return __uniform_to_pe_arr
+        #log.debug('Spe scaling factors created, cached with key %s' % h)
+    
     
 @njit
 def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap):
@@ -449,3 +523,21 @@ def parse_extension(name):
         fmt = split_name[-1]
     #log.warning(f'Using {fmt} for unspecified {name}')
     return fmt
+
+
+#This is a modified version of the corresponding WFsim code....
+@njit()
+def uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
+    indices = np.int64(p * 2000) + 1
+    return __uniform_to_pe_arr[channel, indices]
+
+#In WFSim uniform_to_pe_arr is called inside a loop over the channels
+#I needed to change the code to run on all channels at once
+@njit()
+def loop_uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
+    result = []
+    for i in range(len(p)):
+        result.append(uniform_to_pe_arr(p[i],
+                                        channel=channel[i],
+                                        __uniform_to_pe_arr=__uniform_to_pe_arr) )
+    return np.array(result)
