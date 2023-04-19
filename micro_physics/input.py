@@ -18,6 +18,8 @@ import epix
                  help="Add Description"),
     strax.Option('source_rate', default=1, track=False, infer_type=False,
                  help="source_rate"),
+    strax.Option('cut_delayed', default=4e12, track=False, infer_type=False,
+                 help="cut_delayed"),
     strax.Option('n_interactions_per_chunk', default=10000, track=False, infer_type=False,
                  help="Add n_interactions_per_chunk"),
     strax.Option('debug', default=False, track=False, infer_type=False,
@@ -79,6 +81,7 @@ class input_plugin(strax.Plugin):
                                        self.file_name,
                                        separation_scale = self.separation_scale,
                                        event_rate = self.source_rate,
+                                       cut_delayed = self.cut_delayed,
                                        n_interactions_per_chunk = self.n_interactions_per_chunk,
                                        arg_debug = self.debug,
                                        outer_cylinder=None, #This is not running 
@@ -247,6 +250,9 @@ class file_loader():
         
         inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
         
+        sort_idx = np.argsort(inter_reshaped["time"])
+        inter_reshaped = inter_reshaped[sort_idx]
+
         #Group into chunks
         chunk_idx = dynamic_chunking(inter_reshaped["time"], scale = self.separation_scale, n_min =  self.n_interactions_per_chunk)
         
