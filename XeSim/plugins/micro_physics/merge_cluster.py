@@ -5,7 +5,7 @@ import awkward as ak
 import numba
 import logging
 
-from ..common import full_array_to_numpy, reshape_awkward, calc_dt, ak_num
+from ...common import full_array_to_numpy, reshape_awkward, calc_dt, ak_num
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.micro_physics.merge_cluster')

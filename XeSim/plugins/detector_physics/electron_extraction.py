@@ -5,7 +5,7 @@ from copy import deepcopy
 import os
 import logging
 
-from ..common import make_map, make_patternmap
+from ...common import make_map, make_patternmap
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.detector_physics.electron_extraction')

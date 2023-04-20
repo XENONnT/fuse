@@ -4,7 +4,7 @@ import straxen
 import os
 import logging
 
-from ..common import make_map
+from ...common import make_map
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.detector_physics.electron_drift')

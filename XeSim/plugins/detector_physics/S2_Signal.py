@@ -10,7 +10,7 @@ from scipy.interpolate import interp1d
 
 from strax import deterministic_hash
 
-from ..common import make_map, make_patternmap, DummyMap
+from ...common import make_map, make_patternmap, DummyMap
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.detector_physics.S2_Signal')

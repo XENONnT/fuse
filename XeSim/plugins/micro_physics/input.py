@@ -7,7 +7,7 @@ import logging
 import numpy as np
 import awkward as ak
 
-from ..common import full_array_to_numpy
+from ...common import full_array_to_numpy
 
 import epix
 

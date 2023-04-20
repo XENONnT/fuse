@@ -5,7 +5,7 @@ import strax
 import awkward as ak
 import logging
 
-from ..common import reshape_awkward, awkward_to_flat_numpy
+from ...common import reshape_awkward, awkward_to_flat_numpy
 
 from sklearn.cluster import DBSCAN
 

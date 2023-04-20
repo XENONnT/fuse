@@ -9,7 +9,7 @@ from numba import njit
 from strax import deterministic_hash
 from scipy.interpolate import interp1d
 
-from ..common import make_map, make_patternmap
+from ...common import make_map, make_patternmap
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.detector_physics.S1_Signal')

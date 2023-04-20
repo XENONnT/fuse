@@ -3,7 +3,7 @@ import numpy as np
 import awkward as ak
 import logging 
 
-from ..common import offset_range, reshape_awkward
+from ...common import offset_range, reshape_awkward
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.micro_physics.output')

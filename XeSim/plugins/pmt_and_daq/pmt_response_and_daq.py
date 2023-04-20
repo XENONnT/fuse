@@ -9,7 +9,7 @@ import logging
 from strax import deterministic_hash
 from scipy.interpolate import interp1d
 
-from ..common import find_intervals_below_threshold
+from ...common import find_intervals_below_threshold
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.pmt_and_daq.pmt_response_and_daq')
