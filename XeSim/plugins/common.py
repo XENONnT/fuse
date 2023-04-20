@@ -1,7 +1,10 @@
 import numpy as np
 import awkward as ak
 import straxen
+import strax
 import numba
+from copy import deepcopy
+
 
 def full_array_to_numpy(array, dtype):
     
@@ -13,6 +16,8 @@ def full_array_to_numpy(array, dtype):
         numpy_data[field] = awkward_to_flat_numpy(array[field])
         
     return numpy_data
+
+#WFSim functions
 
 def make_map(map_file, fmt=None, method='WeightedNearestNeighbors'):
     """Fetch and make an instance of InterpolatingMap based on map_file
@@ -34,7 +39,40 @@ def make_map(map_file, fmt=None, method='WeightedNearestNeighbors'):
 
     else:
         raise TypeError("Can't handle map_file except a string or a list")
-    
+
+def make_patternmap(map_file, fmt=None, method='WeightedNearestNeighbors', pmt_mask=None):
+    """ This is special interpretation of the of previous make_map(), but designed
+    for pattern map loading with provided PMT mask. This way simplifies both S1 and S2
+    cases
+    """
+    # making tests not failing, we can probably overwrite it completel
+    if isinstance(map_file, list):
+        #log.warning(f'Using dummy map with pattern mask! This has no effect here!')
+        assert map_file[0] == 'constant dummy', ('Alternative file input can only be '
+                                                 '("constant dummy", constant: int, shape: list')
+        return DummyMap(map_file[1], map_file[2])
+    elif isinstance(map_file, str):
+        if fmt is None:
+            fmt = parse_extension(map_file)
+        map_data = deepcopy(straxen.get_resource(map_file, fmt=fmt))
+        # XXX: straxed deals with pointers and caches resources, it means that resources are global
+        # what is bad, so we make own copy here and modify it locally
+        if 'compressed' in map_data:
+            compressor, dtype, shape = map_data['compressed']
+            map_data['map'] = np.frombuffer(
+                strax.io.COMPRESSORS[compressor]['decompress'](map_data['map']),
+                dtype=dtype).reshape(*shape)
+            del map_data['compressed']
+        if 'quantized' in map_data:
+            map_data['map'] = map_data['quantized']*map_data['map'].astype(np.float32)
+            del map_data['quantized']
+        if not (pmt_mask is None):
+            assert (map_data['map'].shape[-1]==pmt_mask.shape[0]), "Error! Pattern map and PMT gains must have same dimensions!"
+            map_data['map'][..., ~pmt_mask]=0.0
+        return straxen.InterpolatingMap(map_data, method=method)
+    else:
+        raise TypeError("Can't handle map_file except a string or a list")
+
 
 def parse_extension(name):
     """Get the extention from a file name. If zipped or tarred, can contain a dot"""
@@ -70,6 +108,8 @@ class DummyMap:
         return DummyMap(const, shape)
     
 
+
+# Epix functions
 
 def reshape_awkward(array, offset):
     """
@@ -188,3 +228,49 @@ def offset_range(offsets):
         res[i:i+o] = ind
         i += o
     return res
+
+@numba.jit(numba.int32(numba.int64[:], numba.int64, numba.int64, numba.int64[:, :]),
+           nopython=True)
+def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
+    """Fills result_buffer with l, r bounds of intervals in w < threshold.
+    :param w: Waveform to do hitfinding in
+    :param threshold: Threshold for including an interval
+    :param holdoff: Holdoff number of samples after the pulse return back down to threshold
+    :param result_buffer: numpy N*2 array of ints, will be filled by function.
+                          if more than N intervals are found, none past the first N will be processed.
+    :returns : number of intervals processed
+    Boundary indices are inclusive, i.e. the right boundary is the last index which was < threshold
+    """
+    result_buffer_size = len(result_buffer)
+    last_index_in_w = len(w) - 1
+
+    in_interval = False
+    current_interval = 0
+    current_interval_start = -1
+    current_interval_end = -1
+
+    for i, x in enumerate(w):
+
+        if x < threshold:
+            if not in_interval:
+                # Start of an interval
+                in_interval = True
+                current_interval_start = i
+
+            current_interval_end = i
+
+        if ((i == last_index_in_w and in_interval) or
+                (x >= threshold and i >= current_interval_end + holdoff and in_interval)):
+            # End of the current interval
+            in_interval = False
+
+            # Add bounds to result buffer
+            result_buffer[current_interval, 0] = current_interval_start
+            result_buffer[current_interval, 1] = current_interval_end
+            current_interval += 1
+
+            if current_interval == result_buffer_size:
+                result_buffer[current_interval, 1] = len(w) - 1
+
+    n_intervals = current_interval  # No +1, as current_interval was incremented also when the last interval closed
+    return n_intervals

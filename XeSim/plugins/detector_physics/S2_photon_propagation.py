@@ -7,12 +7,9 @@ from numba import njit
 from scipy.stats import skewnorm
 from scipy.interpolate import interp1d
 
-from ..common import make_map
-
-import wfsim
-
 from strax import deterministic_hash
 
+from ..common import make_map, make_patternmap
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -115,7 +112,7 @@ class S2_photon_distributions_and_timing(strax.Plugin):
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
 
-        self.s2_pattern_map = wfsim.make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
+        self.s2_pattern_map = make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
         
         
         # Field dependencies 

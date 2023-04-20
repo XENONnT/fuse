@@ -4,10 +4,7 @@ import straxen
 from copy import deepcopy
 import os
 
-
-import wfsim
-
-from ..common import make_map
+from ..common import make_map, make_patternmap
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -88,7 +85,7 @@ class scintillation(strax.Plugin):
 
                 self.pmt_mask = np.array(gains) > 0  # Converted from to pe (from cmt by default)
 
-                self.s2_pattern_map = wfsim.make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
+                self.s2_pattern_map = make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
                 
                 
                 s2cmap = deepcopy(self.s2_pattern_map)

@@ -1,17 +1,14 @@
 import numpy as np
 import strax
 import straxen
-import wfsim
-import logging 
 import nestpy
 import os
 
 from numba import njit
-
-from ..common import make_map
-
 from strax import deterministic_hash
 from scipy.interpolate import interp1d
+
+from ..common import make_map, make_patternmap
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -87,7 +84,7 @@ class S1_scintillation_and_propagation(strax.Plugin):
     def setup(self):
         
         self.s1_lce_correction_map = make_map(self.s1_lce_correction_map, fmt='json.gz')
-        self.s1_pattern_map = wfsim.make_patternmap(self.s1_pattern_map, fmt='pkl', pmt_mask=None)
+        self.s1_pattern_map = make_patternmap(self.s1_pattern_map, fmt='pkl', pmt_mask=None)
         
         to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
         self.to_pe = to_pe[0][1]

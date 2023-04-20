@@ -1,4 +1,3 @@
-from wfsim.utils import find_intervals_below_threshold
 from immutabledict import immutabledict
 import straxen 
 import strax
@@ -8,6 +7,8 @@ import numpy as np
 
 from strax import deterministic_hash
 from scipy.interpolate import interp1d
+
+from ..common import find_intervals_below_threshold
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
