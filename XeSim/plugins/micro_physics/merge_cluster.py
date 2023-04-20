@@ -4,6 +4,8 @@ import epix
 import awkward as ak
 import numba
 
+from ..common import full_array_to_numpy
+
 
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
@@ -52,18 +54,6 @@ class cluster_merging(strax.Plugin):
     def setup(self):
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
         self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)
-        
-    def full_array_to_numpy(self, array):
-    
-        len_output = len(epix.awkward_to_flat_numpy(array["x"]))
-
-        numpy_data = np.zeros(len_output, dtype=self.dtype)
-
-        for field in array.fields:
-            numpy_data[field] = epix.awkward_to_flat_numpy(array[field])
-        
-        return numpy_data
-
 
     def compute(self, geant4_interactions):
 
@@ -102,7 +92,7 @@ class cluster_merging(strax.Plugin):
         dt = epix.calc_dt(result)
         result = result[dt <= self.max_delay]
         
-        result = self.full_array_to_numpy(result)
+        result = full_array_to_numpy(result, self.dtype)
         
         #result["time"] = result
         result["endtime"] = result["time"] +1e7

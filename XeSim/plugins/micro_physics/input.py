@@ -6,8 +6,9 @@ import warnings
 import numpy as np
 import awkward as ak
 
+from ..common import full_array_to_numpy
+
 import epix
-from epix.common import awkward_to_flat_numpy, offset_range, reshape_awkward
 
 @strax.takes_config(
     strax.Option('path', default=".", track=False, infer_type=False,
@@ -85,27 +86,12 @@ class input_plugin(strax.Plugin):
                                        #cut_nr_only=self.nr_only,
                                        ).load_file_in_chunks()
 
-        
-        
-    
-    def full_array_to_numpy(self, array):
-    
-        len_output = len(epix.awkward_to_flat_numpy(array["x"]))
-
-        numpy_data = np.zeros(len_output, dtype=self.dtype)
-
-        for field in array.fields:
-            numpy_data[field] = epix.awkward_to_flat_numpy(array[field])
-        
-        return numpy_data
-    
-
     def compute(self):
         
         try: 
             inter, n_simulated_events = next(self.file_reader)
             
-            inter_reshaped = self.full_array_to_numpy(inter)
+            inter_reshaped = full_array_to_numpy(inter, self.dtype)
         
             inter_reshaped["time"] = np.int64((inter_reshaped["evtid"]+1) *1e9 + self.prev_chunk_stop)
             inter_reshaped["endtime"] = inter_reshaped["time"] +1e7
