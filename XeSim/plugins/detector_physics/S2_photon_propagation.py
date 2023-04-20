@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 
 from strax import deterministic_hash
 
-from ..common import make_map, make_patternmap
+from ..common import make_map, make_patternmap, DummyMap
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
