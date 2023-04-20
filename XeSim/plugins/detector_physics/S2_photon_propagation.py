@@ -3,14 +3,16 @@ import straxen
 import numpy as np
 import os
 
+from numba import njit
 from scipy.stats import skewnorm
+from scipy.interpolate import interp1d
+
+from ..common import make_map
 
 import wfsim
-from wfsim.load_resource import DummyMap
-from numba import njit
 
 from strax import deterministic_hash
-from scipy.interpolate import interp1d
+
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -487,43 +489,6 @@ def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_ga
         timings[count:count+n] = T
         count+=n
     return timings
-
-
-
-
-def make_map(map_file, fmt=None, method='WeightedNearestNeighbors'):
-    """Fetch and make an instance of InterpolatingMap based on map_file
-    Alternatively map_file can be a list of ["constant dummy", constant: int, shape: list]
-    return an instance of  DummyMap"""
-
-    if isinstance(map_file, list):
-        assert map_file[0] == 'constant dummy', ('Alternative file input can only be '
-                                                 '("constant dummy", constant: int, shape: list')
-        return DummyMap(map_file[1], map_file[2])
-
-    elif isinstance(map_file, str):
-        if fmt is None:
-            fmt = parse_extension(map_file)
-
-        #log.debug(f'Initialize map interpolator for file {map_file}')
-        map_data = straxen.get_resource(map_file, fmt=fmt)
-        return straxen.InterpolatingMap(map_data, method=method)
-
-    else:
-        raise TypeError("Can't handle map_file except a string or a list")
-    
-def parse_extension(name):
-    """Get the extention from a file name. If zipped or tarred, can contain a dot"""
-    split_name = name.split('.')
-    if len(split_name) == 2:
-        fmt = split_name[-1]
-    elif len(split_name) > 2 and 'gz' in name:
-        fmt = '.'.join(split_name[-2:])
-    else:
-        fmt = split_name[-1]
-    #log.warning(f'Using {fmt} for unspecified {name}')
-    return fmt
-
 
 #This is a modified version of the corresponding WFsim code....
 @njit()
