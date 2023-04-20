@@ -51,7 +51,7 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class electron_drift(strax.Plugin):
+class ElectronDrift(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -76,7 +76,7 @@ class electron_drift(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running electron_drift in debug mode")
+            log.debug("Running ElectronDrift in debug mode")
         
         if self.field_distortion_model == "inverse_fdc":
             self.fdc_3d = make_map(self.fdc_3d, fmt='json.gz')

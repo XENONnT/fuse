@@ -51,7 +51,7 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
     strax.Option('ext_eff_from_map', default=config['ext_eff_from_map'], track=False, infer_type=False,
                  help="ext_eff_from_map"),
 )
-class electron_extraction(strax.Plugin):
+class ElectronExtraction(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -72,7 +72,7 @@ class electron_extraction(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running electron_extraction in debug mode")
+            log.debug("Running ElectronExtraction in debug mode")
         
         to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
         self.to_pe = to_pe[0][1]

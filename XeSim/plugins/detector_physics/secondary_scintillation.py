@@ -49,7 +49,7 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class scintillation(strax.Plugin):
+class SecondaryScintillation(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -73,7 +73,7 @@ class scintillation(strax.Plugin):
         
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running scintillation in debug mode")
+            log.debug("Running SecondaryScintillation in debug mode")
 
         if self.se_gain_from_map:
             self.se_gain_map = make_map(self.se_gain_map, fmt = "json")

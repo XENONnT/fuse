@@ -37,7 +37,7 @@ log.setLevel('WARNING')
     strax.Option('DetectorConfigOverride', default=None, track=False, infer_type=False,
                  help="Config file to overwrite default epix.detectors settings; see examples in the configs folder"),
 )
-class input_plugin(strax.Plugin):
+class ChunkRootFile(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -77,7 +77,7 @@ class input_plugin(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running input plugin in debug mode")
+            log.debug("Running ChunkRootFile in debug mode")
         
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
         self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)

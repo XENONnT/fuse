@@ -12,7 +12,7 @@ from scipy.interpolate import interp1d
 from ..common import make_map, make_patternmap
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.detector_physics.S1_scintillation_and_photon_propagation')
+log = logging.getLogger('XeSim.detector_physics.S1_Signal')
 log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
@@ -71,7 +71,7 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class S1_scintillation_and_propagation(strax.Plugin):
+class S1PhotonPropagation(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -92,7 +92,7 @@ class S1_scintillation_and_propagation(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running S1_scintillation_and_propagation in debug mode")
+            log.debug("Running S1PhotonPropagation in debug mode")
         
         self.s1_lce_correction_map = make_map(self.s1_lce_correction_map, fmt='json.gz')
         self.s1_pattern_map = make_patternmap(self.s1_pattern_map, fmt='pkl', pmt_mask=None)

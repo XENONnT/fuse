@@ -21,7 +21,7 @@ log.setLevel('WARNING')
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class find_cluster(strax.Plugin):
+class FindCluster(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -40,7 +40,7 @@ class find_cluster(strax.Plugin):
         
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running find_cluster in debug mode")
+            log.debug("Running FindCluster in debug mode")
     
     def compute(self, geant4_interactions):
 

@@ -13,7 +13,7 @@ from strax import deterministic_hash
 from ..common import make_map, make_patternmap, DummyMap
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.detector_physics.S2_photon_propagation')
+log = logging.getLogger('XeSim.detector_physics.S2_Signal')
 log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
@@ -85,7 +85,7 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class S2_photon_distributions_and_timing(strax.Plugin):
+class S2PhotonPropagation(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -106,7 +106,7 @@ class S2_photon_distributions_and_timing(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running S2_photon_distributions_and_timing in debug mode")
+            log.debug("Running S2PhotonPropagation in debug mode")
         
         to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
         self.to_pe = to_pe[0][1]

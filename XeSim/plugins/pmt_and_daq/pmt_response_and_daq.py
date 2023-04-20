@@ -66,7 +66,7 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class pmt_response_and_daq(strax.Plugin):
+class PMTResponseAndDAQ(strax.Plugin):
     
     __version__ = "0.0.0"
     

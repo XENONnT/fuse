@@ -26,7 +26,7 @@ log.setLevel('WARNING')
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class cluster_merging(strax.Plugin):
+class MergeCluster(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -61,7 +61,7 @@ class cluster_merging(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running cluster_merging in debug mode")
+            log.debug("Running MergeCluster in debug mode")
 
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
         self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)

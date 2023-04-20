@@ -12,7 +12,7 @@ log.setLevel('WARNING')
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class nest_yields(strax.Plugin):
+class NestYields(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -34,7 +34,7 @@ class nest_yields(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running nest_yields in debug mode")
+            log.debug("Running NestYields in debug mode")
             log.debug("f'Using nestpy version {nestpy.__version__}'")
 
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
@@ -142,7 +142,7 @@ class nest_yields(strax.Plugin):
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class bbf_yields(strax.Plugin):
+class BBFYields(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -161,7 +161,7 @@ class bbf_yields(strax.Plugin):
 
         if self.debug:
             log.setLevel("DEBUG")
-            log.debug("Running bbf_yields in debug mode")
+            log.debug("Running BBFYields in debug mode")
 
     def compute(self, geant4_interactions):
         
