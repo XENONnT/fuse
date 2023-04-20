@@ -104,8 +104,8 @@ class find_cluster(strax.Plugin):
 
         return interactions
 
-
-    def _find_cluster(self, x, cluster_size_space):
+    @staticmethod
+    def _find_cluster(x, cluster_size_space):
         """
         Function which finds cluster within a event.
         Args:

@@ -99,7 +99,8 @@ class cluster_merging(strax.Plugin):
         
         return result
     
-    def cluster(self, inter, classify_by_energy=False):
+    @staticmethod
+    def cluster(inter, classify_by_energy=False):
         """
         Function which clusters the found clusters together.
         To cluster events a weighted mean is computed for time and position.

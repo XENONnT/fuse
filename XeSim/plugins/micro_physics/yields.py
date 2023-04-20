@@ -62,8 +62,8 @@ class nest_yields(strax.Plugin):
             result['excitons'] = np.empty(0)
         return result
     
-    
-    def _quanta_from_NEST(self, en, model, e_field, A, Z, create_s2, **kwargs):
+    @staticmethod
+    def _quanta_from_NEST(en, model, e_field, A, Z, create_s2, **kwargs):
         """
         Function which uses NEST to yield photons and electrons
         for a given set of parameters.
