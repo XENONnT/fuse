@@ -2,6 +2,7 @@ import strax
 import uproot
 import os
 import warnings
+import logging
 
 import numpy as np
 import awkward as ak
@@ -9,6 +10,10 @@ import awkward as ak
 from ..common import full_array_to_numpy
 
 import epix
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.input_plugin')
+log.setLevel('WARNING')
 
 @strax.takes_config(
     strax.Option('path', default=".", track=False, infer_type=False,
@@ -69,6 +74,10 @@ class input_plugin(strax.Plugin):
     prev_chunk_start = None
 
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running input plugin in debug mode")
         
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
         self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)

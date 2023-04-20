@@ -2,8 +2,13 @@ import strax
 import numpy as np
 import straxen
 import os
+import logging
 
 from ..common import make_map
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.detector_physics.electron_drift')
+log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -43,6 +48,8 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="diffusion_constant_longitudinal"),
     strax.Option('drift_time_gate', default=config["drift_time_gate"], track=False, infer_type=False,
                  help="drift_time_gate"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
 class electron_drift(strax.Plugin):
     
@@ -66,6 +73,10 @@ class electron_drift(strax.Plugin):
     dtype = dtype + strax.time_fields
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running electron_drift in debug mode")
         
         if self.field_distortion_model == "inverse_fdc":
             self.fdc_3d = make_map(self.fdc_3d, fmt='json.gz')

@@ -2,6 +2,11 @@ import strax
 import numpy as np
 import straxen
 import os
+import logging
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.pmt_and_daq.pmt_afterpulses')
+log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -23,6 +28,8 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="pmt_ap_modifier"),
     strax.Option('pmt_ap_t_modifier', default=config['pmt_ap_t_modifier'], track=False, infer_type=False,
                  help="pmt_ap_t_modifier"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
 class PMTAfterPulses(strax.Plugin):
     
@@ -44,6 +51,10 @@ class PMTAfterPulses(strax.Plugin):
 
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running PMTAfterPulses in debug mode")
         
         self.uniform_to_pmt_ap = straxen.get_resource(self.photon_ap_cdfs, fmt='json.gz')
 
@@ -118,7 +129,7 @@ class PMTAfterPulses(strax.Plugin):
             prob_ap = delaytime_cdf[merged_photon_channels, -1]
             if prob_ap.max() * self.pmt_ap_modifier > 0.5:
                 prob = prob_ap.max() * self.pmt_ap_modifier
-                #log.warning(f'PMT after pulse probability is {prob} larger than 0.5?')
+                log.warning(f'PMT after pulse probability is {prob} larger than 0.5?')
 
             # Scaling down (up) rU0 effectivly increase (decrease) the ap rate
             rU0 /= self.pmt_ap_modifier

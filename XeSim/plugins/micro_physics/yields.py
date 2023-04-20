@@ -2,9 +2,11 @@ import numpy as np
 import warnings
 import nestpy
 import strax
+import logging
 
-print(f'Using nestpy version {nestpy.__version__}')
-
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.yields')
+log.setLevel('WARNING')
 
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
@@ -29,6 +31,11 @@ class nest_yields(strax.Plugin):
     rechunk_on_save = False
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running nest_yields in debug mode")
+            log.debug("f'Using nestpy version {nestpy.__version__}'")
 
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
     
@@ -102,13 +109,13 @@ class nest_yields(strax.Plugin):
         # Some addition taken from
         # https://github.com/NESTCollaboration/nestpy/blob/e82c71f864d7362fee87989ed642cd875845ae3e/src/nestpy/helpers.py#L94-L100
         if model == 0 and en > 2e2:
-            warnings.warn(f"Energy deposition of {en} keV beyond NEST validity for NR model of 200 keV - Remove Interaction")
+            log.warning(f"Energy deposition of {en} keV beyond NEST validity for NR model of 200 keV - Remove Interaction")
             return -1, -1, -1
         if model == 7 and en > 3e3:
-            warnings.warn(f"Energy deposition of {en} keV beyond NEST validity for gamma model of 3 MeV - Remove Interaction")
+            log.warning(f"Energy deposition of {en} keV beyond NEST validity for gamma model of 3 MeV - Remove Interaction")
             return -1, -1, -1
         if model == 8 and en > 3e3:
-            warnings.warn(f"Energy deposition of {en} keV beyond NEST validity for beta model of 3 MeV - Remove Interaction")
+            log.warning(f"Energy deposition of {en} keV beyond NEST validity for beta model of 3 MeV - Remove Interaction")
             return -1, -1, -1
 
         y = nc.GetYields(interaction=nestpy.INTERACTION_TYPE(model),
@@ -149,6 +156,13 @@ class bbf_yields(strax.Plugin):
     
     dtype = dtype + strax.time_fields
 
+    def setup(self):
+        self.bbfyields = BBF_quanta_generator()
+
+        if self.debug:
+            log.setLevel("DEBUG")
+            log.debug("Running bbf_yields in debug mode")
+
     def compute(self, geant4_interactions):
         
         result = np.zeros(len(geant4_interactions), dtype=self.dtype)
@@ -158,8 +172,7 @@ class bbf_yields(strax.Plugin):
         # Generate quanta:
         if len(geant4_interactions) > 0:
 
-            bbfyields = BBF_quanta_generator()
-            photons, electrons, excitons = bbfyields.get_quanta_vectorized(
+            photons, electrons, excitons = self.bbfyields.get_quanta_vectorized(
                                 energy=geant4_interactions['ed'],
                                 interaction=geant4_interactions['nestid'],
                                 field=geant4_interactions['e_field']

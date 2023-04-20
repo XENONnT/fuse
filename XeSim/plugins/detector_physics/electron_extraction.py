@@ -3,8 +3,14 @@ import straxen
 import numpy as np
 from copy import deepcopy
 import os
+import logging
 
 from ..common import make_map, make_patternmap
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.detector_physics.electron_extraction')
+log.setLevel('WARNING')
+
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -63,6 +69,10 @@ class electron_extraction(strax.Plugin):
     dtype = dtype + strax.time_fields
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running electron_extraction in debug mode")
         
         to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
         self.to_pe = to_pe[0][1]

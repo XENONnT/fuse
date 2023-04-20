@@ -3,12 +3,17 @@ import strax
 import straxen
 import nestpy
 import os
+import logging
 
 from numba import njit
 from strax import deterministic_hash
 from scipy.interpolate import interp1d
 
 from ..common import make_map, make_patternmap
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.detector_physics.S1_scintillation_and_photon_propagation')
+log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -63,6 +68,8 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="p_double_pe_emision"),
     strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
                  help="photon_area_distribution"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
 class S1_scintillation_and_propagation(strax.Plugin):
     
@@ -82,6 +89,10 @@ class S1_scintillation_and_propagation(strax.Plugin):
     dtype = dtype + strax.time_fields
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running S1_scintillation_and_propagation in debug mode")
         
         self.s1_lce_correction_map = make_map(self.s1_lce_correction_map, fmt='json.gz')
         self.s1_pattern_map = make_patternmap(self.s1_pattern_map, fmt='pkl', pmt_mask=None)
@@ -106,8 +117,8 @@ class S1_scintillation_and_propagation(strax.Plugin):
                                                       method='RegularGridInterpolator')
         
         if 'nest' in self.s1_model_type: #and (self.nestpy_calc is None):
-            #log.info('Using NEST for scintillation time without set calculator\n'
-            #         'Creating new nestpy calculator')
+            log.info('Using NEST for scintillation time without set calculator\n'
+                     'Creating new nestpy calculator')
             self.nestpy_calc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
 
         self.photon_area_distribution = straxen.get_resource(self.photon_area_distribution, fmt='csv')
@@ -379,8 +390,9 @@ class S1_scintillation_and_propagation(strax.Plugin):
             __uniform_to_pe_arr = np.stack(uniform_to_pe_arr)
             self._cached_uniform_to_pe_arr[h] = __uniform_to_pe_arr
 
+        log.debug('Spe scaling factors created, cached with key %s' % h)
         return __uniform_to_pe_arr
-        #log.debug('Spe scaling factors created, cached with key %s' % h)
+        
 
 #This is a modified version of the corresponding WFsim code....
 @njit()

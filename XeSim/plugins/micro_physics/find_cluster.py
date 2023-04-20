@@ -3,10 +3,15 @@ import pandas as pd
 import numba
 import strax
 import awkward as ak
+import logging
 
 from ..common import reshape_awkward, awkward_to_flat_numpy
 
 from sklearn.cluster import DBSCAN
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.find_cluster')
+log.setLevel('WARNING')
 
 @strax.takes_config(
     strax.Option('micro_separation', default=0.005, track=False, infer_type=False,
@@ -30,8 +35,13 @@ class find_cluster(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
-    
 
+    def setup(self):
+        
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running find_cluster in debug mode")
+    
     def compute(self, geant4_interactions):
 
         if len(geant4_interactions) == 0:

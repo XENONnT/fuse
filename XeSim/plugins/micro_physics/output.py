@@ -1,10 +1,18 @@
 import strax
 import numpy as np
-import wfsim
 import awkward as ak
+import logging 
 
 from ..common import offset_range, reshape_awkward
 
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.output')
+log.setLevel('WARNING')
+
+@strax.takes_config(
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
+)
 class output_plugin(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -35,6 +43,12 @@ class output_plugin(strax.Plugin):
              (('Y position of the primary particle [cm]', 'y_pri'), np.float32),
              (('Z position of the primary particle [cm]', 'z_pri'), np.float32),
             ]
+
+    def setup(self):
+        
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running output_plugin in debug mode")
 
     def compute(self, clustered_interactions):
 

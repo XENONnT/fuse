@@ -3,9 +3,13 @@ import numpy as np
 import epix
 import awkward as ak
 import numba
+import logging
 
 from ..common import full_array_to_numpy, reshape_awkward, calc_dt, ak_num
 
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.merge_cluster')
+log.setLevel('WARNING')
 
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
@@ -19,6 +23,8 @@ from ..common import full_array_to_numpy, reshape_awkward, calc_dt, ak_num
                  help="Config file to overwrite default epix.detectors settings; see examples in the configs folder"),
     strax.Option('max_delay', default=1e7, track=False, infer_type=False,
                  help="Time after which we cut the rest of the event (ns)"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
 class cluster_merging(strax.Plugin):
     
@@ -52,6 +58,11 @@ class cluster_merging(strax.Plugin):
     dtype = dtype + strax.time_fields
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running cluster_merging in debug mode")
+
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
         self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)
 

@@ -2,6 +2,7 @@ import strax
 import straxen
 import numpy as np
 import os
+import logging
 
 from numba import njit
 from scipy.stats import skewnorm
@@ -10,6 +11,10 @@ from scipy.interpolate import interp1d
 from strax import deterministic_hash
 
 from ..common import make_map, make_patternmap, DummyMap
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.detector_physics.S2_photon_propagation')
+log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -77,6 +82,8 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="p_double_pe_emision"),
     strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
                  help="photon_area_distribution"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
 class S2_photon_distributions_and_timing(strax.Plugin):
     
@@ -96,6 +103,10 @@ class S2_photon_distributions_and_timing(strax.Plugin):
     dtype = dtype + strax.time_fields
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running S2_photon_distributions_and_timing in debug mode")
         
         to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
         self.to_pe = to_pe[0][1]
@@ -436,8 +447,9 @@ class S2_photon_distributions_and_timing(strax.Plugin):
             __uniform_to_pe_arr = np.stack(uniform_to_pe_arr)
             self._cached_uniform_to_pe_arr[h] = __uniform_to_pe_arr
 
+        log.debug('Spe scaling factors created, cached with key %s' % h)
         return __uniform_to_pe_arr
-        #log.debug('Spe scaling factors created, cached with key %s' % h)
+        
     
     
 @njit

@@ -2,7 +2,11 @@ import strax
 import numpy as np
 import straxen
 import os
+import logging
 
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.detector_physics.electron_timing')
+log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -11,6 +15,8 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
 @strax.takes_config(
     strax.Option('electron_trapping_time', default=config["electron_trapping_time"], track=False, infer_type=False,
                  help="electron_trapping_time"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
 class electron_timing(strax.Plugin):
     
@@ -32,7 +38,10 @@ class electron_timing(strax.Plugin):
     #dtype = strax.time_fields
     
     def setup(self):
-        pass
+        
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running electron_timing in debug mode")
     
     def compute(self, electron_cloud):
         
