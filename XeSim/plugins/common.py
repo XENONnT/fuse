@@ -2,8 +2,6 @@ import numpy as np
 import epix
 import straxen
 
-from wfsim.load_resource import DummyMap
-
 def full_array_to_numpy(array, dtype):
     
     len_output = len(epix.awkward_to_flat_numpy(array["x"]))
@@ -48,3 +46,24 @@ def parse_extension(name):
         fmt = split_name[-1]
     #log.warning(f'Using {fmt} for unspecified {name}')
     return fmt
+
+class DummyMap:
+    """Return constant results
+        the length match the length of input
+        but from the second dimensions the shape is user defined input
+    """
+    def __init__(self, const, shape=()):
+        self.const = const
+        self.shape = shape
+
+    def __call__(self, x, **kwargs):
+        shape = [len(x)] + list(self.shape)
+        return np.ones(shape) * self.const
+
+    def reduce_last_dim(self):
+        assert len(self.shape) >= 1, 'Need at least 1 dim to reduce further'
+        const = self.const * self.shape[-1]
+        shape = list(self.shape)
+        shape[-1] = 1
+
+        return DummyMap(const, shape)
