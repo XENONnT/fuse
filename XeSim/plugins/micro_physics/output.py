@@ -3,8 +3,7 @@ import numpy as np
 import wfsim
 import awkward as ak
 
-import epix
-from epix.common import offset_range
+from ..common import offset_range, reshape_awkward
 
 class output_plugin(strax.Plugin):
     
@@ -67,7 +66,7 @@ class output_plugin(strax.Plugin):
         for i in range(2):
             
             structure = np.unique(interactions['evtid'], return_counts=True)[1]
-            evtid = epix.reshape_awkward(interactions["evtid"], structure)
+            evtid = reshape_awkward(interactions["evtid"], structure)
             
             res['event_number'][i::2] = offset_range(ak.to_numpy(ak.num(evtid)))
             res['type'][i::2] = i + 1

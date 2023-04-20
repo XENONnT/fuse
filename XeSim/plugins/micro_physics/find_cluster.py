@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import numba
 import strax
-import epix
 import awkward as ak
-from epix.common import reshape_awkward
+
+from ..common import reshape_awkward, awkward_to_flat_numpy
 
 from sklearn.cluster import DBSCAN
 
@@ -41,15 +41,15 @@ class find_cluster(strax.Plugin):
         structure = np.unique(geant4_interactions['evtid'], return_counts=True)[1]
         
         for field in inter.fields:
-            inter[field] = epix.reshape_awkward(geant4_interactions[field], structure)
+            inter[field] = reshape_awkward(geant4_interactions[field], structure)
             
         #We can optimize the find_cluster function for the refactor! No need to return more than cluster_ids , no need to bring it into awkward again
         inter = self.find_cluster(inter, self.micro_separation/10, self.micro_separation_time)
         cluster_ids = inter['cluster_ids']
             
-        len_output = len(epix.awkward_to_flat_numpy(cluster_ids))
+        len_output = len(awkward_to_flat_numpy(cluster_ids))
         numpy_data = np.zeros(len_output, dtype=self.dtype)
-        numpy_data["cluster_ids"] = epix.awkward_to_flat_numpy(cluster_ids)
+        numpy_data["cluster_ids"] = awkward_to_flat_numpy(cluster_ids)
             
         numpy_data["time"] = geant4_interactions["time"]
         numpy_data["endtime"] = geant4_interactions["endtime"]

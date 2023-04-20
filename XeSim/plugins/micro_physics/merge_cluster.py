@@ -4,7 +4,7 @@ import epix
 import awkward as ak
 import numba
 
-from ..common import full_array_to_numpy
+from ..common import full_array_to_numpy, reshape_awkward, calc_dt, ak_num
 
 
 @strax.takes_config(
@@ -64,7 +64,7 @@ class cluster_merging(strax.Plugin):
         structure = np.unique(geant4_interactions['evtid'], return_counts=True)[1]
         
         for field in inter.fields:
-            inter[field] = epix.reshape_awkward(geant4_interactions[field], structure)
+            inter[field] = reshape_awkward(geant4_interactions[field], structure)
 
         result = self.cluster(inter, self.tag_cluster_by == 'energy')
         
@@ -82,14 +82,14 @@ class cluster_merging(strax.Plugin):
         result = result[m]
         
         # Removing now empty events as a result of the selection above:
-        m = epix.ak_num(result['ed']) > 0
+        m = ak_num(result['ed']) > 0
         result = result[m]
         
         # Sort entries (in an event) by in time, then chop all delayed
         # events which are too far away from the rest.
         # (This is a requirement of WFSim)
         result = result[ak.argsort(result['t'])]
-        dt = epix.calc_dt(result)
+        dt = calc_dt(result)
         result = result[dt <= self.max_delay]
         
         result = full_array_to_numpy(result, self.dtype)
