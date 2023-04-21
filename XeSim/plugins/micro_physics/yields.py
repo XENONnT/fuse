@@ -1,16 +1,17 @@
 import numpy as np
-import warnings
 import nestpy
 import strax
+import logging
 
-print(f'Using nestpy version {nestpy.__version__}')
-
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.yields')
+log.setLevel('WARNING')
 
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class nest_yields(strax.Plugin):
+class NestYields(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -29,11 +30,23 @@ class nest_yields(strax.Plugin):
     rechunk_on_save = False
     
     def setup(self):
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running NestYields in debug mode")
+            log.debug(f'Using nestpy version {nestpy.__version__}')
 
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
     
     def compute(self, clustered_interactions):
+        """
+        Computes the charge and light quanta for a list of clustered interactions.
 
+        Args:
+            clustered_interactions (numpy.ndarray): An array of clustered interactions.
+
+        Returns:
+            numpy.ndarray: An array of quanta, with fields for time, endtime, photons, electrons, and excitons.
+        """
         if len(clustered_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
         
@@ -43,16 +56,15 @@ class nest_yields(strax.Plugin):
 
         # Generate quanta:
         if len(clustered_interactions) > 0:
-            
-            photons, electrons, excitons = self.quanta_from_NEST(clustered_interactions['ed'],
-                                                                 clustered_interactions['nestid'],
-                                                                 clustered_interactions['e_field'],
-                                                                 clustered_interactions['A'],
-                                                                 clustered_interactions['Z'],
-                                                                 clustered_interactions['create_S2'],
-                                                                 density=clustered_interactions['xe_density'])
-            
-            
+            photons, electrons, excitons = self.quanta_from_NEST(
+                clustered_interactions['ed'],
+                clustered_interactions['nestid'],
+                clustered_interactions['e_field'],
+                clustered_interactions['A'],
+                clustered_interactions['Z'],
+                clustered_interactions['create_S2'],
+                density=clustered_interactions['xe_density']
+            )
             result['photons'] = photons
             result['electrons'] = electrons
             result['excitons'] = excitons
@@ -62,8 +74,8 @@ class nest_yields(strax.Plugin):
             result['excitons'] = np.empty(0)
         return result
     
-    
-    def _quanta_from_NEST(self, en, model, e_field, A, Z, create_s2, **kwargs):
+    @staticmethod
+    def _quanta_from_NEST(en, model, e_field, A, Z, create_s2, **kwargs):
         """
         Function which uses NEST to yield photons and electrons
         for a given set of parameters.
@@ -102,13 +114,13 @@ class nest_yields(strax.Plugin):
         # Some addition taken from
         # https://github.com/NESTCollaboration/nestpy/blob/e82c71f864d7362fee87989ed642cd875845ae3e/src/nestpy/helpers.py#L94-L100
         if model == 0 and en > 2e2:
-            warnings.warn(f"Energy deposition of {en} keV beyond NEST validity for NR model of 200 keV - Remove Interaction")
+            log.warning(f"Energy deposition of {en} keV beyond NEST validity for NR model of 200 keV - Remove Interaction")
             return -1, -1, -1
         if model == 7 and en > 3e3:
-            warnings.warn(f"Energy deposition of {en} keV beyond NEST validity for gamma model of 3 MeV - Remove Interaction")
+            log.warning(f"Energy deposition of {en} keV beyond NEST validity for gamma model of 3 MeV - Remove Interaction")
             return -1, -1, -1
         if model == 8 and en > 3e3:
-            warnings.warn(f"Energy deposition of {en} keV beyond NEST validity for beta model of 3 MeV - Remove Interaction")
+            log.warning(f"Energy deposition of {en} keV beyond NEST validity for beta model of 3 MeV - Remove Interaction")
             return -1, -1, -1
 
         y = nc.GetYields(interaction=nestpy.INTERACTION_TYPE(model),
@@ -135,7 +147,7 @@ class nest_yields(strax.Plugin):
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class bbf_yields(strax.Plugin):
+class BBFYields(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -149,6 +161,13 @@ class bbf_yields(strax.Plugin):
     
     dtype = dtype + strax.time_fields
 
+    def setup(self):
+        self.bbfyields = BBF_quanta_generator()
+
+        if self.debug:
+            log.setLevel("DEBUG")
+            log.debug("Running BBFYields in debug mode")
+
     def compute(self, geant4_interactions):
         
         result = np.zeros(len(geant4_interactions), dtype=self.dtype)
@@ -158,8 +177,7 @@ class bbf_yields(strax.Plugin):
         # Generate quanta:
         if len(geant4_interactions) > 0:
 
-            bbfyields = BBF_quanta_generator()
-            photons, electrons, excitons = bbfyields.get_quanta_vectorized(
+            photons, electrons, excitons = self.bbfyields.get_quanta_vectorized(
                                 energy=geant4_interactions['ed'],
                                 interaction=geant4_interactions['nestid'],
                                 field=geant4_interactions['e_field']

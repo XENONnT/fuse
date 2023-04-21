@@ -2,8 +2,13 @@ import strax
 import numpy as np
 import straxen
 import os
+import logging
 
-from wfsim.load_resource import DummyMap
+from ...common import make_map
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.detector_physics.electron_drift')
+log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -43,12 +48,14 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="diffusion_constant_longitudinal"),
     strax.Option('drift_time_gate', default=config["drift_time_gate"], track=False, infer_type=False,
                  help="drift_time_gate"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
-class electron_drift(strax.Plugin):
+class ElectronDrift(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("wfsim_instructions")
+    depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
     data_kind = 'electron_cloud'
     
@@ -66,6 +73,10 @@ class electron_drift(strax.Plugin):
     dtype = dtype + strax.time_fields
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running ElectronDrift in debug mode")
         
         if self.field_distortion_model == "inverse_fdc":
             self.fdc_3d = make_map(self.fdc_3d, fmt='json.gz')
@@ -102,21 +113,21 @@ class electron_drift(strax.Plugin):
             self.diffusion_longitudinal_map = _rz_map
     
     
-    #Why is geant4_interactions given from straxen? It should be called wfsim_instructions or??
-    def compute(self, wfsim_instructions):
-
-        if len(wfsim_instructions) == 0:
-            return np.zeros(0, self.dtype)
+    def compute(self, clustered_interactions):
         
-        #Dont want to rename it yet
-        instruction = wfsim_instructions[wfsim_instructions["type"] == 2]
+        #Just apply this to clusters with free electrons
+        instruction = clustered_interactions[clustered_interactions["electrons"] > 0]
+
+        if len(instruction) == 0:
+            return np.zeros(0, self.dtype)
         
         t = instruction["time"]
         x = instruction["x"]
         y = instruction["y"]
         z = instruction["z"]
-        n_electron = instruction["amp"]
-        recoil_type = instruction["recoil"]
+        n_electron = instruction["electrons"].astype(np.int64)
+        recoil_type = instruction["nestid"]
+        recoil_type = np.where(np.isin(recoil_type, [0, 6, 7, 8, 11]), recoil_type, 8)
         
         # Reverse engineering FDC
         if self.field_distortion_model == 'inverse_fdc':
@@ -246,39 +257,5 @@ class electron_drift(strax.Plugin):
         else:
             drift_v_LXe = self.drift_velocity_liquid
         return drift_v_LXe
-
-
-
-def make_map(map_file, fmt=None, method='WeightedNearestNeighbors'):
-    """Fetch and make an instance of InterpolatingMap based on map_file
-    Alternatively map_file can be a list of ["constant dummy", constant: int, shape: list]
-    return an instance of  DummyMap"""
-
-    if isinstance(map_file, list):
-        assert map_file[0] == 'constant dummy', ('Alternative file input can only be '
-                                                 '("constant dummy", constant: int, shape: list')
-        return DummyMap(map_file[1], map_file[2])
-
-    elif isinstance(map_file, str):
-        if fmt is None:
-            fmt = parse_extension(map_file)
-
-        #log.debug(f'Initialize map interpolator for file {map_file}')
-        map_data = straxen.get_resource(map_file, fmt=fmt)
-        return straxen.InterpolatingMap(map_data, method=method)
-
-    else:
-        raise TypeError("Can't handle map_file except a string or a list")
     
 
-def parse_extension(name):
-    """Get the extention from a file name. If zipped or tarred, can contain a dot"""
-    split_name = name.split('.')
-    if len(split_name) == 2:
-        fmt = split_name[-1]
-    elif len(split_name) > 2 and 'gz' in name:
-        fmt = '.'.join(split_name[-2:])
-    else:
-        fmt = split_name[-1]
-    #log.warning(f'Using {fmt} for unspecified {name}')
-    return fmt

@@ -2,15 +2,19 @@ import strax
 import straxen
 import numpy as np
 import os
+import logging
 
-from scipy.stats import skewnorm
-
-import wfsim
-from wfsim.load_resource import DummyMap
 from numba import njit
+from scipy.stats import skewnorm
+from scipy.interpolate import interp1d
 
 from strax import deterministic_hash
-from scipy.interpolate import interp1d
+
+from ...common import make_map, make_patternmap, DummyMap
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.detector_physics.S2_Signal')
+log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -78,8 +82,10 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="p_double_pe_emision"),
     strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
                  help="photon_area_distribution"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
-class S2_photon_distributions_and_timing(strax.Plugin):
+class S2PhotonPropagation(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -97,6 +103,10 @@ class S2_photon_distributions_and_timing(strax.Plugin):
     dtype = dtype + strax.time_fields
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running S2PhotonPropagation in debug mode")
         
         to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
         self.to_pe = to_pe[0][1]
@@ -113,7 +123,7 @@ class S2_photon_distributions_and_timing(strax.Plugin):
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
 
-        self.s2_pattern_map = wfsim.make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
+        self.s2_pattern_map = make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
         
         
         # Field dependencies 
@@ -437,8 +447,9 @@ class S2_photon_distributions_and_timing(strax.Plugin):
             __uniform_to_pe_arr = np.stack(uniform_to_pe_arr)
             self._cached_uniform_to_pe_arr[h] = __uniform_to_pe_arr
 
+        log.debug('Spe scaling factors created, cached with key %s' % h)
         return __uniform_to_pe_arr
-        #log.debug('Spe scaling factors created, cached with key %s' % h)
+        
     
     
 @njit
@@ -487,43 +498,6 @@ def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_ga
         timings[count:count+n] = T
         count+=n
     return timings
-
-
-
-
-def make_map(map_file, fmt=None, method='WeightedNearestNeighbors'):
-    """Fetch and make an instance of InterpolatingMap based on map_file
-    Alternatively map_file can be a list of ["constant dummy", constant: int, shape: list]
-    return an instance of  DummyMap"""
-
-    if isinstance(map_file, list):
-        assert map_file[0] == 'constant dummy', ('Alternative file input can only be '
-                                                 '("constant dummy", constant: int, shape: list')
-        return DummyMap(map_file[1], map_file[2])
-
-    elif isinstance(map_file, str):
-        if fmt is None:
-            fmt = parse_extension(map_file)
-
-        #log.debug(f'Initialize map interpolator for file {map_file}')
-        map_data = straxen.get_resource(map_file, fmt=fmt)
-        return straxen.InterpolatingMap(map_data, method=method)
-
-    else:
-        raise TypeError("Can't handle map_file except a string or a list")
-    
-def parse_extension(name):
-    """Get the extention from a file name. If zipped or tarred, can contain a dot"""
-    split_name = name.split('.')
-    if len(split_name) == 2:
-        fmt = split_name[-1]
-    elif len(split_name) > 2 and 'gz' in name:
-        fmt = '.'.join(split_name[-2:])
-    else:
-        fmt = split_name[-1]
-    #log.warning(f'Using {fmt} for unspecified {name}')
-    return fmt
-
 
 #This is a modified version of the corresponding WFsim code....
 @njit()

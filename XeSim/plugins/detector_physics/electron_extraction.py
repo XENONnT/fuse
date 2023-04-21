@@ -3,9 +3,14 @@ import straxen
 import numpy as np
 from copy import deepcopy
 import os
+import logging
 
-import wfsim
-from wfsim.load_resource import DummyMap
+from ...common import make_map, make_patternmap
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.detector_physics.electron_extraction')
+log.setLevel('WARNING')
+
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -45,12 +50,14 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="electron_extraction_yield"),
     strax.Option('ext_eff_from_map', default=config['ext_eff_from_map'], track=False, infer_type=False,
                  help="ext_eff_from_map"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
-class electron_extraction(strax.Plugin):
+class ElectronExtraction(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("wfsim_instructions", "drifted_electrons")
+    depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
     data_kind = "electron_cloud"
     
@@ -64,6 +71,10 @@ class electron_extraction(strax.Plugin):
     dtype = dtype + strax.time_fields
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running ElectronExtraction in debug mode")
         
         to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
         self.to_pe = to_pe[0][1]
@@ -79,7 +90,7 @@ class electron_extraction(strax.Plugin):
         
         self.pmt_mask = np.array(gains) > 0  # Converted from to pe (from cmt by default)
         
-        self.s2_pattern_map = wfsim.make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
+        self.s2_pattern_map = make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
         
         if self.s2_correction_map_file:
             self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
@@ -95,13 +106,16 @@ class electron_extraction(strax.Plugin):
             
         self.se_gain_map = make_map(self.se_gain_map, fmt = "json")
     
-    def compute(self, wfsim_instructions, electron_cloud):
+    def compute(self, clustered_interactions, electron_cloud):
+        
+        #Just apply this to clusters with free electrons
+        instruction = clustered_interactions[clustered_interactions["electrons"] > 0]
 
-        if len(wfsim_instructions) == 0:
+        if len(instruction) == 0:
             return np.zeros(0, self.dtype)
 
-        x = wfsim_instructions[wfsim_instructions["type"] == 2]["x"]
-        y = wfsim_instructions[wfsim_instructions["type"] == 2]["y"]
+        x = instruction["x"]
+        y = instruction["y"]
         
         xy_int = np.array([x, y]).T # maps are in R_true, so orginal position should be here
 
@@ -126,42 +140,7 @@ class electron_extraction(strax.Plugin):
         
         result = np.zeros(len(n_electron), dtype=self.dtype)
         result["n_electron_extracted"] = n_electron
-        result["time"] = wfsim_instructions[wfsim_instructions["type"] == 2]["time"]
-        result["endtime"] = wfsim_instructions[wfsim_instructions["type"] == 2]["endtime"]
+        result["time"] = instruction["time"]
+        result["endtime"] = instruction["endtime"]
         
         return result
-    
-
-
-def make_map(map_file, fmt=None, method='WeightedNearestNeighbors'):
-    """Fetch and make an instance of InterpolatingMap based on map_file
-    Alternatively map_file can be a list of ["constant dummy", constant: int, shape: list]
-    return an instance of  DummyMap"""
-
-    if isinstance(map_file, list):
-        assert map_file[0] == 'constant dummy', ('Alternative file input can only be '
-                                                 '("constant dummy", constant: int, shape: list')
-        return DummyMap(map_file[1], map_file[2])
-
-    elif isinstance(map_file, str):
-        if fmt is None:
-            fmt = parse_extension(map_file)
-
-        #log.debug(f'Initialize map interpolator for file {map_file}')
-        map_data = straxen.get_resource(map_file, fmt=fmt)
-        return straxen.InterpolatingMap(map_data, method=method)
-
-    else:
-        raise TypeError("Can't handle map_file except a string or a list")
-    
-def parse_extension(name):
-    """Get the extention from a file name. If zipped or tarred, can contain a dot"""
-    split_name = name.split('.')
-    if len(split_name) == 2:
-        fmt = split_name[-1]
-    elif len(split_name) > 2 and 'gz' in name:
-        fmt = '.'.join(split_name[-2:])
-    else:
-        fmt = split_name[-1]
-    #log.warning(f'Using {fmt} for unspecified {name}')
-    return fmt

@@ -1,11 +1,21 @@
+#This plugin can be used to generate output in a shape that can be read by WFsim
+#We can keep this for validation of XeSim but it can be removed later on
+
 import strax
 import numpy as np
-import wfsim
 import awkward as ak
+import logging 
 
-import epix
-from epix.common import offset_range
+from ...common import offset_range, reshape_awkward
 
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.output')
+log.setLevel('WARNING')
+
+@strax.takes_config(
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
+)
 class output_plugin(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -18,24 +28,30 @@ class output_plugin(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
     
-    dtype =         [(('Waveform simulator event number.', 'event_number'), np.int32),
-                     (('Quanta type (S1 photons or S2 electrons)', 'type'), np.int8),
-                     (('Time of the interaction [ns]', 'time'), np.int64),
-                     (('End Time of the interaction [ns]', 'endtime'), np.int64),
-                     (('X position of the cluster [cm]', 'x'), np.float32),
-                     (('Y position of the cluster [cm]', 'y'), np.float32),
-                     (('Z position of the cluster [cm]', 'z'), np.float32),
-                     (('Number of quanta', 'amp'), np.int32),
-                     (('Recoil type of interaction.', 'recoil'), np.int8),
-                     (('Energy deposit of interaction', 'e_dep'), np.float32),
-                     (('Eventid like in geant4 output rootfile', 'g4id'), np.int32),
-                     (('Volume id giving the detector subvolume', 'vol_id'), np.int32),
-                     (('Local field [ V / cm ]', 'local_field'), np.float64),
-                     (('Number of excitons', 'n_excitons'), np.int32),
-                     (('X position of the primary particle [cm]', 'x_pri'), np.float32),
-                     (('Y position of the primary particle [cm]', 'y_pri'), np.float32),
-                     (('Z position of the primary particle [cm]', 'z_pri'), np.float32),
-                    ]
+    dtype = [(('Waveform simulator event number.', 'event_number'), np.int32),
+             (('Quanta type (S1 photons or S2 electrons)', 'type'), np.int8),
+             (('Time of the interaction [ns]', 'time'), np.int64),
+             (('End Time of the interaction [ns]', 'endtime'), np.int64),
+             (('X position of the cluster [cm]', 'x'), np.float32),
+             (('Y position of the cluster [cm]', 'y'), np.float32),
+             (('Z position of the cluster [cm]', 'z'), np.float32),
+             (('Number of quanta', 'amp'), np.int32),
+             (('Recoil type of interaction.', 'recoil'), np.int8),
+             (('Energy deposit of interaction', 'e_dep'), np.float32),
+             (('Eventid like in geant4 output rootfile', 'g4id'), np.int32),
+             (('Volume id giving the detector subvolume', 'vol_id'), np.int32),
+             (('Local field [ V / cm ]', 'local_field'), np.float64),
+             (('Number of excitons', 'n_excitons'), np.int32),
+             (('X position of the primary particle [cm]', 'x_pri'), np.float32),
+             (('Y position of the primary particle [cm]', 'y_pri'), np.float32),
+             (('Z position of the primary particle [cm]', 'z_pri'), np.float32),
+            ]
+
+    def setup(self):
+        
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running output_plugin in debug mode")
 
     def compute(self, clustered_interactions):
 
@@ -50,14 +66,14 @@ class output_plugin(strax.Plugin):
     def awkward_to_wfsim_row_style(self, interactions):
         """
         Converts awkward array instructions into instructions required by
-        WFSim.
+        WFSim
         :param interactions: awkward.Array containing GEANT4 simulation
             information.
         :return: Structured numpy.array. Each row represents either a S1 or
             S2
         """
         if len(interactions) == 0:
-            return np.empty(0, dtype=wfsim.instruction_dtype)
+            return np.empty(0, dtype=self.dtype)
 
         ninteractions = len(interactions['ed'])
         res = np.zeros(2 * ninteractions, dtype=self.dtype)
@@ -67,7 +83,7 @@ class output_plugin(strax.Plugin):
         for i in range(2):
             
             structure = np.unique(interactions['evtid'], return_counts=True)[1]
-            evtid = epix.reshape_awkward(interactions["evtid"], structure)
+            evtid = reshape_awkward(interactions["evtid"], structure)
             
             res['event_number'][i::2] = offset_range(ak.to_numpy(ak.num(evtid)))
             res['type'][i::2] = i + 1

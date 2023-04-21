@@ -2,12 +2,18 @@ import strax
 import uproot
 import os
 import warnings
+import logging
 
 import numpy as np
 import awkward as ak
 
+from ...common import full_array_to_numpy
+
 import epix
-from epix.common import awkward_to_flat_numpy, offset_range, reshape_awkward
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.input')
+log.setLevel('WARNING')
 
 @strax.takes_config(
     strax.Option('path', default=".", track=False, infer_type=False,
@@ -31,7 +37,7 @@ from epix.common import awkward_to_flat_numpy, offset_range, reshape_awkward
     strax.Option('DetectorConfigOverride', default=None, track=False, infer_type=False,
                  help="Config file to overwrite default epix.detectors settings; see examples in the configs folder"),
 )
-class input_plugin(strax.Plugin):
+class ChunkRootFile(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -68,6 +74,10 @@ class input_plugin(strax.Plugin):
     prev_chunk_start = None
 
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running ChunkRootFile in debug mode")
         
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
         self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)
@@ -85,27 +95,12 @@ class input_plugin(strax.Plugin):
                                        #cut_nr_only=self.nr_only,
                                        ).load_file_in_chunks()
 
-        
-        
-    
-    def full_array_to_numpy(self, array):
-    
-        len_output = len(epix.awkward_to_flat_numpy(array["x"]))
-
-        numpy_data = np.zeros(len_output, dtype=self.dtype)
-
-        for field in array.fields:
-            numpy_data[field] = epix.awkward_to_flat_numpy(array[field])
-        
-        return numpy_data
-    
-
     def compute(self):
         
         try: 
             inter, n_simulated_events = next(self.file_reader)
             
-            inter_reshaped = self.full_array_to_numpy(inter)
+            inter_reshaped = full_array_to_numpy(inter, self.dtype)
         
             inter_reshaped["time"] = np.int64((inter_reshaped["evtid"]+1) *1e9 + self.prev_chunk_stop)
             inter_reshaped["endtime"] = inter_reshaped["time"] +1e7
@@ -212,20 +207,19 @@ class file_loader():
         if not self.file.endswith(".root"):
             raise ValueError(f'Cannot load events from file "{self.file}": .root file needed.')
         
+        ttree, n_simulated_events = self._get_ttree()
+
         if self.arg_debug:
-            print(f'Total entries in input file = {ttree.num_entries}')
+            log.debug(f'Total entries in input file = {ttree.num_entries}')
             cutby_string='output file entry'
             if self.cut_by_eventid:
                 cutby_string='g4 eventid'
 
             if self.kwargs['entry_start'] is not None:
-                print(f'Starting to read from {cutby_string} {self.kwargs["entry_start"]}')
+                log.debug(f'Starting to read from {cutby_string} {self.kwargs["entry_start"]}')
             if self.kwargs['entry_stop'] is not None:
-                print(f'Ending read in at {cutby_string} {self.kwargs["entry_stop"]}')
+                log.debug(f'Ending read in at {cutby_string} {self.kwargs["entry_stop"]}')
            
-        
-        ttree, n_simulated_events = self._get_ttree()
-        
         # If user specified entry start/stop we have to update number of
         # events for source rate computation:
         if self.kwargs['entry_start'] is not None:
@@ -289,7 +283,7 @@ class file_loader():
             interactions['z_pri'] = ak.broadcast_arrays(xyz_pri['z_pri'], interactions['x'])[0]
 
             if np.any(interactions['ed'] < 0):
-                warnings.warn('At least one of the energy deposits is negative!')
+                log.warn('At least one of the energy deposits is negative!')
             # Removing all events with zero energy deposit
             m = interactions['ed'] > 0
             if self.cut_by_eventid:

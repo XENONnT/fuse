@@ -1,6 +1,11 @@
 import strax
 import epix
 import numpy as np
+import logging
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.electric_field')
+log.setLevel('WARNING')
 
 
 @strax.takes_config(
@@ -40,6 +45,10 @@ class ElectricField(strax.Plugin):
             self.config['Detector'].lower(),
             self.config['DetectorConfigOverride']
         )
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running ElectricField in debug mode")
 
     def compute(self, clustered_interactions):
         """

@@ -1,17 +1,19 @@
 import numpy as np
 import strax
 import straxen
-import wfsim
-import logging 
 import nestpy
 import os
+import logging
 
 from numba import njit
-
-from wfsim.load_resource import DummyMap
-
 from strax import deterministic_hash
 from scipy.interpolate import interp1d
+
+from ...common import make_map, make_patternmap
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.detector_physics.S1_Signal')
+log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -66,12 +68,14 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="p_double_pe_emision"),
     strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
                  help="photon_area_distribution"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
-class S1_scintillation_and_propagation(strax.Plugin):
+class S1PhotonPropagation(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("wfsim_instructions")
+    depends_on = ("microphysics_summary")
     provides = "S1_channel_and_timings"
     data_kind = "S1_photons"
     
@@ -85,9 +89,13 @@ class S1_scintillation_and_propagation(strax.Plugin):
     dtype = dtype + strax.time_fields
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running S1PhotonPropagation in debug mode")
         
         self.s1_lce_correction_map = make_map(self.s1_lce_correction_map, fmt='json.gz')
-        self.s1_pattern_map = wfsim.make_patternmap(self.s1_pattern_map, fmt='pkl', pmt_mask=None)
+        self.s1_pattern_map = make_patternmap(self.s1_pattern_map, fmt='pkl', pmt_mask=None)
         
         to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
         self.to_pe = to_pe[0][1]
@@ -109,28 +117,28 @@ class S1_scintillation_and_propagation(strax.Plugin):
                                                       method='RegularGridInterpolator')
         
         if 'nest' in self.s1_model_type: #and (self.nestpy_calc is None):
-            #log.info('Using NEST for scintillation time without set calculator\n'
-            #         'Creating new nestpy calculator')
+            log.info('Using NEST for scintillation time without set calculator\n'
+                     'Creating new nestpy calculator')
             self.nestpy_calc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
 
         self.photon_area_distribution = straxen.get_resource(self.photon_area_distribution, fmt='csv')
         self._cached_uniform_to_pe_arr = {}
         self.__uniform_to_pe_arr = self.init_spe_scaling_factor_distributions()
 
-    def compute(self, wfsim_instructions):
+    def compute(self, clustered_interactions):
 
-        if len(wfsim_instructions) == 0:
+        #Just apply this to clusters with free electrons
+        instruction = clustered_interactions[clustered_interactions["photons"] > 0]
+
+        if len(instruction) == 0:
             return np.zeros(0, self.dtype)
-        
-        #And do this part only for S1 signals
-        instruction = wfsim_instructions[wfsim_instructions["type"] == 1]
         
         t = instruction['time']
         x = instruction['x']
         y = instruction['y']
         z = instruction['z']
-        n_photons = instruction['amp']
-        recoil_type = instruction['recoil']
+        n_photons = instruction['photons'].astype(np.int64)
+        recoil_type = instruction['nestid']
         positions = np.array([x, y, z]).T  # For map interpolation
         
         n_photon_hits = self.get_n_photons(n_photons=n_photons,
@@ -145,9 +153,9 @@ class S1_scintillation_and_propagation(strax.Plugin):
         extra_targs = {}
         if 'nest' in self.s1_model_type:
             extra_targs['n_photons_emitted'] = n_photons
-            extra_targs['n_excitons'] = instruction['n_excitons']
-            extra_targs['local_field'] = instruction['local_field']
-            extra_targs['e_dep'] = instruction['e_dep']
+            extra_targs['n_excitons'] = instruction['excitons'].astype(np.int64)
+            extra_targs['local_field'] = instruction['e_field']
+            extra_targs['e_dep'] = instruction['ed']
             extra_targs['nestpy_calc'] = self.nestpy_calc
             
         _photon_timings = self.photon_timings(t=t,
@@ -382,42 +390,9 @@ class S1_scintillation_and_propagation(strax.Plugin):
             __uniform_to_pe_arr = np.stack(uniform_to_pe_arr)
             self._cached_uniform_to_pe_arr[h] = __uniform_to_pe_arr
 
+        log.debug('Spe scaling factors created, cached with key %s' % h)
         return __uniform_to_pe_arr
-        #log.debug('Spe scaling factors created, cached with key %s' % h)
-
-def make_map(map_file, fmt=None, method='WeightedNearestNeighbors'):
-    """Fetch and make an instance of InterpolatingMap based on map_file
-    Alternatively map_file can be a list of ["constant dummy", constant: int, shape: list]
-    return an instance of  DummyMap"""
-
-    if isinstance(map_file, list):
-        assert map_file[0] == 'constant dummy', ('Alternative file input can only be '
-                                                 '("constant dummy", constant: int, shape: list')
-        return DummyMap(map_file[1], map_file[2])
-
-    elif isinstance(map_file, str):
-        if fmt is None:
-            fmt = parse_extension(map_file)
-
-        #log.debug(f'Initialize map interpolator for file {map_file}')
-        map_data = straxen.get_resource(map_file, fmt=fmt)
-        return straxen.InterpolatingMap(map_data, method=method)
-
-    else:
-        raise TypeError("Can't handle map_file except a string or a list")
-    
-def parse_extension(name):
-    """Get the extention from a file name. If zipped or tarred, can contain a dot"""
-    split_name = name.split('.')
-    if len(split_name) == 2:
-        fmt = split_name[-1]
-    elif len(split_name) > 2 and 'gz' in name:
-        fmt = '.'.join(split_name[-2:])
-    else:
-        fmt = split_name[-1]
-    #log.warning(f'Using {fmt} for unspecified {name}')
-    return fmt
-
+        
 
 #This is a modified version of the corresponding WFsim code....
 @njit()
