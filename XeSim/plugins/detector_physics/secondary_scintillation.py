@@ -3,11 +3,13 @@ import numpy as np
 import straxen
 from copy import deepcopy
 import os
+import logging
 
+from ...common import make_map, make_patternmap
 
-import wfsim
-from wfsim.load_resource import DummyMap
-
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.detector_physics.secondary_scintillation')
+log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -44,8 +46,10 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="s2_secondary_sc_gain"),
     strax.Option('s2_gain_spread', default=0, track=False, infer_type=False,
                  help="s2_gain_spread"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
-class scintillation(strax.Plugin):
+class SecondaryScintillation(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -67,6 +71,10 @@ class scintillation(strax.Plugin):
     
     def setup(self):
         
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running SecondaryScintillation in debug mode")
+
         if self.se_gain_from_map:
             self.se_gain_map = make_map(self.se_gain_map, fmt = "json")
         else: 
@@ -88,7 +96,7 @@ class scintillation(strax.Plugin):
 
                 self.pmt_mask = np.array(gains) > 0  # Converted from to pe (from cmt by default)
 
-                self.s2_pattern_map = wfsim.make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
+                self.s2_pattern_map = make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
                 
                 
                 s2cmap = deepcopy(self.s2_pattern_map)
@@ -162,39 +170,3 @@ class scintillation(strax.Plugin):
         sc_gain[np.isnan(sc_gain)] = 0
         
         return sc_gain
-    
-
-
-def make_map(map_file, fmt=None, method='WeightedNearestNeighbors'):
-    """Fetch and make an instance of InterpolatingMap based on map_file
-    Alternatively map_file can be a list of ["constant dummy", constant: int, shape: list]
-    return an instance of  DummyMap"""
-
-    if isinstance(map_file, list):
-        assert map_file[0] == 'constant dummy', ('Alternative file input can only be '
-                                                 '("constant dummy", constant: int, shape: list')
-        return DummyMap(map_file[1], map_file[2])
-
-    elif isinstance(map_file, str):
-        if fmt is None:
-            fmt = parse_extension(map_file)
-
-        #log.debug(f'Initialize map interpolator for file {map_file}')
-        map_data = straxen.get_resource(map_file, fmt=fmt)
-        return straxen.InterpolatingMap(map_data, method=method)
-
-    else:
-        raise TypeError("Can't handle map_file except a string or a list")
-    
-
-def parse_extension(name):
-    """Get the extention from a file name. If zipped or tarred, can contain a dot"""
-    split_name = name.split('.')
-    if len(split_name) == 2:
-        fmt = split_name[-1]
-    elif len(split_name) > 2 and 'gz' in name:
-        fmt = '.'.join(split_name[-2:])
-    else:
-        fmt = split_name[-1]
-    #log.warning(f'Using {fmt} for unspecified {name}')
-    return fmt

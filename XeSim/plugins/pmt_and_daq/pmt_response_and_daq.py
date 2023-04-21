@@ -1,13 +1,19 @@
-from wfsim.utils import find_intervals_below_threshold
 from immutabledict import immutabledict
 import straxen 
 import strax
 import os
 from numba import njit
 import numpy as np
+import logging
 
 from strax import deterministic_hash
 from scipy.interpolate import interp1d
+
+from ...common import find_intervals_below_threshold
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.pmt_and_daq.pmt_response_and_daq')
+log.setLevel('WARNING')
 
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
@@ -57,8 +63,10 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="digitizer_reference_baseline"),
     strax.Option('zle_threshold', default=config['zle_threshold'], track=False, infer_type=False,
                  help="zle_threshold"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
-class pmt_response_and_daq(strax.Plugin):
+class PMTResponseAndDAQ(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -68,6 +76,11 @@ class pmt_response_and_daq(strax.Plugin):
     data_kind = immutabledict(zip(provides, provides))
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running pmt_response_and_daq in debug mode")
+        
         
         to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
         self.to_pe = to_pe[0][1]

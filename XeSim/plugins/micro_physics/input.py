@@ -3,11 +3,18 @@ import uproot
 import os
 import warnings
 import numba
+import logging
 
 import numpy as np
 import awkward as ak
 
+from ...common import full_array_to_numpy
+
 import epix
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.input')
+log.setLevel('WARNING')
 
 @strax.takes_config(
     strax.Option('path', default=".", track=False, infer_type=False,
@@ -37,7 +44,7 @@ import epix
     strax.Option('DetectorConfigOverride', default=None, track=False, infer_type=False,
                  help="Config file to overwrite default epix.detectors settings; see examples in the configs folder"),
 )
-class input_plugin(strax.Plugin):
+class ChunkRootFile(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -71,6 +78,10 @@ class input_plugin(strax.Plugin):
     source_done = False
 
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running ChunkRootFile in debug mode")
         
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
         self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)
@@ -231,7 +242,7 @@ class file_loader():
         interactions = interactions[m]
         
 
-        inter_reshaped = self.full_array_to_numpy(interactions)
+        inter_reshaped = full_array_to_numpy(interactions)
         
         #Need to check start and stop again....
         event_times = np.random.uniform(low = start/self.event_rate,
@@ -280,18 +291,6 @@ class file_loader():
     def last_chunk_bounds(self):
         return self.chunk_bounds[-1]
 
-        
-    def full_array_to_numpy(self, array):
-    
-        len_output = len(epix.awkward_to_flat_numpy(array["x"]))
-
-        numpy_data = np.zeros(len_output, dtype=self.dtype)
-
-        for field in array.fields:
-            numpy_data[field] = epix.awkward_to_flat_numpy(array[field])
-
-        return numpy_data 
-    
     def _load_root_file(self):
         """
         Function which reads a root file using uproot,
@@ -302,20 +301,19 @@ class file_loader():
             start: Index of the first loaded interaction
             stop: Index of the last loaded interaction
         """
-
         ttree, n_simulated_events = self._get_ttree()
 
         if self.arg_debug:
-            print(f'Total entries in input file = {ttree.num_entries}')
+            log.debug(f'Total entries in input file = {ttree.num_entries}')
             cutby_string='output file entry'
             if self.cut_by_eventid:
                 cutby_string='g4 eventid'
 
             if self.kwargs['entry_start'] is not None:
-                print(f'Starting to read from {cutby_string} {self.kwargs["entry_start"]}')
+                log.debug(f'Starting to read from {cutby_string} {self.kwargs["entry_start"]}')
             if self.kwargs['entry_stop'] is not None:
-                print(f'Ending read in at {cutby_string} {self.kwargs["entry_stop"]}')
-
+                log.debug(f'Ending read in at {cutby_string} {self.kwargs["entry_stop"]}')
+           
         # If user specified entry start/stop we have to update number of
         # events for source rate computation:
         if self.kwargs['entry_start'] is not None:

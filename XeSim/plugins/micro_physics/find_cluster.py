@@ -2,11 +2,16 @@ import numpy as np
 import pandas as pd
 import numba
 import strax
-import epix
 import awkward as ak
-from epix.common import reshape_awkward
+import logging
+
+from ...common import reshape_awkward, awkward_to_flat_numpy
 
 from sklearn.cluster import DBSCAN
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.find_cluster')
+log.setLevel('WARNING')
 
 @strax.takes_config(
     strax.Option('micro_separation', default=0.005, track=False, infer_type=False,
@@ -16,7 +21,7 @@ from sklearn.cluster import DBSCAN
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
 )
-class find_cluster(strax.Plugin):
+class FindCluster(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -30,30 +35,46 @@ class find_cluster(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    def setup(self):
+        
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running FindCluster in debug mode")
     
-
     def compute(self, geant4_interactions):
+        """
+        Compute the cluster IDs for a set of GEANT4 interactions.
 
+        Args:
+            geant4_interactions (np.ndarray): An array of GEANT4 interaction data.
+
+        Returns:
+            np.ndarray: An array of cluster IDs with corresponding time and endtime values.
+        """
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
-        
+
         inter = ak.from_numpy(np.empty(1, dtype=geant4_interactions.dtype))
         structure = np.unique(geant4_interactions['evtid'], return_counts=True)[1]
-        
+
         for field in inter.fields:
-            inter[field] = epix.reshape_awkward(geant4_interactions[field], structure)
-            
-        #We can optimize the find_cluster function for the refactor! No need to return more than cluster_ids , no need to bring it into awkward again
-        inter = self.find_cluster(inter, self.micro_separation/10, self.micro_separation_time)
+            inter[field] = reshape_awkward(geant4_interactions[field], structure)
+
+        # We can optimize the find_cluster function for the refactor!
+        # No need to return more than cluster_ids,
+        # no need to bring it into awkward again
+        inter = self.find_cluster(inter, self.micro_separation / 10,
+                                  self.micro_separation_time)
         cluster_ids = inter['cluster_ids']
-            
-        len_output = len(epix.awkward_to_flat_numpy(cluster_ids))
+
+        len_output = len(awkward_to_flat_numpy(cluster_ids))
         numpy_data = np.zeros(len_output, dtype=self.dtype)
-        numpy_data["cluster_ids"] = epix.awkward_to_flat_numpy(cluster_ids)
-            
+        numpy_data["cluster_ids"] = awkward_to_flat_numpy(cluster_ids)
+
         numpy_data["time"] = geant4_interactions["time"]
         numpy_data["endtime"] = geant4_interactions["endtime"]
-        
+
         return numpy_data
     
     def find_cluster(self, interactions, cluster_size_space, cluster_size_time):
@@ -103,8 +124,8 @@ class find_cluster(strax.Plugin):
 
         return interactions
 
-
-    def _find_cluster(self, x, cluster_size_space):
+    @staticmethod
+    def _find_cluster(x, cluster_size_space):
         """
         Function which finds cluster within a event.
         Args:

@@ -3,7 +3,13 @@ import numpy as np
 import epix
 import awkward as ak
 import numba
+import logging
 
+from ...common import full_array_to_numpy, reshape_awkward, calc_dt, ak_num
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('XeSim.micro_physics.merge_cluster')
+log.setLevel('WARNING')
 
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
@@ -17,8 +23,10 @@ import numba
                  help="Config file to overwrite default epix.detectors settings; see examples in the configs folder"),
     strax.Option('max_delay', default=1e7, track=False, infer_type=False,
                  help="Time after which we cut the rest of the event (ns)"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
-class cluster_merging(strax.Plugin):
+class MergeCluster(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -49,20 +57,13 @@ class cluster_merging(strax.Plugin):
     dtype = dtype + strax.time_fields
     
     def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running MergeCluster in debug mode")
+
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
         self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)
-        
-    def full_array_to_numpy(self, array):
-    
-        len_output = len(epix.awkward_to_flat_numpy(array["x"]))
-
-        numpy_data = np.zeros(len_output, dtype=self.dtype)
-
-        for field in array.fields:
-            numpy_data[field] = epix.awkward_to_flat_numpy(array[field])
-        
-        return numpy_data
-
 
     def compute(self, geant4_interactions):
 
@@ -73,8 +74,8 @@ class cluster_merging(strax.Plugin):
         structure = np.unique(geant4_interactions['evtid'], return_counts=True)[1]
         
         for field in inter.fields:
-            inter[field] = epix.reshape_awkward(geant4_interactions[field], structure)
-        
+            inter[field] = reshape_awkward(geant4_interactions[field], structure)
+
         result = self.cluster(inter, self.tag_cluster_by == 'energy')
         
         result['evtid'] = ak.broadcast_arrays(inter['evtid'][:, 0], result['ed'])[0]
@@ -91,7 +92,7 @@ class cluster_merging(strax.Plugin):
         result = result[m]
         
         # Removing now empty events as a result of the selection above:
-        m = epix.ak_num(result['ed']) > 0
+        m = ak_num(result['ed']) > 0
         result = result[m]
         
         # Sort entries (in an event) by in time, then chop all delayed
@@ -101,13 +102,14 @@ class cluster_merging(strax.Plugin):
         dt = calc_dt(result)
         result = result[dt <= self.max_delay]
         
-        result = self.full_array_to_numpy(result)
+        result = full_array_to_numpy(result)
 
         result["endtime"] = result["time"]
         
         return result
     
-    def cluster(self, inter, classify_by_energy=False):
+    @staticmethod
+    def cluster(inter, classify_by_energy=False):
         """
         Function which clusters the found clusters together.
         To cluster events a weighted mean is computed for time and position.
