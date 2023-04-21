@@ -137,8 +137,8 @@ class S1PhotonPropagation(strax.Plugin):
         x = instruction['x']
         y = instruction['y']
         z = instruction['z']
-        n_photons = instruction['photons']
-        recoil_type = instruction['recoil']
+        n_photons = instruction['photons'].astype(np.int64)
+        recoil_type = instruction['nestid']
         positions = np.array([x, y, z]).T  # For map interpolation
         
         n_photon_hits = self.get_n_photons(n_photons=n_photons,
@@ -153,9 +153,9 @@ class S1PhotonPropagation(strax.Plugin):
         extra_targs = {}
         if 'nest' in self.s1_model_type:
             extra_targs['n_photons_emitted'] = n_photons
-            extra_targs['n_excitons'] = instruction['n_excitons']
-            extra_targs['local_field'] = instruction['local_field']
-            extra_targs['e_dep'] = instruction['e_dep']
+            extra_targs['n_excitons'] = instruction['excitons'].astype(np.int64)
+            extra_targs['local_field'] = instruction['e_field']
+            extra_targs['e_dep'] = instruction['ed']
             extra_targs['nestpy_calc'] = self.nestpy_calc
             
         _photon_timings = self.photon_timings(t=t,

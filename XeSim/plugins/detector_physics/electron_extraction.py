@@ -50,6 +50,8 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="electron_extraction_yield"),
     strax.Option('ext_eff_from_map', default=config['ext_eff_from_map'], track=False, infer_type=False,
                  help="ext_eff_from_map"),
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
 )
 class ElectronExtraction(strax.Plugin):
     

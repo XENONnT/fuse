@@ -33,7 +33,7 @@ class NestYields(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running NestYields in debug mode")
-            log.debug("f'Using nestpy version {nestpy.__version__}'")
+            log.debug(f'Using nestpy version {nestpy.__version__}')
 
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
     

@@ -125,7 +125,7 @@ class ElectronDrift(strax.Plugin):
         x = instruction["x"]
         y = instruction["y"]
         z = instruction["z"]
-        n_electron = instruction["electrons"]
+        n_electron = instruction["electrons"].astype(np.int64)
         recoil_type = instruction["nestid"]
         recoil_type = np.where(np.isin(recoil_type, [0, 6, 7, 8, 11]), recoil_type, 8)
         

@@ -12,7 +12,7 @@ from ...common import full_array_to_numpy
 import epix
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.micro_physics.input_plugin')
+log = logging.getLogger('XeSim.micro_physics.input')
 log.setLevel('WARNING')
 
 @strax.takes_config(
@@ -207,20 +207,19 @@ class file_loader():
         if not self.file.endswith(".root"):
             raise ValueError(f'Cannot load events from file "{self.file}": .root file needed.')
         
+        ttree, n_simulated_events = self._get_ttree()
+
         if self.arg_debug:
-            print(f'Total entries in input file = {ttree.num_entries}')
+            log.debug(f'Total entries in input file = {ttree.num_entries}')
             cutby_string='output file entry'
             if self.cut_by_eventid:
                 cutby_string='g4 eventid'
 
             if self.kwargs['entry_start'] is not None:
-                print(f'Starting to read from {cutby_string} {self.kwargs["entry_start"]}')
+                log.debug(f'Starting to read from {cutby_string} {self.kwargs["entry_start"]}')
             if self.kwargs['entry_stop'] is not None:
-                print(f'Ending read in at {cutby_string} {self.kwargs["entry_stop"]}')
+                log.debug(f'Ending read in at {cutby_string} {self.kwargs["entry_stop"]}')
            
-        
-        ttree, n_simulated_events = self._get_ttree()
-        
         # If user specified entry start/stop we have to update number of
         # events for source rate computation:
         if self.kwargs['entry_start'] is not None:
@@ -284,7 +283,7 @@ class file_loader():
             interactions['z_pri'] = ak.broadcast_arrays(xyz_pri['z_pri'], interactions['x'])[0]
 
             if np.any(interactions['ed'] < 0):
-                warnings.warn('At least one of the energy deposits is negative!')
+                log.warn('At least one of the energy deposits is negative!')
             # Removing all events with zero energy deposit
             m = interactions['ed'] > 0
             if self.cut_by_eventid:
