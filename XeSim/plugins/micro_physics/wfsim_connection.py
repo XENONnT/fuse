@@ -1,3 +1,6 @@
+#This plugin can be used to generate output in a shape that can be read by WFsim
+#We can keep this for validation of XeSim but it can be removed later on
+
 import strax
 import numpy as np
 import awkward as ak

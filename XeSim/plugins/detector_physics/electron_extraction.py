@@ -55,7 +55,7 @@ class ElectronExtraction(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("wfsim_instructions", "drifted_electrons")
+    depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
     data_kind = "electron_cloud"
     
@@ -104,13 +104,16 @@ class ElectronExtraction(strax.Plugin):
             
         self.se_gain_map = make_map(self.se_gain_map, fmt = "json")
     
-    def compute(self, wfsim_instructions, electron_cloud):
+    def compute(self, clustered_interactions, electron_cloud):
+        
+        #Just apply this to clusters with free electrons
+        instruction = clustered_interactions[clustered_interactions["electrons"] > 0]
 
-        if len(wfsim_instructions) == 0:
+        if len(instruction) == 0:
             return np.zeros(0, self.dtype)
 
-        x = wfsim_instructions[wfsim_instructions["type"] == 2]["x"]
-        y = wfsim_instructions[wfsim_instructions["type"] == 2]["y"]
+        x = instruction["x"]
+        y = instruction["y"]
         
         xy_int = np.array([x, y]).T # maps are in R_true, so orginal position should be here
 
@@ -135,7 +138,7 @@ class ElectronExtraction(strax.Plugin):
         
         result = np.zeros(len(n_electron), dtype=self.dtype)
         result["n_electron_extracted"] = n_electron
-        result["time"] = wfsim_instructions[wfsim_instructions["type"] == 2]["time"]
-        result["endtime"] = wfsim_instructions[wfsim_instructions["type"] == 2]["endtime"]
+        result["time"] = instruction["time"]
+        result["endtime"] = instruction["endtime"]
         
         return result

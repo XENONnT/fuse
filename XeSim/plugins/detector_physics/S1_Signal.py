@@ -75,7 +75,7 @@ class S1PhotonPropagation(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("wfsim_instructions")
+    depends_on = ("microphysics_summary")
     provides = "S1_channel_and_timings"
     data_kind = "S1_photons"
     
@@ -125,19 +125,19 @@ class S1PhotonPropagation(strax.Plugin):
         self._cached_uniform_to_pe_arr = {}
         self.__uniform_to_pe_arr = self.init_spe_scaling_factor_distributions()
 
-    def compute(self, wfsim_instructions):
+    def compute(self, clustered_interactions):
 
-        if len(wfsim_instructions) == 0:
+        #Just apply this to clusters with free electrons
+        instruction = clustered_interactions[clustered_interactions["photons"] > 0]
+
+        if len(instruction) == 0:
             return np.zeros(0, self.dtype)
-        
-        #And do this part only for S1 signals
-        instruction = wfsim_instructions[wfsim_instructions["type"] == 1]
         
         t = instruction['time']
         x = instruction['x']
         y = instruction['y']
         z = instruction['z']
-        n_photons = instruction['amp']
+        n_photons = instruction['photons']
         recoil_type = instruction['recoil']
         positions = np.array([x, y, z]).T  # For map interpolation
         

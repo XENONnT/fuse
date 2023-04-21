@@ -55,7 +55,7 @@ class ElectronDrift(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("wfsim_instructions")
+    depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
     data_kind = 'electron_cloud'
     
@@ -113,21 +113,21 @@ class ElectronDrift(strax.Plugin):
             self.diffusion_longitudinal_map = _rz_map
     
     
-    #Why is geant4_interactions given from straxen? It should be called wfsim_instructions or??
-    def compute(self, wfsim_instructions):
-
-        if len(wfsim_instructions) == 0:
-            return np.zeros(0, self.dtype)
+    def compute(self, clustered_interactions):
         
-        #Dont want to rename it yet
-        instruction = wfsim_instructions[wfsim_instructions["type"] == 2]
+        #Just apply this to clusters with free electrons
+        instruction = clustered_interactions[clustered_interactions["electrons"] > 0]
+
+        if len(instruction) == 0:
+            return np.zeros(0, self.dtype)
         
         t = instruction["time"]
         x = instruction["x"]
         y = instruction["y"]
         z = instruction["z"]
-        n_electron = instruction["amp"]
-        recoil_type = instruction["recoil"]
+        n_electron = instruction["electrons"]
+        recoil_type = instruction["nestid"]
+        recoil_type = np.where(np.isin(recoil_type, [0, 6, 7, 8, 11]), recoil_type, 8)
         
         # Reverse engineering FDC
         if self.field_distortion_model == 'inverse_fdc':
