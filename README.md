@@ -12,5 +12,6 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
 
 The full simulation chain in split into multiple plugins. An overview of the simulation structure can be found below.
 
-![Simulation_Refactor_Plugins](https://user-images.githubusercontent.com/27280678/233366741-33680792-e697-4ed8-82b8-c38b8dd6064e.jpg)
+![Simulation_Refactor_Plugins](https://user-images.githubusercontent.com/27280678/233602026-a91c4ae0-a3ff-4fc9-ac08-2d725bbe8833.jpg)
+
 
