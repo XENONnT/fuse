@@ -102,7 +102,7 @@ class MergeCluster(strax.Plugin):
         dt = calc_dt(result)
         result = result[dt <= self.max_delay]
         
-        result = full_array_to_numpy(result)
+        result = full_array_to_numpy(result, self.dtype)
 
         result["endtime"] = result["time"]
         

@@ -242,7 +242,7 @@ class file_loader():
         interactions = interactions[m]
         
 
-        inter_reshaped = full_array_to_numpy(interactions)
+        inter_reshaped = full_array_to_numpy(interactions, self.dtype)
         
         #Need to check start and stop again....
         event_times = np.random.uniform(low = start/self.event_rate,
@@ -281,8 +281,6 @@ class file_loader():
         else: 
             print("Only one Chunk! Rate to high?")
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
-            
-        #return chunk_idx, inter_reshaped, self.chunk_bounds
         
         for c_ix, chunk_left, chunk_right in zip(np.unique(chunk_idx), self.chunk_bounds[:-1], self.chunk_bounds[1:]):
             
