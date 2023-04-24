@@ -13,6 +13,9 @@ class MicroPhysicsSummary(strax.MergeOnlyPlugin):
     provides = 'microphysics_summary'
     __version__ = '0.0.0'
 
+    #Forbid rechunking
+    rechunk_on_save = False
+
     def compute(self, **kwargs):
         
         microphysics_summary = super().compute(**kwargs)

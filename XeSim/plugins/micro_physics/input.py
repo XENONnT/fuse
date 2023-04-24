@@ -246,7 +246,6 @@ class file_loader():
         m = ak.num(interactions['ed']) > 0
         interactions = interactions[m]
         
-
         inter_reshaped = full_array_to_numpy(interactions, self.dtype)
         
         #Need to check start and stop again....
@@ -263,7 +262,7 @@ class file_loader():
         
         #Check again why [:len(structure)] is needed 
         interaction_time = np.repeat(event_times[:len(structure)], structure)
-        
+
         inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
         
         sort_idx = np.argsort(inter_reshaped["time"])
