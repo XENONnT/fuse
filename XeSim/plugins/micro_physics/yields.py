@@ -2,6 +2,8 @@ import numpy as np
 import nestpy
 import strax
 import logging
+import pickle
+
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.micro_physics.yields')
@@ -141,7 +143,108 @@ class NestYields(strax.Plugin):
 
         return photons, electrons, excitons
     
+
+
+@strax.takes_config(
+    strax.Option('debug', default=False, track=False, infer_type=False,
+                 help="Show debug informations"),
+    strax.Option('use_recombination_fluctuation', default = True, track=False, infer_type=False,
+                 help="use_recombination_fluctuation"),
+    strax.Option('g1_value', default=0.151, track=False, infer_type=False,
+                 help="g1_value"),
+    strax.Option('g2_value', default=16.45, track=False, infer_type=False,
+                 help="g2_value"),
+    strax.Option('cs1_spline_path', default="/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs1_func_E_option2.pkl", track=False, infer_type=False,
+                 help="cs1_spline_path"),
+    strax.Option('cs2_spline_path', default="/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs2_func_E_option2.pkl", track=False, infer_type=False,
+                 help="cs2_spline_path"),
+)
+class BetaYields(strax.Plugin):
     
+    __version__ = "0.0.0"
+    
+    depends_on = ["clustered_interactions", "electric_field_values"]
+    provides = "quanta"
+    data_kind = "clustered_interactions"
+    
+    dtype = [('photons', np.float64),
+             ('electrons', np.float64),
+             ('excitons', np.float64),
+            ]
+    
+    dtype = dtype + strax.time_fields
+
+    #Forbid rechunking
+    rechunk_on_save = False
+    
+    def setup(self):
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running NestYields in debug mode")
+            log.debug(f'Using nestpy version {nestpy.__version__}')
+
+        self.get_quanta_vectorized = np.vectorize(self.get_quanta, excluded="self")
+        
+        with open(self.cs1_spline_path, 'rb') as f:
+            self.cs1_spline = pickle.load(f)
+        with open(self.cs2_spline_path, 'rb') as f:
+            self.cs2_spline = pickle.load(f)
+            
+        self.nc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
+        for i in range(np.random.randint(100)):
+            self.nc.GetQuanta(self.nc.GetYields(energy=np.random.uniform(10, 100)))
+
+    def compute(self, clustered_interactions):
+        """
+        Computes the charge and light quanta for a list of clustered interactions using custom yields.
+
+        Args:
+            clustered_interactions (numpy.ndarray): An array of clustered interactions.
+
+        Returns:
+            numpy.ndarray: An array of quanta, with fields for time, endtime, photons, electrons, and excitons.
+        """
+        if len(clustered_interactions) == 0:
+            return np.zeros(0, dtype=self.dtype)
+        
+        result = np.zeros(len(clustered_interactions), dtype=self.dtype)
+        result["time"] = clustered_interactions["time"]
+        result["endtime"] = clustered_interactions["endtime"]
+
+        photons, electrons, excitons = self.get_quanta_vectorized(clustered_interactions["ed"], clustered_interactions["e_field"])
+        result['photons'] = photons
+        result['electrons'] = electrons
+        result['excitons'] = excitons
+
+        return result 
+    
+    def get_quanta(self, energy, field):
+        beta_photons = self.cs1_spline(energy) / self.g1_value
+        beta_electrons = self.cs2_spline(energy) / self.g2_value
+
+        if self.use_recombination_fluctuation:
+            rf = np.random.normal(0, energy * 3.0, 1)[0]
+            beta_photons = int(beta_photons + rf)
+            beta_electrons = int(beta_electrons - rf)
+
+            if beta_photons < 0:
+                beta_photons = 0
+            if beta_electrons < 0:
+                beta_electrons = 0
+
+        y = self.nc.GetYields(
+            interaction=nestpy.INTERACTION_TYPE.beta,
+            energy=energy,
+            drift_field=field,
+        )
+        q_ = self.nc.GetQuanta(y)
+
+        return beta_photons, beta_electrons, q_.excitons
+
+
+
+
+
 
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
