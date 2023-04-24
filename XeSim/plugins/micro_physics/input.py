@@ -5,10 +5,11 @@ import warnings
 import numba
 import logging
 
+import pandas as pd
 import numpy as np
 import awkward as ak
 
-from ...common import full_array_to_numpy
+from ...common import full_array_to_numpy, reshape_awkward
 
 import epix
 
@@ -44,7 +45,7 @@ log.setLevel('WARNING')
     strax.Option('DetectorConfigOverride', default=None, track=False, infer_type=False,
                  help="Config file to overwrite default epix.detectors settings; see examples in the configs folder"),
 )
-class ChunkRootFile(strax.Plugin):
+class ChunkInput(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -81,7 +82,7 @@ class ChunkRootFile(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ChunkRootFile in debug mode")
+            log.debug("Running ChunkInput in debug mode")
         
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
         self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)
@@ -220,8 +221,12 @@ class file_loader():
         Function to return one chunk of data from the root file
         """
         
-        interactions, n_simulated_events, start, stop = self._load_root_file()
-        
+        if self.file.endswith(".root"):
+            interactions, n_simulated_events, start, stop = self._load_root_file()
+        elif self.file.endswith(".csv"):
+            interactions, n_simulated_events, start, stop = self._load_csv_file()
+        else:
+            raise ValueError(f'Cannot load events from file "{self.file}": .root or .cvs file needed.')        
         
         # Removing all events with zero energy deposit
         m = interactions['ed'] > 0
@@ -279,7 +284,7 @@ class file_loader():
             self.chunk_bounds = np.append(chunk_start[0]-self.first_chunk_left, chunk_bounds)
             
         else: 
-            print("Only one Chunk! Rate to high?")
+            log.warn("Only one Chunk! Rate to high?")
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
         
         for c_ix, chunk_left, chunk_right in zip(np.unique(chunk_idx), self.chunk_bounds[:-1], self.chunk_bounds[1:]):
@@ -387,6 +392,86 @@ class file_loader():
                             'I tried to search in events and events/events.'
                             f'Found a ttree in {ttrees}?')
         return ttree, n_simulated_events
+    
+    def _load_csv_file(self):
+        """ 
+        Function which reads a csv file using pandas, 
+        performs a simple cut and builds an awkward array.
+
+        Returns:
+            interactions: awkward array
+            n_simulated_events: Total number of simulated events
+            start: Index of the first loaded interaction
+            stop: Index of the last loaded interaction
+        """
+
+        log.debug("Load instructions from a csv file!")
+        
+        instr_df =  pd.read_csv(self.file)
+
+        #unit conversion similar to root case
+        instr_df["x"] = instr_df["xp"]/10 
+        instr_df["y"] = instr_df["yp"]/10 
+        instr_df["z"] = instr_df["zp"]/10
+        instr_df["x_pri"] = instr_df["xp_pri"]/10
+        instr_df["y_pri"] = instr_df["yp_pri"]/10
+        instr_df["z_pri"] = instr_df["zp_pri"]/10
+        instr_df["r"] = np.sqrt(instr_df["x"]**2 + instr_df["y"]**2)
+        instr_df["t"] = instr_df["time"]*10**9
+
+        #Check if all needed columns are in place:
+        if not set(self.column_names).issubset(instr_df.columns):
+            log.warn("Not all needed columns provided!")
+
+        n_simulated_events = len(np.unique(instr_df.evtid))
+
+        if self.outer_cylinder:
+            instr_df = instr_df.query(self.cut_string)
+            
+        instr_df = instr_df[self.column_names+["evtid", "x_pri", "y_pri", "z_pri"]]
+
+        interactions = self._awkwardify_df(instr_df)
+
+        #Use always all events in the csv file
+        start = 0
+        stop = n_simulated_events
+
+        return interactions, n_simulated_events, start, stop 
+    
+    @staticmethod
+    def _awkwardify_df(df):
+        """
+        Function which builds an jagged awkward array from pandas dataframe.
+
+        Args:
+            df: Pandas Dataframe
+
+        Returns:
+            ak.Array(dictionary): awkward array
+
+        """
+
+        _, evt_offsets = np.unique(df["evtid"], return_counts = True)
+    
+        dictionary = {"x": reshape_awkward(df["x"].values , evt_offsets),
+                      "y": reshape_awkward(df["y"].values , evt_offsets),
+                      "z": reshape_awkward(df["z"].values , evt_offsets),
+                      "x_pri": reshape_awkward(df["x_pri"].values, evt_offsets),
+                      "y_pri": reshape_awkward(df["y_pri"].values, evt_offsets),
+                      "z_pri": reshape_awkward(df["z_pri"].values, evt_offsets),
+                      "t": reshape_awkward(df["t"].values , evt_offsets),
+                      "ed": reshape_awkward(df["ed"].values , evt_offsets),
+                      "type":reshape_awkward(np.array(df["type"], dtype=str) , evt_offsets),
+                      "trackid": reshape_awkward(df["trackid"].values , evt_offsets),
+                      "parenttype": reshape_awkward(np.array(df["parenttype"], dtype=str) , evt_offsets),
+                      "parentid": reshape_awkward(df["parentid"].values , evt_offsets),
+                      "creaproc": reshape_awkward(np.array(df["creaproc"], dtype=str) , evt_offsets),
+                      "edproc": reshape_awkward(np.array(df["edproc"], dtype=str) , evt_offsets),
+                      "evtid": reshape_awkward(df["evtid"].values , evt_offsets),
+                    }
+
+        return ak.Array(dictionary)
+
     
     
 @numba.njit()
