@@ -1,17 +1,17 @@
 # XeSim
 Refactor XENONnT epix and WFsim code using the strax framework. 
 
-Please note: To run the code you need to work on dali. You will need the 'private_nt_aux_files' repo somewhere close by. For all plugins in the detector_physics and pmt_and_daq simulation you need to manualy set the path to the private_nt_aux_files repo.
+## Installation
 
-```
-private_files_path = "path/to/private/files"
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
-```
+At the moment the intallation procedure is not very advanced. I would recommend to work on dali in e.g. the base environment and follow the steps below.
+
+1. Clone the XeSim repository.
+2. Clone the private_nt_aux_files repository to the same directory as you cloned XeSim.
+3. Install XeSim using `pip install -e .` in the XeSim directory.
+
 
 ## Plugin Structure
 
 The full simulation chain in split into multiple plugins. An overview of the simulation structure can be found below.
 
-![Simulation_Refactor_Plugins](https://user-images.githubusercontent.com/27280678/233602026-a91c4ae0-a3ff-4fc9-ac08-2d725bbe8833.jpg)
-
-
+![Simulation_Refactor_Plugins](https://user-images.githubusercontent.com/27280678/234295485-40e8edad-1d17-4b58-a346-1d2b13b0006b.jpg)

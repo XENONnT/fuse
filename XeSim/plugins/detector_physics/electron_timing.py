@@ -4,14 +4,18 @@ import straxen
 import os
 import logging
 
+export, __all__ = strax.exporter()
+
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.detector_physics.electron_timing')
 log.setLevel('WARNING')
 
-private_files_path = "path/to/private/files"
+#private_files_path = "path/to/private/files"
+base_path = os.path.abspath(os.getcwd())
+private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
-
+@export
 @strax.takes_config(
     strax.Option('electron_trapping_time', default=config["electron_trapping_time"], track=False, infer_type=False,
                  help="electron_trapping_time"),

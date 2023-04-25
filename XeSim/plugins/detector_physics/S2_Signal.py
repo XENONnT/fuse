@@ -9,6 +9,7 @@ from scipy.stats import skewnorm
 from scipy.interpolate import interp1d
 
 from strax import deterministic_hash
+export, __all__ = strax.exporter()
 
 from ...common import make_map, make_patternmap, DummyMap
 
@@ -16,9 +17,12 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.detector_physics.S2_Signal')
 log.setLevel('WARNING')
 
-private_files_path = "path/to/private/files"
+#private_files_path = "path/to/private/files"
+base_path = os.path.abspath(os.getcwd())
+private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
+@export
 @strax.takes_config(
     strax.Option('s2_aft_sigma', default=config["s2_aft_sigma"], track=False, infer_type=False,
                  help="s2_aft_sigma"),

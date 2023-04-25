@@ -5,15 +5,20 @@ from copy import deepcopy
 import os
 import logging
 
+export, __all__ = strax.exporter()
+
 from ...common import make_map, make_patternmap
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.detector_physics.secondary_scintillation')
 log.setLevel('WARNING')
 
-private_files_path = "path/to/private/files"
+#private_files_path = "path/to/private/files"
+base_path = os.path.abspath(os.getcwd())
+private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
+@export
 @strax.takes_config(
     strax.Option('p_double_pe_emision', default=config["p_double_pe_emision"], track=False, infer_type=False,
                  help="p_double_pe_emision"),

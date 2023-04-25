@@ -2,12 +2,17 @@ import strax
 import uproot
 import os
 import warnings
+import numba
 import logging
 
+import pandas as pd
 import numpy as np
 import awkward as ak
 
-from ...common import full_array_to_numpy
+from sklearn.cluster import DBSCAN
+export, __all__ = strax.exporter()
+
+from ...common import full_array_to_numpy, reshape_awkward
 
 import epix
 
@@ -15,13 +20,20 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.micro_physics.input')
 log.setLevel('WARNING')
 
+@export
 @strax.takes_config(
     strax.Option('path', default=".", track=False, infer_type=False,
                  help="Path to search for data"),
     strax.Option('file_name', track=False, infer_type=False,
                  help="File to open"),
-    strax.Option('ChunkSize', default=20, track=False, infer_type=False,
-                 help="Set the number of Geant4 events in a single chunk"),
+    strax.Option('separation_scale', default=1e8, track=False, infer_type=False,
+                 help="Add Description"),
+    strax.Option('source_rate', default=1, track=False, infer_type=False,
+                 help="source_rate"),
+    strax.Option('cut_delayed', default=4e12, track=False, infer_type=False,
+                 help="cut_delayed"),
+    strax.Option('n_interactions_per_chunk', default=10000, track=False, infer_type=False,
+                 help="Add n_interactions_per_chunk"),
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
     strax.Option('entry_start', default=0, track=False, infer_type=False,
@@ -37,7 +49,7 @@ log.setLevel('WARNING')
     strax.Option('DetectorConfigOverride', default=None, track=False, infer_type=False,
                  help="Config file to overwrite default epix.detectors settings; see examples in the configs folder"),
 )
-class ChunkRootFile(strax.Plugin):
+class ChunkInput(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -69,15 +81,12 @@ class ChunkRootFile(strax.Plugin):
     dtype = dtype + strax.time_fields
     
     source_done = False
-    
-    prev_chunk_stop = np.int64(0)
-    prev_chunk_start = None
 
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ChunkRootFile in debug mode")
+            log.debug("Running ChunkInput in debug mode")
         
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
         self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)
@@ -86,46 +95,39 @@ class ChunkRootFile(strax.Plugin):
 
         self.file_reader = file_loader(self.path,
                                        self.file_name,
-                                       chunk_size = self.ChunkSize,
+                                       separation_scale = self.separation_scale,
+                                       event_rate = self.source_rate,
+                                       cut_delayed = self.cut_delayed,
+                                       n_interactions_per_chunk = self.n_interactions_per_chunk,
                                        arg_debug = self.debug,
                                        outer_cylinder=None, #This is not running 
                                        kwargs={'entry_start': self.entry_start,
                                                'entry_stop': self.entry_stop},
                                        cut_by_eventid=self.cut_by_eventid,
                                        #cut_nr_only=self.nr_only,
-                                       ).load_file_in_chunks()
+                                       )
+        self.file_reader_iterator = self.file_reader.output_chunk()
+        
+    
 
     def compute(self):
         
         try: 
-            inter, n_simulated_events = next(self.file_reader)
             
-            inter_reshaped = full_array_to_numpy(inter, self.dtype)
-        
-            inter_reshaped["time"] = np.int64((inter_reshaped["evtid"]+1) *1e9 + self.prev_chunk_stop)
-            inter_reshaped["endtime"] = inter_reshaped["time"] +1e7
-            
-            
-            if self.prev_chunk_stop == 0:
-                chunk_start = inter_reshaped['time'][0]
-            else:
-                chunk_start = self.prev_chunk_stop
-            
-            chunk_stop  = np.int64(inter_reshaped['endtime'][-1]+1e9)
-            self.prev_chunk_stop = chunk_stop
-            
-            
+            chunk_data, chunk_left, chunk_right = next(self.file_reader_iterator)
+            chunk_data["endtime"] = chunk_data["time"]
+
         except StopIteration:
             self.source_done = True
             
-            chunk_start = self.prev_chunk_stop
-            chunk_stop = chunk_start + 1
+            chunk_left = self.file_reader.last_chunk_bounds()
+            chunk_right = chunk_left + np.int64(1e4) #Add this as config option
             
-            inter_reshaped = np.zeros(0, dtype=self.dtype)
+            chunk_data = np.zeros(0, dtype=self.dtype)
         
-        return self.chunk(start=chunk_start,
-                          end=chunk_stop,
-                          data=inter_reshaped,
+        return self.chunk(start=chunk_left,
+                          end=chunk_right,
+                          data=chunk_data,
                           data_type='geant4_interactions')
 
     
@@ -145,30 +147,19 @@ class ChunkRootFile(strax.Plugin):
 
 class file_loader():
     """
-    Class which contains functions to load geant4 interactions from
-    a root file via uproot4 or interactions from a csv file via pandas.
-    
-    Besides loading, a simple data selection is performed. Units are
-    already converted into strax conform values. mm -> cm and s -> ns.
-    Args:
-        directory (str): Directory in which the data is stored.
-        file_name (str): File name
-        arg_debug (bool): If true, print out loading information.
-        outer_cylinder (dict): If specified will cut all events outside of the
-            given cylinder.
-        kwargs (dict): Keyword arguments passed to .arrays of
-            uproot4.
-        cut_by_eventid (bool): If true event start/stop are applied to
-            eventids, instead of rows.
-    Returns:
-        awkward1.records: Interactions (eventids, parameters, types).
-        integer: Number of events simulated.
+    Load the complete root file and return interactions in chunks 
     """
 
     def __init__(self,
                 directory,
                 file_name,
-                chunk_size = 10,
+                separation_scale = 1e8,
+                event_rate = 1,
+                n_interactions_per_chunk = 500,
+                cut_delayed = 4e12,
+                last_chunk_length = 1e8,
+                first_chunk_left = 1e6,
+                chunk_delay_fraction = 0.75,
                 arg_debug=False,
                 outer_cylinder=None,
                 kwargs={},
@@ -178,12 +169,19 @@ class file_loader():
 
         self.directory = directory
         self.file_name = file_name
-        self.chunk_size = chunk_size
+        self.separation_scale = separation_scale
+        self.event_rate = event_rate / 1e9 #Conversion to ns 
+        self.n_interactions_per_chunk = n_interactions_per_chunk
+        self.cut_delayed = cut_delayed
+        self.last_chunk_length = np.int64(last_chunk_length)
+        self.first_chunk_left = np.int64(first_chunk_left)
+        self.chunk_delay_fraction = chunk_delay_fraction
         self.arg_debug = arg_debug
         self.outer_cylinder = outer_cylinder
         self.kwargs = kwargs
         self.cut_by_eventid = cut_by_eventid
         self.cut_nr_only = cut_nr_only
+        
 
         self.file = os.path.join(self.directory, self.file_name)
 
@@ -199,14 +197,116 @@ class file_loader():
                                f' & ((zp >= {self.outer_cylinder["min_z"] * 10}) & (zp < {self.outer_cylinder["max_z"] * 10}))')            
         else:
             self.cut_string = None
+    
+        
+        
+        self.dtype = [('x', np.float32),
+                     ('y', np.float32),
+                     ('z', np.float32),
+                     ('t', np.float64),
+                     ('ed', np.float32),
+                     ('type', "<U10"),
+                     ('trackid', np.int64),
+                     ('parenttype', "<U10"),
+                     ('parentid', np.int64),
+                     ('creaproc', "<U10"),
+                     ('edproc', "<U10"),
+                     ('evtid', np.int64),
+                     ('x_pri', np.float32),
+                     ('y_pri', np.float32),
+                     ('z_pri', np.float32),
+                    ]
+    
+        self.dtype = self.dtype + strax.time_fields
+        
+    
+    def output_chunk(self):
+        """
+        Function to return one chunk of data from the root file
+        """
+        
+        if self.file.endswith(".root"):
+            interactions, n_simulated_events, start, stop = self._load_root_file()
+        elif self.file.endswith(".csv"):
+            interactions, n_simulated_events, start, stop = self._load_csv_file()
+        else:
+            raise ValueError(f'Cannot load events from file "{self.file}": .root or .cvs file needed.')        
+        
+        # Removing all events with zero energy deposit
+        m = interactions['ed'] > 0
+        if self.cut_by_eventid:
+            # ufunc does not work here...
+            m2 = (interactions['evtid'] >= start) & (interactions['evtid'] < stop)
+            m = m & m2
+        interactions = interactions[m]
 
+        if self.cut_nr_only:
+            m = ((interactions['type'] == "neutron")&(interactions['edproc'] == "hadElastic")) | (interactions['edproc'] == "ionIoni")
+            e_dep_er = ak.sum(interactions[~m]['ed'], axis=1)
+            e_dep_nr = ak.sum(interactions[m]['ed'], axis=1)
+            interactions = interactions[(e_dep_er<10) & (e_dep_nr>0)]
+
+        # Removing all events with no interactions:
+        m = ak.num(interactions['ed']) > 0
+        interactions = interactions[m]
+        
+        inter_reshaped = full_array_to_numpy(interactions, self.dtype)
+        
+        #Need to check start and stop again....
+        event_times = np.random.uniform(low = start/self.event_rate,
+                                        high = stop/self.event_rate,
+                                        size = stop-start
+                                        ).astype(np.int64)
+        event_times = np.sort(event_times)
+        
+        #Remove interactions that happen way after the run ended
+        inter_reshaped = inter_reshaped[inter_reshaped["t"] < np.max(event_times) + self.cut_delayed]
+        
+        structure = np.unique(inter_reshaped["evtid"], return_counts = True)[1]
+        
+        #Check again why [:len(structure)] is needed 
+        interaction_time = np.repeat(event_times[:len(structure)], structure)
+
+        inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
+        
+        sort_idx = np.argsort(inter_reshaped["time"])
+        inter_reshaped = inter_reshaped[sort_idx]
+
+        #Group into chunks
+        chunk_idx = dynamic_chunking(inter_reshaped["time"], scale = self.separation_scale, n_min =  self.n_interactions_per_chunk)
+        
+        #Calculate chunk start and end times
+        chunk_start = np.array([inter_reshaped[chunk_idx == i][0]["time"] for i in np.unique(chunk_idx)])
+        chunk_end = np.array([inter_reshaped[chunk_idx == i][-1]["time"] for i in np.unique(chunk_idx)])
+        
+        if (len(chunk_start) > 1) & (len(chunk_end) > 1):
+        
+            gap_length = chunk_start[1:] - chunk_end[:-1]
+            gap_length = np.append(gap_length, gap_length[-1] + self.last_chunk_length)
+            chunk_bounds = chunk_end + np.int64(self.chunk_delay_fraction*gap_length)
+            self.chunk_bounds = np.append(chunk_start[0]-self.first_chunk_left, chunk_bounds)
             
-    def load_file_in_chunks(self):
-        #Missing: CSV file in chunks!
+        else: 
+            log.warn("Only one Chunk! Rate to high?")
+            self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
         
-        if not self.file.endswith(".root"):
-            raise ValueError(f'Cannot load events from file "{self.file}": .root file needed.')
-        
+        for c_ix, chunk_left, chunk_right in zip(np.unique(chunk_idx), self.chunk_bounds[:-1], self.chunk_bounds[1:]):
+            
+            yield inter_reshaped[chunk_idx == c_ix], chunk_left, chunk_right
+    
+    def last_chunk_bounds(self):
+        return self.chunk_bounds[-1]
+
+    def _load_root_file(self):
+        """
+        Function which reads a root file using uproot,
+        performs a simple cut and builds an awkward array.
+        Returns:
+            interactions: awkward array
+            n_simulated_events: Total number of simulated events
+            start: Index of the first loaded interaction
+            stop: Index of the last loaded interaction
+        """
         ttree, n_simulated_events = self._get_ttree()
 
         if self.arg_debug:
@@ -232,7 +332,7 @@ class file_loader():
         else:
             stop = n_simulated_events
         n_simulated_events = stop - start
-        
+
         if self.cut_by_eventid:
             # Start/stop refers to eventid so drop start drop from kwargs
             # dict if specified, otherwise we cut again on rows.
@@ -246,61 +346,29 @@ class file_loader():
                  'r': 'sqrt(x**2 + y**2)',
                  't': 'time*10**9'
                 }
+
+        # Read in data, convert mm to cm and perform a first cut if specified:
+        interactions = ttree.arrays(self.column_names,
+                                    self.cut_string,
+                                    aliases=alias,
+                                    **self.kwargs)
+        eventids = ttree.arrays('eventid', **self.kwargs)
+        eventids = ak.broadcast_arrays(eventids['eventid'], interactions['x'])[0]
+        interactions['evtid'] = eventids
+
+        xyz_pri = ttree.arrays(['x_pri', 'y_pri', 'z_pri'],
+                              aliases={'x_pri': 'xp_pri/10',
+                                       'y_pri': 'yp_pri/10',
+                                       'z_pri': 'zp_pri/10'
+                                      },
+                              **self.kwargs)
+
+        interactions['x_pri'] = ak.broadcast_arrays(xyz_pri['x_pri'], interactions['x'])[0]
+        interactions['y_pri'] = ak.broadcast_arrays(xyz_pri['y_pri'], interactions['x'])[0]
+        interactions['z_pri'] = ak.broadcast_arrays(xyz_pri['z_pri'], interactions['x'])[0]
+
+        return interactions, n_simulated_events, start, stop
         
-        multi_column_iterator = uproot.iterate(ttree,
-                                       self.column_names,
-                                       aliases = alias,
-                                       cut = self.cut_string,
-                                       step_size=self.chunk_size,
-                                       entrystart=start,
-                                       entrystop=stop
-                                      )
-        event_id_iterator = uproot.iterate(ttree,
-                                           ["eventid"],
-                                           step_size=self.chunk_size,
-                                           entrystart=start,
-                                           entrystop=stop
-                                          )
-        pri_iterator = uproot.iterate(ttree,
-                                      ['x_pri', 'y_pri', 'z_pri'],
-                                      aliases = {'x_pri': 'xp_pri/10',
-                                                 'y_pri': 'yp_pri/10',
-                                                 'z_pri': 'zp_pri/10'},
-                                      step_size=self.chunk_size,
-                                      entrystart=start,
-                                      entrystop=stop
-                                     )
-
-        i = 0
-        for interactions, event_id, xyz_pri  in zip(multi_column_iterator,event_id_iterator, pri_iterator):
-            #print(i)
-            i +=1
-
-            interactions['evtid'] = ak.broadcast_arrays(event_id["eventid"], interactions['x'])[0]
-
-            interactions['x_pri'] = ak.broadcast_arrays(xyz_pri['x_pri'], interactions['x'])[0]
-            interactions['y_pri'] = ak.broadcast_arrays(xyz_pri['y_pri'], interactions['x'])[0]
-            interactions['z_pri'] = ak.broadcast_arrays(xyz_pri['z_pri'], interactions['x'])[0]
-
-            if np.any(interactions['ed'] < 0):
-                log.warn('At least one of the energy deposits is negative!')
-            # Removing all events with zero energy deposit
-            m = interactions['ed'] > 0
-            if self.cut_by_eventid:
-                # ufunc does not work here...
-                m2 = (interactions['evtid'] >= start) & (interactions['evtid'] < stop)
-                m = m & m2
-            interactions = interactions[m]
-            if self.cut_nr_only:
-                m = ((interactions['type'] == "neutron")&(interactions['edproc'] == "hadElastic")) | (interactions['edproc'] == "ionIoni")
-                e_dep_er = ak.sum(interactions[~m]['ed'], axis=1)
-                e_dep_nr = ak.sum(interactions[m]['ed'], axis=1)
-                interactions = interactions[(e_dep_er<10) & (e_dep_nr>0)]
-            # Removing all events with no interactions:
-            m = ak.num(interactions['ed']) > 0
-            interactions = interactions[m]
-            
-            yield interactions, n_simulated_events
 
     def _get_ttree(self):
         """
@@ -327,3 +395,111 @@ class file_loader():
                             'I tried to search in events and events/events.'
                             f'Found a ttree in {ttrees}?')
         return ttree, n_simulated_events
+    
+    def _load_csv_file(self):
+        """ 
+        Function which reads a csv file using pandas, 
+        performs a simple cut and builds an awkward array.
+
+        Returns:
+            interactions: awkward array
+            n_simulated_events: Total number of simulated events
+            start: Index of the first loaded interaction
+            stop: Index of the last loaded interaction
+        """
+
+        log.debug("Load instructions from a csv file!")
+        
+        instr_df =  pd.read_csv(self.file)
+
+        #unit conversion similar to root case
+        instr_df["x"] = instr_df["xp"]/10 
+        instr_df["y"] = instr_df["yp"]/10 
+        instr_df["z"] = instr_df["zp"]/10
+        instr_df["x_pri"] = instr_df["xp_pri"]/10
+        instr_df["y_pri"] = instr_df["yp_pri"]/10
+        instr_df["z_pri"] = instr_df["zp_pri"]/10
+        instr_df["r"] = np.sqrt(instr_df["x"]**2 + instr_df["y"]**2)
+        instr_df["t"] = instr_df["time"]*10**9
+
+        #Check if all needed columns are in place:
+        if not set(self.column_names).issubset(instr_df.columns):
+            log.warn("Not all needed columns provided!")
+
+        n_simulated_events = len(np.unique(instr_df.evtid))
+
+        if self.outer_cylinder:
+            instr_df = instr_df.query(self.cut_string)
+            
+        instr_df = instr_df[self.column_names+["evtid", "x_pri", "y_pri", "z_pri"]]
+
+        interactions = self._awkwardify_df(instr_df)
+
+        #Use always all events in the csv file
+        start = 0
+        stop = n_simulated_events
+
+        return interactions, n_simulated_events, start, stop 
+    
+    @staticmethod
+    def _awkwardify_df(df):
+        """
+        Function which builds an jagged awkward array from pandas dataframe.
+
+        Args:
+            df: Pandas Dataframe
+
+        Returns:
+            ak.Array(dictionary): awkward array
+
+        """
+
+        _, evt_offsets = np.unique(df["evtid"], return_counts = True)
+    
+        dictionary = {"x": reshape_awkward(df["x"].values , evt_offsets),
+                      "y": reshape_awkward(df["y"].values , evt_offsets),
+                      "z": reshape_awkward(df["z"].values , evt_offsets),
+                      "x_pri": reshape_awkward(df["x_pri"].values, evt_offsets),
+                      "y_pri": reshape_awkward(df["y_pri"].values, evt_offsets),
+                      "z_pri": reshape_awkward(df["z_pri"].values, evt_offsets),
+                      "t": reshape_awkward(df["t"].values , evt_offsets),
+                      "ed": reshape_awkward(df["ed"].values , evt_offsets),
+                      "type":reshape_awkward(np.array(df["type"], dtype=str) , evt_offsets),
+                      "trackid": reshape_awkward(df["trackid"].values , evt_offsets),
+                      "parenttype": reshape_awkward(np.array(df["parenttype"], dtype=str) , evt_offsets),
+                      "parentid": reshape_awkward(df["parentid"].values , evt_offsets),
+                      "creaproc": reshape_awkward(np.array(df["creaproc"], dtype=str) , evt_offsets),
+                      "edproc": reshape_awkward(np.array(df["edproc"], dtype=str) , evt_offsets),
+                      "evtid": reshape_awkward(df["evtid"].values , evt_offsets),
+                    }
+
+        return ak.Array(dictionary)
+
+    
+    
+@numba.njit()
+def dynamic_chunking(data, scale, n_min):
+
+    idx_sort = np.argsort(data)
+    idx_undo_sort = np.argsort(idx_sort)
+
+    data_sorted = data[idx_sort]
+
+    diff = data_sorted[1:] - data_sorted[:-1]
+
+    clusters = np.array([0])
+    c = 0
+    for value in diff:
+        if value <= scale:
+            clusters = np.append(clusters, c)
+            
+        elif len(clusters[clusters == c]) < n_min:
+            clusters = np.append(clusters, c)
+            
+        elif value > scale:
+            c = c + 1
+            clusters = np.append(clusters, c)
+
+    clusters_undo_sort = clusters[idx_undo_sort]
+
+    return clusters_undo_sort

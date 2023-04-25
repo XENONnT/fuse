@@ -6,12 +6,15 @@ import numpy as np
 import awkward as ak
 import logging 
 
+export, __all__ = strax.exporter()
+
 from ...common import offset_range, reshape_awkward
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.micro_physics.output')
 log.setLevel('WARNING')
 
+@export
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),
@@ -109,12 +112,8 @@ class output_plugin(strax.Plugin):
                 if 'n_excitons' in res.dtype.names:
                     res['n_excitons'][i::2] = interactions['excitons']
             
-            
-            #Lets just hack some times for now
-            
-            res['time'][i::2] = interactions['time'] + interactions['t']
-            res['endtime'][i::2] = interactions['endtime'] + interactions['t']
+            res['time'][i::2] = interactions['time']
+            res['endtime'][i::2] = interactions['endtime']
         # Remove entries with no quanta
         res = res[res['amp'] > 0]
         return res
-        
