@@ -1,0 +1,5 @@
+
+XeSim/__pycache__/*
+XeSim.egg-info/*
+.eggs/*
+build/*
