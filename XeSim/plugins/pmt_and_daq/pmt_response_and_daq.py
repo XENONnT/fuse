@@ -17,7 +17,9 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.pmt_and_daq.pmt_response_and_daq')
 log.setLevel('WARNING')
 
-private_files_path = "path/to/private/files"
+#private_files_path = "path/to/private/files"
+base_path = os.path.abspath(os.getcwd())
+private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
 @export
