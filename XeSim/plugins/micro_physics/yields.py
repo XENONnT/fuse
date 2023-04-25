@@ -4,11 +4,13 @@ import strax
 import logging
 import pickle
 
+export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.micro_physics.yields')
 log.setLevel('WARNING')
 
+@export
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),

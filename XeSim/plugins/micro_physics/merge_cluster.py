@@ -5,12 +5,15 @@ import awkward as ak
 import numba
 import logging
 
+export, __all__ = strax.exporter()
+
 from ...common import full_array_to_numpy, reshape_awkward, calc_dt, ak_num
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.micro_physics.merge_cluster')
 log.setLevel('WARNING')
 
+@export
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),

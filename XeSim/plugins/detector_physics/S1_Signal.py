@@ -9,6 +9,8 @@ from numba import njit
 from strax import deterministic_hash
 from scipy.interpolate import interp1d
 
+export, __all__ = strax.exporter()
+
 from ...common import make_map, make_patternmap
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
@@ -18,6 +20,7 @@ log.setLevel('WARNING')
 private_files_path = "path/to/private/files"
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
+@export
 @strax.takes_config(
     strax.Option('s1_detection_efficiency', default=1, track=False, infer_type=False,
                  help="Some placeholder for s1_detection_efficiency"),

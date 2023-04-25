@@ -6,12 +6,15 @@ import numpy as np
 import awkward as ak
 import logging 
 
+export, __all__ = strax.exporter()
+
 from ...common import offset_range, reshape_awkward
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.micro_physics.output')
 log.setLevel('WARNING')
 
+@export
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug informations"),

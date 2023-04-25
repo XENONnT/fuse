@@ -9,6 +9,9 @@ import pandas as pd
 import numpy as np
 import awkward as ak
 
+from sklearn.cluster import DBSCAN
+export, __all__ = strax.exporter()
+
 from ...common import full_array_to_numpy, reshape_awkward
 
 import epix
@@ -17,6 +20,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.micro_physics.input')
 log.setLevel('WARNING')
 
+@export
 @strax.takes_config(
     strax.Option('path', default=".", track=False, infer_type=False,
                  help="Path to search for data"),

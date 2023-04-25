@@ -3,11 +3,13 @@ import epix
 import numpy as np
 import logging
 
+export, __all__ = strax.exporter()
+
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.micro_physics.electric_field')
 log.setLevel('WARNING')
 
-
+@export
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug information"),

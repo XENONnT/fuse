@@ -1,5 +1,8 @@
 import strax
 
+export, __all__ = strax.exporter()
+
+@export
 class MicroPhysicsSummary(strax.MergeOnlyPlugin):
     """
     Plugin which summarizes the MicroPhysics simulation into a single output

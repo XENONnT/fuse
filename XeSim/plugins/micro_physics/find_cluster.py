@@ -4,15 +4,17 @@ import numba
 import strax
 import awkward as ak
 import logging
+from sklearn.cluster import DBSCAN
+
+export, __all__ = strax.exporter()
 
 from ...common import reshape_awkward, awkward_to_flat_numpy
-
-from sklearn.cluster import DBSCAN
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('XeSim.micro_physics.find_cluster')
 log.setLevel('WARNING')
 
+@export
 @strax.takes_config(
     strax.Option('micro_separation', default=0.005, track=False, infer_type=False,
                  help="DBSCAN clustering distance (mm)"),
