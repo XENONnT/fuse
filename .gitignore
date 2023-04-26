@@ -3,3 +3,4 @@ fuse/__pycache__/*
 fuse.egg-info/*
 .eggs/*
 build/*
+.DS_Store
