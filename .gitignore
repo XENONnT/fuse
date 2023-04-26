@@ -1,5 +1,5 @@
 
-XeSim/__pycache__/*
-XeSim.egg-info/*
+fuse/__pycache__/*
+fuse.egg-info/*
 .eggs/*
 build/*

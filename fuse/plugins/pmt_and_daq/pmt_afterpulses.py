@@ -7,7 +7,7 @@ import logging
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.pmt_and_daq.pmt_afterpulses')
+log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
 log.setLevel('WARNING')
 
 #private_files_path = "path/to/private/files"

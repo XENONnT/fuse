@@ -10,7 +10,7 @@ from ...common import make_map, make_patternmap
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.detector_physics.electron_extraction')
+log = logging.getLogger('fuse.detector_physics.electron_extraction')
 log.setLevel('WARNING')
 
 

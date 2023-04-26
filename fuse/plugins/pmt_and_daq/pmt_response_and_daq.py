@@ -14,7 +14,7 @@ export, __all__ = strax.exporter()
 from ...common import find_intervals_below_threshold
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.pmt_and_daq.pmt_response_and_daq')
+log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
 log.setLevel('WARNING')
 
 #private_files_path = "path/to/private/files"
