@@ -11,7 +11,7 @@ export, __all__ = strax.exporter()
 from ...common import reshape_awkward, awkward_to_flat_numpy
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.micro_physics.find_cluster')
+log = logging.getLogger('fuse.micro_physics.find_cluster')
 log.setLevel('WARNING')
 
 @export

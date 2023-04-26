@@ -17,7 +17,7 @@ from ...common import full_array_to_numpy, reshape_awkward
 import epix
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.micro_physics.input')
+log = logging.getLogger('fuse.micro_physics.input')
 log.setLevel('WARNING')
 
 @export

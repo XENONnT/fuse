@@ -6,7 +6,7 @@ import logging
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.micro_physics.electric_field')
+log = logging.getLogger('fuse.micro_physics.electric_field')
 log.setLevel('WARNING')
 
 @export

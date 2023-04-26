@@ -7,7 +7,7 @@ import pickle
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.micro_physics.yields')
+log = logging.getLogger('fuse.micro_physics.yields')
 log.setLevel('WARNING')
 
 @export

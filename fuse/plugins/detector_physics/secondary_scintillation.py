@@ -10,7 +10,7 @@ export, __all__ = strax.exporter()
 from ...common import make_map, make_patternmap
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.detector_physics.secondary_scintillation')
+log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 log.setLevel('WARNING')
 
 #private_files_path = "path/to/private/files"

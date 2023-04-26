@@ -1,5 +1,5 @@
 #This plugin can be used to generate output in a shape that can be read by WFsim
-#We can keep this for validation of XeSim but it can be removed later on
+#We can keep this for validation of fuse but it can be removed later on
 
 import strax
 import numpy as np
@@ -11,7 +11,7 @@ export, __all__ = strax.exporter()
 from ...common import offset_range, reshape_awkward
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('XeSim.micro_physics.output')
+log = logging.getLogger('fuse.micro_physics.output')
 log.setLevel('WARNING')
 
 @export
