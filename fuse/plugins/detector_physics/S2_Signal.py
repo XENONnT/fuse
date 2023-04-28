@@ -94,7 +94,7 @@ class S2PhotonPropagation(strax.Plugin):
     __version__ = "0.0.0"
     
     depends_on = ("photons", "extracted_electrons", "drifted_electrons", "sum_photons")
-    provides = "photon_channels_and_timeing"
+    provides = "propagated_s2_photons"
     data_kind = "S2_photons"
 
     #Forbid rechunking

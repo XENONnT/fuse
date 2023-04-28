@@ -81,7 +81,7 @@ class S1PhotonPropagation(strax.Plugin):
     __version__ = "0.0.0"
     
     depends_on = ("microphysics_summary")
-    provides = "S1_channel_and_timings"
+    provides = "propagated_s1_photons"
     data_kind = "S1_photons"
     
     #Forbid rechunking

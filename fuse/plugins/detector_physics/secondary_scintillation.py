@@ -59,17 +59,17 @@ class SecondaryScintillation(strax.Plugin):
     __version__ = "0.0.0"
     
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
-    provides = ("photons", "sum_photons")
-    data_kind = {"photons": "individual_electrons",#Rethink this naming...
-                 "sum_photons" : "electron_cloud"
+    provides = ("s2_photons", "s2_photons_sum")
+    data_kind = {"s2_photons": "individual_electrons",
+                 "s2_photons_sum" : "electron_cloud"
                 }
     
     dtype_photons = [('n_photons', np.int64),] + strax.time_fields
     dtype_sum_photons = [('sum_photons', np.int64),] + strax.time_fields
     
     dtype = dict()
-    dtype["photons"] = dtype_photons
-    dtype["sum_photons"] = dtype_sum_photons
+    dtype["s2_photons"] = dtype_photons
+    dtype["s2_photons_sum"] = dtype_sum_photons
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -134,18 +134,18 @@ class SecondaryScintillation(strax.Plugin):
         
         n_photons_per_ele[n_photons_per_ele < 0] = 0
         
-        result_photons = np.zeros(len(n_photons_per_ele), dtype = self.dtype["photons"])
+        result_photons = np.zeros(len(n_photons_per_ele), dtype = self.dtype["s2_photons"])
         result_photons["n_photons"] = n_photons_per_ele
         result_photons["time"] = individual_electrons["time"]
         result_photons["endtime"] = individual_electrons["endtime"]
         
-        result_sum_photons = np.zeros(len(sum_photons_per_interaction), dtype = self.dtype["sum_photons"])
+        result_sum_photons = np.zeros(len(sum_photons_per_interaction), dtype = self.dtype["s2_photons_sum"])
         result_sum_photons["sum_photons"] = sum_photons_per_interaction
         result_sum_photons["time"] = electron_cloud["time"]
         result_sum_photons["endtime"] = electron_cloud["endtime"]
         
-        return dict(photons=result_photons,
-                    sum_photons=result_sum_photons)
+        return dict(s2_photons=result_photons,
+                    s2_photons_sum=result_sum_photons)
         
         
     def get_s2_light_yield(self, positions):
