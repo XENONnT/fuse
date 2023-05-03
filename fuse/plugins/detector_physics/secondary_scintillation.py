@@ -116,8 +116,8 @@ class SecondaryScintillation(strax.Plugin):
     def compute(self, electron_cloud, individual_electrons ):
 
         if len(electron_cloud) == 0:
-            return dict(photons=np.zeros(0, self.dtype_photons),
-                        sum_photons=np.zeros(0, self.dtype_sum_photons))
+            return dict(s2_photons=np.zeros(0, self.dtype["s2_photons"]),
+                        s2_photons_sum=np.zeros(0, self.dtype["s2_photons_sum"]))
         
         positions = np.array([electron_cloud["x"], electron_cloud["y"]]).T
         
