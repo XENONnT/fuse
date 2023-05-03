@@ -93,7 +93,7 @@ class S2PhotonPropagation(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("photons", "extracted_electrons", "drifted_electrons", "sum_photons")
+    depends_on = ("s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
     provides = "propagated_s2_photons"
     data_kind = "S2_photons"
 
