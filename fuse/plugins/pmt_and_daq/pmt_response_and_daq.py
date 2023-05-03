@@ -75,7 +75,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("photon_channels_and_timeing", "S1_channel_and_timings", "pmt_afterpulses")
+    depends_on = ("propagated_s2_photons", "propagated_s1_photons", "pmt_afterpulses")
     
     provides = ('raw_records', 'raw_records_he', 'raw_records_aqmon')#, 'truth')
     data_kind = immutabledict(zip(provides, provides))
