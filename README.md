@@ -19,4 +19,5 @@ At the moment the intallation procedure is not very advanced. I would recommend 
 
 The full simulation chain in split into multiple plugins. An overview of the simulation structure can be found below.
 
-![Simulation_Refactor_Plugins](https://user-images.githubusercontent.com/27280678/234295485-40e8edad-1d17-4b58-a346-1d2b13b0006b.jpg)
+![Simulation_Refactor_Plugins](https://user-images.githubusercontent.com/27280678/235156990-7fa63aae-21c4-45b5-9b71-a42a4173f0da.jpg)
+
