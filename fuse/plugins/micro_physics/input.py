@@ -1,7 +1,6 @@
 import strax
 import uproot
 import os
-import warnings
 import numba
 import logging
 
@@ -9,7 +8,6 @@ import pandas as pd
 import numpy as np
 import awkward as ak
 
-from sklearn.cluster import DBSCAN
 export, __all__ = strax.exporter()
 
 from ...common import full_array_to_numpy, reshape_awkward
@@ -182,7 +180,6 @@ class file_loader():
         self.cut_by_eventid = cut_by_eventid
         self.cut_nr_only = cut_nr_only
         
-
         self.file = os.path.join(self.directory, self.file_name)
 
         self.column_names = ["x", "y", "z",

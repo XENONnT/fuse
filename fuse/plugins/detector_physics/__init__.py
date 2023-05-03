@@ -15,3 +15,6 @@ from .S2_Signal import *
 
 from . import secondary_scintillation
 from .secondary_scintillation import *
+
+from . import csv_input
+from .csv_input import *
