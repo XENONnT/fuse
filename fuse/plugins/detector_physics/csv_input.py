@@ -36,6 +36,7 @@ class ChunkCsvInput(strax.Plugin):
 
     depends_on = tuple()
     provides = "microphysics_summary"
+    data_kind = "clustered_interactions"
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -122,7 +123,7 @@ class csv_file_loader():
                  ):
         
         self.input_file = input_file
-        self.event_rate = event_rate
+        self.event_rate = event_rate/ 1e9 #Conversion to ns 
         self.separation_scale = separation_scale
         self.n_interactions_per_chunk = n_interactions_per_chunk
         self.chunk_delay_fraction = chunk_delay_fraction
