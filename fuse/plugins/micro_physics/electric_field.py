@@ -13,9 +13,9 @@ log.setLevel('WARNING')
 @strax.takes_config(
     strax.Option('debug', default=False, track=False, infer_type=False,
                  help="Show debug information"),
-    strax.Option('Detector', default="XENONnT", track=False, infer_type=False,
+    strax.Option('detector', default="XENONnT", track=False, infer_type=False,
                  help="Detector to be used. Has to be defined in epix.detectors"),
-    strax.Option('DetectorConfigOverride', default=None, track=False, infer_type=False,
+    strax.Option('detector_config_override', default=None, track=False, infer_type=False,
                  help="Config file to overwrite default epix.detectors settings; see examples in the configs folder")
 )
 class ElectricField(strax.Plugin):
@@ -44,8 +44,8 @@ class ElectricField(strax.Plugin):
         Initialize the detector config.
         """
         self.detector_config = epix.init_detector(
-            self.config['Detector'].lower(),
-            self.config['DetectorConfigOverride']
+            self.detector.lower(),
+            self.detector_config_override
         )
 
         if self.debug:

@@ -20,9 +20,9 @@ log.setLevel('WARNING')
     strax.Option('tag_cluster_by', default=False, track=False, infer_type=False,
                  help="decide if you tag the cluster (particle type, energy depositing process)\
                        according to first interaction in it (time) or most energetic (energy)"),
-    strax.Option('Detector', default="XENONnT", track=False, infer_type=False,
+    strax.Option('detector', default="XENONnT", track=False, infer_type=False,
                  help="Detector to be used. Has to be defined in epix.detectors"),
-    strax.Option('DetectorConfigOverride', default=None, track=False, infer_type=False,
+    strax.Option('detector_config_override', default=None, track=False, infer_type=False,
                  help="Config file to overwrite default epix.detectors settings; see examples in the configs folder"),
     strax.Option('max_delay', default=1e7, track=False, infer_type=False,
                  help="Time after which we cut the rest of the event (ns)"),
@@ -66,7 +66,7 @@ class MergeCluster(strax.Plugin):
             log.debug("Running MergeCluster in debug mode")
 
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
-        self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)
+        self.detector_config = epix.init_detector(self.detector.lower(), self.detector_config_override)
 
     def compute(self, geant4_interactions):
 

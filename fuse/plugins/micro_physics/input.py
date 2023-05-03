@@ -44,9 +44,9 @@ log.setLevel('WARNING')
                  help="If selected, the next two arguments act on the G4 event id, and not the entry number (default)"),
     strax.Option('nr_only', default=False, track=False, infer_type=False,
                  help="Add if you want to filter only nuclear recoil events (maximum ER energy deposit 10 keV)"),
-    strax.Option('Detector', default="XENONnT", track=False, infer_type=False,
+    strax.Option('detector', default="XENONnT", track=False, infer_type=False,
                  help="Detector to be used. Has to be defined in epix.detectors"),
-    strax.Option('DetectorConfigOverride', default=None, track=False, infer_type=False,
+    strax.Option('detector_config_override', default=None, track=False, infer_type=False,
                  help="Config file to overwrite default epix.detectors settings; see examples in the configs folder"),
 )
 class ChunkInput(strax.Plugin):
@@ -89,8 +89,8 @@ class ChunkInput(strax.Plugin):
             log.debug("Running ChunkInput in debug mode")
         
         #Do the volume cuts here #Maybe we can move these lines somewhere else?
-        self.detector_config = epix.init_detector(self.Detector.lower(), self.DetectorConfigOverride)
-        outer_cylinder = getattr(epix.detectors, self.Detector.lower())
+        self.detector_config = epix.init_detector(self.detector.lower(), self.detector_config_override)
+        outer_cylinder = getattr(epix.detectors, self.detector.lower())
         outer_cylinder = outer_cylinder()
 
         self.file_reader = file_loader(self.path,
