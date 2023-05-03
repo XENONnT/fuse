@@ -22,9 +22,9 @@ log.setLevel('WARNING')
 
 @export
 @strax.takes_config(
-    strax.Option('path', default=".", track=True, infer_type=False,
+    strax.Option('path', default=".", track=False, infer_type=False,
                  help="Path to search for data"),
-    strax.Option('file_name', track=True, infer_type=False,
+    strax.Option('file_name', track=False, infer_type=False,
                  help="File to open"),
     strax.Option('separation_scale', default=1e8, track=False, infer_type=False,
                  help="Add Description"),
