@@ -51,6 +51,8 @@ class ChunkCsvInput(strax.Plugin):
              ('e_field', np.float32),
              ('ed', np.float32),
              ('nestid', np.int32),
+             ('t', np.int32), #Remove them later as they are not in the usual micropyhsics summary
+             ('eventid', np.int32),#Remove them later as they are not in the usual micropyhsics summary
             ]
     dtype = dtype + strax.time_fields
 
@@ -69,7 +71,7 @@ class ChunkCsvInput(strax.Plugin):
             debug = self.debug,
         )
         self.file_reader_iterator = self.file_reader.output_chunk()
-        
+
     def compute(self):
         try: 
             
@@ -137,6 +139,8 @@ class csv_file_loader():
                       ('e_field', np.float32),
                       ('ed', np.float32),
                       ('nestid', np.int32),
+                      ('t', np.int32), #Remove them later as they are not in the usual micropyhsics summary
+                      ('eventid', np.int32),#Remove them later as they are not in the usual micropyhsics summary
                       ]
         self.dtype = self.dtype + strax.time_fields
 
