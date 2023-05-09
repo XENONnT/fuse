@@ -40,7 +40,7 @@ class PMTAfterPulses(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("photon_channels_and_timeing", "S1_channel_and_timings")
+    depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"
     
     #Forbid rechunking
