@@ -265,7 +265,7 @@ class ElectronDrift(strax.Plugin):
         drift_time_mean = - z_int / \
             drift_velocity_liquid + self.drift_time_gate
         drift_time_mean = np.clip(drift_time_mean, 0, np.inf)
-        drift_time_spread = np.sqrt(2 * self.diffusion_constant_longitudinal * drift_time_mean)
+        drift_time_spread = np.sqrt(2 * diffusion_constant_longitudinal * drift_time_mean)
         drift_time_spread /= drift_velocity_liquid
         return drift_time_mean, drift_time_spread
     
