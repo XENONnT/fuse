@@ -3,6 +3,7 @@ import nestpy
 import strax
 import logging
 import pickle
+from numba import njit
 
 export, __all__ = strax.exporter()
 
@@ -225,7 +226,7 @@ class BetaYields(strax.Plugin):
         beta_electrons = self.cs2_spline(energy) / self.g2_value
 
         if self.use_recombination_fluctuation:
-            rf = np.random.normal(0, energy * 3.0, 1)[0]
+            rf = np.random.normal(0, simple_recombination_model(energy), 1)[0]
             beta_photons = int(beta_photons + rf)
             beta_electrons = int(beta_electrons - rf)
 
@@ -245,7 +246,23 @@ class BetaYields(strax.Plugin):
 
 
 
+@njit()
+def data_driven_model(energy):
+    a = 2.607
+    b = -61.89
+    return a*energy + b 
 
+@njit()
+def interp_to_zero(energy):
+    a = 1.1179
+    b = 0
+    return a*energy + b
+
+@njit()
+def simple_recombination_model(energy):
+    model_switch = 41.5575
+    sigma_recombination = np.where(energy > model_switch, data_driven_model(energy), interp_to_zero(energy))
+    return sigma_recombination
 
 
 @strax.takes_config(
