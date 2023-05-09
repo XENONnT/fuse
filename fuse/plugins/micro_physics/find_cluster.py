@@ -4,6 +4,7 @@ import numba
 import strax
 import awkward as ak
 import logging
+import straxen
 from sklearn.cluster import DBSCAN
 
 export, __all__ = strax.exporter()
@@ -15,14 +16,6 @@ log = logging.getLogger('fuse.micro_physics.find_cluster')
 log.setLevel('WARNING')
 
 @export
-@strax.takes_config(
-    strax.Option('micro_separation', default=0.005, track=False, infer_type=False,
-                 help="DBSCAN clustering distance (mm)"),
-    strax.Option('micro_separation_time', default = 10, track=False, infer_type=False,
-                 help="Clustering time (ns)"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-)
 class FindCluster(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -37,6 +30,22 @@ class FindCluster(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    micro_separation_time = straxen.URLConfig(
+        default=10, type=(int, float),
+        help='Clustering time (ns)',
+    )
+
+    micro_separation = straxen.URLConfig(
+        default=0.005, type=(int, float),
+        help='DBSCAN clustering distance (mm)',
+    )
 
     def setup(self):
         

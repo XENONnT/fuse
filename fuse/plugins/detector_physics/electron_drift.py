@@ -39,7 +39,7 @@ class ElectronDrift(strax.Plugin):
     
     dtype = dtype + strax.time_fields
     
-    #All the config options
+    #Config options
     debug = straxen.URLConfig(
         default=False, type=bool,
         help='Show debug informations',

@@ -1,4 +1,5 @@
 import strax
+import straxen
 import numpy as np
 import epix
 import awkward as ak
@@ -14,21 +15,6 @@ log = logging.getLogger('fuse.micro_physics.merge_cluster')
 log.setLevel('WARNING')
 
 @export
-@strax.takes_config(
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-    strax.Option('tag_cluster_by', default=False, track=False, infer_type=False,
-                 help="decide if you tag the cluster (particle type, energy depositing process)\
-                       according to first interaction in it (time) or most energetic (energy)"),
-    strax.Option('detector', default="XENONnT", track=False, infer_type=False,
-                 help="Detector to be used. Has to be defined in epix.detectors"),
-    strax.Option('detector_config_override', default=None, track=False, infer_type=False,
-                 help="Config file to overwrite default epix.detectors settings; see examples in the configs folder"),
-    strax.Option('max_delay', default=1e7, track=False, infer_type=False,
-                 help="Time after which we cut the rest of the event (ns)"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-)
 class MergeCluster(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -58,6 +44,33 @@ class MergeCluster(strax.Plugin):
             ]
     
     dtype = dtype + strax.time_fields
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    debutag_cluster_byg = straxen.URLConfig(
+        default=False, type=bool,
+        help='decide if you tag the cluster (particle type, energy depositing process)\
+              according to first interaction in it (time) or most energetic (energy))',
+    )
+
+    detector = straxen.URLConfig(
+        default="XENONnT", 
+        help='Detector to be used. Has to be defined in epix.detectors',
+    )
+
+    detector_config_override = straxen.URLConfig(
+        default=None, 
+        help='Config file to overwrite default epix.detectors settings; see examples in the configs folder',
+    )
+    #Check this variable again in combination with cut_delayed
+    max_delay = straxen.URLConfig(
+        default=1e7, type=(int, float),
+        help='Time after which we cut the rest of the event (ns)',
+    )
     
     def setup(self):
 

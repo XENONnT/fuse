@@ -2,6 +2,7 @@ import strax
 import epix
 import numpy as np
 import logging
+import straxen
 
 export, __all__ = strax.exporter()
 
@@ -10,14 +11,6 @@ log = logging.getLogger('fuse.micro_physics.electric_field')
 log.setLevel('WARNING')
 
 @export
-@strax.takes_config(
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug information"),
-    strax.Option('detector', default="XENONnT", track=False, infer_type=False,
-                 help="Detector to be used. Has to be defined in epix.detectors"),
-    strax.Option('detector_config_override', default=None, track=False, infer_type=False,
-                 help="Config file to overwrite default epix.detectors settings; see examples in the configs folder")
-)
 class ElectricField(strax.Plugin):
     """
     Plugin that calculates the electric field values for the detector.
@@ -36,6 +29,22 @@ class ElectricField(strax.Plugin):
         ('e_field', np.int64),
         *strax.time_fields
     ]
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    detector = straxen.URLConfig(
+        default="XENONnT", 
+        help='Detector to be used. Has to be defined in epix.detectors',
+    )
+
+    detector_config_override = straxen.URLConfig(
+        default=None, 
+        help='Config file to overwrite default epix.detectors settings; see examples in the configs folder',
+    )
 
     def setup(self):
         """

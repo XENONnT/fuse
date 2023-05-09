@@ -1,6 +1,7 @@
 import numpy as np
 import nestpy
 import strax
+import straxen
 import logging
 import pickle
 
@@ -11,10 +12,6 @@ log = logging.getLogger('fuse.micro_physics.yields')
 log.setLevel('WARNING')
 
 @export
-@strax.takes_config(
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-)
 class NestYields(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -32,6 +29,12 @@ class NestYields(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
     
     def setup(self):
         if self.debug:
@@ -145,22 +148,6 @@ class NestYields(strax.Plugin):
 
         return photons, electrons, excitons
     
-
-
-@strax.takes_config(
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-    strax.Option('use_recombination_fluctuation', default = True, track=False, infer_type=False,
-                 help="use_recombination_fluctuation"),
-    strax.Option('g1_value', default=0.151, track=False, infer_type=False,
-                 help="g1_value"),
-    strax.Option('g2_value', default=16.45, track=False, infer_type=False,
-                 help="g2_value"),
-    strax.Option('cs1_spline_path', default="/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs1_func_E_option2.pkl", track=False, infer_type=False,
-                 help="cs1_spline_path"),
-    strax.Option('cs2_spline_path', default="/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs2_func_E_option2.pkl", track=False, infer_type=False,
-                 help="cs2_spline_path"),
-)
 class BetaYields(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -178,6 +165,37 @@ class BetaYields(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    use_recombination_fluctuation = straxen.URLConfig(
+        default=True, type=bool,
+        help='use_recombination_fluctuation',
+    )
+
+    g1_value = straxen.URLConfig(
+        default=0.151, type=(int, float),
+        help='g1',
+    )
+
+    g2_value = straxen.URLConfig(
+        default=16.45, type=(int, float),
+        help='g2',
+    )
+
+    cs1_spline_path = straxen.URLConfig(
+        default='/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs1_func_E_option2.pkl',
+        help='cs1_spline_path',
+    )
+
+    cs2_spline_path = straxen.URLConfig(
+        default='/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs2_func_E_option2.pkl',
+        help='cs2_spline_path',
+    )
     
     def setup(self):
         if self.debug:
@@ -245,13 +263,6 @@ class BetaYields(strax.Plugin):
 
 
 
-
-
-
-@strax.takes_config(
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-)
 class BBFYields(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -265,6 +276,12 @@ class BBFYields(strax.Plugin):
             ]
     
     dtype = dtype + strax.time_fields
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
 
     def setup(self):
         self.bbfyields = BBF_quanta_generator()
