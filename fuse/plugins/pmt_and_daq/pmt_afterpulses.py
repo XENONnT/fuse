@@ -16,12 +16,6 @@ private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_au
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
 @export
-@strax.takes_config(
-    strax.Option('photon_ap_cdfs', default=config["photon_ap_cdfs"], track=False, infer_type=False,
-                 help="photon_ap_cdfs"),
-    strax.Option('to_pe_file', default=os.path.join(private_files_path,"sim_files/to_pe_nt.npy"), track=False, infer_type=False,
-                 help="to_pe file"),
-)
 class PMTAfterPulses(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -70,33 +64,38 @@ class PMTAfterPulses(strax.Plugin):
         default=config["digitizer_voltage_range"], type=(int, float),
         help='digitizer_voltage_range',
     )
-
     
+    gains = straxen.URLConfig(
+        default='pmt_gains://resource://format://'
+                f'{os.path.join(private_files_path,"sim_files/to_pe_nt.npy")}?'
+                '&fmt=npy'
+                f'&digitizer_voltage_range=plugin.digitizer_voltage_range'
+                f'&digitizer_bits=plugin.digitizer_bits'
+                f'&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
+        cache=True,
+        help='pmt gains',
+    )
+    
+    photon_ap_cdfs = straxen.URLConfig(
+        default='simple_load://resource://format://'
+                f'{config["photon_ap_cdfs"]}?'
+                '&fmt=json.gz',
+        cache=True,
+        help='photon_ap_cdfs',
+    )
+ 
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running PMTAfterPulses in debug mode")
         
-        self.uniform_to_pmt_ap = straxen.get_resource(self.photon_ap_cdfs, fmt='json.gz')
+        self.uniform_to_pmt_ap = self.photon_ap_cdfs
 
         for k in self.uniform_to_pmt_ap.keys():
             for q in self.uniform_to_pmt_ap[k].keys():
                 if isinstance(self.uniform_to_pmt_ap[k][q], list):
                     self.uniform_to_pmt_ap[k][q] = np.array(self.uniform_to_pmt_ap[k][q])
-
-
-        to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
-        self.to_pe = to_pe[0][1]
-
-        adc_2_current = (self.digitizer_voltage_range
-                / 2 ** (self.digitizer_bits)
-                 / self.pmt_circuit_load_resistor)
-
-        self.gains = np.divide(adc_2_current,
-                          self.to_pe,
-                          out=np.zeros_like(self.to_pe),
-                          where=self.to_pe != 0)
     
     def compute(self, S1_photons, S2_photons):
         
@@ -201,12 +200,7 @@ class PMTAfterPulses(strax.Plugin):
             _photon_amplitude = np.hstack(_photon_amplitude)
             _photon_gains = np.array(self.gains)[_photon_channels] * _photon_amplitude
 
-            #sorted_index = np.argsort(_photon_channels)
-            #return _photon_timings[sorted_index], _photon_channels[sorted_index], _photon_gains[sorted_index]
             return _photon_timings, _photon_channels, _photon_gains
 
         else:
             return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0)
-            
-    
-    

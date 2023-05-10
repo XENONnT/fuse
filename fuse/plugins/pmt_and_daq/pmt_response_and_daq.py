@@ -23,12 +23,6 @@ private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_au
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
 @export
-@strax.takes_config(
-    strax.Option('to_pe_file', default=os.path.join(private_files_path,"sim_files/to_pe_nt.npy"), track=False, infer_type=False,
-                 help="to_pe file"),
-    strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
-                 help="photon_area_distribution"),
-)
 class PMTResponseAndDAQ(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -144,35 +138,63 @@ class PMTResponseAndDAQ(strax.Plugin):
         default=100000, type=(int),
         help='right raw extension',
     )
+    
+    pe_pulse_ts = straxen.URLConfig(
+        default=config["pe_pulse_ts"],
+        help='pe_pulse_ts',
+    )
+    
+    pe_pulse_ys = straxen.URLConfig(
+        default=config["pe_pulse_ys"],
+        help='pe_pulse_ys',
+    )
+    
+    gains = straxen.URLConfig(
+        default='pmt_gains://resource://format://'
+                f'{os.path.join(private_files_path,"sim_files/to_pe_nt.npy")}?'
+                '&fmt=npy'
+                f'&digitizer_voltage_range=plugin.digitizer_voltage_range'
+                f'&digitizer_bits=plugin.digitizer_bits'
+                f'&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
+        cache=True,
+        help='pmt gains',
+    )
+    
+    photon_area_distribution = straxen.URLConfig(
+        default='simple_load://resource://format://'
+                f'{config["photon_area_distribution"]}?'
+                '&fmt=csv',
+        cache=True,
+        help='photon_area_distribution',
+    )
+    
+    special_thresholds = straxen.URLConfig(
+        default=config["special_thresholds"],
+        help='special_thresholds',
+    )
+    
+    noise_data_tmp = straxen.URLConfig(
+        default='simple_load://resource://format://'
+                f'{config["noise_file"]}?'
+                '&fmt=npy',
+        cache=True,
+        help='noise_data',
+    )
+    
+    channel_map = straxen.URLConfig(
+        track=False, type=immutabledict,
+        help="immutabledict mapping subdetector to (min, max) "
+             "channel number.")
 
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running pmt_response_and_daq in debug mode")
-        
-        
-        to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
-        self.to_pe = to_pe[0][1]
-
-        adc_2_current = (self.digitizer_voltage_range
-                / 2 ** (self.digitizer_bits)
-                 / self.pmt_circuit_load_resistor)
-
-        self.gains = np.divide(adc_2_current,
-                              self.to_pe,
-                              out=np.zeros_like(self.to_pe),
-                              where=self.to_pe != 0)
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
-        
-        self.photon_area_distribution = straxen.get_resource(self.photon_area_distribution, fmt='csv')
-        
-        
-        self.pe_pulse_ts = config["pe_pulse_ts"]
-        self.pe_pulse_ys = config["pe_pulse_ys"]
-        
+
         
         #setup for Digitize Pulse Cache 
         self.current_2_adc = self.pmt_circuit_load_resistor \
@@ -180,32 +202,21 @@ class PMTResponseAndDAQ(strax.Plugin):
                 / (self.digitizer_voltage_range / 2 ** (self.digitizer_bits))
         
         self.channels_bottom = np.arange(self.n_top_pmts, self.n_tpc_pmts)
-        #self.channel_map = dict(st.config['channel_map'])
-        self.channel_map = {'tpc': (0, 493),
-                            'he': (500, 752),
-                            'aqmon': (790, 807),
-                            'aqmon_nv': (808, 815),
-                            'tpc_blank': (999, 999),
-                            'mv': (1000, 1083),
-                            'aux_mv': (1084, 1087),
-                            'mv_blank': (1999, 1999),
-                            'nveto': (2000, 2119),
-                            'nveto_blank': (2999, 2999)
-                           } #I can get this from the context...but how??
+
+        #Ugly hack below
+        self.channel_map_mutable = dict(self.channel_map)
+        self.channel_map_mutable['sum_signal'] = 800
         
-        
-        self.channel_map['sum_signal'] = 800
         self.channels_bottom = np.arange(self.n_top_pmts, self.n_tpc_pmts)
         
+        #We can most likely get rid of this hack and make it properly....
         if self.enable_noise:
-            self.noise_data = straxen.get_resource(config['noise_file'], fmt='npy')['arr_0']
+            self.noise_data = self.noise_data_tmp['arr_0']
              
         #ZLE Part (Now building actual raw_records data!)
         self.samples_per_record = strax.DEFAULT_RECORD_LENGTH
         #self.blevel = 0  # buffer_filled_level
         self.record_buffer = np.zeros(5000000, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH))
-        
-        self.special_thresholds = config.get('special_thresholds', {})
 
         #Im sure there is a better way to handle this part
         self._cached_pmt_current_templates = {}
@@ -318,8 +329,8 @@ class PMTResponseAndDAQ(strax.Plugin):
                 if self.detector == 'XENONnT':
                     adc_wave_he = adc_wave * int(self.high_energy_deamplification_factor)
                     if ch < self.n_top_pmts:
-                        ch_he = np.arange(self.channel_map['he'][0],
-                                          self.channel_map['he'][1] + 1)[ch]
+                        ch_he = np.arange(self.channel_map_mutable['he'][0],
+                                          self.channel_map_mutable['he'][1] + 1)[ch]
                         _raw_data[ch_he, _slice] += adc_wave_he
                         _channel_mask[ch_he] = True
                         _channel_mask['left'][ch_he] = _channel_mask['left'][ch]
@@ -328,7 +339,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                         sum_signal(adc_wave_he,
                                    _pulse['left'] - left,
                                    _pulse['right'] - left + 1,
-                                   _raw_data[self.channel_map['sum_signal']])
+                                   _raw_data[self.channel_map_mutable['sum_signal']])
                         
             _channel_mask['left'] -= left + config['trigger_window']
             _channel_mask['right'] -= left - config['trigger_window']
@@ -412,9 +423,9 @@ class PMTResponseAndDAQ(strax.Plugin):
         records = self.record_buffer[:self.blevel] 
         records = strax.sort_by_time(records)
         
-        return dict(raw_records=records[records['channel'] < self.channel_map['he'][0]],
-                       raw_records_he=records[(records['channel'] >= self.channel_map['he'][0]) &
-                                              (records['channel'] <= self.channel_map['he'][-1])],
+        return dict(raw_records=records[records['channel'] < self.channel_map_mutable['he'][0]],
+                       raw_records_he=records[(records['channel'] >= self.channel_map_mutable['he'][0]) &
+                                              (records['channel'] <= self.channel_map_mutable['he'][-1])],
                        raw_records_aqmon=records[records['channel'] == 800],
                        #truth=_truth
                     ) 

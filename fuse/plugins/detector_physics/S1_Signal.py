@@ -11,8 +11,6 @@ from scipy.interpolate import interp1d
 
 export, __all__ = strax.exporter()
 
-from ...common import make_map, make_patternmap
-
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S1_Signal')
 log.setLevel('WARNING')
@@ -23,27 +21,6 @@ private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_au
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
 @export
-@strax.takes_config(
-    strax.Option('s1_lce_correction_map',
-                 default=os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz"),
-                 track=False,
-                 infer_type=False,
-                 help="S1 LCE correction map"),
-    strax.Option('s1_pattern_map',
-                 default=os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_patterns_corrected_qes_MCva43fa9b_wires.pkl"),
-                 track=False,
-                 infer_type=False,
-                 help="S1 pattern map"),
-    strax.Option('to_pe_file', default=os.path.join(private_files_path, "sim_files/to_pe_nt.npy"), track=False, infer_type=False,
-                 help="to_pe file"),
-    strax.Option('s1_time_spline',
-                 default=os.path.join(private_files_path, "sim_files/XENONnT_s1_proponly_va43fa9b_wires_20200625.json.gz"),
-                 track=False,
-                 infer_type=False,
-                 help="S1 Time Spline"),
-    strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
-                 help="photon_area_distribution"),
-)
 class S1PhotonPropagation(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -141,43 +118,65 @@ class S1PhotonPropagation(strax.Plugin):
         default=1, type=(int, float),
         help='Some placeholder for s1_detection_efficiency',
     )
-
-
+    
+    s1_lce_correction_map = straxen.URLConfig(
+        default='itp_map://resource://format://'
+                f'{os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz")}?'
+                '&fmt=json.gz',
+        cache=True,
+        help='s1_lce_correction_map',
+    )
+    
+    s1_pattern_map = straxen.URLConfig(
+        default='pattern_map://resource://format://'
+                f'{os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_patterns_corrected_qes_MCva43fa9b_wires.pkl")}?'
+                '&fmt=pkl'
+                '&pmt_mask=None',
+        cache=True,
+        help='s1_pattern_map',
+    )
+    
+    gains = straxen.URLConfig(
+        default='pmt_gains://resource://format://'
+                f'{os.path.join(private_files_path,"sim_files/to_pe_nt.npy")}?'
+                '&fmt=npy'
+                f'&digitizer_voltage_range=plugin.digitizer_voltage_range'
+                f'&digitizer_bits=plugin.digitizer_bits'
+                f'&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
+        cache=True,
+        help='pmt gains',
+    )
+    
+    s1_optical_propagation_spline = straxen.URLConfig(
+        default='itp_map://resource://format://'
+                f'{os.path.join(private_files_path, "sim_files/XENONnT_s1_proponly_va43fa9b_wires_20200625.json.gz")}?'
+                '&fmt=json.gz'
+                '&method=RegularGridInterpolator',
+        cache=True,
+        help='s1_optical_propagation_spline',
+    )
+    
+    photon_area_distribution = straxen.URLConfig(
+        default='simple_load://resource://format://'
+                f'{config["photon_area_distribution"]}?'
+                '&fmt=csv',
+        cache=True,
+        help='photon_area_distribution',
+    )
     
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S1PhotonPropagation in debug mode")
-        
-        self.s1_lce_correction_map = make_map(self.s1_lce_correction_map, fmt='json.gz')
-        self.s1_pattern_map = make_patternmap(self.s1_pattern_map, fmt='pkl', pmt_mask=None)
-        
-        to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
-        self.to_pe = to_pe[0][1]
-        
-        adc_2_current = (self.digitizer_voltage_range
-                / 2 ** (self.digitizer_bits)
-                 / self.pmt_circuit_load_resistor)
-
-        self.gains = np.divide(adc_2_current,
-                          self.to_pe,
-                          out=np.zeros_like(self.to_pe),
-                          where=self.to_pe != 0)
 
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
-        
-        
-        self.s1_optical_propagation_spline = make_map(self.s1_time_spline,
-                                                      fmt='json.gz',
-                                                      method='RegularGridInterpolator')
         
         if 'nest' in self.s1_model_type: #and (self.nestpy_calc is None):
             log.info('Using NEST for scintillation time without set calculator\n'
                      'Creating new nestpy calculator')
             self.nestpy_calc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
 
-        self.photon_area_distribution = straxen.get_resource(self.photon_area_distribution, fmt='csv')
         self._cached_uniform_to_pe_arr = {}
         self.__uniform_to_pe_arr = self.init_spe_scaling_factor_distributions()
 

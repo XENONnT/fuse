@@ -11,7 +11,7 @@ from scipy.interpolate import interp1d
 from strax import deterministic_hash
 export, __all__ = strax.exporter()
 
-from ...common import make_map, make_patternmap, DummyMap
+from ...common import DummyMap
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S2_Signal')
@@ -23,24 +23,6 @@ private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_au
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
 @export
-@strax.takes_config(
-    strax.Option('to_pe_file', default=os.path.join(private_files_path,"sim_files/to_pe_nt.npy"), track=False, infer_type=False,
-                 help="to_pe file"),
-    strax.Option('s2_pattern_map_file',
-                 default=os.path.join(private_files_path,"sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl"),
-                 track=False,
-                 infer_type=False,
-                 help="s2_pattern_map"),
-    strax.Option('field_dependencies_map',
-                 default=os.path.join(private_files_path,"sim_files/field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz"),
-                 track=False,
-                 infer_type=False,
-                 help="field_dependencies_map"),
-    strax.Option('s2_time_spline', default=config['s2_time_spline'], track=False, infer_type=False,
-                 help="s2_time_spline"),
-    strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
-                 help="photon_area_distribution"),
-)
 class S2PhotonPropagation(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -178,59 +160,97 @@ class S2PhotonPropagation(strax.Plugin):
         default=config["s2_aft_sigma"], type=(int, float),
         help='s2_aft_sigma',
     )
+    
+    enable_field_dependencies = straxen.URLConfig(
+        default=config["enable_field_dependencies"],
+        help='enable_field_dependencies',
+    )
+    
+    gains = straxen.URLConfig(
+        default='pmt_gains://resource://format://'
+                f'{os.path.join(private_files_path,"sim_files/to_pe_nt.npy")}?'
+                '&fmt=npy'
+                f'&digitizer_voltage_range=plugin.digitizer_voltage_range'
+                f'&digitizer_bits=plugin.digitizer_bits'
+                f'&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
+        cache=True,
+        help='pmt gains',
+    )
+    
+    s2_pattern_map = straxen.URLConfig(
+        default='pattern_map://resource://format://'
+                f'{os.path.join(private_files_path, "sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl")}?'
+                '&fmt=pkl'
+                '&pmt_mask=plugin.pmt_mask',
+        cache=True,
+        help='s2_pattern_map',
+    )
+    
+    photon_area_distribution = straxen.URLConfig(
+        default='simple_load://resource://format://'
+                f'{config["photon_area_distribution"]}?'
+                '&fmt=csv',
+        cache=True,
+        help='photon_area_distribution',
+    )
+    
+    s2_optical_propagation_spline = straxen.URLConfig(
+        default='itp_map://resource://format://'
+                f'{os.path.join(private_files_path, "sim_files/XENONnT_s2_opticalprop_time_v0.json.gz")}?'
+                '&fmt=json.gz',
+        cache=True,
+        help='s2_optical_propagation_spline',
+    )
+    
+    s2_luminescence_map = straxen.URLConfig(
+        default='simple_load://resource://format://'
+                f'{os.path.join(private_files_path,"sim_files/garfield_timing_map_gas_gap_sr0.npy")}?'
+                '&fmt=npy',
+        cache=True,
+        help='s2_luminescence_map',
+    )
+    
+    garfield_gas_gap_map = straxen.URLConfig(
+        default='itp_map://resource://format://'
+                f'{os.path.join(private_files_path,"sim_files/garfield_gas_gap_map_sr0.json")}?'
+                '&fmt=json',
+        cache=True,
+        help='garfield_gas_gap_map',
+    )
+    #stupid naming problem...
+    field_dependencies_map_tmp = straxen.URLConfig(
+        default='itp_map://resource://format://'
+                f'{os.path.join(private_files_path,"sim_files/field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz")}?'
+                '&fmt=json.gz'
+                '&method=RectBivariateSpline',
+        help='field_dependencies_map',
+    )
 
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S2PhotonPropagation in debug mode")
-        
-        to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
-        self.to_pe = to_pe[0][1]
-
-        adc_2_current = (self.digitizer_voltage_range
-                / 2 ** (self.digitizer_bits)
-                 / self.pmt_circuit_load_resistor)
-
-        self.gains = np.divide(adc_2_current,
-                          self.to_pe,
-                          out=np.zeros_like(self.to_pe),
-                          where=self.to_pe != 0)
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
-
-        self.s2_pattern_map = make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
         
-        
+        #Move this part into a nice URLConfig protocol?
         # Field dependencies 
-        # This config entry a dictionary of 5 items
-        self.enable_field_dependencies = config['enable_field_dependencies'] #This is not so nice
         if any(self.enable_field_dependencies.values()):
-            field_dependencies_map_tmp = make_map(self.field_dependencies_map, fmt='json.gz', method='RectBivariateSpline')
             self.drift_velocity_scaling = 1.0
             # calculating drift velocity scaling to match total drift time for R=0 between cathode and gate
             if "norm_drift_velocity" in self.enable_field_dependencies.keys():
                 if self.enable_field_dependencies['norm_drift_velocity']:
-                    norm_dvel = field_dependencies_map_tmp(np.array([ [0], [- self.tpc_length]]).T, map_name='drift_speed_map')[0]
+                    norm_dvel = self.field_dependencies_map_tmp(np.array([ [0], [- self.tpc_length]]).T, map_name='drift_speed_map')[0]
                     norm_dvel*=1e-4
                     drift_velocity_scaling = self.drift_velocity_liquid/norm_dvel
             def rz_map(z, xy, **kwargs):
                 r = np.sqrt(xy[:, 0]**2 + xy[:, 1]**2)
-                return field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
+                return self.field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
             self.field_dependencies_map = rz_map
-        
-        if 'garfield_gas_gap' in self.s2_luminescence_model:
-            #garfield_gas_gap option is using (x,y) -> gas gap (from the map) -> s2 luminescence
-            #from garfield. This s2_luminescence_gg is indexed only by the gas gap, and
-            #corresponds to electrons drawn directly below the anode
-            self.s2_luminescence_map = straxen.get_resource(os.path.join(private_files_path,"sim_files/garfield_timing_map_gas_gap_sr0.npy"), fmt='npy')
-            self.garfield_gas_gap_map = make_map(os.path.join(private_files_path,"sim_files/garfield_gas_gap_map_sr0.json"), fmt = 'json')
-        
-        if self.s2_time_spline:
-            self.s2_optical_propagation_spline = make_map(os.path.join(private_files_path,"sim_files/XENONnT_s2_opticalprop_time_v0.json.gz"), fmt="json.gz")
 
-        self.photon_area_distribution = straxen.get_resource(self.photon_area_distribution, fmt='csv')
+            
         self._cached_uniform_to_pe_arr = {}
         self.__uniform_to_pe_arr = self.init_spe_scaling_factor_distributions()
 
@@ -591,4 +611,3 @@ def loop_uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
         result.append(uniform_to_pe_arr(p[i],
                                         channel=channel[i],
                                         __uniform_to_pe_arr=__uniform_to_pe_arr) )
-    return np.array(result)

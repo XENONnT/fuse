@@ -3,8 +3,6 @@ import awkward as ak
 import straxen
 import strax
 import numba
-from copy import deepcopy
-
 
 def full_array_to_numpy(array, dtype):
     
@@ -18,62 +16,6 @@ def full_array_to_numpy(array, dtype):
     return numpy_data
 
 #WFSim functions
-
-def make_map(map_file, fmt=None, method='WeightedNearestNeighbors'):
-    """Fetch and make an instance of InterpolatingMap based on map_file
-    Alternatively map_file can be a list of ["constant dummy", constant: int, shape: list]
-    return an instance of  DummyMap"""
-
-    if isinstance(map_file, list):
-        assert map_file[0] == 'constant dummy', ('Alternative file input can only be '
-                                                 '("constant dummy", constant: int, shape: list')
-        return DummyMap(map_file[1], map_file[2])
-
-    elif isinstance(map_file, str):
-        if fmt is None:
-            fmt = parse_extension(map_file)
-
-        #log.debug(f'Initialize map interpolator for file {map_file}')
-        map_data = straxen.get_resource(map_file, fmt=fmt)
-        return straxen.InterpolatingMap(map_data, method=method)
-
-    else:
-        raise TypeError("Can't handle map_file except a string or a list")
-
-def make_patternmap(map_file, fmt=None, method='WeightedNearestNeighbors', pmt_mask=None):
-    """ This is special interpretation of the of previous make_map(), but designed
-    for pattern map loading with provided PMT mask. This way simplifies both S1 and S2
-    cases
-    """
-    # making tests not failing, we can probably overwrite it completel
-    if isinstance(map_file, list):
-        #log.warning(f'Using dummy map with pattern mask! This has no effect here!')
-        assert map_file[0] == 'constant dummy', ('Alternative file input can only be '
-                                                 '("constant dummy", constant: int, shape: list')
-        return DummyMap(map_file[1], map_file[2])
-    elif isinstance(map_file, str):
-        if fmt is None:
-            fmt = parse_extension(map_file)
-        map_data = deepcopy(straxen.get_resource(map_file, fmt=fmt))
-        # XXX: straxed deals with pointers and caches resources, it means that resources are global
-        # what is bad, so we make own copy here and modify it locally
-        if 'compressed' in map_data:
-            compressor, dtype, shape = map_data['compressed']
-            map_data['map'] = np.frombuffer(
-                strax.io.COMPRESSORS[compressor]['decompress'](map_data['map']),
-                dtype=dtype).reshape(*shape)
-            del map_data['compressed']
-        if 'quantized' in map_data:
-            map_data['map'] = map_data['quantized']*map_data['map'].astype(np.float32)
-            del map_data['quantized']
-        if not (pmt_mask is None):
-            assert (map_data['map'].shape[-1]==pmt_mask.shape[0]), "Error! Pattern map and PMT gains must have same dimensions!"
-            map_data['map'][..., ~pmt_mask]=0.0
-        return straxen.InterpolatingMap(map_data, method=method)
-    else:
-        raise TypeError("Can't handle map_file except a string or a list")
-
-
 def parse_extension(name):
     """Get the extention from a file name. If zipped or tarred, can contain a dot"""
     split_name = name.split('.')

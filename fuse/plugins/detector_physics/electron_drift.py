@@ -4,8 +4,6 @@ import straxen
 import os
 import logging
 
-from ...common import make_map
-
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])

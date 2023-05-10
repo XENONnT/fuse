@@ -1,11 +1,8 @@
 import strax
 import straxen
 import numpy as np
-from copy import deepcopy
 import os
 import logging
-
-from ...common import make_map, make_patternmap
 
 export, __all__ = strax.exporter()
 
@@ -13,32 +10,11 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_extraction')
 log.setLevel('WARNING')
 
-
-#private_files_path = "path/to/private/files"
 base_path = os.path.abspath(os.getcwd())
 private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
 @export
-@strax.takes_config(
-    strax.Option('s2_correction_map_file',
-                 default=os.path.join(private_files_path, "strax_files/XENONnT_s2_xy_map_v4_210503_mlp_3_in_1_iterated.json"),
-                 track=False,
-                 infer_type=False,
-                 help="s2_correction_map"),
-    strax.Option('s2_pattern_map_file',
-                 default=os.path.join(private_files_path, "sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl"),
-                 track=False,
-                 infer_type=False,
-                 help="s2_pattern_map"),
-    strax.Option('to_pe_file', default=os.path.join(private_files_path, "sim_files/to_pe_nt.npy"), track=False, infer_type=False,
-                 help="to_pe file"),
-    strax.Option('se_gain_map',
-                 default=os.path.join(private_files_path, "strax_files/XENONnT_se_xy_map_v1_mlp.json"),
-                 track=False,
-                 infer_type=False,
-                 help="se_gain_map"),
-)
 class ElectronExtraction(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -102,6 +78,42 @@ class ElectronExtraction(strax.Plugin):
         help='se_gain_from_map',
     )
 
+    gains = straxen.URLConfig(
+        default='pmt_gains://resource://format://'
+                f'{os.path.join(private_files_path,"sim_files/to_pe_nt.npy")}?'
+                '&fmt=npy'
+                f'&digitizer_voltage_range=plugin.digitizer_voltage_range'
+                f'&digitizer_bits=plugin.digitizer_bits'
+                f'&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
+        cache=True,
+        help='pmt gains',
+    )
+    
+    s2_correction_map = straxen.URLConfig(
+        default='itp_map://resource://format://'
+                f'{os.path.join(private_files_path, "strax_files/XENONnT_s2_xy_map_v4_210503_mlp_3_in_1_iterated.json")}?'
+                '&fmt=json',
+        cache=True,
+        help='s2_correction_map',
+    )
+    
+    se_gain_map = straxen.URLConfig(
+        default='itp_map://resource://format://'
+                f'{os.path.join(private_files_path, "strax_files/XENONnT_se_xy_map_v1_mlp.json")}?'
+                '&fmt=json',
+        cache=True,
+        help='se_gain_map',
+    )
+    
+    s2_pattern_map = straxen.URLConfig(
+        default='pattern_map://resource://format://'
+                f'{os.path.join(private_files_path, "sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl")}?'
+                '&fmt=pkl'
+                '&pmt_mask=plugin.pmt_mask',
+        cache=True,
+        help='s2_pattern_map',
+    )
+
     
     def setup(self):
 
@@ -109,35 +121,20 @@ class ElectronExtraction(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug("Running ElectronExtraction in debug mode")
         
-        to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
-        self.to_pe = to_pe[0][1]
+        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         
-        adc_2_current = (self.digitizer_voltage_range
-                / 2 ** (self.digitizer_bits)
-                 / self.pmt_circuit_load_resistor)
-
-        gains = np.divide(adc_2_current,
-                          self.to_pe,
-                          out=np.zeros_like(self.to_pe),
-                          where=self.to_pe != 0)
-        
-        self.pmt_mask = np.array(gains) > 0  # Converted from to pe (from cmt by default)
-        
-        self.s2_pattern_map = make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
-        
-        if self.s2_correction_map_file:
-            self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
-        else:
-            s2cmap = deepcopy(self.s2_pattern_map)
-            # Lower the LCE by removing contribution from dead PMTs
-            # AT: masking is a bit redundant due to PMT mask application in make_patternmap
-            s2cmap.data['map'] = np.sum(s2cmap.data['map'][:][:], axis=2, keepdims=True, where=self.pmt_mask)
-            # Scale by median value
-            s2cmap.data['map'] = s2cmap.data['map'] / np.median(s2cmap.data['map'][s2cmap.data['map'] > 0])
-            s2cmap.__init__(s2cmap.data)
-            self.s2_correction_map = s2cmap
-            
-        self.se_gain_map = make_map(self.se_gain_map, fmt = "json")
+        #Is this else case ever used? if no -> remove
+        #if self.s2_correction_map_file:
+        #    self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
+        #else:
+        #    s2cmap = deepcopy(self.s2_pattern_map)
+        #    # Lower the LCE by removing contribution from dead PMTs
+        #    # AT: masking is a bit redundant due to PMT mask application in make_patternmap
+        #    s2cmap.data['map'] = np.sum(s2cmap.data['map'][:][:], axis=2, keepdims=True, where=self.pmt_mask)
+        #    # Scale by median value
+        #    s2cmap.data['map'] = s2cmap.data['map'] / np.median(s2cmap.data['map'][s2cmap.data['map'] > 0])
+        #    s2cmap.__init__(s2cmap.data)
+        #    self.s2_correction_map = s2cmap
     
     def compute(self, clustered_interactions, electron_cloud):
         
