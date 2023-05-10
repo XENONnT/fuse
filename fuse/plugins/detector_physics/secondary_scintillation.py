@@ -13,17 +13,12 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 log.setLevel('WARNING')
 
-#private_files_path = "path/to/private/files"
 base_path = os.path.abspath(os.getcwd())
 private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
 config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
 @export
 @strax.takes_config(
-    strax.Option('p_double_pe_emision', default=config["p_double_pe_emision"], track=False, infer_type=False,
-                 help="p_double_pe_emision"),
-    strax.Option('se_gain_from_map', default=config["se_gain_from_map"], track=False, infer_type=False,
-                 help="se_gain_from_map"),
     strax.Option('se_gain_map',
                  default=os.path.join(private_files_path,"strax_files/XENONnT_se_xy_map_v1_mlp.json"),
                  track=False,
@@ -36,23 +31,11 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="s2_correction_map"),
     strax.Option('to_pe_file', default=os.path.join(private_files_path,"sim_files/to_pe_nt.npy"), track=False, infer_type=False,
                  help="to_pe file"),
-    strax.Option('digitizer_voltage_range', default=config['digitizer_voltage_range'], track=False, infer_type=False,
-                 help="digitizer_voltage_range"),
-    strax.Option('digitizer_bits', default=config['digitizer_bits'], track=False, infer_type=False,
-                 help="digitizer_bits"),
-    strax.Option('pmt_circuit_load_resistor', default=config['pmt_circuit_load_resistor'], track=False, infer_type=False,
-                 help="pmt_circuit_load_resistor"),
     strax.Option('s2_pattern_map_file',
                  default=os.path.join(private_files_path,"sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl"),
                  track=False,
                  infer_type=False,
                  help="s2_pattern_map"),
-    strax.Option('s2_secondary_sc_gain', default=config['s2_secondary_sc_gain'], track=False, infer_type=False,
-                 help="s2_secondary_sc_gain"),
-    strax.Option('s2_gain_spread', default=0, track=False, infer_type=False,
-                 help="s2_gain_spread"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
 )
 class SecondaryScintillation(strax.Plugin):
     
@@ -74,6 +57,47 @@ class SecondaryScintillation(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
     
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    s2_gain_spread = straxen.URLConfig(
+        default=0, type=(int, float),
+        help='s2_gain_spread',
+    )
+
+    s2_secondary_sc_gain = straxen.URLConfig(
+        default=config["s2_secondary_sc_gain"], type=(int, float),
+        help='s2_secondary_sc_gain',
+    )
+
+    pmt_circuit_load_resistor = straxen.URLConfig(
+        default=config["pmt_circuit_load_resistor"],
+        help='pmt_circuit_load_resistor', type=(int, float),
+    )
+
+    digitizer_bits = straxen.URLConfig(
+        default=config["digitizer_bits"], type=(int, float),
+        help='digitizer_bits',
+    )
+
+    digitizer_voltage_range = straxen.URLConfig(
+        default=config["digitizer_voltage_range"], type=(int, float),
+        help='digitizer_voltage_range',
+    )
+
+    se_gain_from_map = straxen.URLConfig(
+        default=config["se_gain_from_map"],
+        help='se_gain_from_map',
+    )
+
+    p_double_pe_emision = straxen.URLConfig(
+        default=config["p_double_pe_emision"], type=(int, float),
+        help='p_double_pe_emision',
+    )
+
     def setup(self):
         
         if self.debug:

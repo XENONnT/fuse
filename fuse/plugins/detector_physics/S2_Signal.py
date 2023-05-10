@@ -24,26 +24,8 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
 
 @export
 @strax.takes_config(
-    strax.Option('s2_aft_sigma', default=config["s2_aft_sigma"], track=False, infer_type=False,
-                 help="s2_aft_sigma"),
-    strax.Option('s2_aft_skewness', default=config["s2_aft_skewness"], track=False, infer_type=False,
-                 help="s2_aft_skewness"),
-    strax.Option('diffusion_constant_transverse', default=config["diffusion_constant_transverse"], track=False, infer_type=False,
-                 help="diffusion_constant_transverse"),
-    strax.Option('n_top_pmts', default=253, track=False, infer_type=False,
-                 help="n_top_pmts"),
-    strax.Option('n_tpc_pmts', default=494, track=False, infer_type=False,
-                 help="n_tpc_pmts"),
-    strax.Option('tpc_radius', default=config["tpc_radius"], track=False, infer_type=False,
-                 help="tpc_radius"),
     strax.Option('to_pe_file', default=os.path.join(private_files_path,"sim_files/to_pe_nt.npy"), track=False, infer_type=False,
                  help="to_pe file"),
-    strax.Option('digitizer_voltage_range', default=config['digitizer_voltage_range'], track=False, infer_type=False,
-                 help="digitizer_voltage_range"),
-    strax.Option('digitizer_bits', default=config['digitizer_bits'], track=False, infer_type=False,
-                 help="digitizer_bits"),
-    strax.Option('pmt_circuit_load_resistor', default=config['pmt_circuit_load_resistor'], track=False, infer_type=False,
-                 help="pmt_circuit_load_resistor"),
     strax.Option('s2_pattern_map_file',
                  default=os.path.join(private_files_path,"sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl"),
                  track=False,
@@ -54,40 +36,10 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  track=False,
                  infer_type=False,
                  help="field_dependencies_map"),
-    strax.Option('tpc_length', default=config['tpc_length'], track=False, infer_type=False,
-                 help="tpc_length"),
-    strax.Option('drift_velocity_liquid', default=config['drift_velocity_liquid'], track=False, infer_type=False,
-                 help="drift_velocity_liquid"),
-    strax.Option('s2_luminescence_model', default=config['s2_luminescence_model'], track=False, infer_type=False,
-                 help="s2_luminescence_model"),
-    strax.Option('phase_s2', default="gas", track=False, infer_type=False,
-                 help="phase"),
-    strax.Option('singlet_fraction_gas', default=config['singlet_fraction_gas'], track=False, infer_type=False,
-                 help="singlet_fraction_gas"),
-    strax.Option('s2_time_model', default=config['s2_time_model'], track=False, infer_type=False,
-                 help="s2_time_model"),
     strax.Option('s2_time_spline', default=config['s2_time_spline'], track=False, infer_type=False,
                  help="s2_time_spline"),
-    strax.Option('s2_time_spread', default=config['s2_time_spread'], track=False, infer_type=False,
-                 help="s2_time_spread"),
-    strax.Option('singlet_lifetime_liquid', default=config['singlet_lifetime_liquid'], track=False, infer_type=False,
-                 help="singlet_lifetime_liquid"),
-    strax.Option('triplet_lifetime_liquid', default=config['triplet_lifetime_liquid'], track=False, infer_type=False,
-                 help="triplet_lifetime_liquid"),
-    strax.Option('singlet_lifetime_gas', default=config['singlet_lifetime_gas'], track=False, infer_type=False,
-                 help="singlet_lifetime_gas"),
-    strax.Option('triplet_lifetime_gas', default=config['triplet_lifetime_gas'], track=False, infer_type=False,
-                 help="triplet_lifetime_gas"),
-    strax.Option('pmt_transit_time_mean', default=config['pmt_transit_time_mean'], track=False, infer_type=False,
-                 help="pmt_transit_time_mean"),
-    strax.Option('pmt_transit_time_spread', default=config['pmt_transit_time_spread'], track=False, infer_type=False,
-                 help="pmt_transit_time_spread"),
-    strax.Option('p_double_pe_emision', default=config['p_double_pe_emision'], track=False, infer_type=False,
-                 help="p_double_pe_emision"),
     strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
                  help="photon_area_distribution"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
 )
 class S2PhotonPropagation(strax.Plugin):
     
@@ -105,7 +57,128 @@ class S2PhotonPropagation(strax.Plugin):
              ('photon_gain', np.int64),
             ]
     dtype = dtype + strax.time_fields
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    p_double_pe_emision = straxen.URLConfig(
+        default=config["p_double_pe_emision"], type=(int, float),
+        help='p_double_pe_emision',
+    )
+
+    pmt_transit_time_spread = straxen.URLConfig(
+        default=config["pmt_transit_time_spread"], type=(int, float),
+        help='pmt_transit_time_spread',
+    )
     
+    pmt_transit_time_mean = straxen.URLConfig(
+        default=config["pmt_transit_time_mean"], type=(int, float),
+        help='pmt_transit_time_mean',
+    )
+
+    triplet_lifetime_gas = straxen.URLConfig(
+        default=config["triplet_lifetime_gas"], type=(int, float),
+        help='triplet_lifetime_gas',
+    )
+
+    singlet_lifetime_gas = straxen.URLConfig(
+        default=config["singlet_lifetime_gas"], type=(int, float),
+        help='singlet_lifetime_gas',
+    )
+
+    triplet_lifetime_liquid = straxen.URLConfig(
+        default=config["triplet_lifetime_liquid"], type=(int, float),
+        help='triplet_lifetime_liquid',
+    )
+
+    singlet_lifetime_liquid = straxen.URLConfig(
+        default=config["singlet_lifetime_liquid"], type=(int, float),
+        help='singlet_lifetime_liquid',
+    )
+
+    s2_time_spread = straxen.URLConfig(
+        default=config["s2_time_spread"], type=(int, float),
+        help='s2_time_spread',
+    )
+
+    s2_time_model = straxen.URLConfig(
+        default=config["s2_time_model"],
+        help='s2_time_model',
+    )
+
+    singlet_fraction_gas = straxen.URLConfig(
+        default=config["singlet_fraction_gas"], type=(int, float),
+        help='singlet_fraction_gas',
+    )
+    #needed as config?
+    phase_s2 = straxen.URLConfig(
+        default="gas",
+        help='phase_s2',
+    )
+
+    s2_luminescence_model = straxen.URLConfig(
+        default=config["s2_luminescence_model"],
+        help='s2_luminescence_model',
+    )
+
+    drift_velocity_liquid = straxen.URLConfig(
+        default=config["drift_velocity_liquid"], type=(int, float),
+        help='drift_velocity_liquid',
+    )
+
+    tpc_length = straxen.URLConfig(
+        default=config["tpc_length"], type=(int, float),
+        help='tpc_length',
+    )
+
+    pmt_circuit_load_resistor = straxen.URLConfig(
+        default=config["pmt_circuit_load_resistor"], type=(int, float),
+        help='pmt_circuit_load_resistor',
+    )
+
+    digitizer_bits = straxen.URLConfig(
+        default=config["digitizer_bits"], type=(int, float),
+        help='digitizer_bits',
+    )
+
+    digitizer_voltage_range = straxen.URLConfig(
+        default=config["digitizer_voltage_range"], type=(int, float),
+        help='digitizer_voltage_range',
+    )
+
+    tpc_radius = straxen.URLConfig(
+        default=config["tpc_radius"], type=(int, float),
+        help='tpc_radius',
+    )
+
+    n_top_pmts = straxen.URLConfig(
+        default=253, type=(int),
+        help='Number of PMTs on top array',
+    )
+
+    n_tpc_pmts = straxen.URLConfig(
+        default=494, type=(int),
+        help='Number of PMTs in the TPC',
+    )
+
+    diffusion_constant_transverse = straxen.URLConfig(
+        default=config["diffusion_constant_transverse"], type=(int, float),
+        help='diffusion_constant_transverse',
+    )
+
+    s2_aft_skewness = straxen.URLConfig(
+        default=config["s2_aft_skewness"], type=(int, float),
+        help='s2_aft_skewness',
+    )
+
+    s2_aft_sigma = straxen.URLConfig(
+        default=config["s2_aft_sigma"], type=(int, float),
+        help='s2_aft_sigma',
+    )
+
     def setup(self):
 
         if self.debug:

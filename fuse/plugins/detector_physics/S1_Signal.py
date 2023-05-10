@@ -24,10 +24,6 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
 
 @export
 @strax.takes_config(
-    strax.Option('s1_detection_efficiency', default=1, track=False, infer_type=False,
-                 help="Some placeholder for s1_detection_efficiency"),
-    strax.Option('p_double_pe_emision', default=config["p_double_pe_emision"], track=False, infer_type=False,
-                 help="Some placeholder for p_double_pe_emision"),
     strax.Option('s1_lce_correction_map',
                  default=os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz"),
                  track=False,
@@ -38,43 +34,15 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  track=False,
                  infer_type=False,
                  help="S1 pattern map"),
-    strax.Option('n_tpc_pmts', default=494, track=False, infer_type=False,
-                 help="Number of PMTs in the TPC"),
-    strax.Option('n_top_pmts', default=253, track=False, infer_type=False,
-                 help="Number of PMTs on top array"),
-    strax.Option('digitizer_voltage_range', default=config['digitizer_voltage_range'], track=False, infer_type=False,
-                 help="digitizer_voltage_range"),
-    strax.Option('digitizer_bits', default=config['digitizer_bits'], track=False, infer_type=False,
-                 help="digitizer_bits"),
-    strax.Option('pmt_circuit_load_resistor', default=config['pmt_circuit_load_resistor'], track=False, infer_type=False,
-                 help="pmt_circuit_load_resistor"),
     strax.Option('to_pe_file', default=os.path.join(private_files_path, "sim_files/to_pe_nt.npy"), track=False, infer_type=False,
                  help="to_pe file"),
-    strax.Option('s1_model_type', default=config['s1_model_type'], track=True, infer_type=False,
-                 help="s1_model_type"),
     strax.Option('s1_time_spline',
                  default=os.path.join(private_files_path, "sim_files/XENONnT_s1_proponly_va43fa9b_wires_20200625.json.gz"),
                  track=False,
                  infer_type=False,
                  help="S1 Time Spline"),
-    strax.Option('s1_decay_time', default=config['s1_decay_time'], track=False, infer_type=False,
-                 help="s1_decay_time"),
-    strax.Option('s1_decay_spread', default=config['s1_decay_spread'], track=False, infer_type=False,
-                 help="s1_decay_spread"),
-    strax.Option('phase', default="liquid", track=False, infer_type=False,
-                 help="xenon phase"),
-    strax.Option('maximum_recombination_time', default=config["maximum_recombination_time"], track=False, infer_type=False,
-                 help="maximum_recombination_time"),
-    strax.Option('pmt_transit_time_mean', default=config['pmt_transit_time_mean'], track=False, infer_type=False,
-                 help="pmt_transit_time_mean"),
-    strax.Option('pmt_transit_time_spread', default=config['pmt_transit_time_spread'], track=False, infer_type=False,
-                 help="pmt_transit_time_spread"),
-    strax.Option('p_double_pe_emision', default=config['p_double_pe_emision'], track=False, infer_type=False,
-                 help="p_double_pe_emision"),
     strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
                  help="photon_area_distribution"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
 )
 class S1PhotonPropagation(strax.Plugin):
     
@@ -92,6 +60,89 @@ class S1PhotonPropagation(strax.Plugin):
              ('photon_gain', np.int64),
             ]
     dtype = dtype + strax.time_fields
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    p_double_pe_emision = straxen.URLConfig(
+        default=config["p_double_pe_emision"], type=(int, float),
+        help='p_double_pe_emision',
+    )
+
+    pmt_transit_time_spread = straxen.URLConfig(
+        default=config["pmt_transit_time_spread"], type=(int, float),
+        help='pmt_transit_time_spread',
+    )
+
+    pmt_transit_time_mean = straxen.URLConfig(
+        default=config["pmt_transit_time_mean"], type=(int, float),
+        help='pmt_transit_time_mean',
+    )
+
+    maximum_recombination_time = straxen.URLConfig(
+        default=config["maximum_recombination_time"], type=(int, float),
+        help='maximum_recombination_time',
+    )
+
+    phase = straxen.URLConfig(
+        default="liquid",
+        help='phase',
+    )
+
+    s1_decay_spread = straxen.URLConfig(
+        default=config["s1_decay_spread"], type=(int, float),
+        help='s1_decay_spread',
+    )
+
+    s1_decay_time = straxen.URLConfig(
+        default=config["s1_decay_time"], type=(int, float),
+        help='s1_decay_time',
+    )
+
+    s1_model_type = straxen.URLConfig(
+        default=config["s1_model_type"],
+        help='s1_model_type',
+    )
+
+    pmt_circuit_load_resistor = straxen.URLConfig(
+        default=config["pmt_circuit_load_resistor"],
+        help='pmt_circuit_load_resistor', type=(int, float),
+    )
+
+    digitizer_bits = straxen.URLConfig(
+        default=config["digitizer_bits"], type=(int, float),
+        help='digitizer_bits',
+    )
+
+    digitizer_voltage_range = straxen.URLConfig(
+        default=config["digitizer_voltage_range"], type=(int, float),
+        help='digitizer_voltage_range',
+    )
+
+    n_top_pmts = straxen.URLConfig(
+        default=253, type=(int),
+        help='Number of PMTs on top array',
+    )
+
+    n_tpc_pmts = straxen.URLConfig(
+        default=494, type=(int),
+        help='Number of PMTs in the TPC',
+    )
+    
+    p_double_pe_emision = straxen.URLConfig(
+        default=config["p_double_pe_emision"], type=(int, float),
+        help='p_double_pe_emision',
+    )
+    #Is this config needed?
+    s1_detection_efficiency = straxen.URLConfig(
+        default=1, type=(int, float),
+        help='Some placeholder for s1_detection_efficiency',
+    )
+
+
     
     def setup(self):
 

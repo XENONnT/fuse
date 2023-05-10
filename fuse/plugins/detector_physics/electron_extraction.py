@@ -33,29 +33,11 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
                  help="s2_pattern_map"),
     strax.Option('to_pe_file', default=os.path.join(private_files_path, "sim_files/to_pe_nt.npy"), track=False, infer_type=False,
                  help="to_pe file"),
-    strax.Option('digitizer_voltage_range', default=config['digitizer_voltage_range'], track=False, infer_type=False,
-                 help="digitizer_voltage_range"),
-    strax.Option('digitizer_bits', default=config['digitizer_bits'], track=False, infer_type=False,
-                 help="digitizer_bits"),
-    strax.Option('pmt_circuit_load_resistor', default=config['pmt_circuit_load_resistor'], track=False, infer_type=False,
-                 help="pmt_circuit_load_resistor"),
-    strax.Option('se_gain_from_map', default=config['se_gain_from_map'], track=False, infer_type=False,
-                 help="se_gain_from_map"),
     strax.Option('se_gain_map',
                  default=os.path.join(private_files_path, "strax_files/XENONnT_se_xy_map_v1_mlp.json"),
                  track=False,
                  infer_type=False,
                  help="se_gain_map"),
-    strax.Option('s2_secondary_sc_gain', default=config['s2_secondary_sc_gain'], track=False, infer_type=False,
-                 help="s2_secondary_sc_gain"),
-    strax.Option('g2_mean', default=config['g2_mean'], track=False, infer_type=False,
-                 help="g2_mean"),
-    strax.Option('electron_extraction_yield', default=config['electron_extraction_yield'], track=False, infer_type=False,
-                 help="electron_extraction_yield"),
-    strax.Option('ext_eff_from_map', default=config['ext_eff_from_map'], track=False, infer_type=False,
-                 help="ext_eff_from_map"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
 )
 class ElectronExtraction(strax.Plugin):
     
@@ -73,6 +55,53 @@ class ElectronExtraction(strax.Plugin):
             ]
     
     dtype = dtype + strax.time_fields
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    digitizer_voltage_range = straxen.URLConfig(
+        default=config["digitizer_voltage_range"], type=(int, float),
+        help='digitizer_voltage_range',
+    )
+
+    digitizer_bits = straxen.URLConfig(
+        default=config["digitizer_bits"], type=(int, float),
+        help='digitizer_bits',
+    )
+
+    pmt_circuit_load_resistor = straxen.URLConfig(
+        default=config["pmt_circuit_load_resistor"], type=(int, float),
+        help='pmt_circuit_load_resistor',
+    )
+
+    s2_secondary_sc_gain = straxen.URLConfig(
+        default=config["s2_secondary_sc_gain"], type=(int, float),
+        help='s2_secondary_sc_gain',
+    )
+    #Rename? -> g2_value in beta_yields model 
+    g2_mean = straxen.URLConfig(
+        default=config["g2_mean"], type=(int, float),
+        help='g2_mean',
+    )
+
+    electron_extraction_yield = straxen.URLConfig(
+        default=config["electron_extraction_yield"], type=(int, float),
+        help='electron_extraction_yield',
+    )
+
+    ext_eff_from_map = straxen.URLConfig(
+        default=config['ext_eff_from_map'], type=bool,
+        help='ext_eff_from_map',
+    )
+
+    se_gain_from_map = straxen.URLConfig(
+        default=config['se_gain_from_map'], type=bool,
+        help='se_gain_from_map',
+    )
+
     
     def setup(self):
 

@@ -17,24 +17,10 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
 
 @export
 @strax.takes_config(
-    strax.Option('enable_pmt_afterpulses', default=config["enable_pmt_afterpulses"], track=False, infer_type=False,
-                 help="enable_pmt_afterpulses"),
     strax.Option('photon_ap_cdfs', default=config["photon_ap_cdfs"], track=False, infer_type=False,
                  help="photon_ap_cdfs"),
     strax.Option('to_pe_file', default=os.path.join(private_files_path,"sim_files/to_pe_nt.npy"), track=False, infer_type=False,
                  help="to_pe file"),
-    strax.Option('digitizer_voltage_range', default=config['digitizer_voltage_range'], track=False, infer_type=False,
-                 help="digitizer_voltage_range"),
-    strax.Option('digitizer_bits', default=config['digitizer_bits'], track=False, infer_type=False,
-                 help="digitizer_bits"),
-    strax.Option('pmt_circuit_load_resistor', default=config['pmt_circuit_load_resistor'], track=False, infer_type=False,
-                 help="pmt_circuit_load_resistor"),
-    strax.Option('pmt_ap_modifier', default=config['pmt_ap_modifier'], track=False, infer_type=False,
-                 help="pmt_ap_modifier"),
-    strax.Option('pmt_ap_t_modifier', default=config['pmt_ap_t_modifier'], track=False, infer_type=False,
-                 help="pmt_ap_t_modifier"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
 )
 class PMTAfterPulses(strax.Plugin):
     
@@ -53,6 +39,37 @@ class PMTAfterPulses(strax.Plugin):
              ('photon_gain', np.int64),
             ]
     dtype = dtype + strax.time_fields
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    pmt_ap_t_modifier = straxen.URLConfig(
+        default=config["pmt_ap_t_modifier"], type=(int, float),
+        help='pmt_ap_t_modifier',
+    )
+
+    pmt_ap_modifier = straxen.URLConfig(
+        default=config["pmt_ap_modifier"], type=(int, float),
+        help='pmt_ap_modifier',
+    )
+
+    pmt_circuit_load_resistor = straxen.URLConfig(
+        default=config["pmt_circuit_load_resistor"], type=(int, float),
+        help='pmt_circuit_load_resistor',
+    )
+
+    digitizer_bits = straxen.URLConfig(
+        default=config["digitizer_bits"], type=(int, float),
+        help='digitizer_bits',
+    )
+
+    digitizer_voltage_range = straxen.URLConfig(
+        default=config["digitizer_voltage_range"], type=(int, float),
+        help='digitizer_voltage_range',
+    )
 
     
     def setup(self):

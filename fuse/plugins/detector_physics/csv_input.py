@@ -1,4 +1,5 @@
 import strax
+import straxen
 import os
 import numba
 import logging
@@ -16,14 +17,6 @@ log.setLevel('WARNING')
 @strax.takes_config(
     strax.Option('input_file', track=False, infer_type=False,
                  help="CSV file to read"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-    strax.Option('source_rate', default=1, track=False, infer_type=False,
-                 help="source_rate"),
-    strax.Option('separation_scale', default=1e8, track=False, infer_type=False,
-                 help="Add Description"),
-    strax.Option('n_interactions_per_chunk', default=25, track=False, infer_type=False,
-                 help="n_interactions_per_chunk"),
 )
 class ChunkCsvInput(strax.Plugin):
     """
@@ -56,6 +49,27 @@ class ChunkCsvInput(strax.Plugin):
              ('eventid', np.int32),#Remove them later as they are not in the usual micropyhsics summary
             ]
     dtype = dtype + strax.time_fields
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    separation_scale = straxen.URLConfig(
+        default=1e8, type=(int, float),
+        help='separation_scale',
+    )
+
+    source_rate = straxen.URLConfig(
+        default=1, type=(int, float),
+        help='source_rate',
+    )
+
+    n_interactions_per_chunk = straxen.URLConfig(
+        default=25, type=(int, float),
+        help='n_interactions_per_chunk',
+    )
 
     def setup(self):
 

@@ -24,62 +24,127 @@ config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_co
 
 @export
 @strax.takes_config(
-    strax.Option('rext', default=100000, track=False, infer_type=False,
-                 help="right raw extension"),
-    strax.Option('pmt_transit_time_spread', default=config['pmt_transit_time_spread'], track=False, infer_type=False,
-                 help="pmt_transit_time_spread"),
-    strax.Option('dt', default=config['sample_duration'], track=False, infer_type=False,
-                 help="sample_duration"),
     strax.Option('to_pe_file', default=os.path.join(private_files_path,"sim_files/to_pe_nt.npy"), track=False, infer_type=False,
                  help="to_pe file"),
-    strax.Option('digitizer_voltage_range', default=config['digitizer_voltage_range'], track=False, infer_type=False,
-                 help="digitizer_voltage_range"),
-    strax.Option('digitizer_bits', default=config['digitizer_bits'], track=False, infer_type=False,
-                 help="digitizer_bits"),
-    strax.Option('pmt_circuit_load_resistor', default=config['pmt_circuit_load_resistor'], track=False, infer_type=False,
-                 help="pmt_circuit_load_resistor"),
     strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
                  help="photon_area_distribution"),
-    strax.Option('samples_to_store_before', default=config['samples_to_store_before'], track=False, infer_type=False,
-                 help="samples_to_store_before"),
-    strax.Option('samples_before_pulse_center', default=config['samples_before_pulse_center'], track=False, infer_type=False,
-                 help="samples_before_pulse_center"),
-    strax.Option('samples_to_store_after', default=config['samples_to_store_after'], track=False, infer_type=False,
-                 help="samples_to_store_after"),
-    strax.Option('samples_after_pulse_center', default=config['samples_after_pulse_center'], track=False, infer_type=False,
-                 help="samples_after_pulse_center"),
-    strax.Option('pmt_pulse_time_rounding', default=config['pmt_pulse_time_rounding'], track=False, infer_type=False,
-                 help="pmt_pulse_time_rounding"),
-    strax.Option('external_amplification', default=config['external_amplification'], track=False, infer_type=False,
-                 help="external_amplification"),
-    strax.Option('trigger_window', default=config['trigger_window'], track=False, infer_type=False,
-                 help="trigger_window"),
-    strax.Option('n_top_pmts', default=253, track=False, infer_type=False,
-                 help="n_top_pmts"),
-    strax.Option('n_tpc_pmts', default=494, track=False, infer_type=False,
-                 help="n_tpc_pmts"),
-    strax.Option('detector', default="XENONnT", track=False, infer_type=False,
-                 help="detector"),
-    strax.Option('high_energy_deamplification_factor', default=config['high_energy_deamplification_factor'], track=False, infer_type=False,
-                 help="high_energy_deamplification_factor"),
-    strax.Option('enable_noise', default=config['enable_noise'], track=False, infer_type=False,
-                 help="enable_noise"),
-    strax.Option('digitizer_reference_baseline', default=config['digitizer_reference_baseline'], track=False, infer_type=False,
-                 help="digitizer_reference_baseline"),
-    strax.Option('zle_threshold', default=config['zle_threshold'], track=False, infer_type=False,
-                 help="zle_threshold"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
 )
 class PMTResponseAndDAQ(strax.Plugin):
     
     __version__ = "0.0.0"
     
+    #If we want to disable AP they would need to be removed from here... somehow... 
     depends_on = ("propagated_s2_photons", "propagated_s1_photons", "pmt_afterpulses")
     
     provides = ('raw_records', 'raw_records_he', 'raw_records_aqmon')#, 'truth')
     data_kind = immutabledict(zip(provides, provides))
     
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    zle_threshold = straxen.URLConfig(
+        default=config["zle_threshold"], type=(int, float),
+        help='zle_threshold',
+    )
+
+    digitizer_reference_baseline = straxen.URLConfig(
+        default=config["digitizer_reference_baseline"], type=(int, float),
+        help='digitizer_reference_baseline',
+    )
+
+    enable_noise = straxen.URLConfig(
+        default=config['enable_noise'], type=bool,
+        help='enable_noise',
+    )
+
+    high_energy_deamplification_factor = straxen.URLConfig(
+        default=config["high_energy_deamplification_factor"], type=(int, float),
+        help='high_energy_deamplification_factor',
+    )
+
+    detector = straxen.URLConfig(
+        default="XENONnT", 
+        help='Detector to be simulated',
+    )
+
+    n_top_pmts = straxen.URLConfig(
+        default=253, type=(int),
+        help='Number of PMTs on top array',
+    )
+
+    n_tpc_pmts = straxen.URLConfig(
+        default=494, type=(int),
+        help='Number of PMTs in the TPC',
+    )
+
+    trigger_window = straxen.URLConfig(
+        default=config["trigger_window"], type=(int, float),
+        help='trigger_window',
+    )
+
+    external_amplification = straxen.URLConfig(
+        default=config["external_amplification"], type=(int, float),
+        help='external_amplification',
+    )
+
+    pmt_pulse_time_rounding = straxen.URLConfig(
+        default=config["pmt_pulse_time_rounding"], type=(int, float),
+        help='pmt_pulse_time_rounding',
+    )
+
+    samples_after_pulse_center = straxen.URLConfig(
+        default=config["samples_after_pulse_center"], type=(int, float),
+        help='samples_after_pulse_center',
+    )
+
+    samples_to_store_after = straxen.URLConfig(
+        default=config["samples_to_store_after"], type=(int, float),
+        help='samples_to_store_after',
+    )
+
+    samples_before_pulse_center = straxen.URLConfig(
+        default=config["samples_before_pulse_center"], type=(int, float),
+        help='samples_before_pulse_center',
+    )
+
+    samples_to_store_before = straxen.URLConfig(
+        default=config["samples_to_store_before"], type=(int, float),
+        help='samples_to_store_before',
+    )
+
+    pmt_circuit_load_resistor = straxen.URLConfig(
+        default=config["pmt_circuit_load_resistor"],
+        help='pmt_circuit_load_resistor', type=(int, float),
+    )
+
+    digitizer_bits = straxen.URLConfig(
+        default=config["digitizer_bits"], type=(int, float),
+        help='digitizer_bits',
+    )
+
+    digitizer_voltage_range = straxen.URLConfig(
+        default=config["digitizer_voltage_range"], type=(int, float),
+        help='digitizer_voltage_range',
+    )
+
+    dt = straxen.URLConfig(
+        default=config["sample_duration"], type=(int),
+        help='sample_duration',
+    )
+
+    pmt_transit_time_spread = straxen.URLConfig(
+        default=config["pmt_transit_time_spread"], type=(int, float),
+        help='pmt_transit_time_spread',
+    )
+
+    rext = straxen.URLConfig(
+        default=100000, type=(int),
+        help='right raw extension',
+    )
+
     def setup(self):
 
         if self.debug:
