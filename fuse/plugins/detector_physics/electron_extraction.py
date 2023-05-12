@@ -10,10 +10,6 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_extraction')
 log.setLevel('WARNING')
 
-base_path = os.path.abspath(os.getcwd())
-private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
-
 @export
 class ElectronExtraction(strax.Plugin):
     
@@ -39,77 +35,61 @@ class ElectronExtraction(strax.Plugin):
     )
 
     digitizer_voltage_range = straxen.URLConfig(
-        default=config["digitizer_voltage_range"], type=(int, float),
+        type=(int, float),
         help='digitizer_voltage_range',
     )
 
     digitizer_bits = straxen.URLConfig(
-        default=config["digitizer_bits"], type=(int, float),
+        type=(int, float),
         help='digitizer_bits',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        default=config["pmt_circuit_load_resistor"], type=(int, float),
+        type=(int, float),
         help='pmt_circuit_load_resistor',
     )
 
     s2_secondary_sc_gain = straxen.URLConfig(
-        default=config["s2_secondary_sc_gain"], type=(int, float),
+        type=(int, float),
         help='s2_secondary_sc_gain',
     )
     #Rename? -> g2_value in beta_yields model 
     g2_mean = straxen.URLConfig(
-        default=config["g2_mean"], type=(int, float),
+        type=(int, float),
         help='g2_mean',
     )
 
     electron_extraction_yield = straxen.URLConfig(
-        default=config["electron_extraction_yield"], type=(int, float),
+        type=(int, float),
         help='electron_extraction_yield',
     )
 
     ext_eff_from_map = straxen.URLConfig(
-        default=config['ext_eff_from_map'], type=bool,
+        type=bool,
         help='ext_eff_from_map',
     )
 
     se_gain_from_map = straxen.URLConfig(
-        default=config['se_gain_from_map'], type=bool,
+        type=bool,
         help='se_gain_from_map',
     )
 
     gains = straxen.URLConfig(
-        default='pmt_gains://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/to_pe_nt.npy")}?'
-                '&fmt=npy'
-                f'&digitizer_voltage_range=plugin.digitizer_voltage_range'
-                f'&digitizer_bits=plugin.digitizer_bits'
-                f'&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
         cache=True,
         help='pmt gains',
     )
     
     s2_correction_map = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path, "strax_files/XENONnT_s2_xy_map_v4_210503_mlp_3_in_1_iterated.json")}?'
-                '&fmt=json',
         cache=True,
         help='s2_correction_map',
     )
     
     se_gain_map = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path, "strax_files/XENONnT_se_xy_map_v1_mlp.json")}?'
-                '&fmt=json',
         cache=True,
         help='se_gain_map',
     )
     
     s2_pattern_map = straxen.URLConfig(
-        default='pattern_map://resource://format://'
-                f'{os.path.join(private_files_path, "sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl")}?'
-                '&fmt=pkl'
-                '&pmt_mask=plugin.pmt_mask',
         cache=True,
         help='s2_pattern_map',
     )

@@ -15,11 +15,6 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S1_Signal')
 log.setLevel('WARNING')
 
-#private_files_path = "path/to/private/files"
-base_path = os.path.abspath(os.getcwd())
-private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
-
 @export
 class S1PhotonPropagation(strax.Plugin):
     
@@ -45,22 +40,22 @@ class S1PhotonPropagation(strax.Plugin):
     )
 
     p_double_pe_emision = straxen.URLConfig(
-        default=config["p_double_pe_emision"], type=(int, float),
+        type=(int, float),
         help='p_double_pe_emision',
     )
 
     pmt_transit_time_spread = straxen.URLConfig(
-        default=config["pmt_transit_time_spread"], type=(int, float),
+        type=(int, float),
         help='pmt_transit_time_spread',
     )
 
     pmt_transit_time_mean = straxen.URLConfig(
-        default=config["pmt_transit_time_mean"], type=(int, float),
+        type=(int, float),
         help='pmt_transit_time_mean',
     )
 
     maximum_recombination_time = straxen.URLConfig(
-        default=config["maximum_recombination_time"], type=(int, float),
+        type=(int, float),
         help='maximum_recombination_time',
     )
 
@@ -70,96 +65,69 @@ class S1PhotonPropagation(strax.Plugin):
     )
 
     s1_decay_spread = straxen.URLConfig(
-        default=config["s1_decay_spread"], type=(int, float),
+        type=(int, float),
         help='s1_decay_spread',
     )
 
     s1_decay_time = straxen.URLConfig(
-        default=config["s1_decay_time"], type=(int, float),
+        type=(int, float),
         help='s1_decay_time',
     )
 
     s1_model_type = straxen.URLConfig(
-        default=config["s1_model_type"],
         help='s1_model_type',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        default=config["pmt_circuit_load_resistor"],
         help='pmt_circuit_load_resistor', type=(int, float),
     )
 
     digitizer_bits = straxen.URLConfig(
-        default=config["digitizer_bits"], type=(int, float),
+        type=(int, float),
         help='digitizer_bits',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
-        default=config["digitizer_voltage_range"], type=(int, float),
+        type=(int, float),
         help='digitizer_voltage_range',
     )
 
     n_top_pmts = straxen.URLConfig(
-        default=253, type=(int),
+        type=(int),
         help='Number of PMTs on top array',
     )
 
     n_tpc_pmts = straxen.URLConfig(
-        default=494, type=(int),
+        type=(int),
         help='Number of PMTs in the TPC',
-    )
-    
-    p_double_pe_emision = straxen.URLConfig(
-        default=config["p_double_pe_emision"], type=(int, float),
-        help='p_double_pe_emision',
     )
     #Is this config needed?
     s1_detection_efficiency = straxen.URLConfig(
-        default=1, type=(int, float),
+        type=(int, float),
         help='Some placeholder for s1_detection_efficiency',
     )
     
     s1_lce_correction_map = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz")}?'
-                '&fmt=json.gz',
         cache=True,
         help='s1_lce_correction_map',
     )
     
     s1_pattern_map = straxen.URLConfig(
-        default='pattern_map://resource://format://'
-                f'{os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_patterns_corrected_qes_MCva43fa9b_wires.pkl")}?'
-                '&fmt=pkl'
-                '&pmt_mask=None',
         cache=True,
         help='s1_pattern_map',
     )
     
     gains = straxen.URLConfig(
-        default='pmt_gains://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/to_pe_nt.npy")}?'
-                '&fmt=npy'
-                f'&digitizer_voltage_range=plugin.digitizer_voltage_range'
-                f'&digitizer_bits=plugin.digitizer_bits'
-                f'&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
         cache=True,
         help='pmt gains',
     )
     
     s1_optical_propagation_spline = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path, "sim_files/XENONnT_s1_proponly_va43fa9b_wires_20200625.json.gz")}?'
-                '&fmt=json.gz'
-                '&method=RegularGridInterpolator',
         cache=True,
         help='s1_optical_propagation_spline',
     )
     
     photon_area_distribution = straxen.URLConfig(
-        default='simple_load://resource://format://'
-                f'{config["photon_area_distribution"]}?'
-                '&fmt=csv',
         cache=True,
         help='photon_area_distribution',
     )

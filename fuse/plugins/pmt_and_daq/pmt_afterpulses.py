@@ -10,11 +10,6 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
 log.setLevel('WARNING')
 
-#private_files_path = "path/to/private/files"
-base_path = os.path.abspath(os.getcwd())
-private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
-
 @export
 class PMTAfterPulses(strax.Plugin):
     
@@ -41,45 +36,36 @@ class PMTAfterPulses(strax.Plugin):
     )
 
     pmt_ap_t_modifier = straxen.URLConfig(
-        default=config["pmt_ap_t_modifier"], type=(int, float),
+        type=(int, float),
         help='pmt_ap_t_modifier',
     )
 
     pmt_ap_modifier = straxen.URLConfig(
-        default=config["pmt_ap_modifier"], type=(int, float),
+        type=(int, float),
         help='pmt_ap_modifier',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        default=config["pmt_circuit_load_resistor"], type=(int, float),
+        type=(int, float),
         help='pmt_circuit_load_resistor',
     )
 
     digitizer_bits = straxen.URLConfig(
-        default=config["digitizer_bits"], type=(int, float),
+        type=(int, float),
         help='digitizer_bits',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
-        default=config["digitizer_voltage_range"], type=(int, float),
+        type=(int, float),
         help='digitizer_voltage_range',
     )
     
     gains = straxen.URLConfig(
-        default='pmt_gains://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/to_pe_nt.npy")}?'
-                '&fmt=npy'
-                f'&digitizer_voltage_range=plugin.digitizer_voltage_range'
-                f'&digitizer_bits=plugin.digitizer_bits'
-                f'&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
         cache=True,
         help='pmt gains',
     )
     
     photon_ap_cdfs = straxen.URLConfig(
-        default='simple_load://resource://format://'
-                f'{config["photon_ap_cdfs"]}?'
-                '&fmt=json.gz',
         cache=True,
         help='photon_ap_cdfs',
     )

@@ -51,7 +51,7 @@ class MergeCluster(strax.Plugin):
         help='Show debug informations',
     )
 
-    debutag_cluster_byg = straxen.URLConfig(
+    tag_cluster_by = straxen.URLConfig(
         default=False, type=bool,
         help='decide if you tag the cluster (particle type, energy depositing process)\
               according to first interaction in it (time) or most energetic (energy))',

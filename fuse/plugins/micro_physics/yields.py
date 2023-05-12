@@ -178,22 +178,20 @@ class BetaYields(strax.Plugin):
     )
 
     g1_value = straxen.URLConfig(
-        default=0.151, type=(int, float),
+        type=(int, float),
         help='g1',
     )
 
     g2_value = straxen.URLConfig(
-        default=16.45, type=(int, float),
+        type=(int, float),
         help='g2',
     )
 
     cs1_spline_path = straxen.URLConfig(
-        default='/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs1_func_E_option2.pkl',
         help='cs1_spline_path',
     )
 
     cs2_spline_path = straxen.URLConfig(
-        default='/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs2_func_E_option2.pkl',
         help='cs2_spline_path',
     )
     
@@ -205,6 +203,7 @@ class BetaYields(strax.Plugin):
 
         self.get_quanta_vectorized = np.vectorize(self.get_quanta, excluded="self")
         
+        #This can be moved into an URLConfig protocol before merging the PR!
         with open(self.cs1_spline_path, 'rb') as f:
             self.cs1_spline = pickle.load(f)
         with open(self.cs2_spline_path, 'rb') as f:

@@ -10,11 +10,6 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_drift')
 log.setLevel('WARNING')
 
-#Remove this before merging the PR!!!!
-base_path = os.path.abspath(os.getcwd())
-private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
-
 @export
 class ElectronDrift(strax.Plugin):
     
@@ -44,61 +39,47 @@ class ElectronDrift(strax.Plugin):
     )
     
     drift_velocity_liquid = straxen.URLConfig(
-        default=config["drift_velocity_liquid"], type=(int, float),
+        type=(int, float),
         help='drift_velocity_liquid',
     )
     
     drift_time_gate = straxen.URLConfig(
-        default=config["drift_time_gate"], type=(int, float),
+        type=(int, float),
         help='drift_time_gate',
     )
     
     diffusion_constant_longitudinal = straxen.URLConfig(
-        default=config["diffusion_constant_longitudinal"], type=(int, float),
+        type=(int, float),
         help='diffusion_constant_longitudinal',
     )
     
     electron_lifetime_liquid = straxen.URLConfig(
-        default=config["electron_lifetime_liquid"], type=(int, float),
+        type=(int, float),
         help='electron_lifetime_liquid',
     )
     
     enable_field_dependencies = straxen.URLConfig(
-        default=config["enable_field_dependencies"],
         help='enable_field_dependencies',
     )
-    
-    field_dependencies_map_tmp = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz")}?'
-                '&fmt=json.gz'
-                '&method=RectBivariateSpline',
-        help='field_dependencies_map',
-    )
-    
-    diffusion_longitudinal_map_tmp = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/data_driven_diffusion_map_XENONnTSR0V2.json.gz")}?'
-                '&fmt=json.gz'
-                '&method=WeightedNearestNeighbors',
-        help='diffusion_longitudinal_map',
-    )
-        
+
     tpc_length = straxen.URLConfig(
-        default=config["tpc_length"], type=(int, float),
+        type=(int, float),
         help='tpc_length',
     )
         
     field_distortion_model = straxen.URLConfig(
-        default=config["field_distortion_model"],
         help='field_distortion_model',
     )
     
+    field_dependencies_map_tmp = straxen.URLConfig(
+        help='field_dependencies_map',
+    )
+    
+    diffusion_longitudinal_map_tmp = straxen.URLConfig(
+        help='diffusion_longitudinal_map',
+    )
+    
     fdc_map_fuse = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/init_to_final_position_mapping_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz")}?'
-                '&fmt=json.gz'
-                '&method=RectBivariateSpline',
         cache=True,
         help='fdc_map',
     )

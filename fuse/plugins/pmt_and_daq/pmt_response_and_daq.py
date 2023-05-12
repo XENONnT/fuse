@@ -40,143 +40,126 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     zle_threshold = straxen.URLConfig(
-        default=config["zle_threshold"], type=(int, float),
+        type=(int, float),
         help='zle_threshold',
     )
 
     digitizer_reference_baseline = straxen.URLConfig(
-        default=config["digitizer_reference_baseline"], type=(int, float),
+        type=(int, float),
         help='digitizer_reference_baseline',
     )
 
     enable_noise = straxen.URLConfig(
-        default=config['enable_noise'], type=bool,
+        type=bool,
         help='enable_noise',
     )
 
     high_energy_deamplification_factor = straxen.URLConfig(
-        default=config["high_energy_deamplification_factor"], type=(int, float),
+        type=(int, float),
         help='high_energy_deamplification_factor',
     )
 
     detector = straxen.URLConfig(
-        default="XENONnT", 
         help='Detector to be simulated',
     )
 
     n_top_pmts = straxen.URLConfig(
-        default=253, type=(int),
+        type=(int),
         help='Number of PMTs on top array',
     )
 
     n_tpc_pmts = straxen.URLConfig(
-        default=494, type=(int),
+        type=(int),
         help='Number of PMTs in the TPC',
     )
 
     trigger_window = straxen.URLConfig(
-        default=config["trigger_window"], type=(int, float),
+        type=(int, float),
         help='trigger_window',
     )
 
     external_amplification = straxen.URLConfig(
-        default=config["external_amplification"], type=(int, float),
+        type=(int, float),
         help='external_amplification',
     )
 
     pmt_pulse_time_rounding = straxen.URLConfig(
-        default=config["pmt_pulse_time_rounding"], type=(int, float),
+        type=(int, float),
         help='pmt_pulse_time_rounding',
     )
 
     samples_after_pulse_center = straxen.URLConfig(
-        default=config["samples_after_pulse_center"], type=(int, float),
+        type=(int, float),
         help='samples_after_pulse_center',
     )
 
     samples_to_store_after = straxen.URLConfig(
-        default=config["samples_to_store_after"], type=(int, float),
+        type=(int, float),
         help='samples_to_store_after',
     )
 
     samples_before_pulse_center = straxen.URLConfig(
-        default=config["samples_before_pulse_center"], type=(int, float),
+        type=(int, float),
         help='samples_before_pulse_center',
     )
 
     samples_to_store_before = straxen.URLConfig(
-        default=config["samples_to_store_before"], type=(int, float),
+        type=(int, float),
         help='samples_to_store_before',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        default=config["pmt_circuit_load_resistor"],
         help='pmt_circuit_load_resistor', type=(int, float),
     )
 
     digitizer_bits = straxen.URLConfig(
-        default=config["digitizer_bits"], type=(int, float),
+        type=(int, float),
         help='digitizer_bits',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
-        default=config["digitizer_voltage_range"], type=(int, float),
+        type=(int, float),
         help='digitizer_voltage_range',
     )
 
     dt = straxen.URLConfig(
-        default=config["sample_duration"], type=(int),
+        type=(int),
         help='sample_duration',
     )
 
     pmt_transit_time_spread = straxen.URLConfig(
-        default=config["pmt_transit_time_spread"], type=(int, float),
+        type=(int, float),
         help='pmt_transit_time_spread',
     )
 
     rext = straxen.URLConfig(
-        default=100000, type=(int),
+        type=(int),
         help='right raw extension',
     )
     
     pe_pulse_ts = straxen.URLConfig(
-        default=config["pe_pulse_ts"],
         help='pe_pulse_ts',
     )
     
     pe_pulse_ys = straxen.URLConfig(
-        default=config["pe_pulse_ys"],
         help='pe_pulse_ys',
     )
     
     gains = straxen.URLConfig(
-        default='pmt_gains://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/to_pe_nt.npy")}?'
-                '&fmt=npy'
-                f'&digitizer_voltage_range=plugin.digitizer_voltage_range'
-                f'&digitizer_bits=plugin.digitizer_bits'
-                f'&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
         cache=True,
         help='pmt gains',
     )
     
     photon_area_distribution = straxen.URLConfig(
-        default='simple_load://resource://format://'
-                f'{config["photon_area_distribution"]}?'
-                '&fmt=csv',
         cache=True,
         help='photon_area_distribution',
     )
     
     special_thresholds = straxen.URLConfig(
-        default=config["special_thresholds"],
         help='special_thresholds',
     )
     
     noise_data_tmp = straxen.URLConfig(
-        default='simple_load://resource://format://'
-                f'{config["noise_file"]}?'
-                '&fmt=npy',
         cache=True,
         help='noise_data',
     )

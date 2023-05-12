@@ -17,10 +17,6 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S2_Signal')
 log.setLevel('WARNING')
 
-#private_files_path = "path/to/private/files"
-base_path = os.path.abspath(os.getcwd())
-private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
 
 @export
 class S2PhotonPropagation(strax.Plugin):
@@ -47,52 +43,51 @@ class S2PhotonPropagation(strax.Plugin):
     )
 
     p_double_pe_emision = straxen.URLConfig(
-        default=config["p_double_pe_emision"], type=(int, float),
+        type=(int, float),
         help='p_double_pe_emision',
     )
 
     pmt_transit_time_spread = straxen.URLConfig(
-        default=config["pmt_transit_time_spread"], type=(int, float),
+        type=(int, float),
         help='pmt_transit_time_spread',
     )
     
     pmt_transit_time_mean = straxen.URLConfig(
-        default=config["pmt_transit_time_mean"], type=(int, float),
+        type=(int, float),
         help='pmt_transit_time_mean',
     )
 
     triplet_lifetime_gas = straxen.URLConfig(
-        default=config["triplet_lifetime_gas"], type=(int, float),
+        type=(int, float),
         help='triplet_lifetime_gas',
     )
 
     singlet_lifetime_gas = straxen.URLConfig(
-        default=config["singlet_lifetime_gas"], type=(int, float),
+        type=(int, float),
         help='singlet_lifetime_gas',
     )
 
     triplet_lifetime_liquid = straxen.URLConfig(
-        default=config["triplet_lifetime_liquid"], type=(int, float),
+        type=(int, float),
         help='triplet_lifetime_liquid',
     )
 
     singlet_lifetime_liquid = straxen.URLConfig(
-        default=config["singlet_lifetime_liquid"], type=(int, float),
+        type=(int, float),
         help='singlet_lifetime_liquid',
     )
 
     s2_time_spread = straxen.URLConfig(
-        default=config["s2_time_spread"], type=(int, float),
+        type=(int, float),
         help='s2_time_spread',
     )
 
     s2_time_model = straxen.URLConfig(
-        default=config["s2_time_model"],
         help='s2_time_model',
     )
 
     singlet_fraction_gas = straxen.URLConfig(
-        default=config["singlet_fraction_gas"], type=(int, float),
+        type=(int, float),
         help='singlet_fraction_gas',
     )
     #needed as config?
@@ -102,57 +97,56 @@ class S2PhotonPropagation(strax.Plugin):
     )
 
     s2_luminescence_model = straxen.URLConfig(
-        default=config["s2_luminescence_model"],
         help='s2_luminescence_model',
     )
 
     drift_velocity_liquid = straxen.URLConfig(
-        default=config["drift_velocity_liquid"], type=(int, float),
+        type=(int, float),
         help='drift_velocity_liquid',
     )
 
     tpc_length = straxen.URLConfig(
-        default=config["tpc_length"], type=(int, float),
+        type=(int, float),
         help='tpc_length',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        default=config["pmt_circuit_load_resistor"], type=(int, float),
+        type=(int, float),
         help='pmt_circuit_load_resistor',
     )
 
     digitizer_bits = straxen.URLConfig(
-        default=config["digitizer_bits"], type=(int, float),
+        type=(int, float),
         help='digitizer_bits',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
-        default=config["digitizer_voltage_range"], type=(int, float),
+        type=(int, float),
         help='digitizer_voltage_range',
     )
 
     tpc_radius = straxen.URLConfig(
-        default=config["tpc_radius"], type=(int, float),
+        type=(int, float),
         help='tpc_radius',
     )
 
     n_top_pmts = straxen.URLConfig(
-        default=253, type=(int),
+        type=(int),
         help='Number of PMTs on top array',
     )
 
     n_tpc_pmts = straxen.URLConfig(
-        default=494, type=(int),
+        type=(int),
         help='Number of PMTs in the TPC',
     )
 
     diffusion_constant_transverse = straxen.URLConfig(
-        default=config["diffusion_constant_transverse"], type=(int, float),
+        type=(int, float),
         help='diffusion_constant_transverse',
     )
 
     s2_aft_skewness = straxen.URLConfig(
-        default=config["s2_aft_skewness"], type=(int, float),
+        type=(int, float),
         help='s2_aft_skewness',
     )
 
@@ -162,67 +156,40 @@ class S2PhotonPropagation(strax.Plugin):
     )
     
     enable_field_dependencies = straxen.URLConfig(
-        default=config["enable_field_dependencies"],
         help='enable_field_dependencies',
     )
     
     gains = straxen.URLConfig(
-        default='pmt_gains://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/to_pe_nt.npy")}?'
-                '&fmt=npy'
-                f'&digitizer_voltage_range=plugin.digitizer_voltage_range'
-                f'&digitizer_bits=plugin.digitizer_bits'
-                f'&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
         cache=True,
         help='pmt gains',
     )
     
     s2_pattern_map = straxen.URLConfig(
-        default='pattern_map://resource://format://'
-                f'{os.path.join(private_files_path, "sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl")}?'
-                '&fmt=pkl'
-                '&pmt_mask=plugin.pmt_mask',
         cache=True,
         help='s2_pattern_map',
     )
     
     photon_area_distribution = straxen.URLConfig(
-        default='simple_load://resource://format://'
-                f'{config["photon_area_distribution"]}?'
-                '&fmt=csv',
         cache=True,
         help='photon_area_distribution',
     )
     
     s2_optical_propagation_spline = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path, "sim_files/XENONnT_s2_opticalprop_time_v0.json.gz")}?'
-                '&fmt=json.gz',
         cache=True,
         help='s2_optical_propagation_spline',
     )
     
     s2_luminescence_map = straxen.URLConfig(
-        default='simple_load://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/garfield_timing_map_gas_gap_sr0.npy")}?'
-                '&fmt=npy',
         cache=True,
         help='s2_luminescence_map',
     )
     
     garfield_gas_gap_map = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/garfield_gas_gap_map_sr0.json")}?'
-                '&fmt=json',
         cache=True,
         help='garfield_gas_gap_map',
     )
     #stupid naming problem...
     field_dependencies_map_tmp = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz")}?'
-                '&fmt=json.gz'
-                '&method=RectBivariateSpline',
         help='field_dependencies_map',
     )
 

@@ -77,7 +77,7 @@ class ChunkInput(strax.Plugin):
     )
 
     cut_delayed = straxen.URLConfig(
-        default=4e12, type=(int, float),
+        default=4e14, type=(int, float),
         help='cut_delayed',
     )
 

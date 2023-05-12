@@ -11,10 +11,6 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 log.setLevel('WARNING')
 
-base_path = os.path.abspath(os.getcwd())
-private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
-
 @export
 class SecondaryScintillation(strax.Plugin):
     
@@ -43,72 +39,55 @@ class SecondaryScintillation(strax.Plugin):
     )
 
     s2_gain_spread = straxen.URLConfig(
-        default=0, type=(int, float),
+        type=(int, float),
         help='s2_gain_spread',
     )
 
     s2_secondary_sc_gain = straxen.URLConfig(
-        default=config["s2_secondary_sc_gain"], type=(int, float),
+        type=(int, float),
         help='s2_secondary_sc_gain',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        default=config["pmt_circuit_load_resistor"],
-        help='pmt_circuit_load_resistor', type=(int, float),
+        type=(int, float),
+        help='pmt_circuit_load_resistor',
     )
 
     digitizer_bits = straxen.URLConfig(
-        default=config["digitizer_bits"], type=(int, float),
+        type=(int, float),
         help='digitizer_bits',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
-        default=config["digitizer_voltage_range"], type=(int, float),
+        type=(int, float),
         help='digitizer_voltage_range',
     )
 
     se_gain_from_map = straxen.URLConfig(
-        default=config["se_gain_from_map"],
         help='se_gain_from_map',
     )
 
     p_double_pe_emision = straxen.URLConfig(
-        default=config["p_double_pe_emision"], type=(int, float),
+        type=(int, float),
         help='p_double_pe_emision',
     )
     
     se_gain_map = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path, "strax_files/XENONnT_se_xy_map_v1_mlp.json")}?'
-                '&fmt=json',
         cache=True,
         help='se_gain_map',
     )
     
     s2_correction_map = straxen.URLConfig(
-        default='itp_map://resource://format://'
-                f'{os.path.join(private_files_path, "strax_files/XENONnT_s2_xy_map_v4_210503_mlp_3_in_1_iterated.json")}?'
-                '&fmt=json',
         cache=True,
         help='s2_correction_map',
     )
     
     gains = straxen.URLConfig(
-        default='pmt_gains://resource://format://'
-                f'{os.path.join(private_files_path,"sim_files/to_pe_nt.npy")}?'
-                '&fmt=npy'
-                f'&digitizer_voltage_range=plugin.digitizer_voltage_range'
-                f'&digitizer_bits=plugin.digitizer_bits'
-                f'&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
         cache=True,
         help='pmt gains',
     )
     
     s2_pattern_map = straxen.URLConfig(
-        default='pattern_map://resource://format://'
-                f'{os.path.join(private_files_path, "sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl")}?'
-                '&fmt=pkl'
-                '&pmt_mask=plugin.pmt_mask',
         cache=True,
         help='s2_pattern_map',
     )
