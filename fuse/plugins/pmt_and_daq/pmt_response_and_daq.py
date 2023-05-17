@@ -17,11 +17,6 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
 log.setLevel('WARNING')
 
-#private_files_path = "path/to/private/files"
-base_path = os.path.abspath(os.getcwd())
-private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
-
 @export
 class PMTResponseAndDAQ(strax.Plugin):
     
@@ -324,8 +319,8 @@ class PMTResponseAndDAQ(strax.Plugin):
                                    _pulse['right'] - left + 1,
                                    _raw_data[self.channel_map_mutable['sum_signal']])
                         
-            _channel_mask['left'] -= left + config['trigger_window']
-            _channel_mask['right'] -= left - config['trigger_window']
+            _channel_mask['left'] -= left + self.trigger_window
+            _channel_mask['right'] -= left - self.trigger_window
             
             # Adding noise, baseline and digitizer saturation
             if self.enable_noise:
@@ -413,13 +408,14 @@ class PMTResponseAndDAQ(strax.Plugin):
                        #truth=_truth
                     ) 
         
+    #Check if we can just move this function into the setup method!!!
     def init_pmt_current_templates(self):
         """
         Create spe templates, for 10ns sample duration and 1ns rounding we have:
         _pmt_current_templates[i] : photon timing fall between [10*m+i, 10*m+i+1)
         (i, m are integers)
         """
-        h = deterministic_hash(config)
+        h = deterministic_hash("Placeholder!")
         #if h in self._cached_pmt_current_templates:
         #    _pmt_current_templates = self._cached_pmt_current_templates[h]
         #    return _pmt_current_templates
