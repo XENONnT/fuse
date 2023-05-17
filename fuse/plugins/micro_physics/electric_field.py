@@ -1,5 +1,4 @@
 import strax
-import epix
 import numpy as np
 import logging
 import straxen
@@ -36,26 +35,12 @@ class ElectricField(strax.Plugin):
         help='Show debug informations',
     )
 
-    detector = straxen.URLConfig(
-        default="XENONnT", 
-        help='Detector to be used. Has to be defined in epix.detectors',
-    )
-
-    detector_config_override = straxen.URLConfig(
-        default=None, 
-        help='Config file to overwrite default epix.detectors settings; see examples in the configs folder',
+    efield_map = straxen.URLConfig(
+        cache=True,
+        help='electric field map',
     )
 
     def setup(self):
-        """
-        Do the volume cuts here.
-
-        Initialize the detector config.
-        """
-        self.detector_config = epix.init_detector(
-            self.detector.lower(),
-            self.detector_config_override
-        )
 
         if self.debug:
             log.setLevel('DEBUG')
@@ -80,18 +65,9 @@ class ElectricField(strax.Plugin):
 
         efields = electric_field_array['e_field']
 
-        for volume in self.detector_config:
-            if isinstance(volume.electric_field, (float, int)):
-                volume_id_mask = clustered_interactions['vol_id'] == volume.volume_id
-                efields[volume_id_mask] = volume.electric_field
-            else:
-                efields = volume.electric_field(
-                    clustered_interactions['x'],
-                    clustered_interactions['y'],
-                    clustered_interactions['z']
-                )
-
-        electric_field_array['e_field'] = efields
+        r = np.sqrt(clustered_interactions['x'] ** 2 + clustered_interactions['y'] ** 2)
+        positions = np.stack((r, clustered_interactions['z']), axis=1)
+        electric_field_array['e_field'] = self.efield_map(positions)
 
         return electric_field_array
 

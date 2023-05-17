@@ -22,14 +22,17 @@ def microphysics_context(out_dir):
                                    fuse.micro_physics.MicroPhysicsSummary],
                     storage = [strax.DataDirectory(out_dir)]
                     )
-    
-    #Most of them are only used in the beta yields model -> remove here?
+
     st.set_config({
+        "efield_map": 'itp_map://resource://format://'
+                      'fieldmap_2D_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz?'
+                      '&fmt=json.gz'
+                      '&method=RegularGridInterpolator',
         'g1_value' : 0.151,
         'g2_value' : 16.45,
         'cs1_spline_path': '/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs1_func_E_option2.pkl',
         'cs2_spline_path' : '/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs2_func_E_option2.pkl',
-        "detector_config_override" : "sr0_epix_detectorconfig.ini",
+        "detector_config_override" : "sr0_epix_detectorconfig.ini", #Remove this asap
     })
     
     return st
@@ -63,7 +66,11 @@ def full_chain_context(out_dir, config):
 
     st.set_config({
         "detector": "XENONnT",
-        "detector_config_override" : "sr0_epix_detectorconfig.ini",
+        "detector_config_override" : "sr0_epix_detectorconfig.ini",# remove this asap
+        "efield_map": 'itp_map://resource://format://'
+                      'fieldmap_2D_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz?'
+                      '&fmt=json.gz'
+                      '&method=RegularGridInterpolator',
         "drift_velocity_liquid": config["drift_velocity_liquid"],
         "drift_time_gate": config["drift_time_gate"],
         "diffusion_constant_longitudinal": config["diffusion_constant_longitudinal"],
