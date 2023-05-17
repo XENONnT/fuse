@@ -151,7 +151,7 @@ class S2PhotonPropagation(strax.Plugin):
     )
 
     s2_aft_sigma = straxen.URLConfig(
-        default=config["s2_aft_sigma"], type=(int, float),
+        type=(int, float),
         help='s2_aft_sigma',
     )
     
