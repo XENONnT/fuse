@@ -11,9 +11,7 @@ import awkward as ak
 
 export, __all__ = strax.exporter()
 
-from ...common import full_array_to_numpy, reshape_awkward
-
-import epix
+from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.input')
@@ -490,32 +488,3 @@ class file_loader():
                     }
 
         return ak.Array(dictionary)
-
-    
-    
-@numba.njit()
-def dynamic_chunking(data, scale, n_min):
-
-    idx_sort = np.argsort(data)
-    idx_undo_sort = np.argsort(idx_sort)
-
-    data_sorted = data[idx_sort]
-
-    diff = data_sorted[1:] - data_sorted[:-1]
-
-    clusters = np.array([0])
-    c = 0
-    for value in diff:
-        if value <= scale:
-            clusters = np.append(clusters, c)
-            
-        elif len(clusters[clusters == c]) < n_min:
-            clusters = np.append(clusters, c)
-            
-        elif value > scale:
-            c = c + 1
-            clusters = np.append(clusters, c)
-
-    clusters_undo_sort = clusters[idx_undo_sort]
-
-    return clusters_undo_sort
