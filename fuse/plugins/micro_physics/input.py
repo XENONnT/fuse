@@ -106,26 +106,11 @@ class ChunkInput(strax.Plugin):
         help='Add if you want to filter only nuclear recoil events (maximum ER energy deposit 10 keV)',
     )
 
-    detector = straxen.URLConfig(
-        default="XENONnT", 
-        help='Detector to be used. Has to be defined in epix.detectors',
-    )
-
-    detector_config_override = straxen.URLConfig(
-        default=None, 
-        help='Config file to overwrite default epix.detectors settings; see examples in the configs folder',
-    )
-
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ChunkInput in debug mode")
-        
-        #Do the volume cuts here #Maybe we can move these lines somewhere else?
-        self.detector_config = epix.init_detector(self.detector.lower(), self.detector_config_override)
-        outer_cylinder = getattr(epix.detectors, self.detector.lower())
-        outer_cylinder = outer_cylinder()
 
         self.file_reader = file_loader(self.path,
                                        self.file_name,
