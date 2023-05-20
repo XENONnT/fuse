@@ -18,9 +18,3 @@ class MicroPhysicsSummary(strax.MergeOnlyPlugin):
 
     #Forbid rechunking
     rechunk_on_save = False
-
-    def compute(self, **kwargs):
-        
-        microphysics_summary = super().compute(**kwargs)
-
-        return microphysics_summary

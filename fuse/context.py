@@ -6,6 +6,7 @@ import cutax
 import straxen
 import fuse
 import os
+import numpy as np
 
 from straxen import URLConfig
 
@@ -129,7 +130,7 @@ def full_chain_context(out_dir, config):
         "s1_lce_correction_map": 'itp_map://resource://format://'
                                 f'{os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz")}?'
                                  '&fmt=json.gz',
-        "s1_patter_map":'pattern_map://resource://format://'
+        "s1_pattern_map":'pattern_map://resource://format://'
                        f'{os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_patterns_corrected_qes_MCva43fa9b_wires.pkl")}?'
                         '&fmt=pkl'
                         '&pmt_mask=None',

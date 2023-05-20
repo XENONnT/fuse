@@ -379,7 +379,7 @@ class S1PhotonPropagation(strax.Plugin):
     def init_spe_scaling_factor_distributions(self):
         #This code will be duplicate with the corresponding S2 class 
         # Improve!!
-        
+        config="PLACEHOLDER_FIX_THIS_PART"
         h = deterministic_hash(config) # What is this part doing?
         #if h in self._cached_uniform_to_pe_arr:
         #    __uniform_to_pe_arr = self._cached_uniform_to_pe_arr[h]

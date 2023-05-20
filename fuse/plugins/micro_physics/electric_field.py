@@ -63,8 +63,6 @@ class ElectricField(strax.Plugin):
         electric_field_array['time'] = clustered_interactions['time']
         electric_field_array['endtime'] = clustered_interactions['endtime']
 
-        efields = electric_field_array['e_field']
-
         r = np.sqrt(clustered_interactions['x'] ** 2 + clustered_interactions['y'] ** 2)
         positions = np.stack((r, clustered_interactions['z']), axis=1)
         electric_field_array['e_field'] = self.efield_map(positions)

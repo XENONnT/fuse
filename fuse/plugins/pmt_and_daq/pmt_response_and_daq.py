@@ -21,9 +21,8 @@ log.setLevel('WARNING')
 class PMTResponseAndDAQ(strax.Plugin):
     
     __version__ = "0.0.0"
-    
-    #If we want to disable AP they would need to be removed from here... somehow... 
-    depends_on = ("propagated_s2_photons", "propagated_s1_photons", "pmt_afterpulses")
+
+    depends_on = ("photon_summary")
     
     provides = ('raw_records', 'raw_records_he', 'raw_records_aqmon')#, 'truth')
     data_kind = immutabledict(zip(provides, provides))
@@ -199,24 +198,16 @@ class PMTResponseAndDAQ(strax.Plugin):
         #Im sure there is a better way to handle this part
         self._cached_pmt_current_templates = {}
         
-    def compute(self, S1_photons, S2_photons, AP_photons):
+    def compute(self, propagated_photons):
 
-        if len(S1_photons) == 0 and len(S2_photons) == 0  and len(AP_photons) == 0:
+        if len(propagated_photons) == 0:
             return dict(raw_records=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)),
                         raw_records_he=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)),
                         raw_records_aqmon=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)))
         
-        merged_photons = np.concatenate([S1_photons, S2_photons, AP_photons])
-        S1_photons = None
-        S2_photons = None
-        AP_photons = None
-        
-        #Sort all photons by time
-        sortind = np.argsort(merged_photons["time"])
-        merged_photons = merged_photons[sortind]
         
         #Split the photons into groups that will be simualted at once
-        split_photons = np.split(merged_photons, np.where(np.diff(merged_photons["time"]) > self.rext)[0]+1)
+        split_photons = np.split(propagated_photons, np.where(np.diff(propagated_photons["time"]) > self.rext)[0]+1)
         
         self.blevel = 0  # buffer_filled_level
         
