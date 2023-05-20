@@ -8,7 +8,7 @@ class MicroPhysicsSummary(strax.MergeOnlyPlugin):
     Plugin which summarizes the MicroPhysics simulation into a single output
     """
 
-    depends_on = ['clustered_interactions',
+    depends_on = ['interactions_in_roi',
                   'quanta',
                   'electric_field_values',
                   ]

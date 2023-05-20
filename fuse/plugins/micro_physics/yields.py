@@ -16,9 +16,9 @@ class NestYields(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ["clustered_interactions", "electric_field_values"]
+    depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
-    data_kind = "clustered_interactions"
+    data_kind = "interactions_in_roi"
     
     dtype = [('photons', np.float64),
              ('electrons', np.float64),
@@ -44,33 +44,33 @@ class NestYields(strax.Plugin):
 
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
     
-    def compute(self, clustered_interactions):
+    def compute(self, interactions_in_roi):
         """
         Computes the charge and light quanta for a list of clustered interactions.
 
         Args:
-            clustered_interactions (numpy.ndarray): An array of clustered interactions.
+            interactions_in_roi (numpy.ndarray): An array of clustered interactions.
 
         Returns:
             numpy.ndarray: An array of quanta, with fields for time, endtime, photons, electrons, and excitons.
         """
-        if len(clustered_interactions) == 0:
+        if len(interactions_in_roi) == 0:
             return np.zeros(0, dtype=self.dtype)
         
-        result = np.zeros(len(clustered_interactions), dtype=self.dtype)
-        result["time"] = clustered_interactions["time"]
-        result["endtime"] = clustered_interactions["endtime"]
+        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
 
         # Generate quanta:
-        if len(clustered_interactions) > 0:
+        if len(interactions_in_roi) > 0:
             photons, electrons, excitons = self.quanta_from_NEST(
-                clustered_interactions['ed'],
-                clustered_interactions['nestid'],
-                clustered_interactions['e_field'],
-                clustered_interactions['A'],
-                clustered_interactions['Z'],
-                clustered_interactions['create_S2'],
-                density=clustered_interactions['xe_density']
+                interactions_in_roi['ed'],
+                interactions_in_roi['nestid'],
+                interactions_in_roi['e_field'],
+                interactions_in_roi['A'],
+                interactions_in_roi['Z'],
+                interactions_in_roi['create_S2'],
+                density=interactions_in_roi['xe_density']
             )
             result['photons'] = photons
             result['electrons'] = electrons
@@ -152,9 +152,9 @@ class BetaYields(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ["clustered_interactions", "electric_field_values"]
+    depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
-    data_kind = "clustered_interactions"
+    data_kind = "interactions_in_roi"
     
     dtype = [('photons', np.float64),
              ('electrons', np.float64),
@@ -213,24 +213,24 @@ class BetaYields(strax.Plugin):
         for i in range(np.random.randint(100)):
             self.nc.GetQuanta(self.nc.GetYields(energy=np.random.uniform(10, 100)))
 
-    def compute(self, clustered_interactions):
+    def compute(self, interactions_in_roi):
         """
         Computes the charge and light quanta for a list of clustered interactions using custom yields.
 
         Args:
-            clustered_interactions (numpy.ndarray): An array of clustered interactions.
+            interactions_in_roi (numpy.ndarray): An array of clustered interactions.
 
         Returns:
             numpy.ndarray: An array of quanta, with fields for time, endtime, photons, electrons, and excitons.
         """
-        if len(clustered_interactions) == 0:
+        if len(interactions_in_roi) == 0:
             return np.zeros(0, dtype=self.dtype)
         
-        result = np.zeros(len(clustered_interactions), dtype=self.dtype)
-        result["time"] = clustered_interactions["time"]
-        result["endtime"] = clustered_interactions["endtime"]
+        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
 
-        photons, electrons, excitons = self.get_quanta_vectorized(clustered_interactions["ed"], clustered_interactions["e_field"])
+        photons, electrons, excitons = self.get_quanta_vectorized(interactions_in_roi["ed"], clustered_interactions["e_field"])
         result['photons'] = photons
         result['electrons'] = electrons
         result['excitons'] = excitons
@@ -266,7 +266,7 @@ class BBFYields(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ["clustered_interactions", "electric_field_values"]
+    depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
     
     dtype = [('photons', np.float64),
@@ -289,19 +289,19 @@ class BBFYields(strax.Plugin):
             log.setLevel("DEBUG")
             log.debug("Running BBFYields in debug mode")
 
-    def compute(self, geant4_interactions):
+    def compute(self, interactions_in_roi):
         
-        result = np.zeros(len(geant4_interactions), dtype=self.dtype)
-        result["time"] = geant4_interactions["time"]
-        result["endtime"] = geant4_interactions["endtime"]
+        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
 
         # Generate quanta:
-        if len(geant4_interactions) > 0:
+        if len(interactions_in_roi) > 0:
 
             photons, electrons, excitons = self.bbfyields.get_quanta_vectorized(
-                                energy=geant4_interactions['ed'],
-                                interaction=geant4_interactions['nestid'],
-                                field=geant4_interactions['e_field']
+                                energy=interactions_in_roi['ed'],
+                                interaction=interactions_in_roi['nestid'],
+                                field=interactions_in_roi['e_field']
                                 )
 
             

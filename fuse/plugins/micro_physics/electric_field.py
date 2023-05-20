@@ -17,9 +17,9 @@ class ElectricField(strax.Plugin):
 
     __version__ = "0.0.0"
 
-    depends_on = ("clustered_interactions",)
+    depends_on = ("interactions_in_roi",)
     provides = "electric_field_values"
-    data_kind = "clustered_interactions"
+    data_kind = "interactions_in_roi"
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -46,25 +46,25 @@ class ElectricField(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug("Running ElectricField in debug mode")
 
-    def compute(self, clustered_interactions):
+    def compute(self, interactions_in_roi):
         """
         Calculate the electric field values for the given clustered interactions.
 
         Args:
-            clustered_interactions (numpy.ndarray): array of clustered interactions.
+            interactions_in_roi (numpy.ndarray): array of clustered interactions.
 
         Returns:
             numpy.ndarray: array of electric field values.
         """
-        if len(clustered_interactions) == 0:
+        if len(interactions_in_roi) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        electric_field_array = np.zeros(len(clustered_interactions), dtype=self.dtype)
-        electric_field_array['time'] = clustered_interactions['time']
-        electric_field_array['endtime'] = clustered_interactions['endtime']
+        electric_field_array = np.zeros(len(interactions_in_roi), dtype=self.dtype)
+        electric_field_array['time'] = interactions_in_roi['time']
+        electric_field_array['endtime'] = interactions_in_roi['endtime']
 
-        r = np.sqrt(clustered_interactions['x'] ** 2 + clustered_interactions['y'] ** 2)
-        positions = np.stack((r, clustered_interactions['z']), axis=1)
+        r = np.sqrt(interactions_in_roi['x'] ** 2 + interactions_in_roi['y'] ** 2)
+        positions = np.stack((r, interactions_in_roi['z']), axis=1)
         electric_field_array['e_field'] = self.efield_map(positions)
 
         return electric_field_array
