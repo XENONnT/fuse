@@ -5,9 +5,10 @@ import nestpy
 import os
 import logging
 
-from numba import njit
 from strax import deterministic_hash
 from scipy.interpolate import interp1d
+
+from ...common import loop_uniform_to_pe_arr
 
 export, __all__ = strax.exporter()
 
@@ -415,21 +416,3 @@ class S1PhotonPropagation(strax.Plugin):
 
         log.debug('Spe scaling factors created, cached with key %s' % h)
         return __uniform_to_pe_arr
-        
-
-#This is a modified version of the corresponding WFsim code....
-@njit()
-def uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
-    indices = np.int64(p * 2000) + 1
-    return __uniform_to_pe_arr[channel, indices]
-
-#In WFSim uniform_to_pe_arr is called inside a loop over the channels
-#I needed to change the code to run on all channels at once
-@njit()
-def loop_uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
-    result = []
-    for i in range(len(p)):
-        result.append(uniform_to_pe_arr(p[i],
-                                        channel=channel[i],
-                                        __uniform_to_pe_arr=__uniform_to_pe_arr) )
-    return np.array(result)

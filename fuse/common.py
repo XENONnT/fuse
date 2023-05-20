@@ -42,6 +42,25 @@ def full_array_to_numpy(array, dtype):
         
     return numpy_data
 
+
+#This is a modified version of the corresponding WFsim code....
+@numba.njit()
+def uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
+    indices = np.int64(p * 2000) + 1
+    return __uniform_to_pe_arr[channel, indices]
+
+#In WFSim uniform_to_pe_arr is called inside a loop over the channels
+#I needed to change the code to run on all channels at once
+@numba.njit()
+def loop_uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
+    result = []
+    for i in range(len(p)):
+        result.append(uniform_to_pe_arr(p[i],
+                                        channel=channel[i],
+                                        __uniform_to_pe_arr=__uniform_to_pe_arr) )
+    return np.array(result)
+
+
 #WFSim functions
 def parse_extension(name):
     """Get the extention from a file name. If zipped or tarred, can contain a dot"""
