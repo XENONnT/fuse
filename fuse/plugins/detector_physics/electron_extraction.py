@@ -116,10 +116,10 @@ class ElectronExtraction(strax.Plugin):
         #    s2cmap.__init__(s2cmap.data)
         #    self.s2_correction_map = s2cmap
     
-    def compute(self, clustered_interactions, electron_cloud):
+    def compute(self, interactions_in_roi, electron_cloud):
         
         #Just apply this to clusters with free electrons
-        instruction = clustered_interactions[clustered_interactions["electrons"] > 0]
+        instruction = interactions_in_roi[interactions_in_roi["electrons"] > 0]
 
         if len(instruction) == 0:
             return np.zeros(0, self.dtype)

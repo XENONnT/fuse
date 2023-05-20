@@ -105,7 +105,6 @@ class NestYields(strax.Plugin):
             excitons (numpy.array): Number of generated excitons
         """
         nc = nestpy.NESTcalc(nestpy.VDetector())
-        density = 2.862  # g/cm^3
 
         # Fix for Kr83m events.
         # Energies have to be very close to 32.1 keV or 9.4 keV
@@ -198,7 +197,7 @@ class BetaYields(strax.Plugin):
     def setup(self):
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running NestYields in debug mode")
+            log.debug("Running BetaYields in debug mode")
             log.debug(f'Using nestpy version {nestpy.__version__}')
 
         self.get_quanta_vectorized = np.vectorize(self.get_quanta, excluded="self")
@@ -230,7 +229,7 @@ class BetaYields(strax.Plugin):
         result["time"] = interactions_in_roi["time"]
         result["endtime"] = interactions_in_roi["endtime"]
 
-        photons, electrons, excitons = self.get_quanta_vectorized(interactions_in_roi["ed"], clustered_interactions["e_field"])
+        photons, electrons, excitons = self.get_quanta_vectorized(interactions_in_roi["ed"], interactions_in_roi["e_field"])
         result['photons'] = photons
         result['electrons'] = electrons
         result['excitons'] = excitons

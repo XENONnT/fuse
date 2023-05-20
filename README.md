@@ -11,6 +11,7 @@ fuse is still in an alpha-stage, so expect bugs and changes in the future.
 At the moment the intallation procedure is not very advanced. I would recommend to work on dali in e.g. the base environment and follow the steps below.
 
 1. Clone the fuse repository.
+2. Clone the private_nt_aux_files repository to the same directory as you cloned fuse.
 2. Install fuse using `pip install -e .` in the fuse directory.
 
 

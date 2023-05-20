@@ -37,6 +37,9 @@ class MergeCluster(strax.Plugin):
              ('x_pri', np.float32),
              ('y_pri', np.float32),
              ('z_pri', np.float32),
+             ('xe_density', np.float32), #Will be set i a later plugin
+             ('vol_id', np.int64), #Will be set i a later plugin
+             ('create_S2', np.bool8), #Will be set i a later plugin
             ]
     
     dtype = dtype + strax.time_fields

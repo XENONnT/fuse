@@ -148,10 +148,10 @@ class S1PhotonPropagation(strax.Plugin):
         self._cached_uniform_to_pe_arr = {}
         self.__uniform_to_pe_arr = self.init_spe_scaling_factor_distributions()
 
-    def compute(self, clustered_interactions):
+    def compute(self, interactions_in_roi):
 
         #Just apply this to clusters with free electrons
-        instruction = clustered_interactions[clustered_interactions["photons"] > 0]
+        instruction = interactions_in_roi[interactions_in_roi["photons"] > 0]
 
         if len(instruction) == 0:
             return np.zeros(0, self.dtype)

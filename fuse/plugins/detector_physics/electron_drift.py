@@ -117,10 +117,10 @@ class ElectronDrift(strax.Plugin):
             self.diffusion_longitudinal_map = _rz_map
     
     
-    def compute(self, clustered_interactions):
+    def compute(self, interactions_in_roi):
         
         #Just apply this to clusters with free electrons
-        instruction = clustered_interactions[clustered_interactions["electrons"] > 0]
+        instruction = interactions_in_roi[interactions_in_roi["electrons"] > 0]
 
         if len(instruction) == 0:
             return np.zeros(0, self.dtype)

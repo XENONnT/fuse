@@ -102,6 +102,12 @@ class XENONnT_TPC(VolumePlugin):
         help='Create S2s in the XENONnT TPC',
     )
 
+    def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running XENONnT_TPC in debug mode")
+
     def compute(self, clustered_interactions):
         
         #Call the ROI function:
@@ -190,6 +196,12 @@ class XENONnT_BelowCathode(VolumePlugin):
         help='No S2s below the Cathode!',
     )
 
+    def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running XENONnT_BelowCathode in debug mode")
+
     def compute(self, clustered_interactions):
         
         #Call the ROI function:
@@ -277,6 +289,12 @@ class XENONnT_GasPhase(VolumePlugin):
         default=False, type=bool,
         help='No S2s in gas',
     )
+
+    def setup(self):
+
+        if self.debug:
+            log.setLevel('DEBUG')
+            log.debug("Running XENONnT_GasPhase in debug mode")
 
     def compute(self, clustered_interactions):
         

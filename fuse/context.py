@@ -32,10 +32,10 @@ def microphysics_context(out_dir):
                       'fieldmap_2D_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz?'
                       '&fmt=json.gz'
                       '&method=RegularGridInterpolator',
-        'g1_value' : 0.151,
-        'g2_value' : 16.45,
-        'cs1_spline_path': '/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs1_func_E_option2.pkl',
-        'cs2_spline_path' : '/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs2_func_E_option2.pkl',
+        #'g1_value' : 0.151, 
+        #'g2_value' : 16.45,
+        #'cs1_spline_path': '/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs1_func_E_option2.pkl',
+        #'cs2_spline_path' : '/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs2_func_E_option2.pkl',
     })
     
     return st
