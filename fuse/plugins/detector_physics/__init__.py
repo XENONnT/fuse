@@ -7,11 +7,14 @@ from .electron_extraction import *
 from . import electron_timing
 from .electron_timing import *
 
-from . import S1_Signal
-from .S1_Signal import *
+from . import s1_photon_hits
+from .s1_photon_hits import *
 
-from . import S2_Signal
-from .S2_Signal import *
+from . import s1_photon_propagation
+from .s1_photon_propagation import *
+
+from . import s2_photon_propagation
+from .s2_photon_propagation import *
 
 from . import secondary_scintillation
 from .secondary_scintillation import *

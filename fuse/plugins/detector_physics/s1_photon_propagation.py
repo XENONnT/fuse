@@ -2,7 +2,6 @@ import numpy as np
 import strax
 import straxen
 import nestpy
-import os
 import logging
 
 from strax import deterministic_hash
@@ -21,7 +20,7 @@ class S1PhotonPropagation(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("microphysics_summary")
+    depends_on = ("s1_photons", "microphysics_summary")
     provides = "propagated_s1_photons"
     data_kind = "S1_photons"
     
@@ -102,16 +101,6 @@ class S1PhotonPropagation(strax.Plugin):
         type=(int),
         help='Number of PMTs in the TPC',
     )
-    #Is this config needed?
-    s1_detection_efficiency = straxen.URLConfig(
-        type=(int, float),
-        help='Some placeholder for s1_detection_efficiency',
-    )
-    
-    s1_lce_correction_map = straxen.URLConfig(
-        cache=True,
-        help='s1_lce_correction_map',
-    )
     
     s1_pattern_map = straxen.URLConfig(
         cache=True,
@@ -151,8 +140,8 @@ class S1PhotonPropagation(strax.Plugin):
 
     def compute(self, interactions_in_roi):
 
-        #Just apply this to clusters with free electrons
-        instruction = interactions_in_roi[interactions_in_roi["photons"] > 0]
+        #Just apply this to clusters with photons hitting a PMT
+        instruction = interactions_in_roi[interactions_in_roi["n_photon_hits"] > 0]
 
         if len(instruction) == 0:
             return np.zeros(0, self.dtype)
@@ -165,13 +154,9 @@ class S1PhotonPropagation(strax.Plugin):
         recoil_type = instruction['nestid']
         positions = np.array([x, y, z]).T  # For map interpolation
         
-        n_photon_hits = self.get_n_photons(n_photons=n_photons,
-                                           positions=positions,
-                                           )
-        
         # The new way interpolation is written always require a list
         _photon_channels = self.photon_channels(positions=positions,
-                                                n_photon_hits=n_photon_hits,
+                                                n_photon_hits=instruction["n_photon_hits"],
                                                 )
         
         extra_targs = {}
@@ -183,7 +168,7 @@ class S1PhotonPropagation(strax.Plugin):
             extra_targs['nestpy_calc'] = self.nestpy_calc
             
         _photon_timings = self.photon_timings(t=t,
-                                              n_photon_hits=n_photon_hits, 
+                                              n_photon_hits=instruction["n_photon_hits"],
                                               recoil_type=recoil_type,
                                               channels=_photon_channels,
                                               positions=positions,
@@ -202,6 +187,7 @@ class S1PhotonPropagation(strax.Plugin):
                                             self.pmt_transit_time_spread / 2.35482,
                                             len(_photon_timings)).astype(np.int64)
         
+        #Why is this done here and additionally in the get_n_photons function of S1PhotonHits??
         _photon_is_dpe = np.random.binomial(n=1,
                                             p=self.p_double_pe_emision,
                                             size=len(_photon_timings)).astype(np.bool_)
@@ -224,27 +210,6 @@ class S1PhotonPropagation(strax.Plugin):
         result["photon_gain"] = _photon_gains
         
         return result
-    
-    def get_n_photons(self, n_photons, positions):
-    
-        """Calculates number of detected photons based on number of photons in total and the positions
-        :param n_photons: 1d array of ints with number of emitted S1 photons:
-        :param positions: 2d array with xyz positions of interactions
-        :param s1_lce_correction_map: interpolator instance of s1 light yield map
-        :param config: dict wfsim config 
-
-        return array with number photons"""
-        ly = self.s1_lce_correction_map(positions)
-        # depending on if you use the data driven or mc pattern map for light yield 
-        #the shape of n_photon_hits will change. Mc needs a squeeze
-        if len(ly.shape) != 1:
-            ly = np.squeeze(ly, axis=-1)
-        ly /= 1 + self.p_double_pe_emision
-        ly *= self.s1_detection_efficiency
-
-        n_photon_hits = np.random.binomial(n=n_photons, p=ly)
-
-        return n_photon_hits
     
     
     def photon_channels(self, positions, n_photon_hits):
