@@ -11,13 +11,12 @@ fuse is still in an alpha-stage, so expect bugs and changes in the future.
 At the moment the intallation procedure is not very advanced. I would recommend to work on dali in e.g. the base environment and follow the steps below.
 
 1. Clone the fuse repository.
-2. Clone the private_nt_aux_files repository to the same directory as you cloned fuse.
-3. Install fuse using `pip install -e .` in the fuse directory.
+2. Install fuse using `pip install -e .` in the fuse directory.
 
 
 ## Plugin Structure
 
 The full simulation chain in split into multiple plugins. An overview of the simulation structure can be found below.
 
-![Simulation_Refactor_Plugins](https://user-images.githubusercontent.com/27280678/235156990-7fa63aae-21c4-45b5-9b71-a42a4173f0da.jpg)
+![Simulation Refactor](https://github.com/XENONnT/fuse/assets/27280678/abbaa9fd-f586-47f0-a182-715a79d82023)
 
