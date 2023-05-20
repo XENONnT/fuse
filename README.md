@@ -19,5 +19,4 @@ At the moment the intallation procedure is not very advanced. I would recommend 
 
 The full simulation chain in split into multiple plugins. An overview of the simulation structure can be found below.
 
-![Simulation Refactor](https://github.com/XENONnT/fuse/assets/27280678/abbaa9fd-f586-47f0-a182-715a79d82023)
-
+![Simulation Refactor](https://github.com/XENONnT/fuse/assets/27280678/fe05c35a-f341-4430-baf5-e1081f06db89)
