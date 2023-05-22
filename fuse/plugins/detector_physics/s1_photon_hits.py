@@ -46,12 +46,26 @@ class S1PhotonHits(strax.Plugin):
         type=(int, float),
         help='Some placeholder for s1_detection_efficiency',
     )
+    
+    fixed_seed = straxen.URLConfig(
+        default=True, type=bool,track=True,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
 
     def setup(self):
-
+        
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S1PhotonHits in debug mode")
+        
+        if self.fixed_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
 
     def compute(self, interactions_in_roi):
 
@@ -99,6 +113,6 @@ class S1PhotonHits(strax.Plugin):
         ly /= 1 + self.p_double_pe_emision
         ly *= self.s1_detection_efficiency
 
-        n_photon_hits = np.random.binomial(n=n_photons, p=ly)
+        n_photon_hits = self.rng.binomial(n=n_photons, p=ly)
 
         return n_photon_hits
