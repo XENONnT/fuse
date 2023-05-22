@@ -50,7 +50,7 @@ class ChunkCsvInput(strax.Plugin):
 
     #Config options
     debug = straxen.URLConfig(
-        default=False, type=bool,
+        default=False, type=bool, track=False,
         help='Show debug informations',
     )
 
