@@ -19,12 +19,6 @@ log.setLevel('WARNING')
 
 #Remove the path and file name option from the config and do this with the run_number??
 @export
-@strax.takes_config(
-    strax.Option('path', default=".", track=False, infer_type=False,
-                 help="Path to search for data"),
-    strax.Option('file_name', track=False, infer_type=False,
-                 help="File to open"),
-)
 class ChunkInput(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -62,6 +56,16 @@ class ChunkInput(strax.Plugin):
     debug = straxen.URLConfig(
         default=False, type=bool,
         help='Show debug informations',
+    )
+
+    path = straxen.URLConfig(
+        track=False,
+        help='Path to search for data',
+    )
+
+    file_name = straxen.URLConfig(
+        track=False,
+        help='File to open',
     )
 
     separation_scale = straxen.URLConfig(

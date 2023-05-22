@@ -16,10 +16,6 @@ log = logging.getLogger('fuse.detector_physics.csv_input')
 log.setLevel('WARNING')
 
 @export
-@strax.takes_config(
-    strax.Option('input_file', track=False, infer_type=False,
-                 help="CSV file to read"),
-)
 class ChunkCsvInput(strax.Plugin):
     """
     Plugin which reads a CSV file containing instructions for the detector physics simulation
@@ -56,6 +52,12 @@ class ChunkCsvInput(strax.Plugin):
     debug = straxen.URLConfig(
         default=False, type=bool,
         help='Show debug informations',
+    )
+
+    input_file = straxen.URLConfig(
+        track=False,
+        infer_type=False,
+        help='CSV file to read',
     )
 
     separation_scale = straxen.URLConfig(
