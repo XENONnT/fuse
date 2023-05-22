@@ -236,7 +236,7 @@ class S2PhotonPropagation(strax.Plugin):
                                                 interactions_in_roi[mask]["z_obs"],
                                                 positions,
                                                 interactions_in_roi[mask]["drift_time_mean"] ,
-                                                interactions_in_roi[mask]["sum_photons"],
+                                                interactions_in_roi[mask]["sum_s2_photons"],
                                                )
         #_photon_channels = _photon_channels.astype(np.int64)
         _photon_timings = self.photon_timings(positions,

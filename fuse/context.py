@@ -86,15 +86,15 @@ def full_chain_context(out_dir, config):
         "tpc_length": config["tpc_length"],
         "field_distortion_model": config["field_distortion_model"],
         "field_dependencies_map_tmp": 'itp_map://resource://format://'
-                                      'field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz)}?'
+                                      'field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz?'
                                       '&fmt=json.gz'
                                       '&method=RectBivariateSpline',
         "diffusion_longitudinal_map_tmp":'itp_map://resource://format://'
-                                         'data_driven_diffusion_map_XENONnTSR0V2.json.gz)}?'
+                                         'data_driven_diffusion_map_XENONnTSR0V2.json.gz?'
                                          '&fmt=json.gz'
                                          '&method=WeightedNearestNeighbors',
         "fdc_map_fuse": 'itp_map://resource://format://'
-                        'init_to_final_position_mapping_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz)}?'
+                        'init_to_final_position_mapping_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz?'
                         '&fmt=json.gz'
                         '&method=RectBivariateSpline',
         "digitizer_voltage_range": config["digitizer_voltage_range"],
@@ -106,19 +106,19 @@ def full_chain_context(out_dir, config):
         "ext_eff_from_map": config["ext_eff_from_map"],
         "se_gain_from_map": config["se_gain_from_map"],
         "gains": 'pmt_gains://resource://format://'
-                 'to_pe_nt.npy)}?'
+                 'to_pe_nt.npy?'
                  '&fmt=npy'
                  '&digitizer_voltage_range=plugin.digitizer_voltage_range'
                  '&digitizer_bits=plugin.digitizer_bits'
                  '&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
         "s2_correction_map": 'itp_map://resource://format://'
-                             'XENONnT_s2_xy_map_v4_210503_mlp_3_in_1_iterated.json)}?'
+                             'XENONnT_s2_xy_map_v4_210503_mlp_3_in_1_iterated.json?'
                              '&fmt=json',
         "se_gain_map": 'itp_map://resource://format://'
-                       'XENONnT_se_xy_map_v1_mlp.json)}?'
+                       'XENONnT_se_xy_map_v1_mlp.json?'
                        '&fmt=json',
         "s2_pattern_map": 'pattern_map://resource://format://'
-                          'XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl)}?'
+                          'XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl?'
                           '&fmt=pkl'
                           '&pmt_mask=plugin.pmt_mask',
         "electron_trapping_time": config["electron_trapping_time"],
@@ -134,14 +134,14 @@ def full_chain_context(out_dir, config):
         "n_tpc_pmts": 494,
         "s1_detection_efficiency": 1,
         "s1_lce_correction_map": 'itp_map://resource://format://'
-                                 'XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz)}?'
+                                 'XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz?'
                                  '&fmt=json.gz',
         "s1_pattern_map":'pattern_map://resource://format://'
-                        'XENONnT_s1_xyz_patterns_corrected_qes_MCva43fa9b_wires.pkl)}?'
+                        'XENONnT_s1_xyz_patterns_corrected_qes_MCva43fa9b_wires.pkl?'
                         '&fmt=pkl'
                         '&pmt_mask=None',
         "s1_optical_propagation_spline": 'itp_map://resource://format://'
-                                         'XENONnT_s1_proponly_va43fa9b_wires_20200625.json.gz)}?'
+                                         'XENONnT_s1_proponly_va43fa9b_wires_20200625.json.gz?'
                                          '&fmt=json.gz'
                                          '&method=RegularGridInterpolator',
         "photon_area_distribution": 'simple_load://resource://format://'
@@ -162,13 +162,13 @@ def full_chain_context(out_dir, config):
         "s2_aft_skewness": config["s2_aft_skewness"],
         "s2_aft_sigma": config["s2_aft_sigma"],
         "s2_optical_propagation_spline":'itp_map://resource://format://'
-                                        'sim_files/XENONnT_s2_opticalprop_time_v0.json.gz)}?'
+                                        'XENONnT_s2_opticalprop_time_v0.json.gz?'
                                         '&fmt=json.gz',
         "s2_luminescence_map":'simple_load://resource://format://'
-                              'garfield_timing_map_gas_gap_sr0.npy)}?'
+                              'garfield_timing_map_gas_gap_sr0.npy?'
                               '&fmt=npy',
         "garfield_gas_gap_map": 'itp_map://resource://format://'
-                                'garfield_gas_gap_map_sr0.json)}?'
+                                'garfield_gas_gap_map_sr0.json?'
                                 '&fmt=json',
         "pmt_ap_t_modifier": config["pmt_ap_t_modifier"],
         "pmt_ap_modifier": config["pmt_ap_modifier"],
