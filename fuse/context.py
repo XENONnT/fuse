@@ -147,9 +147,6 @@ def full_chain_context(out_dir, config):
         "photon_area_distribution": 'simple_load://resource://format://'
                                    f'{config["photon_area_distribution"]}?'
                                     '&fmt=csv',
-        "s2_gain_map":'itp_map://resource://format://'
-                     f'{os.path.join(private_files_path, "strax_files/XENONnT_se_xy_map_v1_mlp.json")}?'
-                      '&fmt=json',
         "s2_gain_spread": 0,
         "triplet_lifetime_gas": config["triplet_lifetime_gas"],
         "singlet_lifetime_gas": config["singlet_lifetime_gas"],
