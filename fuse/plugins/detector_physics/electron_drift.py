@@ -17,7 +17,7 @@ class ElectronDrift(strax.Plugin):
     
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
-    data_kind = 'electron_cloud'
+    data_kind = 'interactions_in_roi'
     
     dtype = [('n_electron_interface', np.int64),
              ('drift_time_mean', np.int64),
@@ -119,18 +119,18 @@ class ElectronDrift(strax.Plugin):
     
     def compute(self, interactions_in_roi):
         
-        #Just apply this to clusters with free electrons
-        instruction = interactions_in_roi[interactions_in_roi["electrons"] > 0]
+        #Just apply this to clusters with photons
+        mask = interactions_in_roi["electrons"] > 0
 
-        if len(instruction) == 0:
+        if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, self.dtype)
         
-        t = instruction["time"]
-        x = instruction["x"]
-        y = instruction["y"]
-        z = instruction["z"]
-        n_electron = instruction["electrons"].astype(np.int64)
-        recoil_type = instruction["nestid"]
+        t = interactions_in_roi[mask]["time"]
+        x = interactions_in_roi[mask]["x"]
+        y = interactions_in_roi[mask]["y"]
+        z = interactions_in_roi[mask]["z"]
+        n_electron = interactions_in_roi[mask]["electrons"].astype(np.int64)
+        recoil_type = interactions_in_roi[mask]["nestid"]
         recoil_type = np.where(np.isin(recoil_type, [0, 6, 7, 8, 11]), recoil_type, 8)
         
         # Reverse engineering FDC
@@ -157,12 +157,12 @@ class ElectronDrift(strax.Plugin):
         n_electron = n_electron*electron_lifetime_correction
         
         
-        result = np.zeros(len(n_electron), dtype = self.dtype)
-        result["time"] = instruction["time"]
-        result["endtime"] = instruction["endtime"]
-        result["n_electron_interface"] = n_electron
-        result["drift_time_mean"] = drift_time_mean
-        result["drift_time_spread"] = drift_time_spread
+        result = np.zeros(len(interactions_in_roi), dtype = self.dtype)
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
+        result["n_electron_interface"][mask] = n_electron
+        result["drift_time_mean"][mask] = drift_time_mean
+        result["drift_time_spread"][mask] = drift_time_spread
         
         #These ones are needed later
         result["x"] = positions.T[0]

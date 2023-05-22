@@ -222,22 +222,25 @@ class S2PhotonPropagation(strax.Plugin):
         self.__uniform_to_pe_arr = self.init_spe_scaling_factor_distributions()
 
 
-    def compute(self, individual_electrons, electron_cloud):
+    def compute(self, individual_electrons, interactions_in_roi):
+
+        #Just apply this to clusters with photons
+        mask = interactions_in_roi["electrons"] > 0
 
         if len(individual_electrons) == 0:
             return np.zeros(0, dtype=self.dtype)
         
-        positions = np.array([electron_cloud["x"], electron_cloud["y"]]).T
+        positions = np.array([interactions_in_roi[mask]["x"], interactions_in_roi[mask]["y"]]).T
         
-        _photon_channels = self.photon_channels(electron_cloud["n_electron_extracted"],
-                                                electron_cloud["z_obs"],
+        _photon_channels = self.photon_channels(interactions_in_roi[mask]["n_electron_extracted"],
+                                                interactions_in_roi[mask]["z_obs"],
                                                 positions,
-                                                electron_cloud["drift_time_mean"] ,
-                                                electron_cloud["sum_photons"],
+                                                interactions_in_roi[mask]["drift_time_mean"] ,
+                                                interactions_in_roi[mask]["sum_photons"],
                                                )
         #_photon_channels = _photon_channels.astype(np.int64)
         _photon_timings = self.photon_timings(positions,
-                                              electron_cloud["sum_photons"],
+                                              interactions_in_roi[mask]["sum_photons"],
                                               _photon_channels,
                                              )
         

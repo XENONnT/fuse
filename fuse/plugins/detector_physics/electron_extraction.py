@@ -17,7 +17,7 @@ class ElectronExtraction(strax.Plugin):
     
     depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
-    data_kind = "electron_cloud"
+    data_kind = "interactions_in_roi"
     
     #Forbid rechunking
     rechunk_on_save = False
@@ -116,16 +116,16 @@ class ElectronExtraction(strax.Plugin):
         #    s2cmap.__init__(s2cmap.data)
         #    self.s2_correction_map = s2cmap
     
-    def compute(self, interactions_in_roi, electron_cloud):
+    def compute(self, interactions_in_roi):
         
-        #Just apply this to clusters with free electrons
-        instruction = interactions_in_roi[interactions_in_roi["electrons"] > 0]
+        #Just apply this to clusters with photons
+        mask = interactions_in_roi["electrons"] > 0
 
-        if len(instruction) == 0:
+        if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, self.dtype)
 
-        x = instruction["x"]
-        y = instruction["y"]
+        x = interactions_in_roi[mask]["x"]
+        y = interactions_in_roi[mask]["y"]
         
         xy_int = np.array([x, y]).T # maps are in R_true, so orginal position should be here
 
@@ -146,11 +146,11 @@ class ElectronExtraction(strax.Plugin):
         else:
             cy = self.electron_extraction_yield
             
-        n_electron = np.random.binomial(n=electron_cloud["n_electron_interface"], p=cy)
+        n_electron = np.random.binomial(n=interactions_in_roi[mask]["n_electron_interface"], p=cy)
         
         result = np.zeros(len(n_electron), dtype=self.dtype)
-        result["n_electron_extracted"] = n_electron
-        result["time"] = instruction["time"]
-        result["endtime"] = instruction["endtime"]
+        result["n_electron_extracted"][mask] = n_electron
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
         
         return result

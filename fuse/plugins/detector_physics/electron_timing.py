@@ -17,6 +17,7 @@ class ElectronTiming(strax.Plugin):
     
     depends_on = ("drifted_electrons", "extracted_electrons")
     provides = "electron_time"
+    data_kind = "individual_electrons"
     
     #Forbid rechunking
     rechunk_on_save = False
@@ -46,20 +47,23 @@ class ElectronTiming(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug("Running ElectronTiming in debug mode")
     
-    def compute(self, electron_cloud):
+    def compute(self, interactions_in_roi):
+
+        #Just apply this to clusters with photons
+        mask = interactions_in_roi["electrons"] > 0
         
-        if len(electron_cloud) == 0:
+        if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        timing = self.electron_timing(electron_cloud["time"],
-                                      electron_cloud["n_electron_extracted"],
-                                      electron_cloud["drift_time_mean"],
-                                      electron_cloud["drift_time_spread"]
+        timing = self.electron_timing(interactions_in_roi[mask]["time"],
+                                      interactions_in_roi[mask]["n_electron_extracted"],
+                                      interactions_in_roi[mask]["drift_time_mean"],
+                                      interactions_in_roi[mask]["drift_time_spread"]
                                      )
         
         
-        x = np.repeat(electron_cloud["x"], electron_cloud["n_electron_extracted"])
-        y = np.repeat(electron_cloud["y"], electron_cloud["n_electron_extracted"])
+        x = np.repeat(interactions_in_roi[mask]["x"], interactions_in_roi[mask]["n_electron_extracted"])
+        y = np.repeat(interactions_in_roi[mask]["y"], interactions_in_roi[mask]["n_electron_extracted"])
         
         result = np.zeros(len(timing), dtype = self.dtype)
         result["time"] = timing

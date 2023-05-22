@@ -19,7 +19,7 @@ class SecondaryScintillation(strax.Plugin):
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
     provides = ("s2_photons", "s2_photons_sum")
     data_kind = {"s2_photons": "individual_electrons",
-                 "s2_photons_sum" : "electron_cloud"
+                 "s2_photons_sum" : "interactions_in_roi"
                 }
     
     dtype_photons = [('n_photons', np.int64),] + strax.time_fields
@@ -119,24 +119,27 @@ class SecondaryScintillation(strax.Plugin):
         #    s2cmap.__init__(s2cmap.data)
         #    self.s2_correction_map = s2cmap
     
-    def compute(self, electron_cloud, individual_electrons ):
+    def compute(self, interactions_in_roi, individual_electrons):
+        
+        #Just apply this to clusters with photons
+        mask = interactions_in_roi["electrons"] > 0
 
-        if len(electron_cloud) == 0:
+        if len(interactions_in_roi[mask]) == 0:
             return dict(s2_photons=np.zeros(0, self.dtype["s2_photons"]),
                         s2_photons_sum=np.zeros(0, self.dtype["s2_photons_sum"]))
         
-        positions = np.array([electron_cloud["x"], electron_cloud["y"]]).T
+        positions = np.array([interactions_in_roi[mask]["x"], interactions_in_roi[mask]["y"]]).T
         
         sc_gain = self.get_s2_light_yield(positions=positions)
         
-        electron_gains = np.repeat(sc_gain, electron_cloud["n_electron_extracted"])
+        electron_gains = np.repeat(sc_gain, interactions_in_roi[mask]["n_electron_extracted"])
         
         n_photons_per_ele = np.random.poisson(electron_gains)
         
         if self.s2_gain_spread:
             n_photons_per_ele += np.random.normal(0, self.s2_gain_spread, len(n_photons_per_ele)).astype(np.int64)
         
-        sum_photons_per_interaction = [np.sum(x) for x in np.split(n_photons_per_ele, np.cumsum(electron_cloud["n_electron_extracted"]))[:-1]]
+        sum_photons_per_interaction = [np.sum(x) for x in np.split(n_photons_per_ele, np.cumsum(interactions_in_roi[mask]["n_electron_extracted"]))[:-1]]
         
         n_photons_per_ele[n_photons_per_ele < 0] = 0
         
@@ -147,8 +150,8 @@ class SecondaryScintillation(strax.Plugin):
         
         result_sum_photons = np.zeros(len(sum_photons_per_interaction), dtype = self.dtype["s2_photons_sum"])
         result_sum_photons["sum_photons"] = sum_photons_per_interaction
-        result_sum_photons["time"] = electron_cloud["time"]
-        result_sum_photons["endtime"] = electron_cloud["endtime"]
+        result_sum_photons["time"] = interactions_in_roi[mask]["time"]
+        result_sum_photons["endtime"] = interactions_in_roi[mask]["endtime"]
         
         return dict(s2_photons=result_photons,
                     s2_photons_sum=result_sum_photons)
