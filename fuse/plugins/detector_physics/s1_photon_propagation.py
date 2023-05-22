@@ -345,7 +345,7 @@ class S1PhotonPropagation(strax.Plugin):
         assert len(z_positions) == len(channels), 'Give each photon a z position'
 
         prop_time = np.zeros_like(channels)
-        z_rand = np.array([z_positions, self.rng.rand(len(channels))]).T
+        z_rand = np.array([z_positions, self.rng.random(len(channels))]).T
 
         is_top = channels < self.n_top_pmts
         prop_time[is_top] = self.s1_optical_propagation_spline(z_rand[is_top], map_name='top')
