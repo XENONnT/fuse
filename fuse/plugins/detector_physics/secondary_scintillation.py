@@ -22,8 +22,8 @@ class SecondaryScintillation(strax.Plugin):
                  "s2_photons_sum" : "interactions_in_roi"
                 }
     
-    dtype_photons = [('n_photons', np.int64),] + strax.time_fields
-    dtype_sum_photons = [('sum_photons', np.int64),] + strax.time_fields
+    dtype_photons = [('n_s2_photons', np.int64),] + strax.time_fields
+    dtype_sum_photons = [('sum_s2_photons', np.int64),] + strax.time_fields
     
     dtype = dict()
     dtype["s2_photons"] = dtype_photons
@@ -144,12 +144,12 @@ class SecondaryScintillation(strax.Plugin):
         n_photons_per_ele[n_photons_per_ele < 0] = 0
         
         result_photons = np.zeros(len(n_photons_per_ele), dtype = self.dtype["s2_photons"])
-        result_photons["n_photons"] = n_photons_per_ele
+        result_photons["n_s2_photons"] = n_photons_per_ele
         result_photons["time"] = individual_electrons["time"]
         result_photons["endtime"] = individual_electrons["endtime"]
         
         result_sum_photons = np.zeros(len(interactions_in_roi), dtype = self.dtype["s2_photons_sum"])
-        result_sum_photons["sum_photons"][mask] = sum_photons_per_interaction
+        result_sum_photons["sum_s2_photons"][mask] = sum_photons_per_interaction
         result_sum_photons["time"][mask] = interactions_in_roi[mask]["time"]
         result_sum_photons["endtime"][mask] = interactions_in_roi[mask]["endtime"]
         

@@ -22,7 +22,7 @@ class S1PhotonHits(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
 
-    dtype = [('n_photon_hits', np.int64),
+    dtype = [('n_s1_photon_hits', np.int64),
             ]
     dtype = dtype + strax.time_fields
 
@@ -77,7 +77,7 @@ class S1PhotonHits(strax.Plugin):
         result["time"] = interactions_in_roi["time"]
         result["endtime"] = interactions_in_roi["endtime"]
 
-        result["n_photon_hits"][mask] = n_photon_hits
+        result["n_s1_photon_hits"][mask] = n_photon_hits
 
         return result
     

@@ -240,12 +240,12 @@ class S2PhotonPropagation(strax.Plugin):
                                                )
         #_photon_channels = _photon_channels.astype(np.int64)
         _photon_timings = self.photon_timings(positions,
-                                              interactions_in_roi[mask]["sum_photons"],
+                                              interactions_in_roi[mask]["sum_s2_photons"],
                                               _photon_channels,
                                              )
         
         #repeat for n photons per electron # Should this be before adding delays?
-        _photon_timings += np.repeat(individual_electrons["time"], individual_electrons["n_photons"])
+        _photon_timings += np.repeat(individual_electrons["time"], individual_electrons["n_s2_photons"])
         
         #Do i want to save both -> timings with and without pmt transition time spread?
         # Correct for PMT Transition Time Spread (skip for pmt after-pulses)

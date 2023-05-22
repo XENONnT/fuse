@@ -141,7 +141,7 @@ class S1PhotonPropagation(strax.Plugin):
     def compute(self, interactions_in_roi):
 
         #Just apply this to clusters with photons hitting a PMT
-        instruction = interactions_in_roi[interactions_in_roi["n_photon_hits"] > 0]
+        instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
 
         if len(instruction) == 0:
             return np.zeros(0, self.dtype)
@@ -156,7 +156,7 @@ class S1PhotonPropagation(strax.Plugin):
         
         # The new way interpolation is written always require a list
         _photon_channels = self.photon_channels(positions=positions,
-                                                n_photon_hits=instruction["n_photon_hits"],
+                                                n_photon_hits=instruction["n_s1_photon_hits"],
                                                 )
         
         extra_targs = {}
@@ -168,7 +168,7 @@ class S1PhotonPropagation(strax.Plugin):
             extra_targs['nestpy_calc'] = self.nestpy_calc
             
         _photon_timings = self.photon_timings(t=t,
-                                              n_photon_hits=instruction["n_photon_hits"],
+                                              n_photon_hits=instruction["n_s1_photon_hits"],
                                               recoil_type=recoil_type,
                                               channels=_photon_channels,
                                               positions=positions,
