@@ -165,9 +165,9 @@ class ElectronDrift(strax.Plugin):
         result["drift_time_spread"][mask] = drift_time_spread
         
         #These ones are needed later
-        result["x"] = positions.T[0]
-        result["y"] = positions.T[1]
-        result["z_obs"] = z_obs
+        result["x"][mask] = positions.T[0]
+        result["y"][mask] = positions.T[1]
+        result["z_obs"][mask] = z_obs
         
         return result
         
