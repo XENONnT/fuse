@@ -121,12 +121,26 @@ class S1PhotonPropagation(strax.Plugin):
         cache=True,
         help='photon_area_distribution',
     )
+
+    fixed_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
     
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S1PhotonPropagation in debug mode")
+
+        if self.fixed_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
 
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
         
@@ -183,23 +197,23 @@ class S1PhotonPropagation(strax.Plugin):
         #Do i want to save both -> timings with and without pmt transition time spread?
         # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
         # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-        _photon_timings += np.random.normal(self.pmt_transit_time_mean,
+        _photon_timings += self.rng.normal(self.pmt_transit_time_mean,
                                             self.pmt_transit_time_spread / 2.35482,
                                             len(_photon_timings)).astype(np.int64)
         
         #Why is this done here and additionally in the get_n_photons function of S1PhotonHits??
-        _photon_is_dpe = np.random.binomial(n=1,
+        _photon_is_dpe = self.rng.binomial(n=1,
                                             p=self.p_double_pe_emision,
                                             size=len(_photon_timings)).astype(np.bool_)
 
 
         _photon_gains = self.gains[_photon_channels] \
-            * loop_uniform_to_pe_arr(np.random.random(len(_photon_channels)), _photon_channels, self.__uniform_to_pe_arr)
+            * loop_uniform_to_pe_arr(self.rng.random(len(_photon_channels)), _photon_channels, self.__uniform_to_pe_arr)
 
         # Add some double photoelectron emission by adding another sampled gain
         n_double_pe = _photon_is_dpe.sum()
         _photon_gains[_photon_is_dpe] += self.gains[_photon_channels[_photon_is_dpe]] \
-            * loop_uniform_to_pe_arr(np.random.random(n_double_pe), _photon_channels[_photon_is_dpe], self.__uniform_to_pe_arr) 
+            * loop_uniform_to_pe_arr(self.rng.random(n_double_pe), _photon_channels[_photon_is_dpe], self.__uniform_to_pe_arr) 
 
         
         result = np.zeros(_photon_channels.shape[0], dtype = self.dtype)
@@ -227,7 +241,7 @@ class S1PhotonPropagation(strax.Plugin):
         _photon_channels = np.array([]).astype(np.int64)
         for ppc, n in zip(p_per_channel, n_photon_hits):
             _photon_channels = np.append(_photon_channels,
-                                         np.random.choice(
+                                         self.rng.choice(
                                              channels,
                                              size=n,
                                              p=ppc / np.sum(ppc),
@@ -272,8 +286,8 @@ class S1PhotonPropagation(strax.Plugin):
 
         if 'simple' in self.s1_model_type:
             # Simple S1 model enabled: use it for ER and NR.
-            _photon_timings += np.random.exponential(self.s1_decay_time, _n_hits_total).astype(np.int64)
-            _photon_timings += np.random.normal(0, self.s1_decay_spread, _n_hits_total).astype(np.int64)
+            _photon_timings += self.rng.exponential(self.s1_decay_time, _n_hits_total).astype(np.int64)
+            _photon_timings += self.rng.normal(0, self.s1_decay_spread, _n_hits_total).astype(np.int64)
 
         if 'nest' in self.s1_model_type or 'custom' in self.s1_model_type:
             # Pulse model depends on recoil type
@@ -315,7 +329,7 @@ class S1PhotonPropagation(strax.Plugin):
                     # The first part of the scint_time is from exciton only, see
                     # https://github.com/NESTCollaboration/nestpy/blob/fe3d5d7da5d9b33ac56fbea519e02ef55152bc1d/src/nestpy/NEST.cpp#L164-L179
                     _photon_timings[counts_start: counts_start + counts] += \
-                       np.random.choice(scint_time, counts, replace=False).astype(np.int64)
+                       self.rng.choice(scint_time, counts, replace=False).astype(np.int64)
 
                 counts_start += counts
 
@@ -331,7 +345,7 @@ class S1PhotonPropagation(strax.Plugin):
         assert len(z_positions) == len(channels), 'Give each photon a z position'
 
         prop_time = np.zeros_like(channels)
-        z_rand = np.array([z_positions, np.random.rand(len(channels))]).T
+        z_rand = np.array([z_positions, self.rng.rand(len(channels))]).T
 
         is_top = channels < self.n_top_pmts
         prop_time[is_top] = self.s1_optical_propagation_spline(z_rand[is_top], map_name='top')

@@ -48,7 +48,7 @@ class S1PhotonHits(strax.Plugin):
     )
     
     fixed_seed = straxen.URLConfig(
-        default=True, type=bool,track=True,
+        default=True, type=bool,
         help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
 

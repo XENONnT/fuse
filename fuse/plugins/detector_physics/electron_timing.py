@@ -40,13 +40,27 @@ class ElectronTiming(strax.Plugin):
         type=(int, float),
         help='electron_trapping_time',
     )
+
+    fixed_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
     
     def setup(self):
         
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ElectronTiming in debug mode")
-    
+
+        if self.fixed_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
+
     def compute(self, interactions_in_roi):
 
         #Just apply this to clusters with photons
@@ -85,7 +99,7 @@ class ElectronTiming(strax.Plugin):
         drift_time_mean_r = np.repeat(drift_time_mean, n_electron.astype(np.int64))
         drift_time_spread_r = np.repeat(drift_time_spread, n_electron.astype(np.int64))
 
-        timing = np.random.exponential(self.electron_trapping_time, size = time_r.shape[0])
-        timing += np.random.normal(drift_time_mean_r, drift_time_spread_r, size = time_r.shape[0])
+        timing = self.rng.exponential(self.electron_trapping_time, size = time_r.shape[0])
+        timing += self.rng.normal(drift_time_mean_r, drift_time_spread_r, size = time_r.shape[0])
 
         return time_r + timing.astype(np.int64)

@@ -193,12 +193,29 @@ class S2PhotonPropagation(strax.Plugin):
         help='field_dependencies_map',
     )
 
+    fixed_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
+
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S2PhotonPropagation in debug mode")
 
+        if self.fixed_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
+
+        #Set the random generator for scipy
+        skewnorm.random_state=self.rng
+        
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
         
@@ -250,19 +267,19 @@ class S2PhotonPropagation(strax.Plugin):
         #Do i want to save both -> timings with and without pmt transition time spread?
         # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
         # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-        _photon_timings += np.random.normal(self.pmt_transit_time_mean,
+        _photon_timings += self.rng.normal(self.pmt_transit_time_mean,
                                             self.pmt_transit_time_spread / 2.35482,
                                             len(_photon_timings)).astype(np.int64)
-        _photon_is_dpe = np.random.binomial(n=1,
+        _photon_is_dpe = self.rng.binomial(n=1,
                                             p=self.p_double_pe_emision,
                                             size=len(_photon_timings)).astype(np.bool_)
         _photon_gains = self.gains[_photon_channels] \
-            * loop_uniform_to_pe_arr(np.random.random(len(_photon_channels)), _photon_channels, self.__uniform_to_pe_arr)
+            * loop_uniform_to_pe_arr(self.rng.random(len(_photon_channels)), _photon_channels, self.__uniform_to_pe_arr)
 
         # Add some double photoelectron emission by adding another sampled gain
         n_double_pe = _photon_is_dpe.sum()
         _photon_gains[_photon_is_dpe] += self.gains[_photon_channels[_photon_is_dpe]] \
-            * loop_uniform_to_pe_arr(np.random.random(n_double_pe), _photon_channels[_photon_is_dpe], self.__uniform_to_pe_arr) 
+            * loop_uniform_to_pe_arr(self.rng.random(n_double_pe), _photon_channels[_photon_is_dpe], self.__uniform_to_pe_arr) 
 
         
         #we may need to sort this output by time and channel??
@@ -319,7 +336,7 @@ class S2PhotonPropagation(strax.Plugin):
                 _photon_channels = np.array([-1] * n_ph)
                 
             else:
-                _photon_channels = np.random.choice(channels,
+                _photon_channels = self.rng.choice(channels,
                                                     size=n_ph,
                                                     p=pat,
                                                     replace=True)
@@ -357,8 +374,8 @@ class S2PhotonPropagation(strax.Plugin):
         hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
         hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
 
-        hdiff_radial = np.random.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron, axis=0)
-        hdiff_azimuthal = np.random.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron, axis=0)
+        hdiff_radial = self.rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron, axis=0)
+        hdiff_azimuthal = self.rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron, axis=0)
         hdiff = np.column_stack([hdiff_radial, hdiff_azimuthal])
         theta = np.arctan2(xy[:,1], xy[:,0])
         matrix = np.array([[np.cos(theta), np.sin(theta)], [-np.sin(theta), np.cos(theta)]]).T
@@ -408,7 +425,7 @@ class S2PhotonPropagation(strax.Plugin):
             _photon_timings += np.zeros_like(_photon_timings, dtype=np.int64)
         elif "s2_time_spread around zero" in self.s2_time_model:
             # simple/existing delay
-            _photon_timings += np.random.normal(0, self.s2_time_spread, len(_photon_timings)).astype(np.int64)
+            _photon_timings += self.rng.normal(0, self.s2_time_spread, len(_photon_timings)).astype(np.int64)
         else:
             raise KeyError(f"{self.s2_time_model} is not in any of the valid s2 time models")
         
@@ -432,9 +449,9 @@ class S2PhotonPropagation(strax.Plugin):
         else:
             t1, t3 = 0, 0
 
-        delay = np.random.choice([t1, t3], size, replace=True,
+        delay = self.rng.choice([t1, t3], size, replace=True,
                                  p=[singlet_ratio, 1 - singlet_ratio])
-        return (np.random.exponential(1, size) * delay).astype(np.int64)
+        return (self.rng.exponential(1, size) * delay).astype(np.int64)
 
     
     def optical_propagation(self, channels):
@@ -442,7 +459,7 @@ class S2PhotonPropagation(strax.Plugin):
         :param channels: The channels of all s2 photon
         """
         prop_time = np.zeros_like(channels)
-        u_rand = np.random.rand(len(channels))[:, None]
+        u_rand = self.rng.rand(len(channels))[:, None]
 
         is_top = channels < self.n_top_pmts
         prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name='top')
@@ -518,7 +535,7 @@ class S2PhotonPropagation(strax.Plugin):
         return __uniform_to_pe_arr
         
     
-    
+#How to add the rng here? Check again with numba!!! 
 @njit
 def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap):
     

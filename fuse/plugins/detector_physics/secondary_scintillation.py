@@ -92,11 +92,25 @@ class SecondaryScintillation(strax.Plugin):
         help='s2_pattern_map',
     )
 
+    fixed_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
+
     def setup(self):
         
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running SecondaryScintillation in debug mode")
+
+        if self.fixed_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
         
         self.pmt_mask = np.array(self.gains)
         
@@ -134,10 +148,10 @@ class SecondaryScintillation(strax.Plugin):
         
         electron_gains = np.repeat(sc_gain, interactions_in_roi[mask]["n_electron_extracted"])
         
-        n_photons_per_ele = np.random.poisson(electron_gains)
+        n_photons_per_ele = self.rng.poisson(electron_gains)
         
         if self.s2_gain_spread:
-            n_photons_per_ele += np.random.normal(0, self.s2_gain_spread, len(n_photons_per_ele)).astype(np.int64)
+            n_photons_per_ele += self.rng.normal(0, self.s2_gain_spread, len(n_photons_per_ele)).astype(np.int64)
         
         sum_photons_per_interaction = [np.sum(x) for x in np.split(n_photons_per_ele, np.cumsum(interactions_in_roi[mask]["n_electron_extracted"]))[:-1]]
         

@@ -157,6 +157,11 @@ class PMTResponseAndDAQ(strax.Plugin):
         cache=True,
         help='noise_data',
     )
+
+    fixed_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
     
     channel_map = straxen.URLConfig(
         track=False, type=immutabledict,
@@ -169,10 +174,18 @@ class PMTResponseAndDAQ(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug("Running pmt_response_and_daq in debug mode")
 
+        if self.fixed_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
+
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
 
-        
         #setup for Digitize Pulse Cache 
         self.current_2_adc = self.pmt_circuit_load_resistor \
                 * self.external_amplification \
@@ -498,6 +511,7 @@ def sum_signal(adc_wave, left, right, sum_template):
     sum_template[left:right] += adc_wave
     return sum_template
 
+#How to add the random generator....!!!!
 @njit
 def add_noise(data, channel_mask, noise_data, noise_data_length, noise_data_channels):
     """
