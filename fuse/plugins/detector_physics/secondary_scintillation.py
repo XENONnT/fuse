@@ -122,7 +122,7 @@ class SecondaryScintillation(strax.Plugin):
     def compute(self, interactions_in_roi, individual_electrons):
         
         #Just apply this to clusters with photons
-        mask = interactions_in_roi["electrons"] > 0
+        mask = interactions_in_roi["n_electron_extracted"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
             return dict(s2_photons=np.zeros(0, self.dtype["s2_photons"]),
@@ -148,10 +148,10 @@ class SecondaryScintillation(strax.Plugin):
         result_photons["time"] = individual_electrons["time"]
         result_photons["endtime"] = individual_electrons["endtime"]
         
-        result_sum_photons = np.zeros(len(sum_photons_per_interaction), dtype = self.dtype["s2_photons_sum"])
-        result_sum_photons["sum_photons"] = sum_photons_per_interaction
-        result_sum_photons["time"] = interactions_in_roi[mask]["time"]
-        result_sum_photons["endtime"] = interactions_in_roi[mask]["endtime"]
+        result_sum_photons = np.zeros(len(interactions_in_roi), dtype = self.dtype["s2_photons_sum"])
+        result_sum_photons["sum_photons"][mask] = sum_photons_per_interaction
+        result_sum_photons["time"][mask] = interactions_in_roi[mask]["time"]
+        result_sum_photons["endtime"][mask] = interactions_in_roi[mask]["endtime"]
         
         return dict(s2_photons=result_photons,
                     s2_photons_sum=result_sum_photons)

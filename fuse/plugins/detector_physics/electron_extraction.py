@@ -148,7 +148,7 @@ class ElectronExtraction(strax.Plugin):
             
         n_electron = np.random.binomial(n=interactions_in_roi[mask]["n_electron_interface"], p=cy)
         
-        result = np.zeros(len(n_electron), dtype=self.dtype)
+        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         result["n_electron_extracted"][mask] = n_electron
         result["time"] = interactions_in_roi["time"]
         result["endtime"] = interactions_in_roi["endtime"]

@@ -50,7 +50,7 @@ class ElectronTiming(strax.Plugin):
     def compute(self, interactions_in_roi):
 
         #Just apply this to clusters with photons
-        mask = interactions_in_roi["electrons"] > 0
+        mask = interactions_in_roi["n_electron_extracted"] > 0
         
         if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, dtype=self.dtype)

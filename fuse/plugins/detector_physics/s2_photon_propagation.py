@@ -225,7 +225,7 @@ class S2PhotonPropagation(strax.Plugin):
     def compute(self, individual_electrons, interactions_in_roi):
 
         #Just apply this to clusters with photons
-        mask = interactions_in_roi["electrons"] > 0
+        mask = interactions_in_roi["n_electron_extracted"] > 0
 
         if len(individual_electrons) == 0:
             return np.zeros(0, dtype=self.dtype)
