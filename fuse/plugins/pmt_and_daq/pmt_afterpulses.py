@@ -144,7 +144,7 @@ class PMTAfterPulses(strax.Plugin):
             amplitude_bin_size = self.uniform_to_pmt_ap[element]['amplitude_bin_size']
 
             # Assign each photon FRIST random uniform number rU0 from (0, 1] for timing
-            rU0 = 1 - self.rng.rand(len(merged_photon_timings))
+            rU0 = 1 - self.rng.random(len(merged_photon_timings))
 
             # delaytime_cdf is intentionally not normalized to 1 but the probability of the AP 
             prob_ap = delaytime_cdf[merged_photon_channels, -1]
@@ -165,7 +165,7 @@ class PMTAfterPulses(strax.Plugin):
             sel_photon_channel = merged_photon_channels[sel_photon_id]
 
             # Assign selected photon SECOND random uniform number rU1 from (0, 1] for amplitude
-            rU1 = 1 - self.rng.rand(len(sel_photon_channel))
+            rU1 = 1 - self.rng.random(len(sel_photon_channel))
 
             # The map is made so that the indices are delay time in unit of ns
             if 'Uniform' in element:

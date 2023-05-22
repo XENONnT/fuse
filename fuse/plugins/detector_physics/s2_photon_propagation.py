@@ -459,7 +459,7 @@ class S2PhotonPropagation(strax.Plugin):
         :param channels: The channels of all s2 photon
         """
         prop_time = np.zeros_like(channels)
-        u_rand = self.rng.rand(len(channels))[:, None]
+        u_rand = self.rng.random(len(channels))[:, None]
 
         is_top = channels < self.n_top_pmts
         prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name='top')
