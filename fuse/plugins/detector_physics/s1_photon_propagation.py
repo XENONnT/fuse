@@ -136,7 +136,12 @@ class S1PhotonPropagation(strax.Plugin):
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
+            
             self.rng = np.random.default_rng(seed = seed)
+
+            nest_rng = nestpy.RandomGen.rndm()  
+            nest_rng.set_seed(seed)
+
             log.debug(f"Generating random numbers from seed {seed}")
         else: 
             self.rng = np.random.default_rng()

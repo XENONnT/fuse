@@ -11,7 +11,6 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.yields')
 log.setLevel('WARNING')
 
-#How to pass the seed to nestpy?
 @export
 class NestYields(strax.Plugin):
     
@@ -51,10 +50,10 @@ class NestYields(strax.Plugin):
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
+            nest_rng = nestpy.RandomGen.rndm()  
+            nest_rng.set_seed(seed)
             log.debug(f"Generating random numbers from seed {seed}")
         else: 
-            self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")
 
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
@@ -224,6 +223,8 @@ class BetaYields(strax.Plugin):
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
             self.rng = np.random.default_rng(seed = seed)
+            nest_rng = nestpy.RandomGen.rndm()  
+            nest_rng.set_seed(seed)
             log.debug(f"Generating random numbers from seed {seed}")
         else: 
             self.rng = np.random.default_rng()
