@@ -2,7 +2,6 @@ import strax
 import straxen
 import uproot
 import os
-import numba
 import logging
 
 import pandas as pd

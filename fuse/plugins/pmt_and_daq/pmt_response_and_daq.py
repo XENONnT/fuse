@@ -1,7 +1,6 @@
 from immutabledict import immutabledict
 import straxen 
 import strax
-import os
 from numba import njit
 import numpy as np
 import logging

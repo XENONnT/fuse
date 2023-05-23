@@ -1,7 +1,5 @@
 import strax
 import straxen
-import os
-import numba
 import logging
 
 import pandas as pd
