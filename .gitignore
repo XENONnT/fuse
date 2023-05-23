@@ -4,3 +4,4 @@ fuse.egg-info/*
 .eggs/*
 build/*
 .DS_Store
+.vscode/*
