@@ -67,5 +67,11 @@ class ElectricField(strax.Plugin):
         positions = np.stack((r, interactions_in_roi['z']), axis=1)
         electric_field_array['e_field'] = self.efield_map(positions)
 
+        # Clip negative values to 0
+        n_negative_values = np.sum(electric_field_array['e_field'] < 0)
+        if n_negative_values > 0:
+            log.warning(f"Found {n_negative_values} negative electric field values. Clipping to 0.")
+        electric_field_array['e_field'] = np.clip(electric_field_array['e_field'], 0, None)
+
         return electric_field_array
 
