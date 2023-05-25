@@ -490,7 +490,8 @@ class S2PhotonPropagation(strax.Plugin):
                                      draw_index,
                                      n_photons,
                                      diff_nearest_gg,
-                                     d_gasgap
+                                     d_gasgap,
+                                     self.rng
                                     )
     
     def init_spe_scaling_factor_distributions(self):
@@ -534,9 +535,12 @@ class S2PhotonPropagation(strax.Plugin):
         return __uniform_to_pe_arr
         
     
-#How to add the rng here? Check again with numba!!! 
 @njit
-def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap):
+def numba_random_uniform(low, high, size, rng):
+    return low + (high - low) * rng.random(size)
+
+@njit
+def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap, rng):
     
     """
     Draws the excitation times from the GARFIELD electroluminescence map
@@ -570,7 +574,8 @@ def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_ga
                        +inv_cdf_list[hist_ind])
         
         #Subtract 2 because this way we don't want to sample from this last strange tail
-        samples = np.random.uniform(0, inv_cdf_len-2, n)
+        samples = numba_random_uniform(0, inv_cdf_len-2, n, rng)
+        #samples = np.random.uniform(0, inv_cdf_len-2, n)
         t1 = interp_cdf[np.floor(samples).astype('int')]
         t2 = interp_cdf[np.ceil(samples).astype('int')]
         T = (t2-t1)*(samples - np.floor(samples))+t1
