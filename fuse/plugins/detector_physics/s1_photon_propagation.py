@@ -15,6 +15,10 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S1_Signal')
 log.setLevel('WARNING')
 
+#Initialize the nestpy random generator
+#The seed will be set in the setup function
+nest_rng = nestpy.RandomGen.rndm()
+
 @export
 class S1PhotonPropagation(strax.Plugin):
     
@@ -136,15 +140,12 @@ class S1PhotonPropagation(strax.Plugin):
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
-            
-            self.rng = np.random.default_rng(seed = seed)
+            #Dont know but nestpy seems to have a problem with large seeds
+            self.short_seed = int(repr(seed)[-8:])
+            nest_rng.set_seed(self.short_seed)
 
-            nest_rng = nestpy.RandomGen.rndm()  
-            nest_rng.set_seed(seed)
-
-            log.debug(f"Generating random numbers from seed {seed}")
+            log.debug(f"Generating random numbers from seed {self.short_seed}")
         else: 
-            self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")
 
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
