@@ -11,6 +11,10 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.yields')
 log.setLevel('WARNING')
 
+#Initialize the nestpy random generator
+#The seed will be set in the setup function
+nest_rng = nestpy.RandomGen.rndm()
+
 @export
 class NestYields(strax.Plugin):
     
@@ -50,9 +54,11 @@ class NestYields(strax.Plugin):
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
-            nest_rng = nestpy.RandomGen.rndm()  
-            nest_rng.set_seed(seed)
-            log.debug(f"Generating random numbers from seed {seed}")
+            #Dont know but nestpy seems to have a problem with large seeds
+            self.short_seed = int(repr(seed)[-8:])
+            nest_rng.set_seed(self.short_seed)
+
+            log.debug(f"Generating random numbers from seed {self.short_seed}")
         else: 
             log.debug(f"Generating random numbers with seed pulled from OS")
 
@@ -68,6 +74,7 @@ class NestYields(strax.Plugin):
         Returns:
             numpy.ndarray: An array of quanta, with fields for time, endtime, photons, electrons, and excitons.
         """
+
         if len(interactions_in_roi) == 0:
             return np.zeros(0, dtype=self.dtype)
         
@@ -222,12 +229,12 @@ class BetaYields(strax.Plugin):
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            nest_rng = nestpy.RandomGen.rndm()  
-            nest_rng.set_seed(seed)
-            log.debug(f"Generating random numbers from seed {seed}")
+            #Dont know but nestpy seems to have a problem with large seeds
+            self.short_seed = int(repr(seed)[-8:])
+            nest_rng.set_seed(self.short_seed)
+
+            log.debug(f"Generating random numbers from seed {self.short_seed}")
         else: 
-            self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")
 
         self.get_quanta_vectorized = np.vectorize(self.get_quanta, excluded="self")
