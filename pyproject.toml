@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "XENONfuse"
+version = "0.0.0"
+description = "XENON Framework for Unified Simulations of Events"
+authors = [
+  { name = "Henning Schulze Eißing", email = "h_schu55@uni-muenster.de" },
+]
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Natural Language :: English",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics"
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "numba",
+    "awkward",
+    "strax",
+    "straxen",
+    "copy",
+    "cutax",
+    "itertools",
+    "logging",
+    "sklearn",
+    "pandas", 
+    "os",
+    "uproot",
+    "pickle",
+    "nestpy",
+    "immutabledict",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/XENONnT/fuse"
+"Bug Tracker" = "https://github.com/XENONnT/fuse/issues"

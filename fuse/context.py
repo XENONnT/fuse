@@ -5,7 +5,6 @@ import strax
 import cutax
 import straxen
 import fuse
-import os
 import numpy as np
 
 from straxen import URLConfig
