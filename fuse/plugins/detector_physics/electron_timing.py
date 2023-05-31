@@ -1,6 +1,7 @@
 import strax
 import numpy as np
 import straxen
+import os
 import logging
 
 export, __all__ = strax.exporter()
