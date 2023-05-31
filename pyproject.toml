@@ -41,6 +41,3 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/XENONnT/fuse"
 "Bug Tracker" = "https://github.com/XENONnT/fuse/issues"
-
-[tool.setuptools]
-packages = ["fuse"]
