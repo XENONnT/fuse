@@ -2,6 +2,7 @@
 #We can keep this for validation of fuse but it can be removed later on
 
 import strax
+import straxen
 import numpy as np
 import awkward as ak
 import logging 
@@ -15,10 +16,6 @@ log = logging.getLogger('fuse.micro_physics.output')
 log.setLevel('WARNING')
 
 @export
-@strax.takes_config(
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-)
 class output_plugin(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -49,6 +46,12 @@ class output_plugin(strax.Plugin):
              (('Y position of the primary particle [cm]', 'y_pri'), np.float32),
              (('Z position of the primary particle [cm]', 'z_pri'), np.float32),
             ]
+    
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,track=False,
+        help='Show debug informations',
+    )
 
     def setup(self):
         

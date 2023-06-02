@@ -12,12 +12,11 @@ At the moment the intallation procedure is not very advanced. I would recommend 
 
 1. Clone the fuse repository.
 2. Clone the private_nt_aux_files repository to the same directory as you cloned fuse.
-3. Install fuse using `pip install -e .` in the fuse directory.
+2. Install fuse using `pip install -e .` in the fuse directory.
 
 
 ## Plugin Structure
 
 The full simulation chain in split into multiple plugins. An overview of the simulation structure can be found below.
 
-![Simulation_Refactor_Plugins](https://user-images.githubusercontent.com/27280678/235156990-7fa63aae-21c4-45b5-9b71-a42a4173f0da.jpg)
-
+![Simulation Refactor](https://github.com/XENONnT/fuse/assets/27280678/2604ff67-ae7b-4d5b-968a-206af6d3e34a)

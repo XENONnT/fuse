@@ -1,10 +1,13 @@
 import strax
+import straxen
 import os
 import numba
 import logging
 
 import pandas as pd
 import numpy as np
+
+from ...common import dynamic_chunking
 
 export, __all__ = strax.exporter()
 
@@ -13,18 +16,6 @@ log = logging.getLogger('fuse.detector_physics.csv_input')
 log.setLevel('WARNING')
 
 @export
-@strax.takes_config(
-    strax.Option('input_file', track=False, infer_type=False,
-                 help="CSV file to read"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-    strax.Option('source_rate', default=1, track=False, infer_type=False,
-                 help="source_rate"),
-    strax.Option('separation_scale', default=1e8, track=False, infer_type=False,
-                 help="Add Description"),
-    strax.Option('n_interactions_per_chunk', default=25, track=False, infer_type=False,
-                 help="n_interactions_per_chunk"),
-)
 class ChunkCsvInput(strax.Plugin):
     """
     Plugin which reads a CSV file containing instructions for the detector physics simulation
@@ -56,6 +47,33 @@ class ChunkCsvInput(strax.Plugin):
              ('eventid', np.int32),#Remove them later as they are not in the usual micropyhsics summary
             ]
     dtype = dtype + strax.time_fields
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool, track=False,
+        help='Show debug informations',
+    )
+
+    input_file = straxen.URLConfig(
+        track=False,
+        infer_type=False,
+        help='CSV file to read',
+    )
+
+    separation_scale = straxen.URLConfig(
+        default=1e8, type=(int, float),
+        help='separation_scale',
+    )
+
+    source_rate = straxen.URLConfig(
+        default=1, type=(int, float),
+        help='source_rate',
+    )
+
+    n_interactions_per_chunk = straxen.URLConfig(
+        default=25, type=(int, float),
+        help='n_interactions_per_chunk',
+    )
 
     def setup(self):
 
@@ -209,31 +227,3 @@ class csv_file_loader():
             instructions[column] = df[column]
 
         return instructions, n_simulated_events
-    
-
-@numba.njit()
-def dynamic_chunking(data, scale, n_min):
-
-    idx_sort = np.argsort(data)
-    idx_undo_sort = np.argsort(idx_sort)
-
-    data_sorted = data[idx_sort]
-
-    diff = data_sorted[1:] - data_sorted[:-1]
-
-    clusters = np.array([0])
-    c = 0
-    for value in diff:
-        if value <= scale:
-            clusters = np.append(clusters, c)
-            
-        elif len(clusters[clusters == c]) < n_min:
-            clusters = np.append(clusters, c)
-            
-        elif value > scale:
-            c = c + 1
-            clusters = np.append(clusters, c)
-
-    clusters_undo_sort = clusters[idx_undo_sort]
-
-    return clusters_undo_sort

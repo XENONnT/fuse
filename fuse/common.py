@@ -1,9 +1,34 @@
 import numpy as np
 import awkward as ak
-import straxen
-import strax
 import numba
-from copy import deepcopy
+
+
+@numba.njit()
+def dynamic_chunking(data, scale, n_min):
+
+    idx_sort = np.argsort(data)
+    idx_undo_sort = np.argsort(idx_sort)
+
+    data_sorted = data[idx_sort]
+
+    diff = data_sorted[1:] - data_sorted[:-1]
+
+    clusters = np.array([0])
+    c = 0
+    for value in diff:
+        if value <= scale:
+            clusters = np.append(clusters, c)
+            
+        elif len(clusters[clusters == c]) < n_min:
+            clusters = np.append(clusters, c)
+            
+        elif value > scale:
+            c = c + 1
+            clusters = np.append(clusters, c)
+
+    clusters_undo_sort = clusters[idx_undo_sort]
+
+    return clusters_undo_sort
 
 
 def full_array_to_numpy(array, dtype):
@@ -17,63 +42,26 @@ def full_array_to_numpy(array, dtype):
         
     return numpy_data
 
+
+#This is a modified version of the corresponding WFsim code....
+@numba.njit()
+def uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
+    indices = np.int64(p * 2000) + 1
+    return __uniform_to_pe_arr[channel, indices]
+
+#In WFSim uniform_to_pe_arr is called inside a loop over the channels
+#I needed to change the code to run on all channels at once
+@numba.njit()
+def loop_uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
+    result = []
+    for i in range(len(p)):
+        result.append(uniform_to_pe_arr(p[i],
+                                        channel=channel[i],
+                                        __uniform_to_pe_arr=__uniform_to_pe_arr) )
+    return np.array(result)
+
+
 #WFSim functions
-
-def make_map(map_file, fmt=None, method='WeightedNearestNeighbors'):
-    """Fetch and make an instance of InterpolatingMap based on map_file
-    Alternatively map_file can be a list of ["constant dummy", constant: int, shape: list]
-    return an instance of  DummyMap"""
-
-    if isinstance(map_file, list):
-        assert map_file[0] == 'constant dummy', ('Alternative file input can only be '
-                                                 '("constant dummy", constant: int, shape: list')
-        return DummyMap(map_file[1], map_file[2])
-
-    elif isinstance(map_file, str):
-        if fmt is None:
-            fmt = parse_extension(map_file)
-
-        #log.debug(f'Initialize map interpolator for file {map_file}')
-        map_data = straxen.get_resource(map_file, fmt=fmt)
-        return straxen.InterpolatingMap(map_data, method=method)
-
-    else:
-        raise TypeError("Can't handle map_file except a string or a list")
-
-def make_patternmap(map_file, fmt=None, method='WeightedNearestNeighbors', pmt_mask=None):
-    """ This is special interpretation of the of previous make_map(), but designed
-    for pattern map loading with provided PMT mask. This way simplifies both S1 and S2
-    cases
-    """
-    # making tests not failing, we can probably overwrite it completel
-    if isinstance(map_file, list):
-        #log.warning(f'Using dummy map with pattern mask! This has no effect here!')
-        assert map_file[0] == 'constant dummy', ('Alternative file input can only be '
-                                                 '("constant dummy", constant: int, shape: list')
-        return DummyMap(map_file[1], map_file[2])
-    elif isinstance(map_file, str):
-        if fmt is None:
-            fmt = parse_extension(map_file)
-        map_data = deepcopy(straxen.get_resource(map_file, fmt=fmt))
-        # XXX: straxed deals with pointers and caches resources, it means that resources are global
-        # what is bad, so we make own copy here and modify it locally
-        if 'compressed' in map_data:
-            compressor, dtype, shape = map_data['compressed']
-            map_data['map'] = np.frombuffer(
-                strax.io.COMPRESSORS[compressor]['decompress'](map_data['map']),
-                dtype=dtype).reshape(*shape)
-            del map_data['compressed']
-        if 'quantized' in map_data:
-            map_data['map'] = map_data['quantized']*map_data['map'].astype(np.float32)
-            del map_data['quantized']
-        if not (pmt_mask is None):
-            assert (map_data['map'].shape[-1]==pmt_mask.shape[0]), "Error! Pattern map and PMT gains must have same dimensions!"
-            map_data['map'][..., ~pmt_mask]=0.0
-        return straxen.InterpolatingMap(map_data, method=method)
-    else:
-        raise TypeError("Can't handle map_file except a string or a list")
-
-
 def parse_extension(name):
     """Get the extention from a file name. If zipped or tarred, can contain a dot"""
     split_name = name.split('.')

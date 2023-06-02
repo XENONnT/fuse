@@ -2,85 +2,25 @@ import numpy as np
 import strax
 import straxen
 import nestpy
-import os
 import logging
 
-from numba import njit
 from strax import deterministic_hash
 from scipy.interpolate import interp1d
 
-export, __all__ = strax.exporter()
+from ...common import loop_uniform_to_pe_arr
 
-from ...common import make_map, make_patternmap
+export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S1_Signal')
 log.setLevel('WARNING')
 
-#private_files_path = "path/to/private/files"
-base_path = os.path.abspath(os.getcwd())
-private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
-
 @export
-@strax.takes_config(
-    strax.Option('s1_detection_efficiency', default=1, track=False, infer_type=False,
-                 help="Some placeholder for s1_detection_efficiency"),
-    strax.Option('p_double_pe_emision', default=config["p_double_pe_emision"], track=False, infer_type=False,
-                 help="Some placeholder for p_double_pe_emision"),
-    strax.Option('s1_lce_correction_map',
-                 default=os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz"),
-                 track=False,
-                 infer_type=False,
-                 help="S1 LCE correction map"),
-    strax.Option('s1_pattern_map',
-                 default=os.path.join(private_files_path, "sim_files/XENONnT_s1_xyz_patterns_corrected_qes_MCva43fa9b_wires.pkl"),
-                 track=False,
-                 infer_type=False,
-                 help="S1 pattern map"),
-    strax.Option('n_tpc_pmts', default=494, track=False, infer_type=False,
-                 help="Number of PMTs in the TPC"),
-    strax.Option('n_top_pmts', default=253, track=False, infer_type=False,
-                 help="Number of PMTs on top array"),
-    strax.Option('digitizer_voltage_range', default=config['digitizer_voltage_range'], track=False, infer_type=False,
-                 help="digitizer_voltage_range"),
-    strax.Option('digitizer_bits', default=config['digitizer_bits'], track=False, infer_type=False,
-                 help="digitizer_bits"),
-    strax.Option('pmt_circuit_load_resistor', default=config['pmt_circuit_load_resistor'], track=False, infer_type=False,
-                 help="pmt_circuit_load_resistor"),
-    strax.Option('to_pe_file', default=os.path.join(private_files_path, "sim_files/to_pe_nt.npy"), track=False, infer_type=False,
-                 help="to_pe file"),
-    strax.Option('s1_model_type', default=config['s1_model_type'], track=True, infer_type=False,
-                 help="s1_model_type"),
-    strax.Option('s1_time_spline',
-                 default=os.path.join(private_files_path, "sim_files/XENONnT_s1_proponly_va43fa9b_wires_20200625.json.gz"),
-                 track=False,
-                 infer_type=False,
-                 help="S1 Time Spline"),
-    strax.Option('s1_decay_time', default=config['s1_decay_time'], track=False, infer_type=False,
-                 help="s1_decay_time"),
-    strax.Option('s1_decay_spread', default=config['s1_decay_spread'], track=False, infer_type=False,
-                 help="s1_decay_spread"),
-    strax.Option('phase', default="liquid", track=False, infer_type=False,
-                 help="xenon phase"),
-    strax.Option('maximum_recombination_time', default=config["maximum_recombination_time"], track=False, infer_type=False,
-                 help="maximum_recombination_time"),
-    strax.Option('pmt_transit_time_mean', default=config['pmt_transit_time_mean'], track=False, infer_type=False,
-                 help="pmt_transit_time_mean"),
-    strax.Option('pmt_transit_time_spread', default=config['pmt_transit_time_spread'], track=False, infer_type=False,
-                 help="pmt_transit_time_spread"),
-    strax.Option('p_double_pe_emision', default=config['p_double_pe_emision'], track=False, infer_type=False,
-                 help="p_double_pe_emision"),
-    strax.Option('photon_area_distribution', default=config['photon_area_distribution'], track=False, infer_type=False,
-                 help="photon_area_distribution"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-)
 class S1PhotonPropagation(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ("microphysics_summary")
+    depends_on = ("s1_photons", "microphysics_summary")
     provides = "propagated_s1_photons"
     data_kind = "S1_photons"
     
@@ -92,48 +32,116 @@ class S1PhotonPropagation(strax.Plugin):
              ('photon_gain', np.int64),
             ]
     dtype = dtype + strax.time_fields
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,track=False,
+        help='Show debug informations',
+    )
+
+    p_double_pe_emision = straxen.URLConfig(
+        type=(int, float),
+        help='p_double_pe_emision',
+    )
+
+    pmt_transit_time_spread = straxen.URLConfig(
+        type=(int, float),
+        help='pmt_transit_time_spread',
+    )
+
+    pmt_transit_time_mean = straxen.URLConfig(
+        type=(int, float),
+        help='pmt_transit_time_mean',
+    )
+
+    maximum_recombination_time = straxen.URLConfig(
+        type=(int, float),
+        help='maximum_recombination_time',
+    )
+
+    phase = straxen.URLConfig(
+        default="liquid",
+        help='phase',
+    )
+
+    s1_decay_spread = straxen.URLConfig(
+        type=(int, float),
+        help='s1_decay_spread',
+    )
+
+    s1_decay_time = straxen.URLConfig(
+        type=(int, float),
+        help='s1_decay_time',
+    )
+
+    s1_model_type = straxen.URLConfig(
+        help='s1_model_type',
+    )
+
+    pmt_circuit_load_resistor = straxen.URLConfig(
+        help='pmt_circuit_load_resistor', type=(int, float),
+    )
+
+    digitizer_bits = straxen.URLConfig(
+        type=(int, float),
+        help='digitizer_bits',
+    )
+
+    digitizer_voltage_range = straxen.URLConfig(
+        type=(int, float),
+        help='digitizer_voltage_range',
+    )
+
+    n_top_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs on top array',
+    )
+
+    n_tpc_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs in the TPC',
+    )
+    
+    s1_pattern_map = straxen.URLConfig(
+        cache=True,
+        help='s1_pattern_map',
+    )
+    
+    gains = straxen.URLConfig(
+        cache=True,
+        help='pmt gains',
+    )
+    
+    s1_optical_propagation_spline = straxen.URLConfig(
+        cache=True,
+        help='s1_optical_propagation_spline',
+    )
+    
+    photon_area_distribution = straxen.URLConfig(
+        cache=True,
+        help='photon_area_distribution',
+    )
     
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S1PhotonPropagation in debug mode")
-        
-        self.s1_lce_correction_map = make_map(self.s1_lce_correction_map, fmt='json.gz')
-        self.s1_pattern_map = make_patternmap(self.s1_pattern_map, fmt='pkl', pmt_mask=None)
-        
-        to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
-        self.to_pe = to_pe[0][1]
-        
-        adc_2_current = (self.digitizer_voltage_range
-                / 2 ** (self.digitizer_bits)
-                 / self.pmt_circuit_load_resistor)
-
-        self.gains = np.divide(adc_2_current,
-                          self.to_pe,
-                          out=np.zeros_like(self.to_pe),
-                          where=self.to_pe != 0)
 
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
-        
-        
-        self.s1_optical_propagation_spline = make_map(self.s1_time_spline,
-                                                      fmt='json.gz',
-                                                      method='RegularGridInterpolator')
         
         if 'nest' in self.s1_model_type: #and (self.nestpy_calc is None):
             log.info('Using NEST for scintillation time without set calculator\n'
                      'Creating new nestpy calculator')
             self.nestpy_calc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
 
-        self.photon_area_distribution = straxen.get_resource(self.photon_area_distribution, fmt='csv')
         self._cached_uniform_to_pe_arr = {}
         self.__uniform_to_pe_arr = self.init_spe_scaling_factor_distributions()
 
-    def compute(self, clustered_interactions):
+    def compute(self, interactions_in_roi):
 
-        #Just apply this to clusters with free electrons
-        instruction = clustered_interactions[clustered_interactions["photons"] > 0]
+        #Just apply this to clusters with photons hitting a PMT
+        instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
 
         if len(instruction) == 0:
             return np.zeros(0, self.dtype)
@@ -146,13 +154,9 @@ class S1PhotonPropagation(strax.Plugin):
         recoil_type = instruction['nestid']
         positions = np.array([x, y, z]).T  # For map interpolation
         
-        n_photon_hits = self.get_n_photons(n_photons=n_photons,
-                                           positions=positions,
-                                           )
-        
         # The new way interpolation is written always require a list
         _photon_channels = self.photon_channels(positions=positions,
-                                                n_photon_hits=n_photon_hits,
+                                                n_photon_hits=instruction["n_s1_photon_hits"],
                                                 )
         
         extra_targs = {}
@@ -164,7 +168,7 @@ class S1PhotonPropagation(strax.Plugin):
             extra_targs['nestpy_calc'] = self.nestpy_calc
             
         _photon_timings = self.photon_timings(t=t,
-                                              n_photon_hits=n_photon_hits, 
+                                              n_photon_hits=instruction["n_s1_photon_hits"],
                                               recoil_type=recoil_type,
                                               channels=_photon_channels,
                                               positions=positions,
@@ -183,6 +187,7 @@ class S1PhotonPropagation(strax.Plugin):
                                             self.pmt_transit_time_spread / 2.35482,
                                             len(_photon_timings)).astype(np.int64)
         
+        #Why is this done here and additionally in the get_n_photons function of S1PhotonHits??
         _photon_is_dpe = np.random.binomial(n=1,
                                             p=self.p_double_pe_emision,
                                             size=len(_photon_timings)).astype(np.bool_)
@@ -205,27 +210,6 @@ class S1PhotonPropagation(strax.Plugin):
         result["photon_gain"] = _photon_gains
         
         return result
-    
-    def get_n_photons(self, n_photons, positions):
-    
-        """Calculates number of detected photons based on number of photons in total and the positions
-        :param n_photons: 1d array of ints with number of emitted S1 photons:
-        :param positions: 2d array with xyz positions of interactions
-        :param s1_lce_correction_map: interpolator instance of s1 light yield map
-        :param config: dict wfsim config 
-
-        return array with number photons"""
-        ly = self.s1_lce_correction_map(positions)
-        # depending on if you use the data driven or mc pattern map for light yield 
-        #the shape of n_photon_hits will change. Mc needs a squeeze
-        if len(ly.shape) != 1:
-            ly = np.squeeze(ly, axis=-1)
-        ly /= 1 + self.p_double_pe_emision
-        ly *= self.s1_detection_efficiency
-
-        n_photon_hits = np.random.binomial(n=n_photons, p=ly)
-
-        return n_photon_hits
     
     
     def photon_channels(self, positions, n_photon_hits):
@@ -361,7 +345,7 @@ class S1PhotonPropagation(strax.Plugin):
     def init_spe_scaling_factor_distributions(self):
         #This code will be duplicate with the corresponding S2 class 
         # Improve!!
-        
+        config="PLACEHOLDER_FIX_THIS_PART"
         h = deterministic_hash(config) # What is this part doing?
         #if h in self._cached_uniform_to_pe_arr:
         #    __uniform_to_pe_arr = self._cached_uniform_to_pe_arr[h]
@@ -397,21 +381,3 @@ class S1PhotonPropagation(strax.Plugin):
 
         log.debug('Spe scaling factors created, cached with key %s' % h)
         return __uniform_to_pe_arr
-        
-
-#This is a modified version of the corresponding WFsim code....
-@njit()
-def uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
-    indices = np.int64(p * 2000) + 1
-    return __uniform_to_pe_arr[channel, indices]
-
-#In WFSim uniform_to_pe_arr is called inside a loop over the channels
-#I needed to change the code to run on all channels at once
-@njit()
-def loop_uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
-    result = []
-    for i in range(len(p)):
-        result.append(uniform_to_pe_arr(p[i],
-                                        channel=channel[i],
-                                        __uniform_to_pe_arr=__uniform_to_pe_arr) )
-    return np.array(result)

@@ -4,67 +4,20 @@ import straxen
 import os
 import logging
 
-from ...common import make_map
-
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_drift')
 log.setLevel('WARNING')
 
-#private_files_path = "path/to/private/files"
-
-base_path = os.path.abspath(os.getcwd())
-private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
-
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
-
 @export
-@strax.takes_config(
-    strax.Option('field_distortion_model', default=config["field_distortion_model"], track=False, infer_type=False,
-                 help="field_distortion_model"),
-    strax.Option('drift_velocity_liquid', default=config["drift_velocity_liquid"], track=False, infer_type=False,
-                 help="drift_velocity_liquid"),
-    strax.Option('field_distortion_model', default=config["field_distortion_model"], track=False, infer_type=False,
-                 help="field_distortion_model"),
-    strax.Option('fdc_3d',
-                 default=os.path.join(private_files_path,"sim_files/XnT_3D_FDC_xyz_24_Jun_2022_MC.json.gz"),
-                 track=False,
-                 infer_type=False,
-                 help="fdc_3d map"),
-    strax.Option('field_distortion_comsol_map',
-                 default=os.path.join(private_files_path,"sim_files/init_to_final_position_mapping_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz"),
-                 track=False,
-                 infer_type=False,
-                 help="field_distortion_comsol_map"),
-    strax.Option('tpc_length', default=config["tpc_length"], track=False, infer_type=False,
-                 help="tpc_length"),
-    strax.Option('field_dependencies_map',
-                 default=os.path.join(private_files_path,"sim_files/field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz"),
-                 track=False,
-                 infer_type=False,
-                 help="field_dependencies_map"),
-    strax.Option('electron_lifetime_liquid', default=config["electron_lifetime_liquid"], track=False, infer_type=False,
-                 help="electron_lifetime_liquid"),
-    strax.Option('diffusion_longitudinal_map',
-                 default=os.path.join(private_files_path,"sim_files/data_driven_diffusion_map_XENONnTSR0V2.json.gz"),
-                 track=False,
-                 infer_type=False,
-                 help="diffusion_longitudinal_map"),
-    strax.Option('diffusion_constant_longitudinal', default=config["diffusion_constant_longitudinal"], track=False, infer_type=False,
-                 help="diffusion_constant_longitudinal"),
-    strax.Option('drift_time_gate', default=config["drift_time_gate"], track=False, infer_type=False,
-                 help="drift_time_gate"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-)
 class ElectronDrift(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.0.1"
     
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
-    data_kind = 'electron_cloud'
+    data_kind = 'interactions_in_roi'
     
     dtype = [('n_electron_interface', np.int64),
              ('drift_time_mean', np.int64),
@@ -79,61 +32,105 @@ class ElectronDrift(strax.Plugin):
     
     dtype = dtype + strax.time_fields
     
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,track=False,
+        help='Show debug informations',
+    )
+    
+    drift_velocity_liquid = straxen.URLConfig(
+        type=(int, float),
+        help='drift_velocity_liquid',
+    )
+    
+    drift_time_gate = straxen.URLConfig(
+        type=(int, float),
+        help='drift_time_gate',
+    )
+    
+    diffusion_constant_longitudinal = straxen.URLConfig(
+        type=(int, float),
+        help='diffusion_constant_longitudinal',
+    )
+    
+    electron_lifetime_liquid = straxen.URLConfig(
+        type=(int, float),
+        help='electron_lifetime_liquid',
+    )
+    
+    enable_field_dependencies = straxen.URLConfig(
+        help='enable_field_dependencies',
+    )
+
+    tpc_length = straxen.URLConfig(
+        type=(int, float),
+        help='tpc_length',
+    )
+        
+    field_distortion_model = straxen.URLConfig(
+        help='field_distortion_model',
+    )
+    
+    field_dependencies_map_tmp = straxen.URLConfig(
+        help='field_dependencies_map',
+    )
+    
+    diffusion_longitudinal_map_tmp = straxen.URLConfig(
+        help='diffusion_longitudinal_map',
+    )
+    
+    fdc_map_fuse = straxen.URLConfig(
+        cache=True,
+        help='fdc_map',
+    )
+    
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ElectronDrift in debug mode")
         
+        #Can i do this scaling in the url config?
         if self.field_distortion_model == "inverse_fdc":
-            self.fdc_3d = make_map(self.fdc_3d, fmt='json.gz')
-            self.fdc_3d.scale_coordinates([1., 1., - self.drift_velocity_liquid])
-
-        if self.field_distortion_model == "comsol":
-            self.fd_comsol = make_map(self.field_distortion_comsol_map, fmt='json.gz', method='RectBivariateSpline')
-            
+            self.fdc_map_fuse.scale_coordinates([1., 1., - self.drift_velocity_liquid])
+   
         # Field dependencies 
-        # This config entry a dictionary of 5 items
-        self.enable_field_dependencies = config['enable_field_dependencies'] #This is not so nice
         if any(self.enable_field_dependencies.values()):
-            field_dependencies_map_tmp = make_map(self.field_dependencies_map, fmt='json.gz', method='RectBivariateSpline')
             self.drift_velocity_scaling = 1.0
             # calculating drift velocity scaling to match total drift time for R=0 between cathode and gate
             if "norm_drift_velocity" in self.enable_field_dependencies.keys():
                 if self.enable_field_dependencies['norm_drift_velocity']:
-                    norm_dvel = field_dependencies_map_tmp(np.array([ [0], [- self.tpc_length]]).T, map_name='drift_speed_map')[0]
+                    norm_dvel = self.field_dependencies_map_tmp(np.array([ [0], [- self.tpc_length]]).T, map_name='drift_speed_map')[0]
                     norm_dvel*=1e-4
                     drift_velocity_scaling = self.drift_velocity_liquid/norm_dvel
             def rz_map(z, xy, **kwargs):
                 r = np.sqrt(xy[:, 0]**2 + xy[:, 1]**2)
-                return field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
+                return self.field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
             self.field_dependencies_map = rz_map
             
         # Data-driven longitudinal diffusion map
         # TODO: Change to the best way to accommodate simulation/data-driven map
         if self.enable_field_dependencies["diffusion_longitudinal_map"]:
-            diffusion_longitudinal_map_tmp = make_map(self.diffusion_longitudinal_map, fmt='json.gz',
-                                              method='WeightedNearestNeighbors')
             def _rz_map(z, xy, **kwargs):
                 r = np.sqrt(xy[:, 0]**2 + xy[:, 1]**2)
-                return diffusion_longitudinal_map_tmp(np.array([r, z]).T, **kwargs)
+                return self.diffusion_longitudinal_map_tmp(np.array([r, z]).T, **kwargs)
             self.diffusion_longitudinal_map = _rz_map
     
     
-    def compute(self, clustered_interactions):
+    def compute(self, interactions_in_roi):
         
-        #Just apply this to clusters with free electrons
-        instruction = clustered_interactions[clustered_interactions["electrons"] > 0]
+        #Just apply this to clusters with photons
+        mask = interactions_in_roi["electrons"] > 0
 
-        if len(instruction) == 0:
+        if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, self.dtype)
         
-        t = instruction["time"]
-        x = instruction["x"]
-        y = instruction["y"]
-        z = instruction["z"]
-        n_electron = instruction["electrons"].astype(np.int64)
-        recoil_type = instruction["nestid"]
+        t = interactions_in_roi[mask]["time"]
+        x = interactions_in_roi[mask]["x"]
+        y = interactions_in_roi[mask]["y"]
+        z = interactions_in_roi[mask]["z"]
+        n_electron = interactions_in_roi[mask]["electrons"].astype(np.int64)
+        recoil_type = interactions_in_roi[mask]["nestid"]
         recoil_type = np.where(np.isin(recoil_type, [0, 6, 7, 8, 11]), recoil_type, 8)
         
         # Reverse engineering FDC
@@ -160,17 +157,17 @@ class ElectronDrift(strax.Plugin):
         n_electron = n_electron*electron_lifetime_correction
         
         
-        result = np.zeros(len(n_electron), dtype = self.dtype)
-        result["time"] = instruction["time"]
-        result["endtime"] = instruction["endtime"]
-        result["n_electron_interface"] = n_electron
-        result["drift_time_mean"] = drift_time_mean
-        result["drift_time_spread"] = drift_time_spread
+        result = np.zeros(len(interactions_in_roi), dtype = self.dtype)
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
+        result["n_electron_interface"][mask] = n_electron
+        result["drift_time_mean"][mask] = drift_time_mean
+        result["drift_time_spread"][mask] = drift_time_spread
         
         #These ones are needed later
-        result["x"] = positions.T[0]
-        result["y"] = positions.T[1]
-        result["z_obs"] = z_obs
+        result["x"][mask] = positions.T[0]
+        result["y"][mask] = positions.T[1]
+        result["z_obs"][mask] = z_obs
         
         return result
         
@@ -187,7 +184,7 @@ class ElectronDrift(strax.Plugin):
         """
         positions = np.array([x, y, z]).T
         for i_iter in range(6):  # 6 iterations seems to work
-            dr = self.fdc_3d(positions)
+            dr = self.fdc_map_fuse(positions)
             if i_iter > 0:
                 dr = 0.5 * dr + 0.5 * dr_pre  # Average between iter
             dr_pre = dr
@@ -211,7 +208,7 @@ class ElectronDrift(strax.Plugin):
         """
         positions = np.array([np.sqrt(x**2 + y**2), z]).T
         theta = np.arctan2(y, x)
-        r_obs = self.fd_comsol(positions, map_name='r_distortion_map')
+        r_obs = self.fdc_map_fuse(positions, map_name='r_distortion_map')
         x_obs = r_obs * np.cos(theta)
         y_obs = r_obs * np.sin(theta)
 
@@ -247,7 +244,7 @@ class ElectronDrift(strax.Plugin):
         drift_time_mean = - z_int / \
             drift_velocity_liquid + self.drift_time_gate
         drift_time_mean = np.clip(drift_time_mean, 0, np.inf)
-        drift_time_spread = np.sqrt(2 * self.diffusion_constant_longitudinal * drift_time_mean)
+        drift_time_spread = np.sqrt(2 * diffusion_constant_longitudinal * drift_time_mean)
         drift_time_spread /= drift_velocity_liquid
         return drift_time_mean, drift_time_spread
     
@@ -264,5 +261,3 @@ class ElectronDrift(strax.Plugin):
         else:
             drift_v_LXe = self.drift_velocity_liquid
         return drift_v_LXe
-    
-

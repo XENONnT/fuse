@@ -1,11 +1,8 @@
 import strax
 import straxen
 import numpy as np
-from copy import deepcopy
 import os
 import logging
-
-from ...common import make_map, make_patternmap
 
 export, __all__ = strax.exporter()
 
@@ -13,57 +10,14 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_extraction')
 log.setLevel('WARNING')
 
-
-#private_files_path = "path/to/private/files"
-base_path = os.path.abspath(os.getcwd())
-private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
-config = straxen.get_resource(os.path.join(private_files_path, 'sim_files/fax_config_nt_sr0_v4.json') , fmt='json')
-
 @export
-@strax.takes_config(
-    strax.Option('s2_correction_map_file',
-                 default=os.path.join(private_files_path, "strax_files/XENONnT_s2_xy_map_v4_210503_mlp_3_in_1_iterated.json"),
-                 track=False,
-                 infer_type=False,
-                 help="s2_correction_map"),
-    strax.Option('s2_pattern_map_file',
-                 default=os.path.join(private_files_path, "sim_files/XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl"),
-                 track=False,
-                 infer_type=False,
-                 help="s2_pattern_map"),
-    strax.Option('to_pe_file', default=os.path.join(private_files_path, "sim_files/to_pe_nt.npy"), track=False, infer_type=False,
-                 help="to_pe file"),
-    strax.Option('digitizer_voltage_range', default=config['digitizer_voltage_range'], track=False, infer_type=False,
-                 help="digitizer_voltage_range"),
-    strax.Option('digitizer_bits', default=config['digitizer_bits'], track=False, infer_type=False,
-                 help="digitizer_bits"),
-    strax.Option('pmt_circuit_load_resistor', default=config['pmt_circuit_load_resistor'], track=False, infer_type=False,
-                 help="pmt_circuit_load_resistor"),
-    strax.Option('se_gain_from_map', default=config['se_gain_from_map'], track=False, infer_type=False,
-                 help="se_gain_from_map"),
-    strax.Option('se_gain_map',
-                 default=os.path.join(private_files_path, "strax_files/XENONnT_se_xy_map_v1_mlp.json"),
-                 track=False,
-                 infer_type=False,
-                 help="se_gain_map"),
-    strax.Option('s2_secondary_sc_gain', default=config['s2_secondary_sc_gain'], track=False, infer_type=False,
-                 help="s2_secondary_sc_gain"),
-    strax.Option('g2_mean', default=config['g2_mean'], track=False, infer_type=False,
-                 help="g2_mean"),
-    strax.Option('electron_extraction_yield', default=config['electron_extraction_yield'], track=False, infer_type=False,
-                 help="electron_extraction_yield"),
-    strax.Option('ext_eff_from_map', default=config['ext_eff_from_map'], track=False, infer_type=False,
-                 help="ext_eff_from_map"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-)
 class ElectronExtraction(strax.Plugin):
     
     __version__ = "0.0.0"
     
     depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
-    data_kind = "electron_cloud"
+    data_kind = "interactions_in_roi"
     
     #Forbid rechunking
     rechunk_on_save = False
@@ -73,6 +27,73 @@ class ElectronExtraction(strax.Plugin):
             ]
     
     dtype = dtype + strax.time_fields
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,track=False,
+        help='Show debug informations',
+    )
+
+    digitizer_voltage_range = straxen.URLConfig(
+        type=(int, float),
+        help='digitizer_voltage_range',
+    )
+
+    digitizer_bits = straxen.URLConfig(
+        type=(int, float),
+        help='digitizer_bits',
+    )
+
+    pmt_circuit_load_resistor = straxen.URLConfig(
+        type=(int, float),
+        help='pmt_circuit_load_resistor',
+    )
+
+    s2_secondary_sc_gain = straxen.URLConfig(
+        type=(int, float),
+        help='s2_secondary_sc_gain',
+    )
+    #Rename? -> g2_value in beta_yields model 
+    g2_mean = straxen.URLConfig(
+        type=(int, float),
+        help='g2_mean',
+    )
+
+    electron_extraction_yield = straxen.URLConfig(
+        type=(int, float),
+        help='electron_extraction_yield',
+    )
+
+    ext_eff_from_map = straxen.URLConfig(
+        type=bool,
+        help='ext_eff_from_map',
+    )
+
+    se_gain_from_map = straxen.URLConfig(
+        type=bool,
+        help='se_gain_from_map',
+    )
+
+    gains = straxen.URLConfig(
+        cache=True,
+        help='pmt gains',
+    )
+    
+    s2_correction_map = straxen.URLConfig(
+        cache=True,
+        help='s2_correction_map',
+    )
+    
+    se_gain_map = straxen.URLConfig(
+        cache=True,
+        help='se_gain_map',
+    )
+    
+    s2_pattern_map = straxen.URLConfig(
+        cache=True,
+        help='s2_pattern_map',
+    )
+
     
     def setup(self):
 
@@ -80,46 +101,31 @@ class ElectronExtraction(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug("Running ElectronExtraction in debug mode")
         
-        to_pe = straxen.get_resource(self.to_pe_file, fmt='npy')
-        self.to_pe = to_pe[0][1]
+        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         
-        adc_2_current = (self.digitizer_voltage_range
-                / 2 ** (self.digitizer_bits)
-                 / self.pmt_circuit_load_resistor)
-
-        gains = np.divide(adc_2_current,
-                          self.to_pe,
-                          out=np.zeros_like(self.to_pe),
-                          where=self.to_pe != 0)
-        
-        self.pmt_mask = np.array(gains) > 0  # Converted from to pe (from cmt by default)
-        
-        self.s2_pattern_map = make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
-        
-        if self.s2_correction_map_file:
-            self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
-        else:
-            s2cmap = deepcopy(self.s2_pattern_map)
-            # Lower the LCE by removing contribution from dead PMTs
-            # AT: masking is a bit redundant due to PMT mask application in make_patternmap
-            s2cmap.data['map'] = np.sum(s2cmap.data['map'][:][:], axis=2, keepdims=True, where=self.pmt_mask)
-            # Scale by median value
-            s2cmap.data['map'] = s2cmap.data['map'] / np.median(s2cmap.data['map'][s2cmap.data['map'] > 0])
-            s2cmap.__init__(s2cmap.data)
-            self.s2_correction_map = s2cmap
-            
-        self.se_gain_map = make_map(self.se_gain_map, fmt = "json")
+        #Is this else case ever used? if no -> remove
+        #if self.s2_correction_map_file:
+        #    self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
+        #else:
+        #    s2cmap = deepcopy(self.s2_pattern_map)
+        #    # Lower the LCE by removing contribution from dead PMTs
+        #    # AT: masking is a bit redundant due to PMT mask application in make_patternmap
+        #    s2cmap.data['map'] = np.sum(s2cmap.data['map'][:][:], axis=2, keepdims=True, where=self.pmt_mask)
+        #    # Scale by median value
+        #    s2cmap.data['map'] = s2cmap.data['map'] / np.median(s2cmap.data['map'][s2cmap.data['map'] > 0])
+        #    s2cmap.__init__(s2cmap.data)
+        #    self.s2_correction_map = s2cmap
     
-    def compute(self, clustered_interactions, electron_cloud):
+    def compute(self, interactions_in_roi):
         
-        #Just apply this to clusters with free electrons
-        instruction = clustered_interactions[clustered_interactions["electrons"] > 0]
+        #Just apply this to clusters with photons
+        mask = interactions_in_roi["electrons"] > 0
 
-        if len(instruction) == 0:
+        if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, self.dtype)
 
-        x = instruction["x"]
-        y = instruction["y"]
+        x = interactions_in_roi[mask]["x"]
+        y = interactions_in_roi[mask]["y"]
         
         xy_int = np.array([x, y]).T # maps are in R_true, so orginal position should be here
 
@@ -140,11 +146,11 @@ class ElectronExtraction(strax.Plugin):
         else:
             cy = self.electron_extraction_yield
             
-        n_electron = np.random.binomial(n=electron_cloud["n_electron_interface"], p=cy)
+        n_electron = np.random.binomial(n=interactions_in_roi[mask]["n_electron_interface"], p=cy)
         
-        result = np.zeros(len(n_electron), dtype=self.dtype)
-        result["n_electron_extracted"] = n_electron
-        result["time"] = instruction["time"]
-        result["endtime"] = instruction["endtime"]
+        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
+        result["n_electron_extracted"][mask] = n_electron
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
         
         return result

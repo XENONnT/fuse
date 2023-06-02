@@ -1,6 +1,7 @@
 import numpy as np
 import nestpy
 import strax
+import straxen
 import logging
 import pickle
 
@@ -11,17 +12,13 @@ log = logging.getLogger('fuse.micro_physics.yields')
 log.setLevel('WARNING')
 
 @export
-@strax.takes_config(
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-)
 class NestYields(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ["clustered_interactions", "electric_field_values"]
+    depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
-    data_kind = "clustered_interactions"
+    data_kind = "interactions_in_roi"
     
     dtype = [('photons', np.float64),
              ('electrons', np.float64),
@@ -32,6 +29,12 @@ class NestYields(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,track=False,
+        help='Show debug informations',
+    )
     
     def setup(self):
         if self.debug:
@@ -41,33 +44,33 @@ class NestYields(strax.Plugin):
 
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
     
-    def compute(self, clustered_interactions):
+    def compute(self, interactions_in_roi):
         """
         Computes the charge and light quanta for a list of clustered interactions.
 
         Args:
-            clustered_interactions (numpy.ndarray): An array of clustered interactions.
+            interactions_in_roi (numpy.ndarray): An array of clustered interactions.
 
         Returns:
             numpy.ndarray: An array of quanta, with fields for time, endtime, photons, electrons, and excitons.
         """
-        if len(clustered_interactions) == 0:
+        if len(interactions_in_roi) == 0:
             return np.zeros(0, dtype=self.dtype)
         
-        result = np.zeros(len(clustered_interactions), dtype=self.dtype)
-        result["time"] = clustered_interactions["time"]
-        result["endtime"] = clustered_interactions["endtime"]
+        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
 
         # Generate quanta:
-        if len(clustered_interactions) > 0:
+        if len(interactions_in_roi) > 0:
             photons, electrons, excitons = self.quanta_from_NEST(
-                clustered_interactions['ed'],
-                clustered_interactions['nestid'],
-                clustered_interactions['e_field'],
-                clustered_interactions['A'],
-                clustered_interactions['Z'],
-                clustered_interactions['create_S2'],
-                density=clustered_interactions['xe_density']
+                interactions_in_roi['ed'],
+                interactions_in_roi['nestid'],
+                interactions_in_roi['e_field'],
+                interactions_in_roi['A'],
+                interactions_in_roi['Z'],
+                interactions_in_roi['create_S2'],
+                density=interactions_in_roi['xe_density']
             )
             result['photons'] = photons
             result['electrons'] = electrons
@@ -102,7 +105,6 @@ class NestYields(strax.Plugin):
             excitons (numpy.array): Number of generated excitons
         """
         nc = nestpy.NESTcalc(nestpy.VDetector())
-        density = 2.862  # g/cm^3
 
         # Fix for Kr83m events.
         # Energies have to be very close to 32.1 keV or 9.4 keV
@@ -145,29 +147,13 @@ class NestYields(strax.Plugin):
 
         return photons, electrons, excitons
     
-
-
-@strax.takes_config(
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-    strax.Option('use_recombination_fluctuation', default = True, track=False, infer_type=False,
-                 help="use_recombination_fluctuation"),
-    strax.Option('g1_value', default=0.151, track=False, infer_type=False,
-                 help="g1_value"),
-    strax.Option('g2_value', default=16.45, track=False, infer_type=False,
-                 help="g2_value"),
-    strax.Option('cs1_spline_path', default="/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs1_func_E_option2.pkl", track=False, infer_type=False,
-                 help="cs1_spline_path"),
-    strax.Option('cs2_spline_path', default="/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs2_func_E_option2.pkl", track=False, infer_type=False,
-                 help="cs2_spline_path"),
-)
 class BetaYields(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ["clustered_interactions", "electric_field_values"]
+    depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
-    data_kind = "clustered_interactions"
+    data_kind = "interactions_in_roi"
     
     dtype = [('photons', np.float64),
              ('electrons', np.float64),
@@ -178,15 +164,45 @@ class BetaYields(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
+    use_recombination_fluctuation = straxen.URLConfig(
+        default=True, type=bool,
+        help='use_recombination_fluctuation',
+    )
+
+    g1_value = straxen.URLConfig(
+        type=(int, float),
+        help='g1',
+    )
+
+    g2_value = straxen.URLConfig(
+        type=(int, float),
+        help='g2',
+    )
+
+    cs1_spline_path = straxen.URLConfig(
+        help='cs1_spline_path',
+    )
+
+    cs2_spline_path = straxen.URLConfig(
+        help='cs2_spline_path',
+    )
     
     def setup(self):
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running NestYields in debug mode")
+            log.debug("Running BetaYields in debug mode")
             log.debug(f'Using nestpy version {nestpy.__version__}')
 
         self.get_quanta_vectorized = np.vectorize(self.get_quanta, excluded="self")
         
+        #This can be moved into an URLConfig protocol before merging the PR!
         with open(self.cs1_spline_path, 'rb') as f:
             self.cs1_spline = pickle.load(f)
         with open(self.cs2_spline_path, 'rb') as f:
@@ -196,24 +212,24 @@ class BetaYields(strax.Plugin):
         for i in range(np.random.randint(100)):
             self.nc.GetQuanta(self.nc.GetYields(energy=np.random.uniform(10, 100)))
 
-    def compute(self, clustered_interactions):
+    def compute(self, interactions_in_roi):
         """
         Computes the charge and light quanta for a list of clustered interactions using custom yields.
 
         Args:
-            clustered_interactions (numpy.ndarray): An array of clustered interactions.
+            interactions_in_roi (numpy.ndarray): An array of clustered interactions.
 
         Returns:
             numpy.ndarray: An array of quanta, with fields for time, endtime, photons, electrons, and excitons.
         """
-        if len(clustered_interactions) == 0:
+        if len(interactions_in_roi) == 0:
             return np.zeros(0, dtype=self.dtype)
         
-        result = np.zeros(len(clustered_interactions), dtype=self.dtype)
-        result["time"] = clustered_interactions["time"]
-        result["endtime"] = clustered_interactions["endtime"]
+        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
 
-        photons, electrons, excitons = self.get_quanta_vectorized(clustered_interactions["ed"], clustered_interactions["e_field"])
+        photons, electrons, excitons = self.get_quanta_vectorized(interactions_in_roi["ed"], interactions_in_roi["e_field"])
         result['photons'] = photons
         result['electrons'] = electrons
         result['excitons'] = excitons
@@ -245,18 +261,11 @@ class BetaYields(strax.Plugin):
 
 
 
-
-
-
-@strax.takes_config(
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-)
 class BBFYields(strax.Plugin):
     
     __version__ = "0.0.0"
     
-    depends_on = ["clustered_interactions", "electric_field_values"]
+    depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
     
     dtype = [('photons', np.float64),
@@ -266,6 +275,12 @@ class BBFYields(strax.Plugin):
     
     dtype = dtype + strax.time_fields
 
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,
+        help='Show debug informations',
+    )
+
     def setup(self):
         self.bbfyields = BBF_quanta_generator()
 
@@ -273,19 +288,19 @@ class BBFYields(strax.Plugin):
             log.setLevel("DEBUG")
             log.debug("Running BBFYields in debug mode")
 
-    def compute(self, geant4_interactions):
+    def compute(self, interactions_in_roi):
         
-        result = np.zeros(len(geant4_interactions), dtype=self.dtype)
-        result["time"] = geant4_interactions["time"]
-        result["endtime"] = geant4_interactions["endtime"]
+        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
 
         # Generate quanta:
-        if len(geant4_interactions) > 0:
+        if len(interactions_in_roi) > 0:
 
             photons, electrons, excitons = self.bbfyields.get_quanta_vectorized(
-                                energy=geant4_interactions['ed'],
-                                interaction=geant4_interactions['nestid'],
-                                field=geant4_interactions['e_field']
+                                energy=interactions_in_roi['ed'],
+                                interaction=interactions_in_roi['nestid'],
+                                field=interactions_in_roi['e_field']
                                 )
 
             

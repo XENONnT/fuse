@@ -1,4 +1,5 @@
 import strax
+import straxen
 import uproot
 import os
 import numba
@@ -10,43 +11,14 @@ import awkward as ak
 
 export, __all__ = strax.exporter()
 
-from ...common import full_array_to_numpy, reshape_awkward
-
-import epix
+from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.input')
 log.setLevel('WARNING')
 
+#Remove the path and file name option from the config and do this with the run_number??
 @export
-@strax.takes_config(
-    strax.Option('path', default=".", track=False, infer_type=False,
-                 help="Path to search for data"),
-    strax.Option('file_name', track=False, infer_type=False,
-                 help="File to open"),
-    strax.Option('separation_scale', default=1e8, track=False, infer_type=False,
-                 help="Add Description"),
-    strax.Option('source_rate', default=1, track=False, infer_type=False,
-                 help="source_rate"),
-    strax.Option('cut_delayed', default=4e12, track=False, infer_type=False,
-                 help="cut_delayed"),
-    strax.Option('n_interactions_per_chunk', default=10000, track=False, infer_type=False,
-                 help="Add n_interactions_per_chunk"),
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug informations"),
-    strax.Option('entry_start', default=0, track=False, infer_type=False,
-                 help="First event to be read"),
-    strax.Option('entry_stop', default=None, track=False, infer_type=False,
-                 help="How many entries from the ROOT file you want to process. I think it is not working at the moment"),
-    strax.Option('cut_by_eventid', default=False, track=False, infer_type=False,
-                 help="If selected, the next two arguments act on the G4 event id, and not the entry number (default)"),
-    strax.Option('nr_only', default=False, track=False, infer_type=False,
-                 help="Add if you want to filter only nuclear recoil events (maximum ER energy deposit 10 keV)"),
-    strax.Option('detector', default="XENONnT", track=False, infer_type=False,
-                 help="Detector to be used. Has to be defined in epix.detectors"),
-    strax.Option('detector_config_override', default=None, track=False, infer_type=False,
-                 help="Config file to overwrite default epix.detectors settings; see examples in the configs folder"),
-)
 class ChunkInput(strax.Plugin):
     
     __version__ = "0.0.0"
@@ -80,16 +52,67 @@ class ChunkInput(strax.Plugin):
     
     source_done = False
 
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,track=False,
+        help='Show debug informations',
+    )
+
+    path = straxen.URLConfig(
+        track=False,
+        help='Path to search for data',
+    )
+
+    file_name = straxen.URLConfig(
+        track=False,
+        help='File to open',
+    )
+
+    separation_scale = straxen.URLConfig(
+        default=1e8, type=(int, float),
+        help='separation_scale',
+    )
+
+    source_rate = straxen.URLConfig(
+        default=1, type=(int, float),
+        help='source_rate',
+    )
+
+    cut_delayed = straxen.URLConfig(
+        default=4e14, type=(int, float),
+        help='cut_delayed',
+    )
+
+    n_interactions_per_chunk = straxen.URLConfig(
+        default=1e5, type=(int, float),
+        help='n_interactions_per_chunk',
+    )
+
+    entry_start = straxen.URLConfig(
+        default=0, type=(int, float),
+        help='entry_start',
+    )
+
+    entry_stop = straxen.URLConfig(
+        default=None,
+        help='How many entries from the ROOT file you want to process. I think it is not working at the moment',
+    )
+
+    cut_by_eventid = straxen.URLConfig(
+        default=False, type=bool,
+        help='If selected, the next two arguments act on the G4 event id, and not the entry number (default)',
+    )
+
+    nr_only = straxen.URLConfig(
+        default=False, type=bool,
+        help='Add if you want to filter only nuclear recoil events (maximum ER energy deposit 10 keV)',
+    )
+
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ChunkInput in debug mode")
-        
-        #Do the volume cuts here #Maybe we can move these lines somewhere else?
-        self.detector_config = epix.init_detector(self.detector.lower(), self.detector_config_override)
-        outer_cylinder = getattr(epix.detectors, self.detector.lower())
-        outer_cylinder = outer_cylinder()
 
         self.file_reader = file_loader(self.path,
                                        self.file_name,
@@ -106,8 +129,6 @@ class ChunkInput(strax.Plugin):
                                        )
         self.file_reader_iterator = self.file_reader.output_chunk()
         
-    
-
     def compute(self):
         
         try: 
@@ -471,32 +492,3 @@ class file_loader():
                     }
 
         return ak.Array(dictionary)
-
-    
-    
-@numba.njit()
-def dynamic_chunking(data, scale, n_min):
-
-    idx_sort = np.argsort(data)
-    idx_undo_sort = np.argsort(idx_sort)
-
-    data_sorted = data[idx_sort]
-
-    diff = data_sorted[1:] - data_sorted[:-1]
-
-    clusters = np.array([0])
-    c = 0
-    for value in diff:
-        if value <= scale:
-            clusters = np.append(clusters, c)
-            
-        elif len(clusters[clusters == c]) < n_min:
-            clusters = np.append(clusters, c)
-            
-        elif value > scale:
-            c = c + 1
-            clusters = np.append(clusters, c)
-
-    clusters_undo_sort = clusters[idx_undo_sort]
-
-    return clusters_undo_sort

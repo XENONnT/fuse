@@ -1,7 +1,7 @@
 import strax
-import epix
 import numpy as np
 import logging
+import straxen
 
 export, __all__ = strax.exporter()
 
@@ -10,14 +10,6 @@ log = logging.getLogger('fuse.micro_physics.electric_field')
 log.setLevel('WARNING')
 
 @export
-@strax.takes_config(
-    strax.Option('debug', default=False, track=False, infer_type=False,
-                 help="Show debug information"),
-    strax.Option('detector', default="XENONnT", track=False, infer_type=False,
-                 help="Detector to be used. Has to be defined in epix.detectors"),
-    strax.Option('detector_config_override', default=None, track=False, infer_type=False,
-                 help="Config file to overwrite default epix.detectors settings; see examples in the configs folder")
-)
 class ElectricField(strax.Plugin):
     """
     Plugin that calculates the electric field values for the detector.
@@ -25,9 +17,9 @@ class ElectricField(strax.Plugin):
 
     __version__ = "0.0.0"
 
-    depends_on = ("clustered_interactions",)
+    depends_on = ("interactions_in_roi",)
     provides = "electric_field_values"
-    data_kind = "clustered_interactions"
+    data_kind = "interactions_in_roi"
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -37,52 +29,43 @@ class ElectricField(strax.Plugin):
         *strax.time_fields
     ]
 
-    def setup(self):
-        """
-        Do the volume cuts here.
+    #Config options
+    debug = straxen.URLConfig(
+        default=False, type=bool,track=False,
+        help='Show debug informations',
+    )
 
-        Initialize the detector config.
-        """
-        self.detector_config = epix.init_detector(
-            self.detector.lower(),
-            self.detector_config_override
-        )
+    efield_map = straxen.URLConfig(
+        cache=True,
+        help='electric field map',
+    )
+
+    def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ElectricField in debug mode")
 
-    def compute(self, clustered_interactions):
+    def compute(self, interactions_in_roi):
         """
         Calculate the electric field values for the given clustered interactions.
 
         Args:
-            clustered_interactions (numpy.ndarray): array of clustered interactions.
+            interactions_in_roi (numpy.ndarray): array of clustered interactions.
 
         Returns:
             numpy.ndarray: array of electric field values.
         """
-        if len(clustered_interactions) == 0:
+        if len(interactions_in_roi) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        electric_field_array = np.zeros(len(clustered_interactions), dtype=self.dtype)
-        electric_field_array['time'] = clustered_interactions['time']
-        electric_field_array['endtime'] = clustered_interactions['endtime']
+        electric_field_array = np.zeros(len(interactions_in_roi), dtype=self.dtype)
+        electric_field_array['time'] = interactions_in_roi['time']
+        electric_field_array['endtime'] = interactions_in_roi['endtime']
 
-        efields = electric_field_array['e_field']
-
-        for volume in self.detector_config:
-            if isinstance(volume.electric_field, (float, int)):
-                volume_id_mask = clustered_interactions['vol_id'] == volume.volume_id
-                efields[volume_id_mask] = volume.electric_field
-            else:
-                efields = volume.electric_field(
-                    clustered_interactions['x'],
-                    clustered_interactions['y'],
-                    clustered_interactions['z']
-                )
-
-        electric_field_array['e_field'] = efields
+        r = np.sqrt(interactions_in_roi['x'] ** 2 + interactions_in_roi['y'] ** 2)
+        positions = np.stack((r, interactions_in_roi['z']), axis=1)
+        electric_field_array['e_field'] = self.efield_map(positions)
 
         return electric_field_array
 

@@ -18,3 +18,6 @@ from .yields import *
 
 from . import wfsim_connection
 from .wfsim_connection import *
+
+from . import detector_volumes
+from .detector_volumes import *
