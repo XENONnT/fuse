@@ -331,7 +331,9 @@ class PMTResponseAndDAQ(strax.Plugin):
                           channel_mask=_channel_mask,
                           noise_data=self.noise_data,
                           noise_data_length=len(self.noise_data),
-                          noise_data_channels=len(self.noise_data[0]))
+                          noise_data_channels=len(self.noise_data[0]),
+                          rng=self.rng,
+                          )
                 
                 
             add_baseline(_raw_data, _channel_mask, 
@@ -510,9 +512,8 @@ def sum_signal(adc_wave, left, right, sum_template):
     sum_template[left:right] += adc_wave
     return sum_template
 
-#How to add the random generator....!!!!
 @njit
-def add_noise(data, channel_mask, noise_data, noise_data_length, noise_data_channels):
+def add_noise(data, channel_mask, noise_data, noise_data_length, noise_data_channels, rng):
     """
     Get chunk(s) of noise sample from real noise data
     """
@@ -529,7 +530,7 @@ def add_noise(data, channel_mask, noise_data, noise_data_length, noise_data_chan
     if high <= 0:
         ix_rand = 0
     else:
-        ix_rand = np.random.randint(low=0, high=high)
+        ix_rand = rng.integers(low=0, high=high)
 
     for ch in range(data.shape[0]):
         # In case adding noise to he channels is not supported
