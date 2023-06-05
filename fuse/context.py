@@ -10,9 +10,6 @@ import numpy as np
 
 from straxen import URLConfig
 
-base_path = os.path.abspath(os.getcwd())
-private_files_path = os.path.join("/",*base_path.split("/")[:-2], "private_nt_aux_files")
-
 #Microphysics context
 def microphysics_context(out_dir):
     st = strax.Context(register = [fuse.micro_physics.ChunkInput,

@@ -100,6 +100,13 @@ class SecondaryScintillation(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running SecondaryScintillation in debug mode")
+        
+        self.pmt_mask = np.array(self.gains)
+        
+        #Are these if cases needed?? -> If no remove, if yes, correct the code
+        #if self.s2_correction_map_file:
+        #    self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
+        #else:
 
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
