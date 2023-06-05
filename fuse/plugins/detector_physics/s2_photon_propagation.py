@@ -533,11 +533,6 @@ class S2PhotonPropagation(strax.Plugin):
 
         log.debug('Spe scaling factors created, cached with key %s' % h)
         return __uniform_to_pe_arr
-        
-    
-@njit
-def numba_random_uniform(low, high, size, rng):
-    return low + (high - low) * rng.random(size)
 
 @njit
 def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap, rng):
@@ -574,7 +569,7 @@ def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_ga
                        +inv_cdf_list[hist_ind])
         
         #Subtract 2 because this way we don't want to sample from this last strange tail
-        samples = numba_random_uniform(0, inv_cdf_len-2, n, rng)
+        samples = rng.uniform(0, inv_cdf_len-2, n)
         #samples = np.random.uniform(0, inv_cdf_len-2, n)
         t1 = interp_cdf[np.floor(samples).astype('int')]
         t2 = interp_cdf[np.ceil(samples).astype('int')]

@@ -143,8 +143,9 @@ class S1PhotonPropagation(strax.Plugin):
             #Dont know but nestpy seems to have a problem with large seeds
             self.short_seed = int(repr(seed)[-8:])
             nest_rng.set_seed(self.short_seed)
-
-            log.debug(f"Generating random numbers from seed {self.short_seed}")
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+            log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
         else: 
             log.debug(f"Generating random numbers with seed pulled from OS")
 
