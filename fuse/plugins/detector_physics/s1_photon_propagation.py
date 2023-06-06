@@ -4,10 +4,7 @@ import straxen
 import nestpy
 import logging
 
-from strax import deterministic_hash
-from scipy.interpolate import interp1d
-
-from ...common import loop_uniform_to_pe_arr
+from .photon_propagation_base import PhotonPropagationBase
 
 export, __all__ = strax.exporter()
 
@@ -16,7 +13,7 @@ log = logging.getLogger('fuse.detector_physics.S1_Signal')
 log.setLevel('WARNING')
 
 @export
-class S1PhotonPropagation(strax.Plugin):
+class S1PhotonPropagation(PhotonPropagationBase):
     
     __version__ = "0.0.0"
     
@@ -24,36 +21,9 @@ class S1PhotonPropagation(strax.Plugin):
     provides = "propagated_s1_photons"
     data_kind = "S1_photons"
     
-    #Forbid rechunking
-    rechunk_on_save = False
+    child_plugin = True
 
-    dtype = [('channel', np.int64),
-             ('dpe', np.bool_),
-             ('photon_gain', np.int64),
-            ]
-    dtype = dtype + strax.time_fields
-
-    #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
-    p_double_pe_emision = straxen.URLConfig(
-        type=(int, float),
-        help='p_double_pe_emision',
-    )
-
-    pmt_transit_time_spread = straxen.URLConfig(
-        type=(int, float),
-        help='pmt_transit_time_spread',
-    )
-
-    pmt_transit_time_mean = straxen.URLConfig(
-        type=(int, float),
-        help='pmt_transit_time_mean',
-    )
-
+    #Config options specific to S1 simulation
     maximum_recombination_time = straxen.URLConfig(
         type=(int, float),
         help='maximum_recombination_time',
@@ -78,20 +48,6 @@ class S1PhotonPropagation(strax.Plugin):
         help='s1_model_type',
     )
 
-    pmt_circuit_load_resistor = straxen.URLConfig(
-        help='pmt_circuit_load_resistor', type=(int, float),
-    )
-
-    digitizer_bits = straxen.URLConfig(
-        type=(int, float),
-        help='digitizer_bits',
-    )
-
-    digitizer_voltage_range = straxen.URLConfig(
-        type=(int, float),
-        help='digitizer_voltage_range',
-    )
-
     n_top_pmts = straxen.URLConfig(
         type=(int),
         help='Number of PMTs on top array',
@@ -105,11 +61,6 @@ class S1PhotonPropagation(strax.Plugin):
     s1_pattern_map = straxen.URLConfig(
         cache=True,
         help='s1_pattern_map',
-    )
-    
-    gains = straxen.URLConfig(
-        cache=True,
-        help='pmt gains',
     )
     
     s1_optical_propagation_spline = straxen.URLConfig(
@@ -128,15 +79,10 @@ class S1PhotonPropagation(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug("Running S1PhotonPropagation in debug mode")
 
-        self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
-        
         if 'nest' in self.s1_model_type: #and (self.nestpy_calc is None):
             log.info('Using NEST for scintillation time without set calculator\n'
                      'Creating new nestpy calculator')
             self.nestpy_calc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
-
-        self._cached_uniform_to_pe_arr = {}
-        self.__uniform_to_pe_arr = self.init_spe_scaling_factor_distributions()
 
     def compute(self, interactions_in_roi):
 
@@ -183,32 +129,10 @@ class S1PhotonPropagation(strax.Plugin):
         #Do i want to save both -> timings with and without pmt transition time spread?
         # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
         # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-        _photon_timings += np.random.normal(self.pmt_transit_time_mean,
-                                            self.pmt_transit_time_spread / 2.35482,
-                                            len(_photon_timings)).astype(np.int64)
+        _photon_timings, _photon_gains, _photon_is_dpe = super().pmt_transition_time_spread(_photon_timings, _photon_channels)
         
-        #Why is this done here and additionally in the get_n_photons function of S1PhotonHits??
-        _photon_is_dpe = np.random.binomial(n=1,
-                                            p=self.p_double_pe_emision,
-                                            size=len(_photon_timings)).astype(np.bool_)
+        result = super().build_output(_photon_timings, _photon_channels, _photon_gains, _photon_is_dpe)
 
-
-        _photon_gains = self.gains[_photon_channels] \
-            * loop_uniform_to_pe_arr(np.random.random(len(_photon_channels)), _photon_channels, self.__uniform_to_pe_arr)
-
-        # Add some double photoelectron emission by adding another sampled gain
-        n_double_pe = _photon_is_dpe.sum()
-        _photon_gains[_photon_is_dpe] += self.gains[_photon_channels[_photon_is_dpe]] \
-            * loop_uniform_to_pe_arr(np.random.random(n_double_pe), _photon_channels[_photon_is_dpe], self.__uniform_to_pe_arr) 
-
-        
-        result = np.zeros(_photon_channels.shape[0], dtype = self.dtype)
-        result["channel"] = _photon_channels
-        result["time"] = _photon_timings
-        result["endtime"] = result["time"]
-        result["dpe"] = _photon_is_dpe
-        result["photon_gain"] = _photon_gains
-        
         return result
     
     
@@ -340,44 +264,3 @@ class S1PhotonPropagation(strax.Plugin):
         prop_time[is_bottom] = self.s1_optical_propagation_spline(z_rand[is_bottom], map_name='bottom')
 
         return prop_time
-    
-
-    def init_spe_scaling_factor_distributions(self):
-        #This code will be duplicate with the corresponding S2 class 
-        # Improve!!
-        config="PLACEHOLDER_FIX_THIS_PART"
-        h = deterministic_hash(config) # What is this part doing?
-        #if h in self._cached_uniform_to_pe_arr:
-        #    __uniform_to_pe_arr = self._cached_uniform_to_pe_arr[h]
-        #    return __uniform_to_pe_arr
-
-        # Extract the spe pdf from a csv file into a pandas dataframe
-        spe_shapes = self.photon_area_distribution
-
-        # Create a converter array from uniform random numbers to SPE gains (one interpolator per channel)
-        # Scale the distributions so that they have an SPE mean of 1 and then calculate the cdf
-        uniform_to_pe_arr = []
-        for ch in spe_shapes.columns[1:]:  # skip the first element which is the 'charge' header
-            if spe_shapes[ch].sum() > 0:
-                # mean_spe = (spe_shapes['charge'].values * spe_shapes[ch]).sum() / spe_shapes[ch].sum()
-                scaled_bins = spe_shapes['charge'].values  # / mean_spe
-                cdf = np.cumsum(spe_shapes[ch]) / np.sum(spe_shapes[ch])
-            else:
-                # if sum is 0, just make some dummy axes to pass to interpolator
-                cdf = np.linspace(0, 1, 10)
-                scaled_bins = np.zeros_like(cdf)
-
-            grid_cdf = np.linspace(0, 1, 2001)
-            grid_scale = interp1d(cdf, scaled_bins,
-                                  kind='next',
-                                  bounds_error=False,
-                                  fill_value=(scaled_bins[0], scaled_bins[-1]))(grid_cdf)
-
-            uniform_to_pe_arr.append(grid_scale)
-
-        if len(uniform_to_pe_arr):
-            __uniform_to_pe_arr = np.stack(uniform_to_pe_arr)
-            self._cached_uniform_to_pe_arr[h] = __uniform_to_pe_arr
-
-        log.debug('Spe scaling factors created, cached with key %s' % h)
-        return __uniform_to_pe_arr
