@@ -47,16 +47,6 @@ class S1PhotonPropagation(PhotonPropagationBase):
     s1_model_type = straxen.URLConfig(
         help='s1_model_type',
     )
-
-    n_top_pmts = straxen.URLConfig(
-        type=(int),
-        help='Number of PMTs on top array',
-    )
-
-    n_tpc_pmts = straxen.URLConfig(
-        type=(int),
-        help='Number of PMTs in the TPC',
-    )
     
     s1_pattern_map = straxen.URLConfig(
         cache=True,
@@ -74,6 +64,8 @@ class S1PhotonPropagation(PhotonPropagationBase):
     )
     
     def setup(self):
+
+        super().setup()
 
         if self.debug:
             log.setLevel('DEBUG')

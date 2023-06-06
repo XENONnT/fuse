@@ -87,16 +87,6 @@ class S2PhotonPropagation(PhotonPropagationBase):
         help='tpc_radius',
     )
 
-    n_top_pmts = straxen.URLConfig(
-        type=(int),
-        help='Number of PMTs on top array',
-    )
-
-    n_tpc_pmts = straxen.URLConfig(
-        type=(int),
-        help='Number of PMTs in the TPC',
-    )
-
     diffusion_constant_transverse = straxen.URLConfig(
         type=(int, float),
         help='diffusion_constant_transverse',
@@ -146,6 +136,8 @@ class S2PhotonPropagation(PhotonPropagationBase):
     )
 
     def setup(self):
+
+        super().setup()
 
         if self.debug:
             log.setLevel('DEBUG')
