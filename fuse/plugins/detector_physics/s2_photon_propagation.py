@@ -49,15 +49,6 @@ class S2PhotonPropagation(PhotonPropagationBase):
         help='singlet_lifetime_liquid',
     )
 
-    s2_time_spread = straxen.URLConfig(
-        type=(int, float),
-        help='s2_time_spread',
-    )
-
-    s2_time_model = straxen.URLConfig(
-        help='s2_time_model',
-    )
-
     singlet_fraction_gas = straxen.URLConfig(
         type=(int, float),
         help='singlet_fraction_gas',
@@ -66,10 +57,6 @@ class S2PhotonPropagation(PhotonPropagationBase):
     phase_s2 = straxen.URLConfig(
         default="gas",
         help='phase_s2',
-    )
-
-    s2_luminescence_model = straxen.URLConfig(
-        help='s2_luminescence_model',
     )
 
     drift_velocity_liquid = straxen.URLConfig(
@@ -109,11 +96,6 @@ class S2PhotonPropagation(PhotonPropagationBase):
     s2_pattern_map = straxen.URLConfig(
         cache=True,
         help='s2_pattern_map',
-    )
-    
-    photon_area_distribution = straxen.URLConfig(
-        cache=True,
-        help='photon_area_distribution',
     )
     
     s2_optical_propagation_spline = straxen.URLConfig(
@@ -302,32 +284,14 @@ class S2PhotonPropagation(PhotonPropagationBase):
     
     
     def photon_timings(self, positions, n_photons, _photon_channels):
-        
-        if self.s2_luminescence_model == "simple":
-            print("Not Implemented!")
-            #_photon_timings = luminescence_timings_simple(positions, n_photons_per_xy)
-        elif self.s2_luminescence_model == "garfield":
-            print("Not Implemented!")
-        elif self.s2_luminescence_model == "garfield_gas_gap":
-            _photon_timings = self.luminescence_timings_garfield_gasgap(positions, n_photons)
-        else:
-            raise KeyError(f"{self.s2_luminescence_model} is not valid! Use 'simple' or 'garfield' or 'garfield_gas_gap'")
-            
+
+        _photon_timings = self.luminescence_timings_garfield_gasgap(positions, n_photons)
+
         # Emission Delay
         _photon_timings += self.singlet_triplet_delays(len(_photon_timings), self.singlet_fraction_gas)
         
         # Optical Propagation Delay
-        if "optical_propagation" in self.s2_time_model:
-            # optical propagation splitting top and bottom
-            _photon_timings += self.optical_propagation(_photon_channels)
-        elif "zero_delay" in self.s2_time_model:
-            # no optical propagation delay
-            _photon_timings += np.zeros_like(_photon_timings, dtype=np.int64)
-        elif "s2_time_spread around zero" in self.s2_time_model:
-            # simple/existing delay
-            _photon_timings += np.random.normal(0, self.s2_time_spread, len(_photon_timings)).astype(np.int64)
-        else:
-            raise KeyError(f"{self.s2_time_model} is not in any of the valid s2 time models")
+        _photon_timings += self.optical_propagation(_photon_channels)
         
         return _photon_timings
 

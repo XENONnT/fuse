@@ -39,11 +39,6 @@ class S1PhotonPropagation(PhotonPropagationBase):
         help='s1_optical_propagation_spline',
     )
     
-    photon_area_distribution = straxen.URLConfig(
-        cache=True,
-        help='photon_area_distribution',
-    )
-    
     def setup(self):
 
         super().setup()
@@ -192,8 +187,6 @@ class S1PhotonPropagation(PhotonPropagationBase):
         """Function gettting times from s1 timing splines:
         :param channels: The channels of all s1 photon
         :param z_positions: The Z positions of all s1 photon
-        :param config: current configuration of wfsim
-        :param spline: pointer to s1 optical propagation splines from resources
         """
         assert len(z_positions) == len(channels), 'Give each photon a z position'
 

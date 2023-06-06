@@ -80,6 +80,11 @@ class PhotonPropagationBase(strax.Plugin):
         help='pmt gains',
     )
 
+    photon_area_distribution = straxen.URLConfig(
+        cache=True,
+        help='photon_area_distribution',
+    )
+
     def setup(self):
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
