@@ -29,25 +29,6 @@ class S1PhotonPropagation(PhotonPropagationBase):
         help='maximum_recombination_time',
     )
 
-    phase = straxen.URLConfig(
-        default="liquid",
-        help='phase',
-    )
-
-    s1_decay_spread = straxen.URLConfig(
-        type=(int, float),
-        help='s1_decay_spread',
-    )
-
-    s1_decay_time = straxen.URLConfig(
-        type=(int, float),
-        help='s1_decay_time',
-    )
-
-    s1_model_type = straxen.URLConfig(
-        help='s1_model_type',
-    )
-    
     s1_pattern_map = straxen.URLConfig(
         cache=True,
         help='s1_pattern_map',
@@ -71,10 +52,10 @@ class S1PhotonPropagation(PhotonPropagationBase):
             log.setLevel('DEBUG')
             log.debug("Running S1PhotonPropagation in debug mode")
 
-        if 'nest' in self.s1_model_type: #and (self.nestpy_calc is None):
-            log.info('Using NEST for scintillation time without set calculator\n'
-                     'Creating new nestpy calculator')
-            self.nestpy_calc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
+        
+        log.info('Using NEST for scintillation time without set calculator\n'
+                 'Creating new nestpy calculator')
+        self.nestpy_calc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
 
     def compute(self, interactions_in_roi):
 
@@ -96,21 +77,16 @@ class S1PhotonPropagation(PhotonPropagationBase):
         _photon_channels = self.photon_channels(positions=positions,
                                                 n_photon_hits=instruction["n_s1_photon_hits"],
                                                 )
-        
-        extra_targs = {}
-        if 'nest' in self.s1_model_type:
-            extra_targs['n_photons_emitted'] = n_photons
-            extra_targs['n_excitons'] = instruction['excitons'].astype(np.int64)
-            extra_targs['local_field'] = instruction['e_field']
-            extra_targs['e_dep'] = instruction['ed']
-            extra_targs['nestpy_calc'] = self.nestpy_calc
-            
+ 
         _photon_timings = self.photon_timings(t=t,
                                               n_photon_hits=instruction["n_s1_photon_hits"],
                                               recoil_type=recoil_type,
                                               channels=_photon_channels,
                                               positions=positions,
-                                              **extra_targs
+                                              e_dep = instruction['ed'],
+                                              n_photons_emitted = n_photons,
+                                              n_excitons = instruction['excitons'].astype(np.int64), 
+                                              local_field = instruction['e_field'],
                                              )
         
         #I should sort by time i guess
@@ -140,27 +116,27 @@ class S1PhotonPropagation(PhotonPropagationBase):
         p_per_channel = self.s1_pattern_map(positions)
         p_per_channel[:, np.in1d(channels, self.turned_off_pmts)] = 0
 
-        _photon_channels = np.array([]).astype(np.int64)
+        _photon_channels = []
         for ppc, n in zip(p_per_channel, n_photon_hits):
-            _photon_channels = np.append(_photon_channels,
-                                         np.random.choice(
-                                             channels,
-                                             size=n,
-                                             p=ppc / np.sum(ppc),
-                                             replace=True))
-        return _photon_channels
+            _photon_channels.append(
+                np.random.choice(
+                    channels,
+                    size=n,
+                    p=ppc / np.sum(ppc),
+                    replace=True))
+
+        return np.concatenate(_photon_channels)
         
     def photon_timings(self,
                        t,
                        n_photon_hits,
                        recoil_type,
-                       channels=None,
-                       positions=None,
-                       e_dep=None,
-                       n_photons_emitted=None,
-                       n_excitons=None, 
-                       local_field=None,
-                       nestpy_calc=None
+                       channels,
+                       positions,
+                       e_dep,
+                       n_photons_emitted,
+                       n_excitons, 
+                       local_field,
                       ):
         """Calculate distribution of photon arrival timnigs
         :param t: 1d array of ints
@@ -177,63 +153,38 @@ class S1PhotonPropagation(PhotonPropagationBase):
         _photon_timings = np.repeat(t, n_photon_hits)
         _n_hits_total = len(_photon_timings)
 
-        if len(_photon_timings) == 0:
-            return _photon_timings.astype(np.int64)
+        z_positions = np.repeat(positions[:, 2], n_photon_hits)
+        
+        #Propagation Modeling
+        _photon_timings += self.optical_propagation(channels,
+                                                    z_positions,
+                                                    ).astype(np.int64)
 
-        if 'optical_propagation' in self.s1_model_type:
-            z_positions = np.repeat(positions[:, 2], n_photon_hits)
-            _photon_timings += self.optical_propagation(channels,
-                                                        z_positions,
-                                                        ).astype(np.int64)
+        #Scintillation Modeling
+        counts_start = 0
+        for i, counts in enumerate(n_photon_hits):
 
-        if 'simple' in self.s1_model_type:
-            # Simple S1 model enabled: use it for ER and NR.
-            _photon_timings += np.random.exponential(self.s1_decay_time, _n_hits_total).astype(np.int64)
-            _photon_timings += np.random.normal(0, self.s1_decay_spread, _n_hits_total).astype(np.int64)
+            # Allow overwriting with "override_s1_photon_time_field"
+            # xenon:j_angevaare:wfsim_photon_timing_bug
+            #_local_field = config.get('override_s1_photon_time_field', local_field[i])
+            #_local_field = (_local_field if _local_field >0 else local_field[i])
+            _local_field = local_field[i]
+            scint_time = self.nestpy_calc.GetPhotonTimes(
+                nestpy.INTERACTION_TYPE(recoil_type[i]),
+                n_photons_emitted[i],
+                 n_excitons[i],
+                 _local_field,
+                 e_dep[i]
+                 )
 
-        if 'nest' in self.s1_model_type or 'custom' in self.s1_model_type:
-            # Pulse model depends on recoil type
-            counts_start = 0
-            for i, counts in enumerate(n_photon_hits):
+            scint_time = np.clip(scint_time, 0, self.maximum_recombination_time)
 
-                if 'custom' in self.s1_model_type:
-                    raise ValueError('Custom Model not implemented! ') 
-         #           for k in vars(NestId):
-         #               if k.startswith('_'):
-         #                   continue
-         #               if recoil_type[i] in getattr(NestId, k):
-         #                   str_recoil_type = k
-         #           try:
-         #               _photon_timings[counts_start: counts_start + counts] += \
-         #                   getattr(S1, str_recoil_type.lower())(
-         #                   size=counts,
-         #                   config=config,
-         #                   phase=phase).astype(np.int64)
-         #           except AttributeError:
-         #               raise AttributeError(f"Recoil type must be ER, NR, alpha or LED, "
-         #                                    f"not {recoil_type}. Check nest ids")
+            # The first part of the scint_time is from exciton only, see
+            # https://github.com/NESTCollaboration/nestpy/blob/fe3d5d7da5d9b33ac56fbea519e02ef55152bc1d/src/nestpy/NEST.cpp#L164-L179
+            _photon_timings[counts_start: counts_start + counts] += \
+               np.random.choice(scint_time, counts, replace=False).astype(np.int64)
 
-                if 'nest' in self.s1_model_type:
-                    # Allow overwriting with "override_s1_photon_time_field"
-                    # xenon:j_angevaare:wfsim_photon_timing_bug
-                    #_local_field = config.get('override_s1_photon_time_field', local_field[i])
-                    #_local_field = (_local_field if _local_field >0 else local_field[i])
-                    _local_field = local_field[i]
-                    scint_time = nestpy_calc.GetPhotonTimes(nestpy.INTERACTION_TYPE(recoil_type[i]),
-                                                            n_photons_emitted[i],
-                                                            n_excitons[i],
-                                                            _local_field,
-                                                            e_dep[i]
-                                                           )
-
-                    scint_time = np.clip(scint_time, 0, self.maximum_recombination_time)
-
-                    # The first part of the scint_time is from exciton only, see
-                    # https://github.com/NESTCollaboration/nestpy/blob/fe3d5d7da5d9b33ac56fbea519e02ef55152bc1d/src/nestpy/NEST.cpp#L164-L179
-                    _photon_timings[counts_start: counts_start + counts] += \
-                       np.random.choice(scint_time, counts, replace=False).astype(np.int64)
-
-                counts_start += counts
+            counts_start += counts
 
         return _photon_timings
     
