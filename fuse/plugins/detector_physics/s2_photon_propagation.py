@@ -6,6 +6,7 @@ import logging
 
 from numba import njit
 from scipy.stats import skewnorm
+from scipy import constants
 
 export, __all__ = strax.exporter()
 
@@ -15,6 +16,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S2_Signal')
 log.setLevel('WARNING')
 
+conversion_to_bar = 1/constants.elementary_charge / 1e1
 
 @export
 class S2PhotonPropagationBase(strax.Plugin):
@@ -138,11 +140,36 @@ class S2PhotonPropagationBase(strax.Plugin):
         help='field_dependencies_map',
     )
 
+    singlet_fraction_gas = straxen.URLConfig(
+        type=(int, float),
+        help='singlet_fraction_gas',
+    )
+
+    triplet_lifetime_gas = straxen.URLConfig(
+        type=(int, float),
+        help='triplet_lifetime_gas',
+    )
+
+    singlet_lifetime_gas = straxen.URLConfig(
+        type=(int, float),
+        help='singlet_lifetime_gas',
+    )
+
+    triplet_lifetime_liquid = straxen.URLConfig(
+        type=(int, float),
+        help='triplet_lifetime_liquid',
+    )
+
+    singlet_lifetime_liquid = straxen.URLConfig(
+        type=(int, float),
+        help='singlet_lifetime_liquid',
+    )
+
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running S2PhotonPropagation in debug mode")
+            log.debug("Running S2 photon propagation in debug mode")
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
@@ -321,6 +348,28 @@ class S2PhotonPropagationBase(strax.Plugin):
             n0 += ne
 
         return pattern
+
+    def singlet_triplet_delays(self, size, singlet_ratio):
+        """
+        Given the amount of the excimer, return time between excimer decay
+        and their time of generation.
+        size           - amount of excimer
+        self.phase     - 'liquid' or 'gas'
+        singlet_ratio  - fraction of excimers that become singlets
+                         (NOT the ratio of singlets/triplets!)
+        """
+        if self.phase_s2 == 'liquid':
+            t1, t3 = (self.singlet_lifetime_liquid,
+                      self.triplet_lifetime_liquid)
+        elif self.phase_s2 == 'gas':
+            t1, t3 = (self.singlet_lifetime_gas,
+                      self.triplet_lifetime_gas)
+        else:
+            t1, t3 = 0, 0
+
+        delay = np.random.choice([t1, t3], size, replace=True,
+                                 p=[singlet_ratio, 1 - singlet_ratio])
+        return (np.random.exponential(1, size) * delay).astype(np.int64)
     
     def photon_timings(self, positions, n_photons, _photon_channels):
         raise NotImplementedError # This is implemented in the child class
@@ -346,35 +395,14 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
         help='garfield_gas_gap_map',
     )
 
-    singlet_fraction_gas = straxen.URLConfig(
-        type=(int, float),
-        help='singlet_fraction_gas',
-    )
-
-    triplet_lifetime_gas = straxen.URLConfig(
-        type=(int, float),
-        help='triplet_lifetime_gas',
-    )
-
-    singlet_lifetime_gas = straxen.URLConfig(
-        type=(int, float),
-        help='singlet_lifetime_gas',
-    )
-
-    triplet_lifetime_liquid = straxen.URLConfig(
-        type=(int, float),
-        help='triplet_lifetime_liquid',
-    )
-
-    singlet_lifetime_liquid = straxen.URLConfig(
-        type=(int, float),
-        help='singlet_lifetime_liquid',
-    )
-
     s2_optical_propagation_spline = straxen.URLConfig(
         cache=True,
         help='s2_optical_propagation_spline',
     )
+
+    def setup(self):
+        super().setup()
+        log.debug("Using Garfield GasGap luminescence timing and optical propagation")
 
     def photon_timings(self, positions, n_photons, _photon_channels):
 
@@ -412,28 +440,6 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
                                      d_gasgap
                                     )
 
-    def singlet_triplet_delays(self, size, singlet_ratio):
-        """
-        Given the amount of the excimer, return time between excimer decay
-        and their time of generation.
-        size           - amount of excimer
-        self.phase     - 'liquid' or 'gas'
-        singlet_ratio  - fraction of excimers that become singlets
-                         (NOT the ratio of singlets/triplets!)
-        """
-        if self.phase_s2 == 'liquid':
-            t1, t3 = (self.singlet_lifetime_liquid,
-                      self.triplet_lifetime_liquid)
-        elif self.phase_s2 == 'gas':
-            t1, t3 = (self.singlet_lifetime_gas,
-                      self.triplet_lifetime_gas)
-        else:
-            t1, t3 = 0, 0
-
-        delay = np.random.choice([t1, t3], size, replace=True,
-                                 p=[singlet_ratio, 1 - singlet_ratio])
-        return (np.random.exponential(1, size) * delay).astype(np.int64)
-
     def optical_propagation(self, channels):
         """Function getting times from s2 timing splines:
         :param channels: The channels of all s2 photon
@@ -449,7 +455,145 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 
         return prop_time.astype(np.int64)
 
+@export
+class S2PhotonPropagationSimple(S2PhotonPropagationBase):
+    """
+    This class is used to simulate the propagation of photons from an S2 signal using 
+    the simple liminescence model, singlet and tripled delays and optical propagation
+    """
+    __version__ = "0.0.0"
+    
+    child_plugin = True
 
+    pressure = straxen.URLConfig(
+        type=(int, float),
+        help='pressure',
+    )
+
+    temperature = straxen.URLConfig(
+        type=(int, float),
+        help='temperature',
+    )
+
+    gas_drift_velocity_slope = straxen.URLConfig(
+        type=(int, float),
+        help='gas_drift_velocity_slope',
+    )
+
+    enable_gas_gap_warping = straxen.URLConfig(
+        type=(int, float),
+        help='enable_gas_gap_warping',
+    )
+
+    elr_gas_gap_length = straxen.URLConfig(
+        type=(int, float),
+        help='elr_gas_gap_length',
+    )
+
+    gas_gap_map = straxen.URLConfig(
+        cache=True,
+        help='gas_gap_map',
+    )
+
+    anode_field_domination_distance = straxen.URLConfig(
+        type=(int, float),
+        help='anode_field_domination_distance',
+    )
+
+    anode_wire_radius = straxen.URLConfig(
+        type=(int, float),
+        help='anode_wire_radius',
+    )
+
+    gate_to_anode_distance = straxen.URLConfig(
+        type=(int, float),
+        help='gate_to_anode_distance',
+    )
+
+    anode_voltage = straxen.URLConfig(
+        type=(int, float),
+        help='anode_voltage',
+    )
+
+    lxe_dielectric_constant = straxen.URLConfig(
+        type=(int, float),
+        help='lxe_dielectric_constant',
+    )
+
+    s2_optical_propagation_spline = straxen.URLConfig(
+        cache=True,
+        help='s2_optical_propagation_spline',
+    )
+
+    def setup(self):
+        super().setup()
+        log.debug("Using simple luminescence timing and optical propagation")
+        log.warn("This is a legacy option, do you really want to use the simple luminescence model?")
+
+    def photon_timings(self, positions, n_photons, _photon_channels):
+
+        _photon_timings = self.luminescence_timings_simple(positions, n_photons)
+
+        # Emission Delay
+        _photon_timings += self.singlet_triplet_delays(len(_photon_timings), self.singlet_fraction_gas)
+        
+        # Optical Propagation Delay
+        _photon_timings += self.optical_propagation(_photon_channels)
+        
+        return _photon_timings
+
+    def luminescence_timings_simple(self, xy, n_photons):
+
+        """
+        Luminescence time distribution computation according to simple s2 model (many many many single electrons)
+        :param xy: 1d array with positions
+        :param n_photons: 1d array with ints for number of xy positions
+        :param config: dict wfsim config
+        :param resource: instance of wfsim resource
+        returns _luminescence_timings_simple
+        """
+        assert len(n_photons) == len(xy), 'Input number of n_photons should have same length as positions'
+
+        number_density_gas = self.pressure / \
+            (constants.Boltzmann/constants.elementary_charge * self.temperature)
+        alpha = self.gas_drift_velocity_slope / number_density_gas
+        uE = 1000 / 1 #V/cm
+        pressure = self.pressure / conversion_to_bar
+
+        if self.enable_gas_gap_warping:
+            dG = self.gas_gap_map.lookup(*xy.T)
+            dG = np.ma.getdata(dG) #Convert from masked array to ndarray?
+        else:
+            dG = np.ones(len(xy)) * self.elr_gas_gap_length
+        rA = self.anode_field_domination_distance
+        rW = self.anode_wire_radius
+        dL = self.gate_to_anode_distance - dG
+
+        VG = self.anode_voltage / (1 + dL / dG / self.lxe_dielectric_constant)
+        E0 = VG / ((dG - rA) / rA + np.log(rA / rW))  # V / cm
+
+        dr = 0.0001  # cm
+        r = np.arange(np.max(dG), rW, -dr)
+        rr = np.clip(1 / r, 1 / rA, 1 / rW)
+
+        return _luminescence_timings_simple(len(xy), dG, E0, 
+                                            r, dr, rr, alpha, uE,
+                                            pressure, n_photons)
+
+    def optical_propagation(self, channels):
+        """Function getting times from s2 timing splines:
+        :param channels: The channels of all s2 photon
+        """
+        prop_time = np.zeros_like(channels)
+        u_rand = np.random.rand(len(channels))[:, None]
+
+        is_top = channels < self.n_top_pmts
+        prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name='top')
+
+        is_bottom = channels >= self.n_top_pmts
+        prop_time[is_bottom] = self.s2_optical_propagation_spline(u_rand[is_bottom], map_name='bottom')
+
+        return prop_time.astype(np.int64)
 
 @njit
 def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap):
@@ -497,3 +641,28 @@ def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_ga
         timings[count:count+n] = T
         count+=n
     return timings
+
+@njit
+def _luminescence_timings_simple(n, dG, E0, r, dr, rr, alpha, uE, p, n_photons):
+    """
+    Luminescence time distribution computation, calculates emission timings of photons from the excited electrons
+    return 1d nested array with ints
+    """
+    emission_time = np.zeros(np.sum(n_photons), np.int64)
+
+    ci = 0
+    for i in range(n):
+        npho = n_photons[i]
+        dt = dr / (alpha * E0[i] * rr)
+        dy = E0[i] * rr / uE - 0.8 * p  # arXiv:physics/0702142
+        avgt = np.sum(np.cumsum(dt) * dy) / np.sum(dy)
+
+        j = np.argmax(r <= dG[i])
+        t = np.cumsum(dt[j:]) - avgt
+        y = np.cumsum(dy[j:])
+
+        probabilities = np.random.rand(npho)
+        emission_time[ci:ci+npho] = np.interp(probabilities, y / y[-1], t).astype(np.int64)
+        ci += npho
+
+    return emission_time
