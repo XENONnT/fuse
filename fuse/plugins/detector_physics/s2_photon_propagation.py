@@ -9,8 +9,7 @@ from scipy.stats import skewnorm
 
 export, __all__ = strax.exporter()
 
-from ...common import DummyMap
-from .photon_propagation_base import PhotonPropagationBase
+from ...common import DummyMap, init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S2_Signal')
@@ -18,7 +17,7 @@ log.setLevel('WARNING')
 
 
 @export
-class S2PhotonPropagation(PhotonPropagationBase):
+class S2PhotonPropagationBase(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -26,34 +25,70 @@ class S2PhotonPropagation(PhotonPropagationBase):
     provides = "propagated_s2_photons"
     data_kind = "S2_photons"
 
-    child_plugin = True
+    #dtype is the same for S1 and S2
+    dtype = [('channel', np.int64),
+             ('dpe', np.bool_),
+             ('photon_gain', np.int64),
+            ]
+    dtype = dtype + strax.time_fields
+
+    #Config options shared by S1 and S2 simulation 
+    debug = straxen.URLConfig(
+        default=False, type=bool,track=False,
+        help='Show debug informations',
+    )
+
+    p_double_pe_emision = straxen.URLConfig(
+        type=(int, float),
+        help='p_double_pe_emision',
+    )
+
+    pmt_transit_time_spread = straxen.URLConfig(
+        type=(int, float),
+        help='pmt_transit_time_spread',
+    )
+
+    pmt_transit_time_mean = straxen.URLConfig(
+        type=(int, float),
+        help='pmt_transit_time_mean',
+    )
+
+    pmt_circuit_load_resistor = straxen.URLConfig(
+        type=(int, float),
+        help='pmt_circuit_load_resistor',
+    )
+
+    digitizer_bits = straxen.URLConfig(
+        type=(int, float),
+        help='digitizer_bits',
+    )
+
+    digitizer_voltage_range = straxen.URLConfig(
+        type=(int, float),
+        help='digitizer_voltage_range',
+    )
+
+    n_top_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs on top array',
+    )
+
+    n_tpc_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs in the TPC',
+    )
+
+    gains = straxen.URLConfig(
+        cache=True,
+        help='pmt gains',
+    )
+
+    photon_area_distribution = straxen.URLConfig(
+        cache=True,
+        help='photon_area_distribution',
+    )
 
     #Config options specific to S2 simulation
-    triplet_lifetime_gas = straxen.URLConfig(
-        type=(int, float),
-        help='triplet_lifetime_gas',
-    )
-
-    singlet_lifetime_gas = straxen.URLConfig(
-        type=(int, float),
-        help='singlet_lifetime_gas',
-    )
-
-    triplet_lifetime_liquid = straxen.URLConfig(
-        type=(int, float),
-        help='triplet_lifetime_liquid',
-    )
-
-    singlet_lifetime_liquid = straxen.URLConfig(
-        type=(int, float),
-        help='singlet_lifetime_liquid',
-    )
-
-    singlet_fraction_gas = straxen.URLConfig(
-        type=(int, float),
-        help='singlet_fraction_gas',
-    )
-    #needed as config?
     phase_s2 = straxen.URLConfig(
         default="gas",
         help='phase_s2',
@@ -97,21 +132,7 @@ class S2PhotonPropagation(PhotonPropagationBase):
         cache=True,
         help='s2_pattern_map',
     )
-    
-    s2_optical_propagation_spline = straxen.URLConfig(
-        cache=True,
-        help='s2_optical_propagation_spline',
-    )
-    
-    s2_luminescence_map = straxen.URLConfig(
-        cache=True,
-        help='s2_luminescence_map',
-    )
-    
-    garfield_gas_gap_map = straxen.URLConfig(
-        cache=True,
-        help='garfield_gas_gap_map',
-    )
+
     #stupid naming problem...
     field_dependencies_map_tmp = straxen.URLConfig(
         help='field_dependencies_map',
@@ -119,11 +140,16 @@ class S2PhotonPropagation(PhotonPropagationBase):
 
     def setup(self):
 
-        super().setup()
-
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S2PhotonPropagation in debug mode")
+
+        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
+        self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
+        
+        #I dont like this part -> clean up before merging the PR
+        self._cached_uniform_to_pe_arr = {}
+        self.__uniform_to_pe_arr = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
         #Move this part into a nice URLConfig protocol?
         # Field dependencies 
@@ -168,9 +194,23 @@ class S2PhotonPropagation(PhotonPropagationBase):
         #Do i want to save both -> timings with and without pmt transition time spread?
         # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
         # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-        _photon_timings, _photon_gains, _photon_is_dpe = super().pmt_transition_time_spread(_photon_timings, _photon_channels)
+        _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
+            _photon_timings=_photon_timings,
+            _photon_channels=_photon_channels,
+            pmt_transit_time_mean=self.pmt_transit_time_mean,
+            pmt_transit_time_spread=self.pmt_transit_time_spread,
+            p_double_pe_emision=self.p_double_pe_emision,
+            gains=self.gains,
+            __uniform_to_pe_arr=self.__uniform_to_pe_arr,
+            )
 
-        result = super().build_output(_photon_timings, _photon_channels, _photon_gains, _photon_is_dpe)
+        result = build_photon_propagation_output(
+            dtype=self.dtype,
+            _photon_timings=_photon_timings,
+            _photon_channels=_photon_channels,
+            _photon_gains=_photon_gains,
+            _photon_is_dpe=_photon_is_dpe,
+            )
     
         return result
     
@@ -282,7 +322,60 @@ class S2PhotonPropagation(PhotonPropagationBase):
 
         return pattern
     
+    def photon_timings(self, positions, n_photons, _photon_channels):
+        raise NotImplementedError # This is implemented in the child class
+
     
+@export
+class S2PhotonPropagation(S2PhotonPropagationBase):
+    """
+    This class is used to simulate the propagation of photons from an S2 signal using 
+    luminescence timing from garfield gasgap, singlet and tripled delays and optical propagation
+    """
+    __version__ = "0.0.0"
+    
+    child_plugin = True
+
+    s2_luminescence_map = straxen.URLConfig(
+        cache=True,
+        help='s2_luminescence_map',
+    )
+
+    garfield_gas_gap_map = straxen.URLConfig(
+        cache=True,
+        help='garfield_gas_gap_map',
+    )
+
+    singlet_fraction_gas = straxen.URLConfig(
+        type=(int, float),
+        help='singlet_fraction_gas',
+    )
+
+    triplet_lifetime_gas = straxen.URLConfig(
+        type=(int, float),
+        help='triplet_lifetime_gas',
+    )
+
+    singlet_lifetime_gas = straxen.URLConfig(
+        type=(int, float),
+        help='singlet_lifetime_gas',
+    )
+
+    triplet_lifetime_liquid = straxen.URLConfig(
+        type=(int, float),
+        help='triplet_lifetime_liquid',
+    )
+
+    singlet_lifetime_liquid = straxen.URLConfig(
+        type=(int, float),
+        help='singlet_lifetime_liquid',
+    )
+
+    s2_optical_propagation_spline = straxen.URLConfig(
+        cache=True,
+        help='s2_optical_propagation_spline',
+    )
+
     def photon_timings(self, positions, n_photons, _photon_channels):
 
         _photon_timings = self.luminescence_timings_garfield_gasgap(positions, n_photons)
@@ -295,45 +388,6 @@ class S2PhotonPropagation(PhotonPropagationBase):
         
         return _photon_timings
 
-    def singlet_triplet_delays(self, size, singlet_ratio):
-        """
-        Given the amount of the excimer, return time between excimer decay
-        and their time of generation.
-        size           - amount of excimer
-        self.phase     - 'liquid' or 'gas'
-        singlet_ratio  - fraction of excimers that become singlets
-                         (NOT the ratio of singlets/triplets!)
-        """
-        if self.phase_s2 == 'liquid':
-            t1, t3 = (self.singlet_lifetime_liquid,
-                      self.triplet_lifetime_liquid)
-        elif self.phase_s2 == 'gas':
-            t1, t3 = (self.singlet_lifetime_gas,
-                      self.triplet_lifetime_gas)
-        else:
-            t1, t3 = 0, 0
-
-        delay = np.random.choice([t1, t3], size, replace=True,
-                                 p=[singlet_ratio, 1 - singlet_ratio])
-        return (np.random.exponential(1, size) * delay).astype(np.int64)
-
-    
-    def optical_propagation(self, channels):
-        """Function getting times from s2 timing splines:
-        :param channels: The channels of all s2 photon
-        """
-        prop_time = np.zeros_like(channels)
-        u_rand = np.random.rand(len(channels))[:, None]
-
-        is_top = channels < self.n_top_pmts
-        prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name='top')
-
-        is_bottom = channels >= self.n_top_pmts
-        prop_time[is_bottom] = self.s2_optical_propagation_spline(u_rand[is_bottom], map_name='bottom')
-
-        return prop_time.astype(np.int64)
-    
-    
     def luminescence_timings_garfield_gasgap(self, xy, n_photons):
         """
         Luminescence time distribution computation according to garfield scintillation maps
@@ -357,7 +411,46 @@ class S2PhotonPropagation(PhotonPropagationBase):
                                      diff_nearest_gg,
                                      d_gasgap
                                     )
-    
+
+    def singlet_triplet_delays(self, size, singlet_ratio):
+        """
+        Given the amount of the excimer, return time between excimer decay
+        and their time of generation.
+        size           - amount of excimer
+        self.phase     - 'liquid' or 'gas'
+        singlet_ratio  - fraction of excimers that become singlets
+                         (NOT the ratio of singlets/triplets!)
+        """
+        if self.phase_s2 == 'liquid':
+            t1, t3 = (self.singlet_lifetime_liquid,
+                      self.triplet_lifetime_liquid)
+        elif self.phase_s2 == 'gas':
+            t1, t3 = (self.singlet_lifetime_gas,
+                      self.triplet_lifetime_gas)
+        else:
+            t1, t3 = 0, 0
+
+        delay = np.random.choice([t1, t3], size, replace=True,
+                                 p=[singlet_ratio, 1 - singlet_ratio])
+        return (np.random.exponential(1, size) * delay).astype(np.int64)
+
+    def optical_propagation(self, channels):
+        """Function getting times from s2 timing splines:
+        :param channels: The channels of all s2 photon
+        """
+        prop_time = np.zeros_like(channels)
+        u_rand = np.random.rand(len(channels))[:, None]
+
+        is_top = channels < self.n_top_pmts
+        prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name='top')
+
+        is_bottom = channels >= self.n_top_pmts
+        prop_time[is_bottom] = self.s2_optical_propagation_spline(u_rand[is_bottom], map_name='bottom')
+
+        return prop_time.astype(np.int64)
+
+
+
 @njit
 def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap):
     

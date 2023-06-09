@@ -2,6 +2,7 @@ import numpy as np
 import awkward as ak
 import numba
 
+from scipy.interpolate import interp1d
 
 @numba.njit()
 def dynamic_chunking(data, scale, n_min):
@@ -262,3 +263,80 @@ def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
 
     n_intervals = current_interval  # No +1, as current_interval was incremented also when the last interval closed
     return n_intervals
+
+
+#Code shared between S1 and S2 photon propagation
+def init_spe_scaling_factor_distributions(spe_shapes):
+
+    # Create a converter array from uniform random numbers to SPE gains (one interpolator per channel)
+    # Scale the distributions so that they have an SPE mean of 1 and then calculate the cdf
+    uniform_to_pe_arr = []
+    for ch in spe_shapes.columns[1:]:  # skip the first element which is the 'charge' header
+        if spe_shapes[ch].sum() > 0:
+            # mean_spe = (spe_shapes['charge'].values * spe_shapes[ch]).sum() / spe_shapes[ch].sum()
+            scaled_bins = spe_shapes['charge'].values  # / mean_spe
+            cdf = np.cumsum(spe_shapes[ch]) / np.sum(spe_shapes[ch])
+        else:
+            # if sum is 0, just make some dummy axes to pass to interpolator
+            cdf = np.linspace(0, 1, 10)
+            scaled_bins = np.zeros_like(cdf)
+
+        grid_cdf = np.linspace(0, 1, 2001)
+        grid_scale = interp1d(cdf, scaled_bins,
+                              kind='next',
+                              bounds_error=False,
+                              fill_value=(scaled_bins[0], scaled_bins[-1]))(grid_cdf)
+
+        uniform_to_pe_arr.append(grid_scale)
+
+    __uniform_to_pe_arr = np.stack(uniform_to_pe_arr)
+    return __uniform_to_pe_arr
+
+def pmt_transition_time_spread(
+    _photon_timings,
+    _photon_channels,
+    pmt_transit_time_mean,
+    pmt_transit_time_spread,
+    p_double_pe_emision,
+    gains,
+    __uniform_to_pe_arr,
+    ):
+
+        _photon_timings += np.random.normal(pmt_transit_time_mean,
+                                            pmt_transit_time_spread / 2.35482,
+                                            len(_photon_timings)).astype(np.int64)
+        
+        #Why is this done here and additionally in the get_n_photons function of S1PhotonHits??
+        _photon_is_dpe = np.random.binomial(n=1,
+                                            p=p_double_pe_emision,
+                                            size=len(_photon_timings)).astype(np.bool_)
+
+
+        _photon_gains = gains[_photon_channels] \
+            * loop_uniform_to_pe_arr(np.random.random(len(_photon_channels)), _photon_channels, __uniform_to_pe_arr)
+
+        # Add some double photoelectron emission by adding another sampled gain
+        n_double_pe = _photon_is_dpe.sum()
+        _photon_gains[_photon_is_dpe] += gains[_photon_channels[_photon_is_dpe]] \
+            * loop_uniform_to_pe_arr(np.random.random(n_double_pe), _photon_channels[_photon_is_dpe], __uniform_to_pe_arr) 
+
+        return _photon_timings, _photon_gains, _photon_is_dpe
+
+def build_photon_propagation_output(
+    dtype,
+    _photon_timings,
+    _photon_channels,
+    _photon_gains,
+    _photon_is_dpe
+    ):
+
+    result = np.zeros(_photon_channels.shape[0], dtype = dtype)
+    result["time"] = _photon_timings
+    result["channel"] = _photon_channels
+    result["endtime"] = result["time"]
+    result["photon_gain"] = _photon_gains 
+    result["dpe"] = _photon_is_dpe
+
+    return result
+        
+    

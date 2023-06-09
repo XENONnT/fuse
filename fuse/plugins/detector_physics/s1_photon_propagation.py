@@ -4,16 +4,16 @@ import straxen
 import nestpy
 import logging
 
-from .photon_propagation_base import PhotonPropagationBase
+from ...common import init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output
 
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('fuse.detector_physics.S1_Signal')
+log = logging.getLogger('fuse.detector_physics.s1_photon_propagation')
 log.setLevel('WARNING')
 
 @export
-class S1PhotonPropagation(PhotonPropagationBase):
+class S1PhotonPropagationBase(strax.Plugin):
     
     __version__ = "0.0.0"
     
@@ -21,36 +21,87 @@ class S1PhotonPropagation(PhotonPropagationBase):
     provides = "propagated_s1_photons"
     data_kind = "S1_photons"
     
-    child_plugin = True
+    #dtype is the same for S1 and S2
+    dtype = [('channel', np.int64),
+             ('dpe', np.bool_),
+             ('photon_gain', np.int64),
+            ]
+    dtype = dtype + strax.time_fields
 
-    #Config options specific to S1 simulation
-    maximum_recombination_time = straxen.URLConfig(
-        type=(int, float),
-        help='maximum_recombination_time',
+    #Config options shared by S1 and S2 simulation 
+    debug = straxen.URLConfig(
+        default=False, type=bool,track=False,
+        help='Show debug informations',
     )
 
+    p_double_pe_emision = straxen.URLConfig(
+        type=(int, float),
+        help='p_double_pe_emision',
+    )
+
+    pmt_transit_time_spread = straxen.URLConfig(
+        type=(int, float),
+        help='pmt_transit_time_spread',
+    )
+
+    pmt_transit_time_mean = straxen.URLConfig(
+        type=(int, float),
+        help='pmt_transit_time_mean',
+    )
+
+    pmt_circuit_load_resistor = straxen.URLConfig(
+        type=(int, float),
+        help='pmt_circuit_load_resistor',
+    )
+
+    digitizer_bits = straxen.URLConfig(
+        type=(int, float),
+        help='digitizer_bits',
+    )
+
+    digitizer_voltage_range = straxen.URLConfig(
+        type=(int, float),
+        help='digitizer_voltage_range',
+    )
+
+    n_top_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs on top array',
+    )
+
+    n_tpc_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs in the TPC',
+    )
+
+    gains = straxen.URLConfig(
+        cache=True,
+        help='pmt gains',
+    )
+
+    photon_area_distribution = straxen.URLConfig(
+        cache=True,
+        help='photon_area_distribution',
+    )
+
+    #Config options specific to S1 simulation
     s1_pattern_map = straxen.URLConfig(
         cache=True,
         help='s1_pattern_map',
     )
-    
-    s1_optical_propagation_spline = straxen.URLConfig(
-        cache=True,
-        help='s1_optical_propagation_spline',
-    )
-    
-    def setup(self):
 
-        super().setup()
+    def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S1PhotonPropagation in debug mode")
 
+        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
+        self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
         
-        log.info('Using NEST for scintillation time without set calculator\n'
-                 'Creating new nestpy calculator')
-        self.nestpy_calc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
+        #I dont like this part -> clean up before merging the PR
+        self._cached_uniform_to_pe_arr = {}
+        self.__uniform_to_pe_arr = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
     def compute(self, interactions_in_roi):
 
@@ -92,12 +143,25 @@ class S1PhotonPropagation(PhotonPropagationBase):
         #Do i want to save both -> timings with and without pmt transition time spread?
         # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
         # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-        _photon_timings, _photon_gains, _photon_is_dpe = super().pmt_transition_time_spread(_photon_timings, _photon_channels)
-        
-        result = super().build_output(_photon_timings, _photon_channels, _photon_gains, _photon_is_dpe)
+        _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
+            _photon_timings=_photon_timings,
+            _photon_channels=_photon_channels,
+            pmt_transit_time_mean=self.pmt_transit_time_mean,
+            pmt_transit_time_spread=self.pmt_transit_time_spread,
+            p_double_pe_emision=self.p_double_pe_emision,
+            gains=self.gains,
+            __uniform_to_pe_arr=self.__uniform_to_pe_arr,
+            )
+
+        result = build_photon_propagation_output(
+            dtype=self.dtype,
+            _photon_timings=_photon_timings,
+            _photon_channels=_photon_channels,
+            _photon_gains=_photon_gains,
+            _photon_is_dpe=_photon_is_dpe,
+            )
 
         return result
-    
     
     def photon_channels(self, positions, n_photon_hits):
         """Calculate photon arrival channels
@@ -121,7 +185,39 @@ class S1PhotonPropagation(PhotonPropagationBase):
                     replace=True))
 
         return np.concatenate(_photon_channels)
+
+    def photon_timings(self):
+        raise NotImplementedError # To be implemented by child class
         
+
+@export
+class S1PhotonPropagation(S1PhotonPropagationBase):
+    """
+    This class is used to simulate the propagation of photons from an S1 signal using
+    optical propagation and luminescence timing from nestpy
+    """
+
+    __version__ = "0.0.0"
+
+    child_plugin = True
+
+    maximum_recombination_time = straxen.URLConfig(
+        type=(int, float),
+        help='maximum_recombination_time',
+    )
+
+    s1_optical_propagation_spline = straxen.URLConfig(
+        cache=True,
+        help='s1_optical_propagation_spline',
+    )
+
+    def setup(self):
+        super().setup()
+
+        log.info('Using NEST for scintillation time without set calculator\n'
+                 'Creating new nestpy calculator')
+        self.nestpy_calc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
+
     def photon_timings(self,
                        t,
                        n_photon_hits,
