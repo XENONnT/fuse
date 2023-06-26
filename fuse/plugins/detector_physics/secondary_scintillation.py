@@ -7,7 +7,6 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
-log.setLevel('WARNING')
 
 @export
 class SecondaryScintillation(strax.Plugin):
@@ -100,6 +99,8 @@ class SecondaryScintillation(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running SecondaryScintillation in debug mode")
+        else: 
+            log.setLevel('WARNING')
         
         self.pmt_mask = np.array(self.gains)
         

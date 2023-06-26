@@ -14,7 +14,6 @@ from ...common import DummyMap, loop_uniform_to_pe_arr
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S2_Signal')
-log.setLevel('WARNING')
 
 
 @export
@@ -202,6 +201,8 @@ class S2PhotonPropagation(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S2PhotonPropagation in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))

@@ -11,7 +11,6 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.csv_input')
-log.setLevel('WARNING')
 
 @export
 class ChunkCsvInput(strax.Plugin):
@@ -81,6 +80,8 @@ class ChunkCsvInput(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ChunkCsvInput in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))

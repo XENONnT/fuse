@@ -14,7 +14,6 @@ from ...common import find_intervals_below_threshold
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
-log.setLevel('WARNING')
 
 @export
 class PMTResponseAndDAQ(strax.Plugin):
@@ -172,6 +171,8 @@ class PMTResponseAndDAQ(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running pmt_response_and_daq in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))

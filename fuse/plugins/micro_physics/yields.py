@@ -9,7 +9,6 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.yields')
-log.setLevel('WARNING')
 
 #Initialize the nestpy random generator
 #The seed will be set in the setup function
@@ -49,7 +48,10 @@ class NestYields(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running NestYields in debug mode")
-            log.debug(f'Using nestpy version {nestpy.__version__}')
+        else: 
+            log.setLevel('WARNING')
+
+        log.debug(f'Using nestpy version {nestpy.__version__}')
 
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -223,7 +225,10 @@ class BetaYields(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running BetaYields in debug mode")
-            log.debug(f'Using nestpy version {nestpy.__version__}')
+        else: 
+            log.setLevel('WARNING')
+        
+        log.debug(f'Using nestpy version {nestpy.__version__}')
 
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -327,6 +332,8 @@ class BBFYields(strax.Plugin):
         if self.debug:
             log.setLevel("DEBUG")
             log.debug("Running BBFYields in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))

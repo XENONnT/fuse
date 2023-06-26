@@ -14,7 +14,6 @@ from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.input')
-log.setLevel('WARNING')
 
 #Remove the path and file name option from the config and do this with the run_number??
 @export
@@ -117,6 +116,8 @@ class ChunkInput(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ChunkInput in debug mode")
+        else:
+            log.setLevel('WARNING')
 
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))

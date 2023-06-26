@@ -8,7 +8,6 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s1_photon_hits')
-log.setLevel('WARNING')
 
 @export
 class S1PhotonHits(strax.Plugin):
@@ -57,6 +56,8 @@ class S1PhotonHits(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S1PhotonHits in debug mode")
+        else: 
+            log.setLevel('WARNING')
         
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))

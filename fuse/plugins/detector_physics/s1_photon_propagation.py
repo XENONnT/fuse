@@ -13,7 +13,6 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S1_Signal')
-log.setLevel('WARNING')
 
 #Initialize the nestpy random generator
 #The seed will be set in the setup function
@@ -136,6 +135,8 @@ class S1PhotonPropagation(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S1PhotonPropagation in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))

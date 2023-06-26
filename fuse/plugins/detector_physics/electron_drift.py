@@ -7,7 +7,6 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_drift')
-log.setLevel('WARNING')
 
 @export
 class ElectronDrift(strax.Plugin):
@@ -88,6 +87,8 @@ class ElectronDrift(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ElectronDrift in debug mode")
+        else: 
+            log.setLevel('WARNING')
         
         #Can i do this scaling in the url config?
         if self.field_distortion_model == "inverse_fdc":

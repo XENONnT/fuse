@@ -8,7 +8,6 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_extraction')
-log.setLevel('WARNING')
 
 @export
 class ElectronExtraction(strax.Plugin):
@@ -104,6 +103,8 @@ class ElectronExtraction(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ElectronExtraction in debug mode")
+        else: 
+            log.setLevel('WARNING')
         
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))

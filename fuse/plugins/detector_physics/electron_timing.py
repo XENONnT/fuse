@@ -7,7 +7,6 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_timing')
-log.setLevel('WARNING')
 
 @export
 class ElectronTiming(strax.Plugin):
@@ -50,6 +49,8 @@ class ElectronTiming(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ElectronTiming in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))

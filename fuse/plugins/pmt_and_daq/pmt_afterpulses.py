@@ -7,7 +7,6 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
-log.setLevel('WARNING')
 
 @export
 class PMTAfterPulses(strax.Plugin):
@@ -79,6 +78,8 @@ class PMTAfterPulses(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running PMTAfterPulses in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
         if self.fixed_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
