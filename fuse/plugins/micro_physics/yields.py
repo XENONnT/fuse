@@ -39,7 +39,7 @@ class NestYields(strax.Plugin):
         help='Show debug informations',
     )
 
-    fixed_seed = straxen.URLConfig(
+    deterministic_seed = straxen.URLConfig(
         default=True, type=bool,
         help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
@@ -53,7 +53,7 @@ class NestYields(strax.Plugin):
 
         log.debug(f'Using nestpy version {nestpy.__version__}')
 
-        if self.fixed_seed:
+        if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
             #Dont know but nestpy seems to have a problem with large seeds
@@ -216,7 +216,7 @@ class BetaYields(strax.Plugin):
         help='cs2_spline_path',
     )
 
-    fixed_seed = straxen.URLConfig(
+    deterministic_seed = straxen.URLConfig(
         default=True, type=bool,
         help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
@@ -230,7 +230,7 @@ class BetaYields(strax.Plugin):
         
         log.debug(f'Using nestpy version {nestpy.__version__}')
 
-        if self.fixed_seed:
+        if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
             #Dont know but nestpy seems to have a problem with large seeds
@@ -322,7 +322,7 @@ class BBFYields(strax.Plugin):
         help='Show debug informations',
     )
 
-    fixed_seed = straxen.URLConfig(
+    deterministic_seed = straxen.URLConfig(
         default=True, type=bool,
         help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
@@ -335,7 +335,7 @@ class BBFYields(strax.Plugin):
         else: 
             log.setLevel('WARNING')
 
-        if self.fixed_seed:
+        if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
             self.rng = np.random.default_rng(seed = seed)

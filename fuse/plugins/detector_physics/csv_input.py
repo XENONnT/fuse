@@ -70,7 +70,7 @@ class ChunkCsvInput(strax.Plugin):
         help='n_interactions_per_chunk',
     )
 
-    fixed_seed = straxen.URLConfig(
+    deterministic_seed = straxen.URLConfig(
         default=True, type=bool,
         help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
@@ -83,7 +83,7 @@ class ChunkCsvInput(strax.Plugin):
         else: 
             log.setLevel('WARNING')
 
-        if self.fixed_seed:
+        if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
             self.rng = np.random.default_rng(seed = seed)

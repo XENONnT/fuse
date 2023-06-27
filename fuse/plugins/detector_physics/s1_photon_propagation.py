@@ -125,7 +125,7 @@ class S1PhotonPropagation(strax.Plugin):
         help='photon_area_distribution',
     )
 
-    fixed_seed = straxen.URLConfig(
+    deterministic_seed = straxen.URLConfig(
         default=True, type=bool,
         help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
@@ -138,7 +138,7 @@ class S1PhotonPropagation(strax.Plugin):
         else: 
             log.setLevel('WARNING')
 
-        if self.fixed_seed:
+        if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
             #Dont know but nestpy seems to have a problem with large seeds
