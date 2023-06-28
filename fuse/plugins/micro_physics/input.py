@@ -125,7 +125,7 @@ class ChunkInput(strax.Plugin):
                                        kwargs={'entry_start': self.entry_start,
                                                'entry_stop': self.entry_stop},
                                        cut_by_eventid=self.cut_by_eventid,
-                                       #cut_nr_only=self.nr_only,
+                                       cut_nr_only=self.nr_only,
                                        )
         self.file_reader_iterator = self.file_reader.output_chunk()
         
@@ -259,6 +259,7 @@ class file_loader():
         interactions = interactions[m]
 
         if self.cut_nr_only:
+            log.debug("'nr_only' set to True, keeping only the NR events")
             m = ((interactions['type'] == "neutron")&(interactions['edproc'] == "hadElastic")) | (interactions['edproc'] == "ionIoni")
             e_dep_er = ak.sum(interactions[~m]['ed'], axis=1)
             e_dep_nr = ak.sum(interactions[m]['ed'], axis=1)
