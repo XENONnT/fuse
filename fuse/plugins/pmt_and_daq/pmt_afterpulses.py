@@ -18,6 +18,8 @@ class PMTAfterPulses(strax.Plugin):
     
     #Forbid rechunking
     rechunk_on_save = False
+
+    save_when = strax.SaveWhen.TARGET
     
     data_kind = "AP_photons"
     

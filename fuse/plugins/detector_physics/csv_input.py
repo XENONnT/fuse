@@ -27,6 +27,8 @@ class ChunkCsvInput(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
 
+    save_when = strax.SaveWhen.TARGET
+
     source_done = False
 
     dtype = [('x', np.float32),

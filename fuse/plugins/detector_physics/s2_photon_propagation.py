@@ -28,6 +28,8 @@ class S2PhotonPropagation(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
 
+    save_when = strax.SaveWhen.TARGET
+
     dtype = [('channel', np.int64),
              ('dpe', np.bool_),
              ('photon_gain', np.int64),

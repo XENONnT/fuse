@@ -24,6 +24,8 @@ class PMTResponseAndDAQ(strax.Plugin):
     
     provides = ('raw_records', 'raw_records_he', 'raw_records_aqmon')#, 'truth')
     data_kind = immutabledict(zip(provides, provides))
+
+    save_when = strax.SaveWhen.ALWAYS
     
     #Config options
     debug = straxen.URLConfig(

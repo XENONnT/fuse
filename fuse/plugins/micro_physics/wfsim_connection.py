@@ -27,6 +27,8 @@ class output_plugin(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    save_when = strax.SaveWhen.TARGET
     
     dtype = [(('Waveform simulator event number.', 'event_number'), np.int32),
              (('Quanta type (S1 photons or S2 electrons)', 'type'), np.int8),

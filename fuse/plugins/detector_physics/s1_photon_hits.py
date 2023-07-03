@@ -21,6 +21,8 @@ class S1PhotonHits(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
 
+    save_when = strax.SaveWhen.TARGET
+
     dtype = [('n_s1_photon_hits', np.int64),
             ]
     dtype = dtype + strax.time_fields

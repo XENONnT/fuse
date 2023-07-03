@@ -25,6 +25,8 @@ class MergeCluster(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    save_when = strax.SaveWhen.TARGET
     
     dtype = [('x', np.float32),
              ('y', np.float32),

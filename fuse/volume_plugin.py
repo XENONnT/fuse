@@ -8,6 +8,8 @@ class VolumePlugin(Plugin):
     Plugin that evaluates if interactions are in a defined detector volume.
     """
 
+    save_when = SaveWhen.NEVER
+
     def in_ROI(self, interactions, min_z, max_z, max_r):
         """
         Function that evaluates if an interaction is in the ROI.
