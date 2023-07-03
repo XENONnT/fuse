@@ -6,6 +6,8 @@ import logging
 
 export, __all__ = strax.exporter()
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_timing')
 log.setLevel('WARNING')
@@ -22,6 +24,7 @@ class ElectronTiming(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
     
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     data_kind = "individual_electrons"
     

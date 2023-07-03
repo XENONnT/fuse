@@ -6,6 +6,8 @@ import logging
 
 export, __all__ = strax.exporter()
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
 log.setLevel('WARNING')
@@ -20,6 +22,8 @@ class PMTAfterPulses(strax.Plugin):
     
     #Forbid rechunking
     rechunk_on_save = False
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     data_kind = "AP_photons"
     

@@ -8,6 +8,7 @@ import logging
 export, __all__ = strax.exporter()
 
 from ...common import full_array_to_numpy, reshape_awkward, calc_dt, ak_num
+from ...common import FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.merge_cluster')
@@ -25,6 +26,8 @@ class MergeCluster(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = [('x', np.float32),
              ('y', np.float32),

@@ -12,6 +12,7 @@ from scipy.interpolate import interp1d
 export, __all__ = strax.exporter()
 
 from ...common import find_intervals_below_threshold
+from ...common import FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
@@ -26,6 +27,8 @@ class PMTResponseAndDAQ(strax.Plugin):
     
     provides = ('raw_records', 'raw_records_he', 'raw_records_aqmon')#, 'truth')
     data_kind = immutabledict(zip(provides, provides))
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     #Config options
     debug = straxen.URLConfig(

@@ -6,6 +6,8 @@ import logging
 
 export, __all__ = strax.exporter()
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_drift')
 log.setLevel('WARNING')
@@ -18,6 +20,8 @@ class ElectronDrift(strax.Plugin):
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
     data_kind = 'interactions_in_roi'
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = [('n_electron_interface', np.int64),
              ('drift_time_mean', np.int64),

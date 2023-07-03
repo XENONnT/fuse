@@ -7,6 +7,8 @@ import pickle
 
 export, __all__ = strax.exporter()
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.yields')
 log.setLevel('WARNING')
@@ -19,6 +21,8 @@ class NestYields(strax.Plugin):
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
     data_kind = "interactions_in_roi"
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = [('photons', np.float64),
              ('electrons', np.float64),

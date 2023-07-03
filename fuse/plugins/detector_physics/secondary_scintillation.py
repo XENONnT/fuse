@@ -7,6 +7,8 @@ import logging
 
 export, __all__ = strax.exporter()
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 log.setLevel('WARNING')
@@ -31,6 +33,8 @@ class SecondaryScintillation(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     #Config options
     debug = straxen.URLConfig(
