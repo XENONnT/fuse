@@ -106,7 +106,7 @@ class PMTAfterPulses(strax.Plugin):
     def compute(self, S1_photons, S2_photons):
         
         if len(S1_photons) == 0 and len(S2_photons) == 0:
-            return np.zeros(0, dtype=self.dtype)
+            self.empty_result()
 
         merged_photons = np.concatenate([S1_photons, S2_photons])
         S1_photons = None

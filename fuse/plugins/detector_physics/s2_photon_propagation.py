@@ -249,7 +249,7 @@ class S2PhotonPropagation(strax.Plugin):
         mask = interactions_in_roi["n_electron_extracted"] > 0
 
         if len(individual_electrons) == 0:
-            return np.zeros(0, dtype=self.dtype)
+            self.empty_result()
         
         positions = np.array([interactions_in_roi[mask]["x"], interactions_in_roi[mask]["y"]]).T
         

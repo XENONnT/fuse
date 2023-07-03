@@ -170,7 +170,7 @@ class S1PhotonPropagation(strax.Plugin):
         instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
 
         if len(instruction) == 0:
-            return np.zeros(0, self.dtype)
+            self.empty_result()
         
         t = instruction['time']
         x = instruction['x']

@@ -83,7 +83,7 @@ class NestYields(strax.Plugin):
             numpy.ndarray: An array of quanta, with fields for time, endtime, photons, electrons, and excitons.
         """
         if len(interactions_in_roi) == 0:
-            return np.zeros(0, dtype=self.dtype)
+            self.empty_result()
         
         result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         result["time"] = interactions_in_roi["time"]

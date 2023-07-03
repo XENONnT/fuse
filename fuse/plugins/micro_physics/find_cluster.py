@@ -69,7 +69,7 @@ class FindCluster(strax.Plugin):
             np.ndarray: An array of cluster IDs with corresponding time and endtime values.
         """
         if len(geant4_interactions) == 0:
-            return np.zeros(0, dtype=self.dtype)
+            self.empty_result()
 
         inter = ak.from_numpy(np.empty(1, dtype=geant4_interactions.dtype))
         structure = np.unique(geant4_interactions['evtid'], return_counts=True)[1]

@@ -72,7 +72,7 @@ class ElectronTiming(strax.Plugin):
         mask = interactions_in_roi["n_electron_extracted"] > 0
         
         if len(interactions_in_roi[mask]) == 0:
-            return np.zeros(0, dtype=self.dtype)
+            self.empty_result()
 
         timing = self.electron_timing(interactions_in_roi[mask]["time"],
                                       interactions_in_roi[mask]["n_electron_extracted"],

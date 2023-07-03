@@ -67,7 +67,7 @@ class output_plugin(strax.Plugin):
     def compute(self, clustered_interactions):
 
         if len(clustered_interactions) == 0:
-            return np.zeros(0, dtype=self.dtype)
+            self.empty_result()
         
         instructions = self.awkward_to_wfsim_row_style(clustered_interactions)
         

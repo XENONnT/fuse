@@ -218,11 +218,8 @@ class PMTResponseAndDAQ(strax.Plugin):
     def compute(self, propagated_photons):
 
         if len(propagated_photons) == 0:
-            return dict(raw_records=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)),
-                        raw_records_he=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)),
-                        raw_records_aqmon=np.zeros(0, dtype=strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)))
-        
-        
+            self.empty_result()
+
         #Split the photons into groups that will be simualted at once
         split_photons = np.split(propagated_photons, np.where(np.diff(propagated_photons["time"]) > self.rext)[0]+1)
         

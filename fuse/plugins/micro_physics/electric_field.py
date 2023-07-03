@@ -64,7 +64,7 @@ class ElectricField(strax.Plugin):
             numpy.ndarray: array of electric field values.
         """
         if len(interactions_in_roi) == 0:
-            return np.zeros(0, dtype=self.dtype)
+            self.empty_result()
 
         electric_field_array = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         electric_field_array['time'] = interactions_in_roi['time']
