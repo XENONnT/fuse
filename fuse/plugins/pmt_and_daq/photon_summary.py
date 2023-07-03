@@ -18,3 +18,18 @@ class PhotonSummary(VerticalMergerPlugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+@export
+class PhotonSummaryElectronAP(VerticalMergerPlugin):
+    """
+    Plugin which concatenates the output of the S1, S2, PMT AP and electron AP plugins
+    """
+    
+    depends_on = ("propagated_s2_photons", "propagated_s1_photons", "pmt_afterpulses", "propagated_ap_s2_photons")
+    
+    provides = 'photon_summary'
+    data_kind = 'propagated_photons'
+    __version__ = '0.0.0'
+
+    #Forbid rechunking
+    rechunk_on_save = False
