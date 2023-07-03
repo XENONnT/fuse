@@ -9,7 +9,7 @@ import logging
 
 export, __all__ = strax.exporter()
 
-from ...common import offset_range, reshape_awkward
+from ...common import offset_range, reshape_awkward, FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.output')
@@ -29,6 +29,8 @@ class output_plugin(strax.Plugin):
     rechunk_on_save = False
 
     save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = [(('Waveform simulator event number.', 'event_number'), np.int32),
              (('Quanta type (S1 photons or S2 electrons)', 'type'), np.int8),

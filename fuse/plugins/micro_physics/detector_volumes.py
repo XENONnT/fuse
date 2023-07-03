@@ -5,10 +5,11 @@ import logging
 from ...volume_plugin import *
 from ...vertical_merger_plugin import *
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.detector_volumes')
 log.setLevel('WARNING')
-
 
 class VolumesMerger(VerticalMergerPlugin):
     """
@@ -24,6 +25,8 @@ class VolumesMerger(VerticalMergerPlugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     def compute(self, **kwargs):
         return super().compute(**kwargs)

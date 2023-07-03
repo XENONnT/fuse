@@ -4,10 +4,14 @@ from strax import Plugin, SaveWhen
 import numpy as np
 from itertools import groupby
 
+from common import FUSE_PLUGIN_TIMEOUT
+
 class VerticalMergerPlugin(Plugin):
     "Plugin that concatenates data from the dependencies along the fist axis"
 
     save_when = SaveWhen.NEVER
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     def infer_dtype(self):
         incoming_dtypes = [self.deps[d].dtype_for(d) for d in sorted(self.depends_on)]

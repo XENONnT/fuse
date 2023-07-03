@@ -5,6 +5,8 @@ import straxen
 import logging
 import pickle
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
@@ -34,6 +36,8 @@ class NestYields(strax.Plugin):
     rechunk_on_save = False
 
     save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     #Config options
     debug = straxen.URLConfig(
