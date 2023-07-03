@@ -2,7 +2,6 @@ import numpy as np
 import awkward as ak
 import numba
 
-FUSE_PLUGIN_TIMEOUT = 240 #Default strax value is 80 seconds, lets use something longer here
 
 @numba.njit()
 def dynamic_chunking(data, scale, n_min):

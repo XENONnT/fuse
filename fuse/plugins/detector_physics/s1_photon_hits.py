@@ -6,8 +6,6 @@ import numpy as np
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
-
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s1_photon_hits')
 log.setLevel('WARNING')
@@ -23,8 +21,6 @@ class S1PhotonHits(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [('n_s1_photon_hits', np.int64),
             ]

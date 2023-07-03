@@ -5,8 +5,6 @@ import straxen
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
-
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.electric_field')
 log.setLevel('WARNING')
@@ -25,8 +23,6 @@ class ElectricField(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [
         ('e_field', np.int64),

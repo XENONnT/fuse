@@ -10,7 +10,6 @@ from sklearn.cluster import DBSCAN
 export, __all__ = strax.exporter()
 
 from ...common import reshape_awkward, awkward_to_flat_numpy
-from ...common import FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.find_cluster')
@@ -25,8 +24,6 @@ class FindCluster(strax.Plugin):
     
     provides = "cluster_index"
     
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
     dtype = [('cluster_ids', np.int64),
             ]
     dtype = dtype + strax.time_fields

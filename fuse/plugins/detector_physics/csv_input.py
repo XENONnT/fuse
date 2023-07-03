@@ -8,7 +8,6 @@ import pandas as pd
 import numpy as np
 
 from ...common import dynamic_chunking
-from ...common import FUSE_PLUGIN_TIMEOUT
 
 export, __all__ = strax.exporter()
 
@@ -34,8 +33,6 @@ class ChunkCsvInput(strax.Plugin):
     rechunk_on_save = False
 
     source_done = False
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [('x', np.float32),
              ('y', np.float32),

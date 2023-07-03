@@ -12,7 +12,6 @@ import awkward as ak
 export, __all__ = strax.exporter()
 
 from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
-from ...common import FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.input')
@@ -31,8 +30,6 @@ class ChunkInput(strax.Plugin):
     rechunk_on_save = False
 
     source_done = False
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = [('x', np.float32),
              ('y', np.float32),

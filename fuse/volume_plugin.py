@@ -3,14 +3,10 @@ from strax import Plugin, SaveWhen
 import numba
 import numpy as np
 
-from common import FUSE_PLUGIN_TIMEOUT
-
 class VolumePlugin(Plugin):
     """
     Plugin that evaluates if interactions are in a defined detector volume.
     """
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     def in_ROI(self, interactions, min_z, max_z, max_r):
         """
