@@ -13,7 +13,6 @@ from ...common import offset_range, reshape_awkward, FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.output')
-log.setLevel('WARNING')
 
 @export
 class output_plugin(strax.Plugin):
@@ -62,6 +61,8 @@ class output_plugin(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running output_plugin in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
     def compute(self, clustered_interactions):
 

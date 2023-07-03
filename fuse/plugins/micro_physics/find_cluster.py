@@ -13,7 +13,6 @@ from ...common import reshape_awkward, awkward_to_flat_numpy, FUSE_PLUGIN_TIMEOU
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.find_cluster')
-log.setLevel('WARNING')
 
 @export
 class FindCluster(strax.Plugin):
@@ -56,6 +55,8 @@ class FindCluster(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running FindCluster in debug mode")
+        else: 
+            log.setLevel('WARNING')
     
     def compute(self, geant4_interactions):
         """

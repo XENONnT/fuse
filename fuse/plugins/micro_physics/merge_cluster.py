@@ -11,7 +11,6 @@ from ...common import full_array_to_numpy, reshape_awkward, calc_dt, FUSE_PLUGIN
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.merge_cluster')
-log.setLevel('WARNING')
 
 @export
 class MergeCluster(strax.Plugin):
@@ -71,6 +70,8 @@ class MergeCluster(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running MergeCluster in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
     def compute(self, geant4_interactions):
 
