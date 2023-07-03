@@ -104,7 +104,7 @@ class FindCluster(strax.Plugin):
         # TODO is there a better way to get the df?
         df = []
         for key in ['x', 'y', 'z', 'ed', 'time']:
-            df.append(ak.to_pandas(interactions[key], anonymous=key))
+            df.append(ak.to_dataframe(interactions[key], anonymous=key))
         df = pd.concat(df, axis=1)
 
         if df.empty:

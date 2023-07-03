@@ -1,14 +1,12 @@
 import strax
 import numpy as np
 import straxen
-import os
 import logging
 
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
-log.setLevel('WARNING')
 
 @export
 class PMTAfterPulses(strax.Plugin):
@@ -69,12 +67,28 @@ class PMTAfterPulses(strax.Plugin):
         cache=True,
         help='photon_ap_cdfs',
     )
+
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
  
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running PMTAfterPulses in debug mode")
+        else: 
+            log.setLevel('WARNING')
+
+        if self.deterministic_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
         
         self.uniform_to_pmt_ap = self.photon_ap_cdfs
 
@@ -130,7 +144,7 @@ class PMTAfterPulses(strax.Plugin):
             amplitude_bin_size = self.uniform_to_pmt_ap[element]['amplitude_bin_size']
 
             # Assign each photon FRIST random uniform number rU0 from (0, 1] for timing
-            rU0 = 1 - np.random.rand(len(merged_photon_timings))
+            rU0 = 1 - self.rng.random(len(merged_photon_timings))
 
             # delaytime_cdf is intentionally not normalized to 1 but the probability of the AP 
             prob_ap = delaytime_cdf[merged_photon_channels, -1]
@@ -151,11 +165,11 @@ class PMTAfterPulses(strax.Plugin):
             sel_photon_channel = merged_photon_channels[sel_photon_id]
 
             # Assign selected photon SECOND random uniform number rU1 from (0, 1] for amplitude
-            rU1 = 1 - np.random.rand(len(sel_photon_channel))
+            rU1 = 1 - self.rng.random(len(sel_photon_channel))
 
             # The map is made so that the indices are delay time in unit of ns
             if 'Uniform' in element:
-                ap_delay = (np.random.uniform(delaytime_cdf[sel_photon_channel, 0], 
+                ap_delay = (self.rng.uniform(delaytime_cdf[sel_photon_channel, 0], 
                                             delaytime_cdf[sel_photon_channel, 1])
                             * delaytime_bin_size)
                 ap_amplitude = np.ones_like(ap_delay)

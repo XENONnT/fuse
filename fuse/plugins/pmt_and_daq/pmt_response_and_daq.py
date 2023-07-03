@@ -1,7 +1,6 @@
 from immutabledict import immutabledict
 import straxen 
 import strax
-import os
 from numba import njit
 import numpy as np
 import logging
@@ -15,7 +14,6 @@ from ...common import find_intervals_below_threshold
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
-log.setLevel('WARNING')
 
 @export
 class PMTResponseAndDAQ(strax.Plugin):
@@ -157,6 +155,11 @@ class PMTResponseAndDAQ(strax.Plugin):
         cache=True,
         help='noise_data',
     )
+
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
     
     channel_map = straxen.URLConfig(
         track=False, type=immutabledict,
@@ -168,11 +171,21 @@ class PMTResponseAndDAQ(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running pmt_response_and_daq in debug mode")
+        else: 
+            log.setLevel('WARNING')
+
+        if self.deterministic_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
 
-        
         #setup for Digitize Pulse Cache 
         self.current_2_adc = self.pmt_circuit_load_resistor \
                 * self.external_amplification \
@@ -319,7 +332,9 @@ class PMTResponseAndDAQ(strax.Plugin):
                           channel_mask=_channel_mask,
                           noise_data=self.noise_data,
                           noise_data_length=len(self.noise_data),
-                          noise_data_channels=len(self.noise_data[0]))
+                          noise_data_channels=len(self.noise_data[0]),
+                          rng=self.rng,
+                          )
                 
                 
             add_baseline(_raw_data, _channel_mask, 
@@ -499,7 +514,7 @@ def sum_signal(adc_wave, left, right, sum_template):
     return sum_template
 
 @njit
-def add_noise(data, channel_mask, noise_data, noise_data_length, noise_data_channels):
+def add_noise(data, channel_mask, noise_data, noise_data_length, noise_data_channels, rng):
     """
     Get chunk(s) of noise sample from real noise data
     """
@@ -516,7 +531,7 @@ def add_noise(data, channel_mask, noise_data, noise_data_length, noise_data_chan
     if high <= 0:
         ix_rand = 0
     else:
-        ix_rand = np.random.randint(low=0, high=high)
+        ix_rand = rng.integers(low=0, high=high)
 
     for ch in range(data.shape[0]):
         # In case adding noise to he channels is not supported

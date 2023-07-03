@@ -1,7 +1,5 @@
 import strax
 import straxen
-import os
-import numba
 import logging
 
 import pandas as pd
@@ -13,7 +11,6 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.csv_input')
-log.setLevel('WARNING')
 
 @export
 class ChunkCsvInput(strax.Plugin):
@@ -21,8 +18,6 @@ class ChunkCsvInput(strax.Plugin):
     Plugin which reads a CSV file containing instructions for the detector physics simulation
     and returns the data in chunks
     """
-
-
     __version__ = "0.0.0"
 
     depends_on = tuple()
@@ -75,15 +70,31 @@ class ChunkCsvInput(strax.Plugin):
         help='n_interactions_per_chunk',
     )
 
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
+
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ChunkCsvInput in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
+        if self.deterministic_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
 
         self.file_reader = csv_file_loader(
             input_file = self.input_file,
+            random_number_generator = self.rng,
             event_rate = self.source_rate,
             separation_scale = self.separation_scale,
             n_interactions_per_chunk = self.n_interactions_per_chunk,
@@ -131,6 +142,7 @@ class csv_file_loader():
 
     def __init__(self,
                  input_file,
+                 random_number_generator,
                  event_rate,
                  separation_scale,
                  n_interactions_per_chunk,
@@ -141,6 +153,7 @@ class csv_file_loader():
                  ):
         
         self.input_file = input_file
+        self.rng = random_number_generator
         self.event_rate = event_rate/ 1e9 #Conversion to ns 
         self.separation_scale = separation_scale
         self.n_interactions_per_chunk = n_interactions_per_chunk
@@ -174,7 +187,7 @@ class csv_file_loader():
         instructions, n_simulated_events = self.__load_csv_file()
 
         #Assign event times and dynamic chunking
-        event_times = np.random.uniform(low = 0,
+        event_times = self.rng.uniform(low = 0,
                                         high = n_simulated_events/self.event_rate,
                                         size = n_simulated_events
                                         ).astype(np.int64)

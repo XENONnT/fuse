@@ -9,7 +9,10 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.yields')
-log.setLevel('WARNING')
+
+#Initialize the nestpy random generator
+#The seed will be set in the setup function
+nest_rng = nestpy.RandomGen.rndm()
 
 @export
 class NestYields(strax.Plugin):
@@ -35,12 +38,31 @@ class NestYields(strax.Plugin):
         default=False, type=bool,track=False,
         help='Show debug informations',
     )
+
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
     
     def setup(self):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running NestYields in debug mode")
-            log.debug(f'Using nestpy version {nestpy.__version__}')
+        else: 
+            log.setLevel('WARNING')
+
+        log.debug(f'Using nestpy version {nestpy.__version__}')
+
+        if self.deterministic_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            #Dont know but nestpy seems to have a problem with large seeds
+            self.short_seed = int(repr(seed)[-8:])
+            nest_rng.set_seed(self.short_seed)
+
+            log.debug(f"Generating random numbers from seed {self.short_seed}")
+        else: 
+            log.debug(f"Generating random numbers with seed pulled from OS")
 
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
     
@@ -193,12 +215,31 @@ class BetaYields(strax.Plugin):
     cs2_spline_path = straxen.URLConfig(
         help='cs2_spline_path',
     )
+
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
     
     def setup(self):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running BetaYields in debug mode")
-            log.debug(f'Using nestpy version {nestpy.__version__}')
+        else: 
+            log.setLevel('WARNING')
+        
+        log.debug(f'Using nestpy version {nestpy.__version__}')
+
+        if self.deterministic_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            #Dont know but nestpy seems to have a problem with large seeds
+            self.short_seed = int(repr(seed)[-8:])
+            nest_rng.set_seed(self.short_seed)
+
+            log.debug(f"Generating random numbers from seed {self.short_seed}")
+        else: 
+            log.debug(f"Generating random numbers with seed pulled from OS")
 
         self.get_quanta_vectorized = np.vectorize(self.get_quanta, excluded="self")
         
@@ -209,7 +250,7 @@ class BetaYields(strax.Plugin):
             self.cs2_spline = pickle.load(f)
             
         self.nc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
-        for i in range(np.random.randint(100)):
+        for i in range(self.rng.randint(100)):
             self.nc.GetQuanta(self.nc.GetYields(energy=np.random.uniform(10, 100)))
 
     def compute(self, interactions_in_roi):
@@ -241,7 +282,7 @@ class BetaYields(strax.Plugin):
         beta_electrons = self.cs2_spline(energy) / self.g2_value
 
         if self.use_recombination_fluctuation:
-            rf = np.random.normal(0, energy * 3.0, 1)[0]
+            rf = self.rng.normal(0, energy * 3.0, 1)[0]
             beta_photons = int(beta_photons + rf)
             beta_electrons = int(beta_electrons - rf)
 
@@ -281,12 +322,29 @@ class BBFYields(strax.Plugin):
         help='Show debug informations',
     )
 
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
+
     def setup(self):
-        self.bbfyields = BBF_quanta_generator()
 
         if self.debug:
             log.setLevel("DEBUG")
             log.debug("Running BBFYields in debug mode")
+        else: 
+            log.setLevel('WARNING')
+
+        if self.deterministic_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
+
+        self.bbfyields = BBF_quanta_generator(self.rng)
 
     def compute(self, interactions_in_roi):
         
@@ -316,7 +374,9 @@ class BBFYields(strax.Plugin):
     
 
 class BBF_quanta_generator:
-    def __init__(self):
+    def __init__(self, rng):
+
+        self.rng = rng
         self.er_par_dict = {
             'W': 0.013509665661431896,
             'Nex/Ni': 0.08237994367314523,
@@ -447,36 +507,36 @@ class BBF_quanta_generator:
     ###
     def get_ER_quanta(self, energy, field, par_dict):
         Nq_mean = energy / par_dict['W']
-        Nq = np.clip(np.round(np.random.normal(Nq_mean, np.sqrt(Nq_mean * par_dict['fano']))), 0, np.inf).astype(np.int64)
+        Nq = np.clip(np.round(self.rng.normal(Nq_mean, np.sqrt(Nq_mean * par_dict['fano']))), 0, np.inf).astype(np.int64)
 
-        Ni = np.random.binomial(Nq, 1./(1.+par_dict['Nex/Ni']))
+        Ni = self.rng.binomial(Nq, 1./(1.+par_dict['Nex/Ni']))
 
         recomb = self.ER_recomb(energy,field, par_dict)
         drecomb = self.ER_drecomb(energy, par_dict)
-        true_recomb = np.clip(np.random.normal(recomb, drecomb), 0., 1.)
+        true_recomb = np.clip(self.rng.normal(recomb, drecomb), 0., 1.)
 
-        Ne = np.random.binomial(Ni, 1.-true_recomb)
+        Ne = self.rng.binomial(Ni, 1.-true_recomb)
         Nph = Nq - Ne
         Nex = Nq - Ni
         return Nph, Ne, Nex
     def get_NR_quanta(self, energy, field, par_dict):
         Nq_mean = energy / par_dict['W']
-        Nq = np.round(np.random.normal(Nq_mean, np.sqrt(Nq_mean * par_dict['fano']))).astype(np.int64)
+        Nq = np.round(self.rng.normal(Nq_mean, np.sqrt(Nq_mean * par_dict['fano']))).astype(np.int64)
 
         quenching = self.NR_quenching(energy, par_dict)
-        Nq = np.random.binomial(Nq, quenching)
+        Nq = self.rng.binomial(Nq, quenching)
 
         ExIonRatio = self.NR_ExIonRatio(energy, field,par_dict)
-        Ni = np.random.binomial(Nq, ExIonRatio/(1.+ExIonRatio))
+        Ni = self.rng.binomial(Nq, ExIonRatio/(1.+ExIonRatio))
 
         penning_quenching = self.NR_Penning_quenching(energy, par_dict)
-        Nex = np.random.binomial(Nq - Ni, penning_quenching)
+        Nex = self.rng.binomial(Nq - Ni, penning_quenching)
 
         recomb = self.NR_recomb(energy, field, par_dict)
         if recomb < 0 or recomb > 1:
             return None, None
 
-        Ne = np.random.binomial(Ni, 1.-recomb)
+        Ne = self.rng.binomial(Ni, 1.-recomb)
         Nph = Ni + Nex - Ne
         return Nph, Ne, Nex
     

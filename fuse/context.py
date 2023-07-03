@@ -153,7 +153,6 @@ def full_chain_context(out_dir, config):
         "s2_time_model": config["s2_time_model"],
         "singlet_fraction_gas": config["singlet_fraction_gas"],
         "s2_luminescence_model": config["s2_luminescence_model"],
-        "s2_luminescence_model": config["s2_luminescence_model"],
         "tpc_radius": config["tpc_radius"],
         "diffusion_constant_transverse": config["diffusion_constant_transverse"],
         "s2_aft_skewness": config["s2_aft_skewness"],
