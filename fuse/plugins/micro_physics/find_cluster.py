@@ -9,11 +9,10 @@ from sklearn.cluster import DBSCAN
 
 export, __all__ = strax.exporter()
 
-from ...common import reshape_awkward, awkward_to_flat_numpy
+from ...common import reshape_awkward, awkward_to_flat_numpy, FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.find_cluster')
-log.setLevel('WARNING')
 
 @export
 class FindCluster(strax.Plugin):
@@ -30,6 +29,10 @@ class FindCluster(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     #Config options
     debug = straxen.URLConfig(
@@ -52,6 +55,8 @@ class FindCluster(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running FindCluster in debug mode")
+        else: 
+            log.setLevel('WARNING')
     
     def compute(self, geant4_interactions):
         """

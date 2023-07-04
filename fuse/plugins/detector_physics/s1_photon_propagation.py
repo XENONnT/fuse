@@ -4,13 +4,17 @@ import straxen
 import nestpy
 import logging
 
-from ...common import init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output
+from ...common import init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output, FUSE_PLUGIN_TIMEOUT
 
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s1_photon_propagation')
 log.setLevel('WARNING')
+
+#Initialize the nestpy random generator
+#The seed will be set in the setup function
+nest_rng = nestpy.RandomGen.rndm()
 
 @export
 class S1PhotonPropagationBase(strax.Plugin):
@@ -22,6 +26,14 @@ class S1PhotonPropagationBase(strax.Plugin):
     data_kind = "S1_photons"
     
     #dtype is the same for S1 and S2
+    
+    #Forbid rechunking
+    rechunk_on_save = False
+
+    save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
+
     dtype = [('channel', np.int64),
              ('dpe', np.bool_),
              ('photon_gain', np.int64),
@@ -90,11 +102,30 @@ class S1PhotonPropagationBase(strax.Plugin):
         help='s1_pattern_map',
     )
 
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
+    
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running S1PhotonPropagation in debug mode")
+        else: 
+            log.setLevel('WARNING')
+
+        if self.deterministic_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            #Dont know but nestpy seems to have a problem with large seeds
+            self.short_seed = int(repr(seed)[-8:])
+            nest_rng.set_seed(self.short_seed)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+            log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
+        else: 
+            log.debug(f"Generating random numbers with seed pulled from OS")
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
@@ -287,7 +318,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         assert len(z_positions) == len(channels), 'Give each photon a z position'
 
         prop_time = np.zeros_like(channels)
-        z_rand = np.array([z_positions, np.random.rand(len(channels))]).T
+        z_rand = np.array([z_positions, self.rng.random(len(channels))]).T
 
         is_top = channels < self.n_top_pmts
         prop_time[is_top] = self.s1_optical_propagation_spline(z_rand[is_top], map_name='top')

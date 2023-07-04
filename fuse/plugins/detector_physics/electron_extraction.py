@@ -4,11 +4,12 @@ import numpy as np
 import os
 import logging
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_extraction')
-log.setLevel('WARNING')
 
 @export
 class ElectronExtraction(strax.Plugin):
@@ -22,6 +23,9 @@ class ElectronExtraction(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
     
+    save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [('n_electron_extracted', np.int64),
             ]
@@ -94,13 +98,28 @@ class ElectronExtraction(strax.Plugin):
         help='s2_pattern_map',
     )
 
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
     
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ElectronExtraction in debug mode")
+        else: 
+            log.setLevel('WARNING')
         
+        if self.deterministic_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
+
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         
         #Is this else case ever used? if no -> remove
@@ -129,7 +148,6 @@ class ElectronExtraction(strax.Plugin):
         
         xy_int = np.array([x, y]).T # maps are in R_true, so orginal position should be here
 
-        
         if self.ext_eff_from_map:
             # Extraction efficiency is g2(x,y)/SE_gain(x,y)
             rel_s2_cor=self.s2_correction_map(xy_int)
@@ -146,7 +164,7 @@ class ElectronExtraction(strax.Plugin):
         else:
             cy = self.electron_extraction_yield
             
-        n_electron = np.random.binomial(n=interactions_in_roi[mask]["n_electron_interface"], p=cy)
+        n_electron = self.rng.binomial(n=interactions_in_roi[mask]["n_electron_interface"], p=cy)
         
         result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         result["n_electron_extracted"][mask] = n_electron

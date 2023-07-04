@@ -2,7 +2,6 @@ import strax
 import straxen
 import uproot
 import os
-import numba
 import logging
 
 import pandas as pd
@@ -11,11 +10,10 @@ import awkward as ak
 
 export, __all__ = strax.exporter()
 
-from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
+from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.input')
-log.setLevel('WARNING')
 
 #Remove the path and file name option from the config and do this with the run_number??
 @export
@@ -30,6 +28,8 @@ class ChunkInput(strax.Plugin):
     rechunk_on_save = False
 
     source_done = False
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = [('x', np.float32),
              ('y', np.float32),
@@ -49,6 +49,8 @@ class ChunkInput(strax.Plugin):
             ]
     
     dtype = dtype + strax.time_fields
+
+    save_when = strax.SaveWhen.TARGET
     
     source_done = False
 
@@ -108,14 +110,31 @@ class ChunkInput(strax.Plugin):
         help='Add if you want to filter only nuclear recoil events (maximum ER energy deposit 10 keV)',
     )
 
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
+
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ChunkInput in debug mode")
+        else:
+            log.setLevel('WARNING')
+
+        if self.deterministic_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
 
         self.file_reader = file_loader(self.path,
                                        self.file_name,
+                                       self.rng,
                                        separation_scale = self.separation_scale,
                                        event_rate = self.source_rate,
                                        cut_delayed = self.cut_delayed,
@@ -125,7 +144,7 @@ class ChunkInput(strax.Plugin):
                                        kwargs={'entry_start': self.entry_start,
                                                'entry_stop': self.entry_stop},
                                        cut_by_eventid=self.cut_by_eventid,
-                                       #cut_nr_only=self.nr_only,
+                                       cut_nr_only=self.nr_only,
                                        )
         self.file_reader_iterator = self.file_reader.output_chunk()
         
@@ -172,6 +191,7 @@ class file_loader():
     def __init__(self,
                 directory,
                 file_name,
+                random_number_generator,
                 separation_scale = 1e8,
                 event_rate = 1,
                 n_interactions_per_chunk = 500,
@@ -188,6 +208,7 @@ class file_loader():
 
         self.directory = directory
         self.file_name = file_name
+        self.rng = random_number_generator
         self.separation_scale = separation_scale
         self.event_rate = event_rate / 1e9 #Conversion to ns 
         self.n_interactions_per_chunk = n_interactions_per_chunk
@@ -259,6 +280,7 @@ class file_loader():
         interactions = interactions[m]
 
         if self.cut_nr_only:
+            log.debug("'nr_only' set to True, keeping only the NR events")
             m = ((interactions['type'] == "neutron")&(interactions['edproc'] == "hadElastic")) | (interactions['edproc'] == "ionIoni")
             e_dep_er = ak.sum(interactions[~m]['ed'], axis=1)
             e_dep_nr = ak.sum(interactions[m]['ed'], axis=1)
@@ -271,7 +293,7 @@ class file_loader():
         inter_reshaped = full_array_to_numpy(interactions, self.dtype)
         
         #Need to check start and stop again....
-        event_times = np.random.uniform(low = start/self.event_rate,
+        event_times = self.rng.uniform(low = start/self.event_rate,
                                         high = stop/self.event_rate,
                                         size = stop-start
                                         ).astype(np.int64)

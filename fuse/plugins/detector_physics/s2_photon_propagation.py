@@ -1,7 +1,6 @@
 import strax
 import straxen
 import numpy as np
-import os
 import logging
 
 from numba import njit
@@ -10,11 +9,10 @@ from scipy import constants
 
 export, __all__ = strax.exporter()
 
-from ...common import DummyMap, init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output
+from ...common import DummyMap, init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output, FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S2_Signal')
-log.setLevel('WARNING')
 
 conversion_to_bar = 1/constants.elementary_charge / 1e1
 
@@ -28,6 +26,14 @@ class S2PhotonPropagationBase(strax.Plugin):
     data_kind = "S2_photons"
 
     #dtype is the same for S1 and S2
+
+    #Forbid rechunking
+    rechunk_on_save = False
+
+    save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
+
     dtype = [('channel', np.int64),
              ('dpe', np.bool_),
              ('photon_gain', np.int64),
@@ -165,12 +171,31 @@ class S2PhotonPropagationBase(strax.Plugin):
         help='singlet_lifetime_liquid',
     )
 
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
+
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running S2 photon propagation in debug mode")
+            log.debug("Running S2PhotonPropagation in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
+        if self.deterministic_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
+
+        #Set the random generator for scipy
+        skewnorm.random_state=self.rng
+        
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
         
@@ -285,7 +310,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                 _photon_channels = np.array([-1] * n_ph)
                 
             else:
-                _photon_channels = np.random.choice(channels,
+                _photon_channels = self.rng.choice(channels,
                                                     size=n_ph,
                                                     p=pat,
                                                     replace=True)
@@ -323,8 +348,8 @@ class S2PhotonPropagationBase(strax.Plugin):
         hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
         hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
 
-        hdiff_radial = np.random.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron, axis=0)
-        hdiff_azimuthal = np.random.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron, axis=0)
+        hdiff_radial = self.rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron, axis=0)
+        hdiff_azimuthal = self.rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron, axis=0)
         hdiff = np.column_stack([hdiff_radial, hdiff_azimuthal])
         theta = np.arctan2(xy[:,1], xy[:,0])
         matrix = np.array([[np.cos(theta), np.sin(theta)], [-np.sin(theta), np.cos(theta)]]).T
@@ -367,7 +392,7 @@ class S2PhotonPropagationBase(strax.Plugin):
         else:
             t1, t3 = 0, 0
 
-        delay = np.random.choice([t1, t3], size, replace=True,
+        delay = self.rng.choice([t1, t3], size, replace=True,
                                  p=[singlet_ratio, 1 - singlet_ratio])
         return (np.random.exponential(1, size) * delay).astype(np.int64)
     
@@ -437,7 +462,8 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
                                      draw_index,
                                      n_photons,
                                      diff_nearest_gg,
-                                     d_gasgap
+                                     d_gasgap,
+                                     self.rng
                                     )
 
     def optical_propagation(self, channels):
@@ -596,7 +622,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         return prop_time.astype(np.int64)
 
 @njit
-def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap):
+def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap, rng):
     
     """
     Draws the excitation times from the GARFIELD electroluminescence map
@@ -630,7 +656,8 @@ def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_ga
                        +inv_cdf_list[hist_ind])
         
         #Subtract 2 because this way we don't want to sample from this last strange tail
-        samples = np.random.uniform(0, inv_cdf_len-2, n)
+        samples = rng.uniform(0, inv_cdf_len-2, n)
+        #samples = np.random.uniform(0, inv_cdf_len-2, n)
         t1 = interp_cdf[np.floor(samples).astype('int')]
         t2 = interp_cdf[np.ceil(samples).astype('int')]
         T = (t2-t1)*(samples - np.floor(samples))+t1

@@ -1,14 +1,14 @@
 import strax
 import numpy as np
 import straxen
-import os
 import logging
+
+from ...common import FUSE_PLUGIN_TIMEOUT
 
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_drift')
-log.setLevel('WARNING')
 
 @export
 class ElectronDrift(strax.Plugin):
@@ -29,6 +29,10 @@ class ElectronDrift(strax.Plugin):
     
     #Forbid rechunking
     rechunk_on_save = False
+
+    save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = dtype + strax.time_fields
     
@@ -89,6 +93,8 @@ class ElectronDrift(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ElectronDrift in debug mode")
+        else: 
+            log.setLevel('WARNING')
         
         #Can i do this scaling in the url config?
         if self.field_distortion_model == "inverse_fdc":
