@@ -395,7 +395,7 @@ class S2PhotonPropagationBase(strax.Plugin):
 
         delay = self.rng.choice([t1, t3], size, replace=True,
                                  p=[singlet_ratio, 1 - singlet_ratio])
-        return (self.exponential(1, size) * delay).astype(np.int64)
+        return (self.rng.exponential(1, size) * delay).astype(np.int64)
     
     def photon_timings(self, positions, n_photons, _photon_channels):
         raise NotImplementedError # This is implemented in the child class
