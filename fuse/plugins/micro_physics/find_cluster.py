@@ -31,6 +31,8 @@ class FindCluster(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
 
+    save_when = strax.SaveWhen.TARGET
+
     #Config options
     debug = straxen.URLConfig(
         default=False, type=bool,track=False,

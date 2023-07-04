@@ -47,6 +47,8 @@ class ChunkInput(strax.Plugin):
             ]
     
     dtype = dtype + strax.time_fields
+
+    save_when = strax.SaveWhen.TARGET
     
     source_done = False
 

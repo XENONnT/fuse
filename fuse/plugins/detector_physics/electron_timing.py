@@ -19,8 +19,9 @@ class ElectronTiming(strax.Plugin):
     
     #Forbid rechunking
     rechunk_on_save = False
-    
 
+    save_when = strax.SaveWhen.TARGET
+    
     data_kind = "individual_electrons"
     
     dtype = [('x', np.float64),
