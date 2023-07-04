@@ -3,7 +3,7 @@ from strax import Plugin, SaveWhen
 import numba
 import numpy as np
 
-from common import FUSE_PLUGIN_TIMEOUT
+from .common import FUSE_PLUGIN_TIMEOUT
 
 class VolumePlugin(Plugin):
     """

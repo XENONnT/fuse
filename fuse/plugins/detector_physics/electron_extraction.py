@@ -25,7 +25,7 @@ class ElectronExtraction(strax.Plugin):
     
     save_when = strax.SaveWhen.TARGET
 
-    import_timeout = FUSE_PLUGIN_TIMEOUT
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [('n_electron_extracted', np.int64),
             ]

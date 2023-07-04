@@ -4,7 +4,7 @@ from strax import Plugin, SaveWhen
 import numpy as np
 from itertools import groupby
 
-from common import FUSE_PLUGIN_TIMEOUT
+from .common import FUSE_PLUGIN_TIMEOUT
 
 class VerticalMergerPlugin(Plugin):
     "Plugin that concatenates data from the dependencies along the fist axis"

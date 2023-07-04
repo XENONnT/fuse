@@ -33,4 +33,4 @@ dependencies = [
 "Bug Tracker" = "https://github.com/XENONnT/fuse/issues"
 
 [tool.setuptools.packages.find]
-where = ["fuse"]
+exclude = ["/plugins"]

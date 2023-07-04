@@ -24,7 +24,7 @@ class ElectronTiming(strax.Plugin):
 
     save_when = strax.SaveWhen.TARGET
 
-    import_timeout = FUSE_PLUGIN_TIMEOUT
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     data_kind = "individual_electrons"
     
