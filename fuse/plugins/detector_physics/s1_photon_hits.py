@@ -4,6 +4,8 @@ import logging
 
 import numpy as np
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
@@ -22,6 +24,8 @@ class S1PhotonHits(strax.Plugin):
     rechunk_on_save = False
 
     save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [('n_s1_photon_hits', np.int64),
             ]

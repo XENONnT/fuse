@@ -7,7 +7,7 @@ import logging
 from strax import deterministic_hash
 from scipy.interpolate import interp1d
 
-from ...common import loop_uniform_to_pe_arr
+from ...common import loop_uniform_to_pe_arr, FUSE_PLUGIN_TIMEOUT
 
 export, __all__ = strax.exporter()
 
@@ -31,6 +31,8 @@ class S1PhotonPropagation(strax.Plugin):
     rechunk_on_save = False
 
     save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [('channel', np.int64),
              ('dpe', np.bool_),

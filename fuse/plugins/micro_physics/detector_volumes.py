@@ -5,10 +5,10 @@ import logging
 from ...volume_plugin import *
 from ...vertical_merger_plugin import *
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.detector_volumes')
-log.setLevel('WARNING')
-
 
 class VolumesMerger(VerticalMergerPlugin):
     """
@@ -24,6 +24,8 @@ class VolumesMerger(VerticalMergerPlugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     def compute(self, **kwargs):
         return super().compute(**kwargs)
@@ -107,6 +109,8 @@ class XENONnT_TPC(VolumePlugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running XENONnT_TPC in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
     def compute(self, clustered_interactions):
         
@@ -201,6 +205,8 @@ class XENONnT_BelowCathode(VolumePlugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running XENONnT_BelowCathode in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
     def compute(self, clustered_interactions):
         
@@ -295,6 +301,8 @@ class XENONnT_GasPhase(VolumePlugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running XENONnT_GasPhase in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
     def compute(self, clustered_interactions):
         

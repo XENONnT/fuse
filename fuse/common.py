@@ -2,6 +2,9 @@ import numpy as np
 import awkward as ak
 import numba
 
+#strax uses a default of 80 seconds,
+#but this can be a bit limiting for the simulation 
+FUSE_PLUGIN_TIMEOUT = 240 
 
 @numba.njit()
 def dynamic_chunking(data, scale, n_min):
