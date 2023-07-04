@@ -12,7 +12,7 @@ export, __all__ = strax.exporter()
 from ...common import DummyMap, init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output, FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('fuse.detector_physics.S2_Signal')
+log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
 
 conversion_to_bar = 1/constants.elementary_charge / 1e1
 
@@ -254,6 +254,7 @@ class S2PhotonPropagationBase(strax.Plugin):
             p_double_pe_emision=self.p_double_pe_emision,
             gains=self.gains,
             __uniform_to_pe_arr=self.__uniform_to_pe_arr,
+            rng=self.rng,
             )
 
         result = build_photon_propagation_output(
@@ -394,7 +395,7 @@ class S2PhotonPropagationBase(strax.Plugin):
 
         delay = self.rng.choice([t1, t3], size, replace=True,
                                  p=[singlet_ratio, 1 - singlet_ratio])
-        return (np.random.exponential(1, size) * delay).astype(np.int64)
+        return (self.exponential(1, size) * delay).astype(np.int64)
     
     def photon_timings(self, positions, n_photons, _photon_channels):
         raise NotImplementedError # This is implemented in the child class
@@ -471,7 +472,7 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
         :param channels: The channels of all s2 photon
         """
         prop_time = np.zeros_like(channels)
-        u_rand = np.random.rand(len(channels))[:, None]
+        u_rand = self.rng.random(len(channels))[:, None]
 
         is_top = channels < self.n_top_pmts
         prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name='top')
@@ -611,7 +612,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         :param channels: The channels of all s2 photon
         """
         prop_time = np.zeros_like(channels)
-        u_rand = np.random.rand(len(channels))[:, None]
+        u_rand = self.rng.random(len(channels))[:, None]
 
         is_top = channels < self.n_top_pmts
         prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name='top')
@@ -670,7 +671,19 @@ def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_ga
     return timings
 
 @njit
-def _luminescence_timings_simple(n, dG, E0, r, dr, rr, alpha, uE, p, n_photons):
+def _luminescence_timings_simple(
+    n,
+    dG,
+    E0,
+    r,
+    dr,
+    rr,
+    alpha,
+    uE,
+    p,
+    n_photons,
+    rng,
+    ):
     """
     Luminescence time distribution computation, calculates emission timings of photons from the excited electrons
     return 1d nested array with ints
@@ -688,7 +701,7 @@ def _luminescence_timings_simple(n, dG, E0, r, dr, rr, alpha, uE, p, n_photons):
         t = np.cumsum(dt[j:]) - avgt
         y = np.cumsum(dy[j:])
 
-        probabilities = np.random.rand(npho)
+        probabilities = rng.random(npho)
         emission_time[ci:ci+npho] = np.interp(probabilities, y / y[-1], t).astype(np.int64)
         ci += npho
 

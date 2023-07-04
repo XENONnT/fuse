@@ -10,7 +10,6 @@ export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s1_photon_propagation')
-log.setLevel('WARNING')
 
 #Initialize the nestpy random generator
 #The seed will be set in the setup function
@@ -182,6 +181,7 @@ class S1PhotonPropagationBase(strax.Plugin):
             p_double_pe_emision=self.p_double_pe_emision,
             gains=self.gains,
             __uniform_to_pe_arr=self.__uniform_to_pe_arr,
+            rng=self.rng,
             )
 
         result = build_photon_propagation_output(
@@ -209,7 +209,7 @@ class S1PhotonPropagationBase(strax.Plugin):
         _photon_channels = []
         for ppc, n in zip(p_per_channel, n_photon_hits):
             _photon_channels.append(
-                np.random.choice(
+                self.rng.choice(
                     channels,
                     size=n,
                     p=ppc / np.sum(ppc),
@@ -304,7 +304,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
             # The first part of the scint_time is from exciton only, see
             # https://github.com/NESTCollaboration/nestpy/blob/fe3d5d7da5d9b33ac56fbea519e02ef55152bc1d/src/nestpy/NEST.cpp#L164-L179
             _photon_timings[counts_start: counts_start + counts] += \
-               np.random.choice(scint_time, counts, replace=False).astype(np.int64)
+               self.rng.choice(scint_time, counts, replace=False).astype(np.int64)
 
             counts_start += counts
 

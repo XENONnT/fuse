@@ -304,25 +304,26 @@ def pmt_transition_time_spread(
     p_double_pe_emision,
     gains,
     __uniform_to_pe_arr,
+    rng,
     ):
 
-        _photon_timings += np.random.normal(pmt_transit_time_mean,
+        _photon_timings += rng.normal(pmt_transit_time_mean,
                                             pmt_transit_time_spread / 2.35482,
                                             len(_photon_timings)).astype(np.int64)
         
         #Why is this done here and additionally in the get_n_photons function of S1PhotonHits??
-        _photon_is_dpe = np.random.binomial(n=1,
+        _photon_is_dpe = rng.binomial(n=1,
                                             p=p_double_pe_emision,
                                             size=len(_photon_timings)).astype(np.bool_)
 
 
         _photon_gains = gains[_photon_channels] \
-            * loop_uniform_to_pe_arr(np.random.random(len(_photon_channels)), _photon_channels, __uniform_to_pe_arr)
+            * loop_uniform_to_pe_arr(rng.random(len(_photon_channels)), _photon_channels, __uniform_to_pe_arr)
 
         # Add some double photoelectron emission by adding another sampled gain
         n_double_pe = _photon_is_dpe.sum()
         _photon_gains[_photon_is_dpe] += gains[_photon_channels[_photon_is_dpe]] \
-            * loop_uniform_to_pe_arr(np.random.random(n_double_pe), _photon_channels[_photon_is_dpe], __uniform_to_pe_arr) 
+            * loop_uniform_to_pe_arr(rng.random(n_double_pe), _photon_channels[_photon_is_dpe], __uniform_to_pe_arr) 
 
         return _photon_timings, _photon_gains, _photon_is_dpe
 
