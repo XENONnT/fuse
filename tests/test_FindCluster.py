@@ -4,7 +4,7 @@ import tempfile
 import os
 import numpy as np
 
-class TestElectricField(unittest.TestCase):
+class TestFindCluster(unittest.TestCase):
 
     def setUp(self):
 
@@ -12,7 +12,7 @@ class TestElectricField(unittest.TestCase):
 
         self.test_context = fuse.context.microphysics_context(self.temp_dir.name)
         
-        self.plugin = self.test_context.get_single_plugin("TestRun_00000", "electric_field_values")
+        self.plugin = self.test_context.get_single_plugin("TestRun_00000", "cluster_index")
 
     def tearDown(self):
             
@@ -20,10 +20,10 @@ class TestElectricField(unittest.TestCase):
 
     def test_ChunkInput(self):
             
-        plugin_input = np.load(os.path.join(os.getcwd(), "data", "interactions_in_roi_for_test.npy"))
+        plugin_input = np.load(os.path.join(os.getcwd(), "data", "geant4_interactions_for_test.npy"))
 
         plugin_output = self.plugin.compute(plugin_input)
-        
-        true_output = np.load(os.path.join(os.getcwd(), "data", "electric_field_values_for_test.npy"))
+
+        true_output = np.load(os.path.join(os.getcwd(), "data", "cluster_index_for_test.npy"))
 
         self.assertTrue(np.all(plugin_output == true_output))
