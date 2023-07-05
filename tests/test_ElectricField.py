@@ -27,3 +27,6 @@ class TestElectricField(unittest.TestCase):
         true_output = np.load(os.path.join(os.getcwd(), "data", "electric_field_values_for_test.npy"))
 
         self.assertTrue(np.all(plugin_output == true_output))
+
+if __name__ == '__main__':
+    unittest.main()

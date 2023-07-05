@@ -31,3 +31,6 @@ class TestChunkInput(unittest.TestCase):
         true_output = np.load(os.path.join(os.getcwd(), "data", "geant4_interactions_for_test.npy"))
 
         self.assertTrue(np.all(output == true_output))
+
+if __name__ == '__main__':
+    unittest.main()

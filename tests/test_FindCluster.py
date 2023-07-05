@@ -27,3 +27,6 @@ class TestFindCluster(unittest.TestCase):
         true_output = np.load(os.path.join(os.getcwd(), "data", "cluster_index_for_test.npy"))
 
         self.assertTrue(np.all(plugin_output == true_output))
+
+if __name__ == '__main__':
+    unittest.main()
