@@ -1,13 +1,12 @@
 import strax
 import straxen
 import numpy as np
-import awkward as ak
 import numba
 import logging
 
 export, __all__ = strax.exporter()
 
-from ...common import full_array_to_numpy, reshape_awkward, calc_dt, FUSE_PLUGIN_TIMEOUT
+from ...common import FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.merge_cluster')
@@ -54,15 +53,9 @@ class MergeCluster(strax.Plugin):
     )
 
     tag_cluster_by = straxen.URLConfig(
-        default=False, type=bool,
+        default="energy",
         help='decide if you tag the cluster (particle type, energy depositing process)\
               according to first interaction in it (time) or most energetic (energy))',
-    )
-
-    #Check this variable again in combination with cut_delayed
-    max_delay = straxen.URLConfig(
-        default=1e7, type=(int, float),
-        help='Time after which we cut the rest of the event (ns)',
     )
     
     def setup(self):
@@ -77,182 +70,82 @@ class MergeCluster(strax.Plugin):
 
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
-        
-        inter = ak.from_numpy(np.empty(1, dtype=geant4_interactions.dtype))
-        structure = np.unique(geant4_interactions['evtid'], return_counts=True)[1]
-        
-        for field in inter.fields:
-            inter[field] = reshape_awkward(geant4_interactions[field], structure)
 
-        result = self.cluster(inter, self.tag_cluster_by == 'energy')
-        
-        result['evtid'] = ak.broadcast_arrays(inter['evtid'][:, 0], result['ed'])[0]
-        # Add x_pri, y_pri, z_pri again:
-        result['x_pri'] = ak.broadcast_arrays(inter['x_pri'][:, 0], result['ed'])[0]
-        result['y_pri'] = ak.broadcast_arrays(inter['y_pri'][:, 0], result['ed'])[0]
-        result['z_pri'] = ak.broadcast_arrays(inter['z_pri'][:, 0], result['ed'])[0]
-        
-        # Sort entries (in an event) by in time, then chop all delayed
-        # events which are too far away from the rest.
-        # (This is a requirement of WFSim)
-        result = result[ak.argsort(result['time'])]
-        dt = calc_dt(result)
-        result = result[dt <= self.max_delay]
-        
-        result = full_array_to_numpy(result, self.dtype)
+        #Use the updated clustering based only on numpy
+        result = self.cluster_and_classify(geant4_interactions)
+
+        #remove the delay cut, fuse can simulated delayed interactions! 
 
         result["endtime"] = result["time"]
         
         return result
-    
-    @staticmethod
-    def cluster(inter, classify_by_energy=False):
-        """
-        Function which clusters the found clusters together.
-        To cluster events a weighted mean is computed for time and position.
-        The individual interactions are weighted by their energy.
-        The energy of clustered interaction is given by the total sum.
-        Events can be classified either by the first interaction in time in the
-        cluster or by the highest energy deposition.
-        Args:
-            inter (awkward.Array): Array containing at least the following
-                fields: x,y,z,t,ed,cluster_ids, type, parenttype, creaproc,
-                edproc.
-        Kwargs:
-            classify_by_energy (bool): If true events are classified
-                according to the properties of the highest energy deposit
-                within the cluster. If false cluster is classified according
-                to first interaction.
-        Returns:
-            awkward.Array: Clustered events with nest conform
-                classification.
-        """
 
-        if len(inter) == 0:
-            result_cluster_dtype = [('x', 'float64'),
-                                    ('y', 'float64'),
-                                    ('z', 'float64'),
-                                    ('time', 'float64'),
-                                    ('ed', 'float64'),
-                                    ('nestid', 'int64'),
-                                    ('A', 'int64'),
-                                    ('Z', 'int64'),
-                                   ]
-            return ak.from_numpy(np.empty(0, dtype=result_cluster_dtype))
-        # Sort interactions by cluster_ids to simplify looping
-        inds = ak.argsort(inter['cluster_ids'])
-        inter = inter[inds]
+    def cluster_and_classify(self, interactions):
 
-        # TODO: Better way to do this with awkward?
-        x = inter['x']
-        y = inter['y']
-        z = inter['z']
-        ed = inter['ed']
-        time = inter['time']
-        ci = inter['cluster_ids']
-        types = inter['type']
-        parenttype = inter['parenttype']
-        creaproc = inter['creaproc']
-        edproc = inter['edproc']
+        interaction_cluster = np.split(interactions,
+                                    np.unique(interactions["cluster_ids"], return_index=True)[1][1:])
 
-        # Init result and cluster:
-        res = ak.ArrayBuilder()
-        _cluster(x, y, z, ed, time, ci,
-                 types, parenttype, creaproc, edproc,
-                 classify_by_energy, res)
-        return res.snapshot()
+        result = np.zeros(len(interaction_cluster), dtype=self.dtype)
+        
+        x_avg = []
+        y_avg = []
+        z_avg = []
+        time_avg = []
+        energy_sum = []
+        A_list = []
+        Z_list = []
+        nestid_list = []
+        x_pri_list = []
+        y_pri_list = []
+        z_pri_list = []
+        evtid_list = []
 
+        for group in interaction_cluster:
+            x_avg.append(np.average(group["x"], weights = group["ed"]))
+            y_avg.append(np.average(group["y"], weights = group["ed"]))
+            z_avg.append(np.average(group["z"], weights = group["ed"]))
+            time_avg.append(np.average(group["time"], weights = group["ed"]))
+            energy_sum.append(np.sum(group["ed"]))
 
-@numba.njit
-def _cluster(x, y, z, ed, time, ci,
-             types, parenttype, creaproc, edproc,
-             classify_by_energy, res):
-    # Loop over each event
-    nevents = len(ed)
-    for ei in range(nevents):
-        # Init a new list for clustered interactions within event:
-        res.begin_list()
-
-        # Init buffers:
-        ninteractions = len(ed[ei])
-        x_mean = 0
-        y_mean = 0
-        z_mean = 0
-        t_mean = 0
-        ed_tot = 0
-        event_time_min = min(time[ei])
-
-        current_ci = 0  # Current cluster id
-        i_class = 0  # Index for classification (depends on users requirement)
-        # Set classifier start value according to user request, interactions
-        # are classified either by
-        if classify_by_energy:
-            # Highest energy
-            classifier_max = 0
-        else:
-            # First interaction
-            classifier_max = np.inf
-
-        # Loop over all interactions within event:
-        for ii in range(ninteractions):
-            if current_ci != ci[ei][ii]:
-                # Cluster Id has changed compared to previous interaction,
-                # hence we have to write out our result and empty the buffer,
-                # but first classify event:
-                A, Z, nestid = classify(types[ei][i_class],
-                                        parenttype[ei][i_class],
-                                        creaproc[ei][i_class],
-                                        edproc[ei][i_class])
-
-                # Write result, simple but extensive with awkward...
-                _write_result(res, x_mean, y_mean, z_mean,
-                              ed_tot, t_mean, event_time_min, A, Z, nestid)
-
-                # Update cluster id and empty buffer
-                current_ci = ci[ei][ii]
-                x_mean = 0
-                y_mean = 0
-                z_mean = 0
-                t_mean = 0
-                ed_tot = 0
-
-                # Reset classifier:
-                if classify_by_energy:
-                    classifier_max = 0
-                else:
-                    classifier_max = np.inf
-
-            # We have to gather information of current cluster:
-            e = ed[ei][ii]
-            t = time[ei][ii] - event_time_min
-            x_mean += x[ei][ii] * e
-            y_mean += y[ei][ii] * e
-            z_mean += z[ei][ii] * e
-            t_mean += t * e
-            ed_tot += e
-
-            if classify_by_energy:
-                # In case we want to classify the event by energy.
-                if e > classifier_max:
-                    i_class = ii
-                    classifier_max = e
+            if self.tag_cluster_by == "energy":
+                main_interaction_index = np.argmax(group["ed"])
+            elif self.tag_cluster_by == "time":
+                main_interaction_index = np.argmin(group["time"])
             else:
-                # or by first arrival time:
-                if t < classifier_max:
-                    i_class = ii
-                    classifier_max = t
+                raise ValueError("tag_cluster_by must be 'energy' or 'time'")
 
-        # Before we are done with this event we have to classify and
-        # write the last interaction
-        A, Z, nestid = classify(types[ei][i_class],
-                                parenttype[ei][i_class],
-                                creaproc[ei][i_class],
-                                edproc[ei][i_class])
+            A, Z, nestid = classify(group["type"][main_interaction_index],
+                                    group["parenttype"][main_interaction_index],
+                                    group["creaproc"][main_interaction_index],
+                                    group["edproc"][main_interaction_index]
+                                    )
+            A_list.append(A)
+            Z_list.append(Z)
+            nestid_list.append(nestid)
 
-        _write_result(res, x_mean, y_mean, z_mean,
-                      ed_tot, t_mean, event_time_min, A, Z, nestid)
+            #Do i want to set them like this? What if two events are merged?
+            if len(np.unique(group["evtid"])) > 1:
+                log.debug("More than one event in cluster,\
+                            setting primary positions and evtid based on main interaction")
+            x_pri_list.append(group["x_pri"][main_interaction_index])
+            y_pri_list.append(group["y_pri"][main_interaction_index])
+            z_pri_list.append(group["z_pri"][main_interaction_index])
+            evtid_list.append(group["evtid"][main_interaction_index])
 
-        res.end_list()
+        result["x"] = np.array(x_avg)
+        result["y"] = np.array(y_avg)
+        result["z"] = np.array(z_avg)
+        result["time"] = np.array(time_avg)
+        result["ed"] = np.array(energy_sum)
+        result["A"] = np.array(A_list)
+        result["Z"] = np.array(Z_list)
+        result["nestid"] = np.array(nestid_list)
+        result["x_pri"] = np.array(x_pri_list)
+        result["y_pri"] = np.array(y_pri_list)
+        result["z_pri"] = np.array(z_pri_list)
+        result["evtid"] = np.array(evtid_list)
+
+        return result
 
 
 infinity = np.iinfo(np.int16).max
@@ -288,43 +181,3 @@ def classify(types, parenttype, creaproc, edproc):
     # If our data does not match any classification make it a nest None type
     # TODO: fix me
     return infinity, infinity, 12
-
-
-@numba.njit
-def _write_result(res, x_mean, y_mean, z_mean,
-                  ed_tot, t_mean, event_time_min, A, Z, nestid):
-    """
-    Helper to write result into record array.
-    """
-    res.begin_record()
-    res.field('x')
-    res.real(x_mean / ed_tot)
-    res.field('y')
-    res.real(y_mean / ed_tot)
-    res.field('z')
-    res.real(z_mean / ed_tot)
-    res.field('time')
-    res.real((t_mean / ed_tot) + event_time_min)
-    res.field('ed')
-    res.real(ed_tot)
-    res.field('nestid')
-    res.integer(nestid)
-    res.field('A')
-    res.integer(A)
-    res.field('Z')
-    res.integer(Z)
-    res.end_record()
-    
-    
-    
-def calc_dt(result):
-    """
-    Calculate dt, the time difference from the initial data in the event
-    With empty check
-    :param result: Including `t` field
-    :return dt: Array like
-    """
-    if len(result) == 0:
-        return np.empty(0)
-    dt = result['time'] - result['time'][:, 0]
-    return dt

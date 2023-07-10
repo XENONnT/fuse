@@ -9,7 +9,7 @@ from sklearn.cluster import DBSCAN
 
 export, __all__ = strax.exporter()
 
-from ...common import reshape_awkward, awkward_to_flat_numpy, FUSE_PLUGIN_TIMEOUT
+from ...common import FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.find_cluster')
@@ -71,90 +71,54 @@ class FindCluster(strax.Plugin):
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        inter = ak.from_numpy(np.empty(1, dtype=geant4_interactions.dtype))
-        structure = np.unique(geant4_interactions['evtid'], return_counts=True)[1]
-
-        for field in inter.fields:
-            inter[field] = reshape_awkward(geant4_interactions[field], structure)
-
-        # We can optimize the find_cluster function for the refactor!
-        # No need to return more than cluster_ids,
-        # no need to bring it into awkward again
-        inter = self.find_cluster(inter, self.micro_separation / 10,
+        cluster_ids = self.find_cluster(geant4_interactions, self.micro_separation / 10,
                                   self.micro_separation_time)
-        cluster_ids = inter['cluster_ids']
 
-        len_output = len(awkward_to_flat_numpy(cluster_ids))
-        numpy_data = np.zeros(len_output, dtype=self.dtype)
-        numpy_data["cluster_ids"] = awkward_to_flat_numpy(cluster_ids)
+        numpy_data = np.zeros(len(geant4_interactions), dtype=self.dtype)
+        numpy_data["cluster_ids"] = cluster_ids
 
         numpy_data["time"] = geant4_interactions["time"]
         numpy_data["endtime"] = geant4_interactions["endtime"]
 
         return numpy_data
     
-    def find_cluster(self, interactions, cluster_size_space, cluster_size_time):
-        """
-        Function which finds cluster within a event.
-        Args:
-            x (pandas.DataFrame): Subentries of event must contain the
-                fields, x,y,z,time
-            cluster_size_space (float): Max spatial distance between two points to
-                be inside a cluster [cm].
-            cluster_size_time (float): Max time distance between two points to be 
-                inside a cluster [ns].
-        Returns:
-            awkward.array: Adds to interaction a cluster_ids record.
-        """
-        # TODO is there a better way to get the df?
-        df = []
-        for key in ['x', 'y', 'z', 'ed', 'time']:
-            df.append(ak.to_dataframe(interactions[key], anonymous=key))
-        df = pd.concat(df, axis=1)
-
-        if df.empty:
-            # TPC interaction is empty
-            return interactions
-
-        # Splitting into individual events and apply time clustering:
-        groups = df.groupby('entry')
-
-        df["time_cluster"] = np.concatenate(groups.apply(lambda x: simple_1d_clustering(x.time.values, cluster_size_time)))
-
-        # Splitting into individual events and time cluster and apply space clustering space:
-        df['cluster_id'] = np.zeros(len(df.index), dtype=np.int)
-
-        for evt in df.index.get_level_values(0).unique():
-            _df_evt = df.loc[evt]
-            _t_clusters = _df_evt.time_cluster.unique()
-            add_to_cluster = 0
-
-            for _t in _t_clusters:
-                _cl = self._find_cluster(_df_evt[_df_evt.time_cluster == _t], cluster_size_space=cluster_size_space)
-                df.loc[(df.time_cluster == _t) & (df.index.get_level_values(0) == evt), 'cluster_id'] = _cl + add_to_cluster
-                add_to_cluster = max(_cl) + add_to_cluster + 1
-
-        ci = df.loc[:, 'cluster_id'].values
-        offsets = ak.num(interactions['x'])
-        interactions['cluster_ids'] = reshape_awkward(ci, offsets)
-
-        return interactions
-
     @staticmethod
-    def _find_cluster(x, cluster_size_space):
+    def find_cluster(interactions, cluster_size_space, cluster_size_time):
         """
-        Function which finds cluster within a event.
-        Args:
-            x (pandas.DataFrame): Subentries of event must contain the
-                fields, x,y,z,time
-            cluster_size_space (float): Max distance between two points to
-                be inside a cluster [cm].
-        Returns:
-            functon: to be used in groupby.apply.
+        Function to find clusters in a set of interactions. First interactions are clustered in time, then in space.
         """
-        db_cluster = DBSCAN(eps=cluster_size_space, min_samples=1)
-        xprime = x[['x', 'y', 'z']].values
-        return db_cluster.fit_predict(xprime)
+        
+        time_cluster = simple_1d_clustering(interactions["time"], cluster_size_time)
+
+        # Splitting into time cluster and apply space clustering space:
+        cluster_id = np.zeros(len(interactions), dtype=np.int32)
+
+        _t_clusters = np.unique(time_cluster)
+        add_to_cluster = 0
+        for _t in _t_clusters:
+            _cl = _find_cluster(interactions[time_cluster == _t], cluster_size_space=cluster_size_space)
+            cluster_id[time_cluster == _t] = _cl + add_to_cluster
+            add_to_cluster = max(_cl) + add_to_cluster + 1
+
+        return cluster_id
+
+    
+def _find_cluster(x, cluster_size_space):
+    """
+    Function to cluster three dimensional data (x, y, z).
+    Args:
+        x (np.ndarray): structured numpy array with x, y, z coordinates to be clustered
+        cluster_size_space (float): Clustering distance for DBSCAN
+    Returns:
+        Cluster labels
+    """
+    db_cluster = DBSCAN(eps=cluster_size_space, min_samples=1)
+
+    #Conversion from numpy structured array to regular array with correct shape for 
+    #sklearn somehow works fine via pandas... 
+    xprime = pd.DataFrame(x[['x', 'y', 'z']]).values
+
+    return db_cluster.fit_predict(xprime)
     
 @numba.jit(nopython=True)
 def simple_1d_clustering(data, scale):
