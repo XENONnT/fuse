@@ -466,12 +466,12 @@ class file_loader():
         if not set(self.column_names).issubset(instr_df.columns):
             log.warn("Not all needed columns provided!")
 
-        n_simulated_events = len(np.unique(instr_df.evtid))
+        n_simulated_events = len(np.unique(instr_df.eventid))
 
         if self.outer_cylinder:
             instr_df = instr_df.query(self.cut_string)
             
-        instr_df = instr_df[self.column_names+["evtid", "x_pri", "y_pri", "z_pri"]]
+        instr_df = instr_df[self.column_names+["eventid", "x_pri", "y_pri", "z_pri"]]
 
         interactions = self._awkwardify_df(instr_df)
 
@@ -494,7 +494,7 @@ class file_loader():
 
         """
 
-        _, evt_offsets = np.unique(df["evtid"], return_counts = True)
+        _, evt_offsets = np.unique(df["eventid"], return_counts = True)
     
         dictionary = {"x": reshape_awkward(df["x"].values , evt_offsets),
                       "y": reshape_awkward(df["y"].values , evt_offsets),
@@ -510,7 +510,7 @@ class file_loader():
                       "parentid": reshape_awkward(df["parentid"].values , evt_offsets),
                       "creaproc": reshape_awkward(np.array(df["creaproc"], dtype=str) , evt_offsets),
                       "edproc": reshape_awkward(np.array(df["edproc"], dtype=str) , evt_offsets),
-                      "evtid": reshape_awkward(df["evtid"].values , evt_offsets),
+                      "evtid": reshape_awkward(df["eventid"].values , evt_offsets),
                     }
 
         return ak.Array(dictionary)
