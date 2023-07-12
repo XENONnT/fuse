@@ -82,8 +82,7 @@ class MergeCluster(strax.Plugin):
 
     def cluster_and_classify(self, interactions):
 
-        interaction_cluster = np.split(interactions,
-                                    np.unique(interactions["cluster_ids"], return_index=True)[1][1:])
+        interaction_cluster = [interactions[interactions["cluster_ids"] == i] for i in np.unique(interactions["cluster_ids"])]
 
         result = np.zeros(len(interaction_cluster), dtype=self.dtype)
         
