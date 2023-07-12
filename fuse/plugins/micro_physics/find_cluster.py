@@ -92,14 +92,14 @@ class FindCluster(strax.Plugin):
 
         # Splitting into time cluster and apply space clustering space:
         cluster_id = np.zeros(len(interactions), dtype=np.int32)
+        spacial_cluster = np.zeros(len(interactions), dtype=np.int32)
 
         _t_clusters = np.unique(time_cluster)
-        add_to_cluster = 0
         for _t in _t_clusters:
             _cl = _find_cluster(interactions[time_cluster == _t], cluster_size_space=cluster_size_space)
-            cluster_id[time_cluster == _t] = _cl + add_to_cluster
-            add_to_cluster = max(_cl) + add_to_cluster + 1
-
+            spacial_cluster[time_cluster == _t] = _cl
+        _, cluster_id = np.unique((time_cluster, spacial_cluster), axis=1, return_inverse=True)
+        
         return cluster_id
 
     
