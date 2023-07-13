@@ -5,7 +5,7 @@ import logging
 import pandas as pd
 import numpy as np
 
-from ...common import dynamic_chunking
+from ...common import dynamic_chunking, FUSE_PLUGIN_TIMEOUT
 
 export, __all__ = strax.exporter()
 
@@ -26,6 +26,10 @@ class ChunkCsvInput(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     source_done = False
 

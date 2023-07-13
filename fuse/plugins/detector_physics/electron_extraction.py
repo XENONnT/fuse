@@ -4,6 +4,8 @@ import numpy as np
 import os
 import logging
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
@@ -21,6 +23,9 @@ class ElectronExtraction(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
     
+    save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [('n_electron_extracted', np.int64),
             ]

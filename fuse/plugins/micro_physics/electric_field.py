@@ -3,11 +3,12 @@ import numpy as np
 import logging
 import straxen
 
+from ...common import FUSE_PLUGIN_TIMEOUT
+
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.electric_field')
-log.setLevel('WARNING')
 
 @export
 class ElectricField(strax.Plugin):
@@ -23,6 +24,10 @@ class ElectricField(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [
         ('e_field', np.int64),
@@ -45,6 +50,8 @@ class ElectricField(strax.Plugin):
         if self.debug:
             log.setLevel('DEBUG')
             log.debug("Running ElectricField in debug mode")
+        else: 
+            log.setLevel('WARNING')
 
     def compute(self, interactions_in_roi):
         """

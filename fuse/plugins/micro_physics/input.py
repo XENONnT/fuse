@@ -10,7 +10,7 @@ import awkward as ak
 
 export, __all__ = strax.exporter()
 
-from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
+from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.input')
@@ -28,6 +28,8 @@ class ChunkInput(strax.Plugin):
     rechunk_on_save = False
 
     source_done = False
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = [('x', np.float32),
              ('y', np.float32),
@@ -47,6 +49,8 @@ class ChunkInput(strax.Plugin):
             ]
     
     dtype = dtype + strax.time_fields
+
+    save_when = strax.SaveWhen.TARGET
     
     source_done = False
 
@@ -323,7 +327,7 @@ class file_loader():
             self.chunk_bounds = np.append(chunk_start[0]-self.first_chunk_left, chunk_bounds)
             
         else: 
-            log.warn("Only one Chunk! Rate to high?")
+            log.warning("Only one Chunk! Rate to high?")
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
         
         for c_ix, chunk_left, chunk_right in zip(np.unique(chunk_idx), self.chunk_bounds[:-1], self.chunk_bounds[1:]):
@@ -460,7 +464,7 @@ class file_loader():
 
         #Check if all needed columns are in place:
         if not set(self.column_names).issubset(instr_df.columns):
-            log.warn("Not all needed columns provided!")
+            log.warning("Not all needed columns provided!")
 
         n_simulated_events = len(np.unique(instr_df.evtid))
 

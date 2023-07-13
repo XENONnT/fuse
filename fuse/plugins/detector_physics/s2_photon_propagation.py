@@ -10,7 +10,7 @@ from scipy.interpolate import interp1d
 from strax import deterministic_hash
 export, __all__ = strax.exporter()
 
-from ...common import DummyMap, loop_uniform_to_pe_arr
+from ...common import DummyMap, loop_uniform_to_pe_arr, FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.S2_Signal')
@@ -27,6 +27,10 @@ class S2PhotonPropagation(strax.Plugin):
 
     #Forbid rechunking
     rechunk_on_save = False
+
+    save_when = strax.SaveWhen.TARGET
+
+    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [('channel', np.int64),
              ('dpe', np.bool_),

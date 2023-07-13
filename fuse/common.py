@@ -2,6 +2,9 @@ import numpy as np
 import awkward as ak
 import numba
 
+#strax uses a default of 80 seconds,
+#but this can be a bit limiting for the simulation 
+FUSE_PLUGIN_TIMEOUT = 240 
 
 @numba.njit()
 def dynamic_chunking(data, scale, n_min):
@@ -113,7 +116,7 @@ def reshape_awkward(array, offset):
         res: awkward1.ArrayBuilder object.
     """
     res = ak.ArrayBuilder()
-    if (array.dtype == np.int) or (array.dtype == np.float64) or (array.dtype == np.float32):
+    if (array.dtype == np.int32) or (array.dtype == np.int64) or (array.dtype == np.float64) or (array.dtype == np.float32):
         _reshape_awkward_number(array, offset, res)
     else:
         _reshape_awkward_string(array, offset, res)
