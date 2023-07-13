@@ -4,7 +4,7 @@ from ..electron_drift import ElectronDrift
 export, __all__ = strax.exporter()
 
 @export
-class ElectronAfterpulsesDrift(ElectronDrift):
+class DelayedElectronsDrift(ElectronDrift):
     """
     This class is used to simulate the drift of electrons from the sources of electron afterpulses. 
     """
@@ -12,5 +12,5 @@ class ElectronAfterpulsesDrift(ElectronDrift):
     
     child_plugin = True
 
-    depends_on = ('electron_ap_summary',)
-    provides = "drifted_ap_electrons"
+    depends_on = ('delayed_electron_summary',)
+    provides = "drifted_delayed_electrons"

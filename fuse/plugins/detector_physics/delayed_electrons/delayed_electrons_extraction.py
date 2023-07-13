@@ -4,7 +4,7 @@ from ..electron_extraction import ElectronExtraction
 export, __all__ = strax.exporter()
 
 @export
-class ElectronAfterpulsesExtraction(ElectronExtraction):
+class DelayedElectronsExtraction(ElectronExtraction):
     """
     This class is used to simulate the extraction of electrons from the sources of electron afterpulses. 
     """
@@ -12,5 +12,5 @@ class ElectronAfterpulsesExtraction(ElectronExtraction):
     
     child_plugin = True
 
-    depends_on = ('electron_ap_summary','drifted_ap_electrons')
-    provides = "extracted_ap_electrons"
+    depends_on = ('delayed_electron_summary','drifted_delayed_electrons')
+    provides = "extracted_delayed_electrons"

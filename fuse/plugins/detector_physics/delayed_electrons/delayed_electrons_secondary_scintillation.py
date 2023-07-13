@@ -5,7 +5,7 @@ from ..secondary_scintillation import SecondaryScintillation
 export, __all__ = strax.exporter()
 
 @export
-class ElectronAfterpulsesSecondaryScintillation(SecondaryScintillation):
+class DelayedElectronsSecondaryScintillation(SecondaryScintillation):
     """
     This class is used to simulate the extraction of electrons from the sources of electron afterpulses. 
     """

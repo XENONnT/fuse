@@ -4,7 +4,7 @@ from ..electron_timing import ElectronTiming
 export, __all__ = strax.exporter()
 
 @export
-class ElectronAfterpulsesTiming(ElectronTiming):
+class DelayedElectronsTiming(ElectronTiming):
     """
     This class is used to simulate the timing of electrons from the sources of electron afterpulses. 
     """
@@ -12,5 +12,5 @@ class ElectronAfterpulsesTiming(ElectronTiming):
     
     child_plugin = True
 
-    depends_on = ('drifted_ap_electrons','extracted_ap_electrons')
-    provides = "ap_electron_time"
+    depends_on = ('drifted_delayed_electrons','extracted_delayed_electrons')
+    provides = "delayed_electron_time"
