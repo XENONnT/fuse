@@ -26,6 +26,7 @@ class ElectronDrift(strax.Plugin):
              ('y', np.float64),
              ('z_obs', np.float64),
             ]
+    dtype = dtype + strax.time_fields
     
     #Forbid rechunking
     rechunk_on_save = False
@@ -33,8 +34,6 @@ class ElectronDrift(strax.Plugin):
     save_when = strax.SaveWhen.TARGET
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
-    
-    dtype = dtype + strax.time_fields
     
     #Config options
     debug = straxen.URLConfig(

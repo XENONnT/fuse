@@ -147,7 +147,7 @@ class SecondaryScintillation(strax.Plugin):
     
     def compute(self, interactions_in_roi, individual_electrons):
         
-        #Just apply this to clusters with photons
+        #Just apply this to clusters with electrons
         mask = interactions_in_roi["n_electron_extracted"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
