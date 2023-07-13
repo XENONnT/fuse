@@ -19,7 +19,7 @@ class TestFullChain(unittest.TestCase):
 
         self.test_context.set_config({"path": "/project2/lgrandi/xenonnt/simulations/testing",
                                       "file_name": "pmt_neutrons_100.root",
-                                      "entry_stop": 10,
+                                      "entry_stop": 5,
                                       })
         
         self.run_number = "TestRun_00000"
