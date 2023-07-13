@@ -71,80 +71,49 @@ class MergeCluster(strax.Plugin):
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        #Use the updated clustering based only on numpy
-        result = self.cluster_and_classify(geant4_interactions)
-
-        #remove the delay cut, fuse can simulated delayed interactions! 
+        result = np.zeros(len(np.unique(geant4_interactions["cluster_ids"])), dtype=self.dtype)
+        result = cluster_and_classify(result, geant4_interactions, self.tag_cluster_by)
 
         result["endtime"] = result["time"]
         
         return result
 
-    def cluster_and_classify(self, interactions):
+@numba.njit()
+def cluster_and_classify(result, interactions, tag_cluster_by):
 
-        interaction_cluster = [interactions[interactions["cluster_ids"] == i] for i in np.unique(interactions["cluster_ids"])]
+    interaction_cluster = [interactions[interactions["cluster_ids"] == i] for i in np.unique(interactions["cluster_ids"])]
 
-        result = np.zeros(len(interaction_cluster), dtype=self.dtype)
+    for i, cluster in enumerate(interaction_cluster):
+        result[i]["x"] = np.average(cluster["x"], weights = cluster["ed"])
+        result[i]["y"] = np.average(cluster["y"], weights = cluster["ed"])
+        result[i]["z"] = np.average(cluster["z"], weights = cluster["ed"])
+        result[i]["time"] = np.average(cluster["time"], weights = cluster["ed"])
+        result[i]["ed"] = np.sum(cluster["ed"])
         
-        x_avg = []
-        y_avg = []
-        z_avg = []
-        time_avg = []
-        energy_sum = []
-        A_list = []
-        Z_list = []
-        nestid_list = []
-        x_pri_list = []
-        y_pri_list = []
-        z_pri_list = []
-        evtid_list = []
 
-        for group in interaction_cluster:
-            x_avg.append(np.average(group["x"], weights = group["ed"]))
-            y_avg.append(np.average(group["y"], weights = group["ed"]))
-            z_avg.append(np.average(group["z"], weights = group["ed"]))
-            time_avg.append(np.average(group["time"], weights = group["ed"]))
-            energy_sum.append(np.sum(group["ed"]))
+        if tag_cluster_by == "energy":
+            main_interaction_index = np.argmax(cluster["ed"])
+        elif tag_cluster_by == "time":
+            main_interaction_index = np.argmin(cluster["time"])
+        else:
+            raise ValueError("tag_cluster_by must be 'energy' or 'time'")
 
-            if self.tag_cluster_by == "energy":
-                main_interaction_index = np.argmax(group["ed"])
-            elif self.tag_cluster_by == "time":
-                main_interaction_index = np.argmin(group["time"])
-            else:
-                raise ValueError("tag_cluster_by must be 'energy' or 'time'")
+        A, Z, nestid = classify(cluster["type"][main_interaction_index],
+                                cluster["parenttype"][main_interaction_index],
+                                cluster["creaproc"][main_interaction_index],
+                                cluster["edproc"][main_interaction_index]
+                                )
+        result[i]["A"] = A
+        result[i]["Z"] = Z
+        result[i]["nestid"] = nestid
 
-            A, Z, nestid = classify(group["type"][main_interaction_index],
-                                    group["parenttype"][main_interaction_index],
-                                    group["creaproc"][main_interaction_index],
-                                    group["edproc"][main_interaction_index]
-                                    )
-            A_list.append(A)
-            Z_list.append(Z)
-            nestid_list.append(nestid)
+        result[i]["x_pri"] = cluster["x_pri"][main_interaction_index]
+        result[i]["y_pri"] = cluster["y_pri"][main_interaction_index]
+        result[i]["z_pri"] = cluster["z_pri"][main_interaction_index]
+        result[i]["evtid"] = cluster["evtid"][main_interaction_index]
 
-            #Do i want to set them like this? What if two events are merged?
-            if len(np.unique(group["evtid"])) > 1:
-                log.debug("More than one event in cluster,\
-                            setting primary positions and evtid based on main interaction")
-            x_pri_list.append(group["x_pri"][main_interaction_index])
-            y_pri_list.append(group["y_pri"][main_interaction_index])
-            z_pri_list.append(group["z_pri"][main_interaction_index])
-            evtid_list.append(group["evtid"][main_interaction_index])
+    return result
 
-        result["x"] = np.array(x_avg)
-        result["y"] = np.array(y_avg)
-        result["z"] = np.array(z_avg)
-        result["time"] = np.array(time_avg)
-        result["ed"] = np.array(energy_sum)
-        result["A"] = np.array(A_list)
-        result["Z"] = np.array(Z_list)
-        result["nestid"] = np.array(nestid_list)
-        result["x_pri"] = np.array(x_pri_list)
-        result["y_pri"] = np.array(y_pri_list)
-        result["z_pri"] = np.array(z_pri_list)
-        result["evtid"] = np.array(evtid_list)
-
-        return result
 
 
 infinity = np.iinfo(np.int16).max
