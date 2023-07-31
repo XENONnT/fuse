@@ -77,7 +77,9 @@ class ChunkInput(strax.Plugin):
 
     source_rate = straxen.URLConfig(
         default=1, type=(int, float),
-        help='source_rate',
+        help='Source rate used to generate event times'
+             'Use a value >0 to generate event times in fuse'
+             'Use source_rate = 0 to use event times from the input file (only for csv input)',
     )
 
     cut_delayed = straxen.URLConfig(
@@ -97,7 +99,7 @@ class ChunkInput(strax.Plugin):
 
     entry_stop = straxen.URLConfig(
         default=None,
-        help='How many entries from the ROOT file you want to process. I think it is not working at the moment',
+        help='How many entries from the ROOT file you want to process.',
     )
 
     cut_by_eventid = straxen.URLConfig(
@@ -293,22 +295,31 @@ class file_loader():
         inter_reshaped = full_array_to_numpy(interactions, self.dtype)
         
         #Need to check start and stop again....
-        event_times = self.rng.uniform(low = start/self.event_rate,
-                                        high = stop/self.event_rate,
-                                        size = stop-start
-                                        ).astype(np.int64)
-        event_times = np.sort(event_times)
+        if self.event_rate > 0:
+            event_times = self.rng.uniform(low = start/self.event_rate,
+                                            high = stop/self.event_rate,
+                                            size = stop-start
+                                            ).astype(np.int64)
+            event_times = np.sort(event_times)
+
+            structure = np.unique(inter_reshaped["evtid"], return_counts = True)[1]
+
+            #Check again why [:len(structure)] is needed 
+            interaction_time = np.repeat(event_times[:len(structure)], structure)
+            inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
+        elif self.event_rate == 0:
+            log.debug("Using event times from provided input file.")
+            if self.file.endswith(".root"):
+                log.warning("Using event times from root file is not recommended! Use a source_rate > 0 instead.")
+            inter_reshaped["time"] = inter_reshaped["t"]
+        else:
+            raise ValueError("Source rate cannot be negative!")
         
         #Remove interactions that happen way after the run ended
-        inter_reshaped = inter_reshaped[inter_reshaped["t"] < np.max(event_times) + self.cut_delayed]
-        
-        structure = np.unique(inter_reshaped["evtid"], return_counts = True)[1]
-        
-        #Check again why [:len(structure)] is needed 
-        interaction_time = np.repeat(event_times[:len(structure)], structure)
-
-        inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
-        
+        delay_cut = inter_reshaped["t"] < np.max(event_times) + self.cut_delayed
+        log.debug(f"Removing {np.sum(~delay_cut)} delayed interactions")
+        inter_reshaped = inter_reshaped[delay_cut]
+ 
         sort_idx = np.argsort(inter_reshaped["time"])
         inter_reshaped = inter_reshaped[sort_idx]
 
