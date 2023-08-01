@@ -22,7 +22,7 @@ class ChunkCsvInput(strax.Plugin):
 
     depends_on = tuple()
     provides = "microphysics_summary"
-    data_kind = "clustered_interactions"
+    data_kind = "interactions_in_roi"
 
     #Forbid rechunking
     rechunk_on_save = False

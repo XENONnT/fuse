@@ -84,7 +84,7 @@ class ChunkInput(strax.Plugin):
 
     cut_delayed = straxen.URLConfig(
         default=4e14, type=(int, float),
-        help='cut_delayed',
+        help='delay cut. All interactions happening after this time (including the event time) will be cut.',
     )
 
     n_interactions_per_chunk = straxen.URLConfig(
@@ -316,7 +316,7 @@ class file_loader():
             raise ValueError("Source rate cannot be negative!")
         
         #Remove interactions that happen way after the run ended
-        delay_cut = inter_reshaped["t"] < np.max(event_times) + self.cut_delayed
+        delay_cut = inter_reshaped["t"] <= self.cut_delayed
         log.debug(f"Removing {np.sum(~delay_cut)} delayed interactions")
         inter_reshaped = inter_reshaped[delay_cut]
  
