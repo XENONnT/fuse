@@ -12,5 +12,5 @@ class DelayedElectronsExtraction(ElectronExtraction):
     
     child_plugin = True
 
-    depends_on = ('delayed_electron_summary','drifted_delayed_electrons')
+    depends_on = ('photo_ionization_electrons','drifted_delayed_electrons')
     provides = "extracted_delayed_electrons"

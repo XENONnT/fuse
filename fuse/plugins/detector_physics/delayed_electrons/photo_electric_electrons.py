@@ -1,4 +1,5 @@
 # Add instruction generation for photo electric electrons here
+#Can be removed i think- we just want the photo ionization ones!
 
 import strax
 import straxen

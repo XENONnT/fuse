@@ -12,5 +12,5 @@ class DelayedElectronsDrift(ElectronDrift):
     
     child_plugin = True
 
-    depends_on = ('delayed_electron_summary',)
+    depends_on = ('photo_ionization_electrons',)
     provides = "drifted_delayed_electrons"
