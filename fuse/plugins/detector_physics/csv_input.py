@@ -42,7 +42,7 @@ class ChunkCsvInput(strax.Plugin):
              ('e_field', np.float32),
              ('ed', np.float32),
              ('nestid', np.int32),
-             ('t', np.int32), #Remove them later as they are not in the usual micropyhsics summary
+             ('t', np.int64), #Remove them later as they are not in the usual micropyhsics summary
              ('eventid', np.int32),#Remove them later as they are not in the usual micropyhsics summary
             ]
     dtype = dtype + strax.time_fields
