@@ -19,8 +19,8 @@ class DelayedElectronsSecondaryScintillation(SecondaryScintillation):
     depends_on = ("drifted_delayed_electrons", "extracted_delayed_electrons", "delayed_electrons_time")
 
     provides = (result_name_photons, result_name_photons_sum)
-    data_kind = {result_name_photons: "individual_electrons",
-                 result_name_photons_sum : "interactions_in_roi"
+    data_kind = {result_name_photons: "delayed_individual_electrons",
+                 result_name_photons_sum : "delayed_interactions_in_roi"
                 }
     
     dtype_photons = [('n_s2_photons', np.int64),] + strax.time_fields
@@ -29,3 +29,6 @@ class DelayedElectronsSecondaryScintillation(SecondaryScintillation):
     dtype = dict()
     dtype[result_name_photons] = dtype_photons
     dtype[result_name_photons_sum] = dtype_sum_photons
+
+    def compute(self, delayed_interactions_in_roi, delayed_individual_electrons):
+        return super().compute(interactions_in_roi=delayed_interactions_in_roi, individual_electrons=delayed_individual_electrons)

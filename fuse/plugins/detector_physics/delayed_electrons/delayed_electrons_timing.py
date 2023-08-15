@@ -14,3 +14,7 @@ class DelayedElectronsTiming(ElectronTiming):
 
     depends_on = ('drifted_delayed_electrons','extracted_delayed_electrons')
     provides = "delayed_electrons_time"
+    data_kind = "delayed_individual_electrons"
+
+    def compute(self, delayed_interactions_in_roi):
+        return super().compute(interactions_in_roi=delayed_interactions_in_roi)

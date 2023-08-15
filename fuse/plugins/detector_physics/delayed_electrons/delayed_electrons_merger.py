@@ -19,6 +19,7 @@ class DriftedElectronsMerger(VerticalMergerPlugin):
     #Forbid rechunking
     rechunk_on_save = False
 
+
 @export
 class ExtractedElectronsMerger(VerticalMergerPlugin):
     """

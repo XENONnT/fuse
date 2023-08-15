@@ -24,7 +24,7 @@ class PhotoIonizationElectrons(strax.Plugin):
     # And this way we should get good results too 
     depends_on = ("s2_photons_sum", "extracted_electrons", "s2_photons")
     provides = "photo_ionization_electrons"
-    data_kind = "interactions_in_roi"
+    data_kind = "delayed_interactions_in_roi"
 
     #dtype will be the same as the microphysics_summary
     #We can probably import it from there
