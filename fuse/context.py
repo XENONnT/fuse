@@ -180,12 +180,16 @@ s2_simulation_plugins = [fuse.detector_physics.ElectronDrift,
                          fuse.detector_physics.SecondaryScintillation,
                          ]
 
-delayed_electrons_plugins = [fuse.detector_physics.delayed_electrons.PhotoIonizationElectrons,
-                             fuse.detector_physics.delayed_electrons.DelayedElectronsDrift,
-                             fuse.detector_physics.delayed_electrons.DelayedElectronsExtraction,
-                             fuse.detector_physics.delayed_electrons.DelayedElectronsTiming,
-                             fuse.detector_physics.delayed_electrons.DelayedElectronsSecondaryScintillation,
-                             ]
+s2_simulation_rename_plugins = [fuse.detector_physics.delayed_electrons.DriftedElectronsRename,
+                                fuse.detector_physics.delayed_electrons.ExtractedElectronsRename,
+                                fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonsRename,
+                                fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonSumRename,
+                                ]
+
+pmt_and_daq_plugins = [fuse.pmt_and_daq.PMTAfterPulses,
+                       fuse.pmt_and_daq.PhotonSummary,
+                       fuse.pmt_and_daq.PMTResponseAndDAQ,
+                       ]
 
 
 def full_chain_context(out_dir, config):
@@ -204,12 +208,72 @@ def full_chain_context(out_dir, config):
     for plugin in s2_simulation_plugins:
         st.register(plugin)
 
+    #Register S2 renaming plugins
+    for plugin in s2_simulation_rename_plugins:
+        st.register(plugin)
+
     st.register(fuse.detector_physics.S2PhotonPropagation)
-    st.register(fuse.pmt_and_daq.PMTAfterPulses)
-    st.register(fuse.pmt_and_daq.PhotonSummary)
-    st.register(fuse.pmt_and_daq.PMTResponseAndDAQ)
+
+    #Register PMT and DAQ plugins
+    for plugin in pmt_and_daq_plugins:
+        st.register(plugin)
+
 
     set_full_chain_config(st, config)
+
+    return st
+
+
+
+delayed_electrons_plugins = [fuse.detector_physics.delayed_electrons.PhotoIonizationElectrons,
+                             fuse.detector_physics.delayed_electrons.DelayedElectronsDrift,
+                             fuse.detector_physics.delayed_electrons.DelayedElectronsExtraction,
+                             fuse.detector_physics.delayed_electrons.DelayedElectronsTiming,
+                             fuse.detector_physics.delayed_electrons.DelayedElectronsSecondaryScintillation,
+                             ]
+
+s2_simulation_merger_plugins = [fuse.detector_physics.delayed_electrons.DriftedElectronsMerger,
+                                fuse.detector_physics.delayed_electrons.ExtractedElectronsMerger,
+                                fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonsMerger,
+                                fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonSumMerger,
+                                ]
+
+def full_chain_w_photo_ionization_context(out_dir, config):
+
+    st = cutax.contexts.xenonnt_sim_SR0v3_cmt_v9(output_folder = out_dir)
+
+    #Register microphysics plugins
+    for plugin in microphysics_plugins:
+        st.register(plugin)
+
+    #Register S1 plugins
+    for plugin in s1_simulation_plugins:
+        st.register(plugin)
+
+    #Register S2 plugins
+    for plugin in s2_simulation_plugins:
+        st.register(plugin)
+
+    #Register delayed S2 plugins
+    for plugin in delayed_electrons_plugins:
+        st.register(plugin)
+
+    #Register S2 renaming plugins
+    for plugin in s2_simulation_merger_plugins:
+        st.register(plugin)
+
+    st.register(fuse.detector_physics.S2PhotonPropagation)
+    
+    #Register PMT and DAQ plugins
+    for plugin in pmt_and_daq_plugins:
+        st.register(plugin)
+
+    set_full_chain_config(st, config)
+
+    st.set_config({
+        "delaytime_pmf_hist": 'simple_load://resource://format://xnt_se_afterpulse_delaytime.pkl.gz?&fmt=pkl.gz',
+        "photoionization_modifier": config["photoionization_modifier"],
+        })
 
     return st
 

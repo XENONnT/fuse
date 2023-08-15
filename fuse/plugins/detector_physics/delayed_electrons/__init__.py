@@ -12,3 +12,6 @@ from .delayed_electrons_secondary_scintillation import *
 
 from . import photo_ionization_electrons
 from .photo_ionization_electrons import *
+
+from . import delayed_electrons_merger
+from .delayed_electrons_merger import *
