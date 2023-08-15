@@ -21,3 +21,6 @@ from .secondary_scintillation import *
 
 from . import csv_input
 from .csv_input import *
+
+from . import delayed_electrons
+from .delayed_electrons import *

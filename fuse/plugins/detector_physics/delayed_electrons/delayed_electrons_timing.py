@@ -13,4 +13,4 @@ class DelayedElectronsTiming(ElectronTiming):
     child_plugin = True
 
     depends_on = ('drifted_delayed_electrons','extracted_delayed_electrons')
-    provides = "delayed_electron_time"
+    provides = "delayed_electrons_time"

@@ -10,17 +10,19 @@ import numpy as np
 
 from straxen import URLConfig
 
+microphysics_plugins = [fuse.micro_physics.ChunkInput,
+                        fuse.micro_physics.FindCluster,
+                        fuse.micro_physics.MergeCluster,
+                        fuse.micro_physics.XENONnT_TPC,
+                        fuse.micro_physics.XENONnT_BelowCathode,
+                        fuse.micro_physics.VolumesMerger,
+                        fuse.micro_physics.ElectricField,
+                        fuse.micro_physics.NestYields,
+                        fuse.micro_physics.MicroPhysicsSummary]
+
 #Microphysics context
 def microphysics_context(out_dir):
-    st = strax.Context(register = [fuse.micro_physics.ChunkInput,
-                                   fuse.micro_physics.FindCluster,
-                                   fuse.micro_physics.MergeCluster,
-                                   fuse.micro_physics.XENONnT_TPC,
-                                   fuse.micro_physics.XENONnT_BelowCathode,
-                                   fuse.micro_physics.VolumesMerger,
-                                   fuse.micro_physics.ElectricField,
-                                   fuse.micro_physics.NestYields,
-                                   fuse.micro_physics.MicroPhysicsSummary],
+    st = strax.Context(register = microphysics_plugins,
                     storage = [strax.DataDirectory(out_dir)]
                     )
 
@@ -41,34 +43,7 @@ def microphysics_context(out_dir):
 #Full Chain Context
 #For now lets just hijack the cutax simulations context 
 
-full_chain_modules = [fuse.micro_physics.ChunkInput,
-                      fuse.micro_physics.FindCluster,
-                      fuse.micro_physics.MergeCluster,
-                      fuse.micro_physics.XENONnT_TPC,
-                      fuse.micro_physics.XENONnT_BelowCathode,
-                      fuse.micro_physics.VolumesMerger,
-                      fuse.micro_physics.ElectricField,
-                      fuse.micro_physics.NestYields,
-                      fuse.micro_physics.MicroPhysicsSummary,
-                      fuse.detector_physics.S1PhotonHits,
-                      fuse.detector_physics.S1PhotonPropagation,
-                      fuse.detector_physics.ElectronDrift,
-                      fuse.detector_physics.ElectronExtraction,
-                      fuse.detector_physics.ElectronTiming,
-                      fuse.detector_physics.SecondaryScintillation,
-                      fuse.detector_physics.S2PhotonPropagation,
-                      fuse.pmt_and_daq.PMTAfterPulses,
-                      fuse.pmt_and_daq.PhotonSummary,
-                      fuse.pmt_and_daq.PMTResponseAndDAQ,
-                     ]
-
-def full_chain_context(out_dir, config):
-
-    st = cutax.contexts.xenonnt_sim_SR0v3_cmt_v9(output_folder = out_dir)
-
-    for module in full_chain_modules:
-        st.register(module)
-
+def set_full_chain_config(st,config):
     st.set_config({
         "detector": "XENONnT",
         "efield_map": 'itp_map://resource://format://'
@@ -190,10 +165,54 @@ def full_chain_context(out_dir, config):
         "noise_data_tmp": 'simple_load://resource://format://'
                          f'{config["noise_file"]}?'
                           '&fmt=npy',
-
     })
 
+#Plugins to simulate S1 signals
+s1_simulation_plugins = [fuse.detector_physics.S1PhotonHits,
+                         fuse.detector_physics.S1PhotonPropagation,
+                        ]
+
+#Plugins to simulate S2 signals
+#S2PhotonPropagation is registered separately since it is also used for delayed electrons
+s2_simulation_plugins = [fuse.detector_physics.ElectronDrift,
+                         fuse.detector_physics.ElectronExtraction,
+                         fuse.detector_physics.ElectronTiming,
+                         fuse.detector_physics.SecondaryScintillation,
+                         ]
+
+delayed_electrons_plugins = [fuse.detector_physics.delayed_electrons.PhotoIonizationElectrons,
+                             fuse.detector_physics.delayed_electrons.DelayedElectronsDrift,
+                             fuse.detector_physics.delayed_electrons.DelayedElectronsExtraction,
+                             fuse.detector_physics.delayed_electrons.DelayedElectronsTiming,
+                             fuse.detector_physics.delayed_electrons.DelayedElectronsSecondaryScintillation,
+                             ]
+
+
+def full_chain_context(out_dir, config):
+
+    st = cutax.contexts.xenonnt_sim_SR0v3_cmt_v9(output_folder = out_dir)
+
+    #Register microphysics plugins
+    for plugin in microphysics_plugins:
+        st.register(plugin)
+
+    #Register S1 plugins
+    for plugin in s1_simulation_plugins:
+        st.register(plugin)
+
+    #Register S2 plugins
+    for plugin in s2_simulation_plugins:
+        st.register(plugin)
+
+    st.register(fuse.detector_physics.S2PhotonPropagation)
+    st.register(fuse.pmt_and_daq.PMTAfterPulses)
+    st.register(fuse.pmt_and_daq.PhotonSummary)
+    st.register(fuse.pmt_and_daq.PMTResponseAndDAQ)
+
+    set_full_chain_config(st, config)
+
     return st
+
 
 
 

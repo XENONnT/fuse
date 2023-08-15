@@ -13,16 +13,19 @@ class DelayedElectronsSecondaryScintillation(SecondaryScintillation):
     
     child_plugin = True
 
-    depends_on = ("drifted_delayed_electrons", "extracted_delayed_electrons", "delayed_electron_time")
+    result_name_photons = "delayed_electrons_s2_photons"
+    result_name_photons_sum = "delayed_electrons_s2_photons_sum"
 
-    provides = ("delayed_electrons_s2_photons", "delayed_electrons_s2_photons_sum")
-    data_kind = {"delayed_electrons_s2_photons": "individual_electrons",
-                 "delayed_electrons_s2_photons_sum" : "interactions_in_roi"
+    depends_on = ("drifted_delayed_electrons", "extracted_delayed_electrons", "delayed_electrons_time")
+
+    provides = (result_name_photons, result_name_photons_sum)
+    data_kind = {result_name_photons: "individual_electrons",
+                 result_name_photons_sum : "interactions_in_roi"
                 }
     
     dtype_photons = [('n_s2_photons', np.int64),] + strax.time_fields
     dtype_sum_photons = [('sum_s2_photons', np.int64),] + strax.time_fields
     
     dtype = dict()
-    dtype["delayed_electrons_s2_photons"] = dtype_photons
-    dtype["delayed_electrons_s2_photons_sum"] = dtype_sum_photons
+    dtype[result_name_photons] = dtype_photons
+    dtype[result_name_photons_sum] = dtype_sum_photons

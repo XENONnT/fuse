@@ -14,19 +14,22 @@ log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 class SecondaryScintillation(strax.Plugin):
     
     __version__ = "0.0.0"
+
+    result_name_photons = "s2_photons"
+    result_name_photons_sum = "s2_photons_sum"
     
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
-    provides = ("s2_photons", "s2_photons_sum")
-    data_kind = {"s2_photons": "individual_electrons",
-                 "s2_photons_sum" : "interactions_in_roi"
+    provides = (result_name_photons, result_name_photons_sum)
+    data_kind = {result_name_photons: "individual_electrons",
+                 result_name_photons_sum : "interactions_in_roi"
                 }
     
     dtype_photons = [('n_s2_photons', np.int64),] + strax.time_fields
     dtype_sum_photons = [('sum_s2_photons', np.int64),] + strax.time_fields
     
     dtype = dict()
-    dtype["s2_photons"] = dtype_photons
-    dtype["s2_photons_sum"] = dtype_sum_photons
+    dtype[result_name_photons] = dtype_photons
+    dtype[result_name_photons_sum] = dtype_sum_photons
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -151,8 +154,8 @@ class SecondaryScintillation(strax.Plugin):
         mask = interactions_in_roi["n_electron_extracted"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
-            return dict(s2_photons=np.zeros(0, self.dtype["s2_photons"]),
-                        s2_photons_sum=np.zeros(0, self.dtype["s2_photons_sum"]))
+            return {self.result_name_photons : np.zeros(0, self.dtype[self.result_name_photons]),
+                    self.result_name_photons_sum : np.zeros(0, self.dtype[self.result_name_photons_sum])}
         
         positions = np.array([interactions_in_roi[mask]["x"], interactions_in_roi[mask]["y"]]).T
         
@@ -169,18 +172,18 @@ class SecondaryScintillation(strax.Plugin):
         
         n_photons_per_ele[n_photons_per_ele < 0] = 0
         
-        result_photons = np.zeros(len(n_photons_per_ele), dtype = self.dtype["s2_photons"])
+        result_photons = np.zeros(len(n_photons_per_ele), dtype = self.dtype[self.result_name_photons])
         result_photons["n_s2_photons"] = n_photons_per_ele
         result_photons["time"] = individual_electrons["time"]
         result_photons["endtime"] = individual_electrons["endtime"]
         
-        result_sum_photons = np.zeros(len(interactions_in_roi), dtype = self.dtype["s2_photons_sum"])
+        result_sum_photons = np.zeros(len(interactions_in_roi), dtype = self.dtype[self.result_name_photons_sum])
         result_sum_photons["sum_s2_photons"][mask] = sum_photons_per_interaction
-        result_sum_photons["time"][mask] = interactions_in_roi[mask]["time"]
-        result_sum_photons["endtime"][mask] = interactions_in_roi[mask]["endtime"]
+        result_sum_photons["time"] = interactions_in_roi["time"]
+        result_sum_photons["endtime"] = interactions_in_roi["endtime"]
         
-        return dict(s2_photons=result_photons,
-                    s2_photons_sum=result_sum_photons)
+        return {self.result_name_photons : result_photons,
+                self.result_name_photons_sum : result_sum_photons}
         
         
     def get_s2_light_yield(self, positions):

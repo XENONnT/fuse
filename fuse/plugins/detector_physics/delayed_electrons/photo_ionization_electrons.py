@@ -144,9 +144,9 @@ class PhotoIonizationElectrons(strax.Plugin):
             #    electron_delay,
             #    self.delaytime_pmf_hist
             #    )
-            electron_delay_i = electron_delay[i]
-            n_delayed_electron_i = n_delayed_electrons[i]
-            n_instruction = len(electron_delay_i)
+            #electron_delay_i = electron_delay[i]
+            #n_delayed_electron_i = n_delayed_electrons[i]
+            n_instruction = len(electron_delay)
 
             #Randomly select the time of the extracted electrons as time zeros
             #This differs to the WFSim implementation but the effect should be small
@@ -155,13 +155,14 @@ class PhotoIonizationElectrons(strax.Plugin):
             #And build the output
             temp_output = np.zeros(n_instruction, dtype = self.dtype)
             temp_output["time"] = t_zeros #WFsim subtracts the drift time here, i guess we dont need it??
+            temp_output["endtime"] = t_zeros
             temp_output["x"], temp_output["y"] = ramdom_xy_position(
                                                     n_instruction,
                                                     self.tpc_radius,
                                                     self.rng
                                                     )
-            temp_output['z'] = - electron_delay_i * self.drift_velocity_liquid
-            temp_output['electrons'] = n_delayed_electron_i
+            temp_output['z'] = - electron_delay * self.drift_velocity_liquid
+            temp_output['electrons'] = n_delayed_electrons[i]
             output.append(temp_output)
 
         return np.concatenate(output)
