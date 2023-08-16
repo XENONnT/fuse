@@ -86,6 +86,11 @@ class ElectronDrift(strax.Plugin):
         cache=True,
         help='fdc_map',
     )
+
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    )
     
     def setup(self):
 
@@ -94,6 +99,15 @@ class ElectronDrift(strax.Plugin):
             log.debug("Running ElectronDrift in debug mode")
         else: 
             log.setLevel('WARNING')
+
+        if self.deterministic_seed:
+            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
+            seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = seed)
+            log.debug(f"Generating random numbers from seed {seed}")
+        else: 
+            self.rng = np.random.default_rng()
+            log.debug(f"Generating random numbers with seed pulled from OS")
         
         #Can i do this scaling in the url config?
         if self.field_distortion_model == "inverse_fdc":
@@ -152,15 +166,15 @@ class ElectronDrift(strax.Plugin):
         p_surv = self.kill_electrons(xy_int = np.array([x, y]).T, # maps are in R_true, so orginal position should be here
                                      z_int = z, # maps are in Z_true, so orginal position should be here
                                     )
-        n_electron = n_electron*p_surv
         
         #Absorb electrons during the drift
         # Average drift time of the electrons
         drift_time_mean, drift_time_spread = self.get_s2_drift_time_params(xy_int = np.array([x, y]).T,
                                                                            z_int = z)
         electron_lifetime_correction = np.exp(- 1 * drift_time_mean / self.electron_lifetime_liquid)
-        n_electron = n_electron*electron_lifetime_correction
         
+        #Electron absorption is a binomial process
+        n_electron = self.rng.binomial(n=n_electron, p=p_surv * electron_lifetime_correction)
         
         result = np.zeros(len(interactions_in_roi), dtype = self.dtype)
         result["time"] = interactions_in_roi["time"]
