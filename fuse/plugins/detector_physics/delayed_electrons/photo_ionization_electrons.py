@@ -131,61 +131,29 @@ class PhotoIonizationElectrons(strax.Plugin):
             * self.photoionization_modifier
             )
 
-        output = []
-        #Maybe we can vectorize this too?
-        for i in range(len(n_delayed_electrons)):
+        electron_delay = get_random(self.delaytime_pmf_hist, self.rng, np.sum(n_delayed_electrons))
+        electron_delay = np.split(electron_delay, np.cumsum(n_delayed_electrons)[:-1])
 
-            electron_delay = get_random(self.delaytime_pmf_hist, self.rng, n_delayed_electrons[i])
+        #Randomly select the time of the extracted electrons as time zeros
+        #This differs to the WFSim implementation but neglecting the photon 
+        #propagation time should not do much i guess
+        t_zeros = [self.rng.choice(electrons["time"], size = len(delayed_electrons)) for electrons, delayed_electrons in zip(electrons_per_interaction, electron_delay)]
+        t_zeros = np.concatenate(t_zeros)
+        electron_delay = np.concatenate(electron_delay)
+        n_instruction = len(electron_delay)
+
+        result = np.zeros(n_instruction, dtype = self.dtype)
+        result["time"] = t_zeros #WFsim subtracts the drift time here, i guess we dont need it??
+        result["endtime"] = t_zeros
+        result["x"], result["y"] = ramdom_xy_position(
+            n_instruction,
+            self.tpc_radius,
+            self.rng
+            )
+        result['z'] = - electron_delay * self.drift_velocity_liquid
+        result['electrons'] = [1]*n_instruction
         
-
-            ### What is this function doing?? It is super slow, do i need this at all???
-            # Reasonably bin delay time that would be diffuse out together
-            #electron_delay_i, n_delayed_electron_i = self._reduce_instruction_timing(
-            #    electron_delay,
-            #    self.delaytime_pmf_hist
-            #    )
-            #electron_delay_i = electron_delay[i]
-            #n_delayed_electron_i = n_delayed_electrons[i]
-            n_instruction = len(electron_delay)
-
-            #Randomly select the time of the extracted electrons as time zeros
-            #This differs to the WFSim implementation but the effect should be small
-            t_zeros = electrons_per_interaction[i]["time"][self.rng.integers(low = 0, high = len(electrons_per_interaction[i]), size = n_instruction)]
-
-            #And build the output
-            temp_output = np.zeros(n_instruction, dtype = self.dtype)
-            temp_output["time"] = t_zeros #WFsim subtracts the drift time here, i guess we dont need it??
-            temp_output["endtime"] = t_zeros
-            temp_output["x"], temp_output["y"] = ramdom_xy_position(
-                                                    n_instruction,
-                                                    self.tpc_radius,
-                                                    self.rng
-                                                    )
-            temp_output['z'] = - electron_delay * self.drift_velocity_liquid
-            temp_output['electrons'] = n_delayed_electrons[i]
-            output.append(temp_output)
-
-        return np.concatenate(output)
-
-
-    def _reduce_instruction_timing(self, electron_delay, delaytime_pmf_hist):
-        # Binning the delay time, so electron timing within each
-        # will be diffused to fill the whole bin
-        
-        delaytime_spread = np.sqrt(2 * self.diffusion_constant_longitudinal\
-                                   * delaytime_pmf_hist.bin_centers)
-        delaytime_spread /= self.drift_velocity_liquid
-
-        coarse_time, coarse_time_i = [], 100 # Start at 100ns, as its smaller than single electron width
-        while coarse_time_i < delaytime_pmf_hist.bin_centers[-1]:
-            coarse_time.append(coarse_time_i)
-            coarse_time_i += delaytime_spread[np.argmin(np.abs(coarse_time_i - delaytime_pmf_hist.bin_centers))]
-        coarse_time = np.array(coarse_time)
-
-        idx = np.digitize(electron_delay[electron_delay < coarse_time[-1]], coarse_time)
-        idxs, n = np.unique(idx, return_counts=True)
-        _ap_delay = coarse_time[idxs]
-        return _ap_delay, n
+        return result
 
 
 def ramdom_xy_position(n, radius, rng):
