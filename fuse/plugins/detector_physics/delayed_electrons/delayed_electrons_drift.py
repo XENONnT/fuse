@@ -1,7 +1,11 @@
 import strax
+import logging
 from ..electron_drift import ElectronDrift
 
 export, __all__ = strax.exporter()
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('fuse.detector_physics.delayed_electrons.delayed_electrons_drift')
 
 @export
 class DelayedElectronsDrift(ElectronDrift):
