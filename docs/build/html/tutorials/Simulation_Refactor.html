@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Using XENON fuse &#8212; XENON fuse 0.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=039e1c02" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=525cde36"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ChunkInput" href="../plugins/ChunkInput.html" />
+    <link rel="prev" title="PMT and DAQ Simulation" href="../pmt_and_daq.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="Using-XENON-fuse">
+<h1>Using XENON fuse<a class="headerlink" href="#Using-XENON-fuse" title="Permalink to this heading">¶</a></h1>
+<section id="Imports">
+<h2>Imports<a class="headerlink" href="#Imports" title="Permalink to this heading">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">strax</span>
+<span class="kn">import</span> <span class="nn">straxen</span>
+<span class="kn">import</span> <span class="nn">cutax</span>
+<span class="kn">import</span> <span class="nn">fuse</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">straxen</span> <span class="kn">import</span> <span class="n">URLConfig</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/henningse/miniforge3/lib/python3.9/site-packages/numba/core/decorators.py:262: NumbaDeprecationWarning: <span class="ansi-bold">numba.generated_jit is deprecated. Please see the documentation at: https://numba.readthedocs.io/en/stable/reference/deprecation.html#deprecation-of-generated-jit for more information and advice on a suitable replacement.</span>
+  warnings.warn(msg, NumbaDeprecationWarning)
+2023-08-16 17:32:22,907 - utilix - WARNING - Could not load a configuration file. You can create one at /Users/henningse/.xenon_config, or set a custom path using
+
+export XENON_CONFIG=path/to/your/config
+
+/Users/henningse/Code/straxen/straxen/plugins/led_cal/led_calibration.py:213: NumbaDeprecationWarning: <span class="ansi-bold">The &#39;nopython&#39; keyword argument was not supplied to the &#39;numba.jit&#39; decorator. The implicit default value for this argument is currently False, but it will be changed to True in Numba 0.59.0. See https://numba.readthedocs.io/en/stable/reference/deprecation.html#deprecation-of-object-mode-fall-back-behaviour-when-using-jit for details.</span>
+  def calc_delta_time(ext_timings_nv_delta_time, pulses, hitlets_nv, nv_pmt_start, nv_pmt_stop):
+/Users/henningse/miniforge3/lib/python3.9/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">ModuleNotFoundError</span>                       Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [1]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 3&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">      1</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span> <span class="ansi-bold" style="color: rgb(0,0,255)">strax</span>
+<span class="ansi-green-intense-fg ansi-bold">      2</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span> <span class="ansi-bold" style="color: rgb(0,0,255)">straxen</span>
+<span class="ansi-green-fg">----&gt; 3</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span> <span class="ansi-bold" style="color: rgb(0,0,255)">cutax</span>
+<span class="ansi-green-intense-fg ansi-bold">      4</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span> <span class="ansi-bold" style="color: rgb(0,0,255)">fuse</span>
+<span class="ansi-green-intense-fg ansi-bold">      6</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span> <span class="ansi-bold" style="color: rgb(0,0,255)">numpy</span> <span class="ansi-bold" style="color: rgb(0,135,0)">as</span> <span class="ansi-bold" style="color: rgb(0,0,255)">np</span>
+
+<span class="ansi-red-fg">ModuleNotFoundError</span>: No module named &#39;cutax&#39;
+</pre></div></div>
+</div>
+</section>
+<section id="Microphysics-simulation-(former-epix)">
+<h2>Microphysics simulation (former epix)<a class="headerlink" href="#Microphysics-simulation-(former-epix)" title="Permalink to this heading">¶</a></h2>
+<p>In fuse all simulation steps are handled in dedicated plugins just like straxen does for our data processing. The first part of our full chain simulations is the simulation of microphysics effects. The corresponding plugins are grouped in the <code class="docutils literal notranslate"><span class="pre">micro_physics</span></code> module.</p>
+<p>To set up a simulation we first need to define a <code class="docutils literal notranslate"><span class="pre">Context</span></code>. At this stage we dont’t need a lot of inputs so we can run the simulation inside a generic <code class="docutils literal notranslate"><span class="pre">strax.Context</span></code>. fuse has a predefined <code class="docutils literal notranslate"><span class="pre">microphyics_context</span></code> that registers all needed plugins for us. Afterwards we can change the configuration of the simulation using <code class="docutils literal notranslate"><span class="pre">st.set_config</span></code>. If you want to try your own <code class="docutils literal notranslate"><span class="pre">.root</span></code> or <code class="docutils literal notranslate"><span class="pre">.csv</span></code>file feel free to change the given example file.</p>
+<p>There are some more options we can change: - <code class="docutils literal notranslate"><span class="pre">debug</span></code> will print out some debug informations during the simulation (For now there are basically no debug statements.) - <code class="docutils literal notranslate"><span class="pre">source_rate</span></code>: You can specify a rate in Hz. fuse will distribute your events according to this rate. - <code class="docutils literal notranslate"><span class="pre">n_interactions_per_chunk</span></code>: fuse builds strax chunks based on an algorithm called ‘dynamic chunking’. It searches for empty time intervalls and cuts the data into chunks there. With this parameter you can set an lower limit
+to the number of interactions per chunk. For Geant4 files something in the order of 10k - 100k can work. For csv files i would reccomend something in the order of 10 - 1000 depending on you specific data. - <code class="docutils literal notranslate"><span class="pre">cut_delayed</span></code>: fuse will remove interactions that happen after the last sampled time + the cut_delayed time. We dont want to deal with interactions that happen way after our “run” finished (yet)</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span> <span class="o">=</span> <span class="n">fuse</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">microphysics_context</span><span class="p">(</span><span class="s2">&quot;/path/to/output/folder&quot;</span><span class="p">)</span>
+
+<span class="n">st</span><span class="o">.</span><span class="n">set_config</span><span class="p">({</span><span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;/project2/lgrandi/xenonnt/simulations/testing&quot;</span><span class="p">,</span>
+               <span class="s2">&quot;file_name&quot;</span><span class="p">:</span> <span class="s2">&quot;pmt_neutrons_100.root&quot;</span><span class="p">,</span>
+               <span class="s2">&quot;debug&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+               <span class="s2">&quot;source_rate&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+              <span class="p">})</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [2]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> st <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">fuse</span><span style="color: rgb(98,98,98)">.</span>context<span style="color: rgb(98,98,98)">.</span>microphysics_context(<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">/path/to/output/folder</span><span style="color: rgb(175,0,0)">&#34;</span>)
+<span class="ansi-green-intense-fg ansi-bold">      3</span> st<span style="color: rgb(98,98,98)">.</span>set_config({<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">path</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">/project2/lgrandi/xenonnt/simulations/testing</span><span style="color: rgb(175,0,0)">&#34;</span>,
+<span class="ansi-green-intense-fg ansi-bold">      4</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">file_name</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">pmt_neutrons_100.root</span><span style="color: rgb(175,0,0)">&#34;</span>,
+<span class="ansi-green-intense-fg ansi-bold">      5</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">debug</span><span style="color: rgb(175,0,0)">&#34;</span>: <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>,
+<span class="ansi-green-intense-fg ansi-bold">      6</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">source_rate</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(98,98,98)">1</span>,
+<span class="ansi-green-intense-fg ansi-bold">      7</span>               })
+
+<span class="ansi-red-fg">NameError</span>: name &#39;fuse&#39; is not defined
+</pre></div></div>
+</div>
+<p>Now that we have our context we can start to run fuse. Just use <code class="docutils literal notranslate"><span class="pre">st.make</span></code> and pick the data types you would like to make.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">run_number</span> <span class="o">=</span> <span class="s2">&quot;00000&quot;</span>
+
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span> <span class="s2">&quot;geant4_interactions&quot;</span><span class="p">)</span>
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span> <span class="s2">&quot;cluster_index&quot;</span><span class="p">)</span>
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span> <span class="s2">&quot;clustered_interactions&quot;</span><span class="p">)</span>
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span> <span class="s2">&quot;electric_field_values&quot;</span><span class="p">)</span>
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span> <span class="s2">&quot;quanta&quot;</span><span class="p">)</span>
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span> <span class="s2">&quot;microphysics_summary&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [3]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 3&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">      1</span> run_number <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">00000</span><span style="color: rgb(175,0,0)">&#34;</span>
+<span class="ansi-green-fg">----&gt; 3</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number, <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">geant4_interactions</span><span style="color: rgb(175,0,0)">&#34;</span>)
+<span class="ansi-green-intense-fg ansi-bold">      4</span> st<span style="color: rgb(98,98,98)">.</span>make(run_number, <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">cluster_index</span><span style="color: rgb(175,0,0)">&#34;</span>)
+<span class="ansi-green-intense-fg ansi-bold">      5</span> st<span style="color: rgb(98,98,98)">.</span>make(run_number, <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">clustered_interactions</span><span style="color: rgb(175,0,0)">&#34;</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+<p>If your simulation did not crash you can now load the simulated data just like straxen data. First we can take a look at the <code class="docutils literal notranslate"><span class="pre">geant4_interaction</span></code>. Each line represents a single energy deposit.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">geant4_interactions</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s2">&quot;00000&quot;</span><span class="p">,[</span><span class="s2">&quot;geant4_interactions&quot;</span><span class="p">,</span> <span class="s2">&quot;cluster_index&quot;</span><span class="p">])</span>
+<span class="n">geant4_interactions</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [4]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> geant4_interactions <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>get_df(<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">00000</span><span style="color: rgb(175,0,0)">&#34;</span>,[<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">geant4_interactions</span><span style="color: rgb(175,0,0)">&#34;</span>, <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">cluster_index</span><span style="color: rgb(175,0,0)">&#34;</span>])
+<span class="ansi-green-intense-fg ansi-bold">      2</span> geant4_interactions<span style="color: rgb(98,98,98)">.</span>head(<span style="color: rgb(98,98,98)">10</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+<p>You can also load the clustered data that will go into the second part of the simulation. For now it is called <code class="docutils literal notranslate"><span class="pre">microphysics_summary</span></code>. Each line gives you now the position and number of electron and photons (along other informations.)</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">microphysics_summary</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s2">&quot;00000&quot;</span><span class="p">,[</span> <span class="s2">&quot;microphysics_summary&quot;</span><span class="p">])</span>
+<span class="n">microphysics_summary</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [5]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> microphysics_summary <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>get_df(<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">00000</span><span style="color: rgb(175,0,0)">&#34;</span>,[ <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">microphysics_summary</span><span style="color: rgb(175,0,0)">&#34;</span>])
+<span class="ansi-green-intense-fg ansi-bold">      2</span> microphysics_summary<span style="color: rgb(98,98,98)">.</span>head(<span style="color: rgb(98,98,98)">10</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+</section>
+<section id="Detector-and-Electronics-Simulation-(former-WFSim)">
+<h2>Detector and Electronics Simulation (former WFSim)<a class="headerlink" href="#Detector-and-Electronics-Simulation-(former-WFSim)" title="Permalink to this heading">¶</a></h2>
+<p>Now that you know how to run microphysics simulations we can continue with the detector physics, PMT and DAQ simulations. The corresponding plugins can be found in the<code class="docutils literal notranslate"><span class="pre">detector_physics</span></code> and <code class="docutils literal notranslate"><span class="pre">pmt_and_daq</span></code> modules.</p>
+<p>We want to simulate now up to the raw_records level and then process the data with our usual straxen processing routines. To do so, we will use the <code class="docutils literal notranslate"><span class="pre">full_chain_context</span></code> that is prepared in fuse. To build the context you need to provide a config dictionary, we will load our XENONnT SR0 config here. Remember to select an output folder with sufficient free disk space as <code class="docutils literal notranslate"><span class="pre">propagated_s2_photons</span></code> and <code class="docutils literal notranslate"><span class="pre">raw_records</span></code> data can be a bit heavy.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">url_string</span> <span class="o">=</span> <span class="s1">&#39;simple_load://resource://format://fax_config_nt_sr0_v4.json?&amp;fmt=json&#39;</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">URLConfig</span><span class="o">.</span><span class="n">evaluate_dry</span><span class="p">(</span><span class="n">url_string</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [6]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 2&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">      1</span> url_string <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">simple_load://resource://format://fax_config_nt_sr0_v4.json?&amp;fmt=json</span><span style="color: rgb(175,0,0)">&#39;</span>
+<span class="ansi-green-fg">----&gt; 2</span> config <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">URLConfig</span><span style="color: rgb(98,98,98)">.</span>evaluate_dry(url_string)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;URLConfig&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span> <span class="o">=</span> <span class="n">fuse</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">full_chain_context</span><span class="p">(</span><span class="n">out_dir</span> <span class="o">=</span> <span class="s2">&quot;/path/to/output/folder&quot;</span><span class="p">,</span>
+                                     <span class="n">config</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>
+
+<span class="n">st</span><span class="o">.</span><span class="n">set_config</span><span class="p">({</span><span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;/project2/lgrandi/xenonnt/simulations/testing&quot;</span><span class="p">,</span>
+               <span class="s2">&quot;file_name&quot;</span><span class="p">:</span> <span class="s2">&quot;pmt_neutrons_100.root&quot;</span><span class="p">,</span>
+               <span class="s2">&quot;debug&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+               <span class="s2">&quot;source_rate&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+              <span class="p">})</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [7]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> st <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">fuse</span><span style="color: rgb(98,98,98)">.</span>context<span style="color: rgb(98,98,98)">.</span>full_chain_context(out_dir <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">/path/to/output/folder</span><span style="color: rgb(175,0,0)">&#34;</span>,
+<span class="ansi-green-intense-fg ansi-bold">      2</span>                                      config <span style="color: rgb(98,98,98)">=</span> config)
+<span class="ansi-green-intense-fg ansi-bold">      4</span> st<span style="color: rgb(98,98,98)">.</span>set_config({<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">path</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">/project2/lgrandi/xenonnt/simulations/testing</span><span style="color: rgb(175,0,0)">&#34;</span>,
+<span class="ansi-green-intense-fg ansi-bold">      5</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">file_name</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">pmt_neutrons_100.root</span><span style="color: rgb(175,0,0)">&#34;</span>,
+<span class="ansi-green-intense-fg ansi-bold">      6</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">debug</span><span style="color: rgb(175,0,0)">&#34;</span>: <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>,
+<span class="ansi-green-intense-fg ansi-bold">      7</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">source_rate</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(98,98,98)">1</span>,
+<span class="ansi-green-intense-fg ansi-bold">      8</span>               })
+
+<span class="ansi-red-fg">NameError</span>: name &#39;fuse&#39; is not defined
+</pre></div></div>
+</div>
+<section id="Microphysics">
+<h3>Microphysics<a class="headerlink" href="#Microphysics" title="Permalink to this heading">¶</a></h3>
+<p>Just like before we first run the microphysics simulation. Lets make <code class="docutils literal notranslate"><span class="pre">microphysics_summary</span></code> first. Note that you dont need to make every data type manually but let strax take care of it.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">run_number</span> <span class="o">=</span> <span class="s2">&quot;00000&quot;</span>
+
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;microphysics_summary&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [8]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 3&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">      1</span> run_number <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">00000</span><span style="color: rgb(175,0,0)">&#34;</span>
+<span class="ansi-green-fg">----&gt; 3</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">microphysics_summary</span><span style="color: rgb(175,0,0)">&#34;</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+</section>
+<section id="S1-Simulation">
+<h3>S1 Simulation<a class="headerlink" href="#S1-Simulation" title="Permalink to this heading">¶</a></h3>
+<p>After the microphysics simulation is done we can continue and distribute our S1 photons to our PMTs. First we need to determin how many photons are actually recorded at an PMT. This step is quite fast and can be used in fastsim in the future (I guess).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;s1_photons&quot;</span> <span class="p">,</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [9]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">s1_photons</span><span style="color: rgb(175,0,0)">&#34;</span> ,progress_bar <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+<p>In a second step we distribute the photons to our PMTs. The output will be a long list where each row represents a single photon with the information of <code class="docutils literal notranslate"><span class="pre">time</span></code> and <code class="docutils literal notranslate"><span class="pre">channel</span></code>attached. Strax can show you a progress bar during simulation. I found it to be a bit buggy misleading as it shows the fraction of simulated time and not number of interactions.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;propagated_s1_photons&quot;</span> <span class="p">,</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [10]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">propagated_s1_photons</span><span style="color: rgb(175,0,0)">&#34;</span> ,progress_bar <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+</section>
+<section id="S2-Simulations">
+<h3>S2 Simulations<a class="headerlink" href="#S2-Simulations" title="Permalink to this heading">¶</a></h3>
+<p>The S2 simulations are a bit more complicated than the S1 simulation and thus split into more plugins. We first need to drift our electrons to the liquid-gas interface, extract them and calculate the timing of the electrons when reaching the gas phase. Afterwards we can simulate how many photons each electron generates and then distribute the photons on the PMTs. The output of the S2 simulation has basically the same format as the S1 simulation output.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;drifted_electrons&quot;</span><span class="p">,</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;extracted_electrons&quot;</span><span class="p">,</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;electron_time&quot;</span><span class="p">,</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;s2_photons&quot;</span><span class="p">,</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;s2_photons_sum&quot;</span><span class="p">,</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;propagated_s2_photons&quot;</span><span class="p">,</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [11]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">drifted_electrons</span><span style="color: rgb(175,0,0)">&#34;</span>,progress_bar <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+<span class="ansi-green-intense-fg ansi-bold">      2</span> st<span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">extracted_electrons</span><span style="color: rgb(175,0,0)">&#34;</span>,progress_bar <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+<span class="ansi-green-intense-fg ansi-bold">      3</span> st<span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">electron_time</span><span style="color: rgb(175,0,0)">&#34;</span>,progress_bar <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+</section>
+<section id="PMT-Afterpulses">
+<h3>PMT Afterpulses<a class="headerlink" href="#PMT-Afterpulses" title="Permalink to this heading">¶</a></h3>
+<p>Based on the output of the S1 and S2 simulation we can calculate PMT afterpulses. The output will have the same format as the S1 and S2 simulations where each row represents a “virtual” photon with information about channel and timing attached.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;pmt_afterpulses&quot;</span><span class="p">,</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [12]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">pmt_afterpulses</span><span style="color: rgb(175,0,0)">&#34;</span>,progress_bar <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+</section>
+<section id="PMT-and-DAQ">
+<h3>PMT and DAQ<a class="headerlink" href="#PMT-and-DAQ" title="Permalink to this heading">¶</a></h3>
+<p>Combining our S1, S2 and AP simulations we can start to simulate the PMT response to photons and simulate the effects of our DAQ on the PMT output. As a result we get <code class="docutils literal notranslate"><span class="pre">raw_records</span></code> that sould look very similar to the data we get from our real TPC and DAQ!</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;raw_records&quot;</span> <span class="p">,</span> <span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [13]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">raw_records</span><span style="color: rgb(175,0,0)">&#34;</span> , progress_bar <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+</section>
+</section>
+<section id="Processing">
+<h2>Processing<a class="headerlink" href="#Processing" title="Permalink to this heading">¶</a></h2>
+<p>We finished our simulation! Now we can use straxen to process it. All necessary straxen plugins should be already registered in the context.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;event_info&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [14]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">event_info</span><span style="color: rgb(175,0,0)">&#34;</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">event_info</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span> <span class="s2">&quot;event_info&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [15]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> event_info <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>get_df(run_number, <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">event_info</span><span style="color: rgb(175,0,0)">&#34;</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">event_info</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [16]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-yellow-bg">event_info</span><span style="color: rgb(98,98,98)">.</span>head(<span style="color: rgb(98,98,98)">20</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;event_info&#39; is not defined
+</pre></div></div>
+</div>
+<p>If you take a look at the readme of fuse you will find that <code class="docutils literal notranslate"><span class="pre">S1PhotonHits</span></code>, <code class="docutils literal notranslate"><span class="pre">ElectronDrift</span></code>, <code class="docutils literal notranslate"><span class="pre">ElectronExtraction</span></code> and <code class="docutils literal notranslate"><span class="pre">SecondaryScintillation</span></code> produce data with the <code class="docutils literal notranslate"><span class="pre">interactions_in_roi</span></code> data_kind just like e.g. the microphysics_summary. As a result we can load this data togeter. For each interaction cluster we thus have the number of S1 and S2 photons. This can be exploited when integrating fastsim.</p>
+</section>
+<section id="CSV-Input">
+<h2>CSV Input<a class="headerlink" href="#CSV-Input" title="Permalink to this heading">¶</a></h2>
+<p>You can also run the simulation without a Geant4 root file but with simulation instructions in a csv file. Simulation instructions from csv files can be passed to fuse on the microphysics level and on the detector physics level.</p>
+<section id="id1">
+<h3>Microphysics<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>First we need to generate some simulation instructions and save them to a csv file. Below you find two examples, one function generating monoenergetic energy deposits from a gamma source and a second function to mimic Kr83m decays.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="k">def</span> <span class="nf">monoenergetic_source</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">energy</span><span class="p">):</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2500</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;xp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;yp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;zp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">150</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;xp_pri&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;xp&#39;</span><span class="p">]</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;yp_pri&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;yp&#39;</span><span class="p">]</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;zp_pri&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;zp&#39;</span><span class="p">]</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;ed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">energy</span><span class="p">]</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;evtid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="s2">&quot;gamma&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;trackid&quot;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;parentid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;creaproc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;parenttype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;edproc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span>
+
+<span class="k">def</span> <span class="nf">Kr83m_example</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+
+    <span class="n">half_life</span> <span class="o">=</span> <span class="mf">156.94e-9</span> <span class="c1">#Kr intermediate state half-life in ns</span>
+    <span class="n">decay_energies</span> <span class="o">=</span> <span class="p">[</span><span class="mf">32.2</span><span class="p">,</span><span class="mf">9.4</span><span class="p">]</span> <span class="c1"># Decay energies in kev</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2500</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;xp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;yp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;zp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">150</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;xp_pri&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;xp&#39;</span><span class="p">]</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;yp_pri&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;yp&#39;</span><span class="p">]</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;zp_pri&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;zp&#39;</span><span class="p">]</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;ed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">decay_energies</span><span class="p">,</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">exponential</span><span class="p">(</span><span class="n">half_life</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">dt</span><span class="p">)))</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="c1">#*1e9</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;evtid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;parenttype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">([</span><span class="s1">&#39;Kr83[41.557]&#39;</span><span class="p">,</span> <span class="s1">&#39;Kr83[9.405]&#39;</span><span class="p">],</span> <span class="n">n</span><span class="p">)</span>
+
+    <span class="c1">#Not used:</span>
+    <span class="c1"># a) since Kr83m is classified in epix using only the parenttype</span>
+    <span class="c1"># b) trackid, parentid are not used right now.</span>
+    <span class="c1"># Please keep in mind that other &quot;simulations&quot; may require properly set</span>
+    <span class="c1"># edproc, type and creaproc. Future epix updates using e.g. track reconstructions</span>
+    <span class="c1"># may also need proper track- and parent-ids.</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;trackid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;parentid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;creaproc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;edproc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span>
+</pre></div>
+</div>
+</div>
+<p>The time fuse needs to simulate depends on the energy of the signal you put into fuse. The higher the energy the longer fuse needs to simulate. In this example we will simulate 1000 events with an energy of 200 keV.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">microphysics_instructions</span> <span class="o">=</span> <span class="n">monoenergetic_source</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">microphysics_instructions</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;monoenergetic_200keV.csv&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We can use the full_chain_context again as fuse will automatically detect that a csv file is given and treat it accordingly. As our csv file contains a single energy deposit per event, we should set <code class="docutils literal notranslate"><span class="pre">n_interactions_per_chunk</span></code> to something reasonable like 100. Now each chunk will consist of at least 100 events.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span> <span class="o">=</span> <span class="n">fuse</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">full_chain_context</span><span class="p">(</span><span class="n">out_dir</span> <span class="o">=</span> <span class="s2">&quot;/path/to/output/folder&quot;</span><span class="p">,</span>
+                                     <span class="n">config</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>
+
+<span class="n">st</span><span class="o">.</span><span class="n">set_config</span><span class="p">({</span><span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span>
+               <span class="s2">&quot;file_name&quot;</span><span class="p">:</span> <span class="s2">&quot;monoenergetic_200keV.csv&quot;</span><span class="p">,</span>
+               <span class="s2">&quot;debug&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+               <span class="s2">&quot;source_rate&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+               <span class="s2">&quot;n_interactions_per_chunk&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+               <span class="s2">&quot;cut_delayed&quot;</span><span class="p">:</span> <span class="mf">4e14</span><span class="p">,</span>
+              <span class="p">})</span>
+
+<span class="n">run_number</span> <span class="o">=</span> <span class="s2">&quot;00001&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [19]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> st <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">fuse</span><span style="color: rgb(98,98,98)">.</span>context<span style="color: rgb(98,98,98)">.</span>full_chain_context(out_dir <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">/path/to/output/folder</span><span style="color: rgb(175,0,0)">&#34;</span>,
+<span class="ansi-green-intense-fg ansi-bold">      2</span>                                      config <span style="color: rgb(98,98,98)">=</span> config)
+<span class="ansi-green-intense-fg ansi-bold">      4</span> st<span style="color: rgb(98,98,98)">.</span>set_config({<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">path</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">.</span><span style="color: rgb(175,0,0)">&#34;</span>,
+<span class="ansi-green-intense-fg ansi-bold">      5</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">file_name</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">monoenergetic_200keV.csv</span><span style="color: rgb(175,0,0)">&#34;</span>,
+<span class="ansi-green-intense-fg ansi-bold">      6</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">debug</span><span style="color: rgb(175,0,0)">&#34;</span>: <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>,
+<span class="ansi-green-fg">   (...)</span>
+<span class="ansi-green-intense-fg ansi-bold">      9</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">cut_delayed</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(98,98,98)">4e14</span>,
+<span class="ansi-green-intense-fg ansi-bold">     10</span>               })
+<span class="ansi-green-intense-fg ansi-bold">     12</span> run_number <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">00001</span><span style="color: rgb(175,0,0)">&#34;</span>
+
+<span class="ansi-red-fg">NameError</span>: name &#39;fuse&#39; is not defined
+</pre></div></div>
+</div>
+<p>We do not need to run each simulation step manualy, strax will handle that. Lets just ask it to make <code class="docutils literal notranslate"><span class="pre">raw_records</span></code> and then <code class="docutils literal notranslate"><span class="pre">event_info</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;raw_records&quot;</span> <span class="p">,</span> <span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [20]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">raw_records</span><span style="color: rgb(175,0,0)">&#34;</span> , progress_bar <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;event_info&quot;</span> <span class="p">,</span> <span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [21]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">event_info</span><span style="color: rgb(175,0,0)">&#34;</span> , progress_bar <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">event_info_data</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;event_info&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [22]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> event_info_data <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>get_df(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">event_info</span><span style="color: rgb(175,0,0)">&#34;</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+<p>Lets end this subsection with an unnecessary complicated scatterplot.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">gaussian_kde</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">2000</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">15000</span><span class="p">,</span> <span class="mi">60000</span><span class="p">)</span>
+
+<span class="n">xdata</span> <span class="o">=</span> <span class="n">event_info_data</span><span class="p">[</span><span class="s2">&quot;cs1_wo_timecorr&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+<span class="n">ydata</span> <span class="o">=</span> <span class="n">event_info_data</span><span class="p">[</span><span class="s2">&quot;cs2_wo_timecorr&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+<span class="n">xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">xdata</span><span class="p">,</span> <span class="n">ydata</span><span class="p">])</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">gaussian_kde</span><span class="p">(</span><span class="n">xy</span><span class="p">)(</span><span class="n">xy</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span>
+           <span class="n">ydata</span><span class="p">,</span>
+           <span class="n">c</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+           <span class="n">s</span><span class="o">=</span><span class="mf">7.5</span><span class="p">,</span>
+           <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;viridis&quot;</span>
+          <span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;cS1 [pe]&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;cS2 [pe]&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [23]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 9&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-intense-fg ansi-bold">      6</span> ax<span style="color: rgb(98,98,98)">.</span>set_xlim(<span style="color: rgb(98,98,98)">1000</span>, <span style="color: rgb(98,98,98)">2000</span>)
+<span class="ansi-green-intense-fg ansi-bold">      7</span> ax<span style="color: rgb(98,98,98)">.</span>set_ylim(<span style="color: rgb(98,98,98)">15000</span>, <span style="color: rgb(98,98,98)">60000</span>)
+<span class="ansi-green-fg">----&gt; 9</span> xdata <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">event_info_data</span>[<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">cs1_wo_timecorr</span><span style="color: rgb(175,0,0)">&#34;</span>]<span style="color: rgb(98,98,98)">.</span>values
+<span class="ansi-green-intense-fg ansi-bold">     10</span> ydata <span style="color: rgb(98,98,98)">=</span> event_info_data[<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">cs2_wo_timecorr</span><span style="color: rgb(175,0,0)">&#34;</span>]<span style="color: rgb(98,98,98)">.</span>values
+<span class="ansi-green-intense-fg ansi-bold">     12</span> xy <span style="color: rgb(98,98,98)">=</span> np<span style="color: rgb(98,98,98)">.</span>vstack([xdata, ydata])
+
+<span class="ansi-red-fg">NameError</span>: name &#39;event_info_data&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/tutorials_Simulation_Refactor_45_1.png" src="../_images/tutorials_Simulation_Refactor_45_1.png" />
+</div>
+</div>
+</section>
+<section id="Detector-Physics">
+<h3>Detector Physics<a class="headerlink" href="#Detector-Physics" title="Permalink to this heading">¶</a></h3>
+<p>Now that we know how to start the microphysics simulation from a csv file we can do the same for the detector physics simulation. The required csv file format is a bit different. You can find a very simple example below.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="k">def</span> <span class="nf">build_random_instructions</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2500</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">130</span><span class="p">,</span> <span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;photons&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span><span class="mi">5000</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;electrons&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span><span class="mi">5000</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;excitons&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;e_field&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">23</span><span class="p">]</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;nestid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">7</span><span class="p">]</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;ed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="c1">#just set the time with respect to the start of the event</span>
+    <span class="c1">#The events will be distributed in time by fuse</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;eventid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">detectorphysics_instructions</span> <span class="o">=</span> <span class="n">build_random_instructions</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">detectorphysics_instructions</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;random_detectorphysics_instructions.csv&quot;</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We can now set up the simulation context. As i was to lazy to set up a context for this use case yet i just hijack the <code class="docutils literal notranslate"><span class="pre">full_chain_context</span></code> and register the <code class="docutils literal notranslate"><span class="pre">ChunkCsvInput</span></code> plugin.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span> <span class="o">=</span> <span class="n">fuse</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">full_chain_context</span><span class="p">(</span><span class="n">out_dir</span> <span class="o">=</span> <span class="s2">&quot;/path/to/output/folder&quot;</span><span class="p">,</span>
+                                     <span class="n">config</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>
+
+
+<span class="n">st</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">fuse</span><span class="o">.</span><span class="n">detector_physics</span><span class="o">.</span><span class="n">ChunkCsvInput</span><span class="p">)</span>
+
+<span class="n">st</span><span class="o">.</span><span class="n">set_config</span><span class="p">({</span><span class="s2">&quot;input_file&quot;</span><span class="p">:</span> <span class="s2">&quot;./random_detectorphysics_instructions.csv&quot;</span><span class="p">,</span>
+               <span class="s2">&quot;debug&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+               <span class="s2">&quot;source_rate&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+               <span class="s2">&quot;n_interactions_per_chunk&quot;</span><span class="p">:</span> <span class="mi">25</span><span class="p">,</span>
+              <span class="p">})</span>
+
+<span class="n">run_number</span> <span class="o">=</span> <span class="s2">&quot;00002&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [26]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> st <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">fuse</span><span style="color: rgb(98,98,98)">.</span>context<span style="color: rgb(98,98,98)">.</span>full_chain_context(out_dir <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">/path/to/output/folder</span><span style="color: rgb(175,0,0)">&#34;</span>,
+<span class="ansi-green-intense-fg ansi-bold">      2</span>                                      config <span style="color: rgb(98,98,98)">=</span> config)
+<span class="ansi-green-intense-fg ansi-bold">      5</span> st<span style="color: rgb(98,98,98)">.</span>register(fuse<span style="color: rgb(98,98,98)">.</span>detector_physics<span style="color: rgb(98,98,98)">.</span>ChunkCsvInput)
+<span class="ansi-green-intense-fg ansi-bold">      7</span> st<span style="color: rgb(98,98,98)">.</span>set_config({<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">input_file</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">./random_detectorphysics_instructions.csv</span><span style="color: rgb(175,0,0)">&#34;</span>,
+<span class="ansi-green-intense-fg ansi-bold">      8</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">debug</span><span style="color: rgb(175,0,0)">&#34;</span>: <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>,
+<span class="ansi-green-intense-fg ansi-bold">      9</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">source_rate</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(98,98,98)">1</span>,
+<span class="ansi-green-intense-fg ansi-bold">     10</span>                <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">n_interactions_per_chunk</span><span style="color: rgb(175,0,0)">&#34;</span>: <span style="color: rgb(98,98,98)">25</span>,
+<span class="ansi-green-intense-fg ansi-bold">     11</span>               })
+
+<span class="ansi-red-fg">NameError</span>: name &#39;fuse&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;raw_records&quot;</span> <span class="p">,</span> <span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [27]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">raw_records</span><span style="color: rgb(175,0,0)">&#34;</span> , progress_bar <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;event_info&quot;</span> <span class="p">,</span> <span class="n">progress_bar</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [28]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>make(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">event_info</span><span style="color: rgb(175,0,0)">&#34;</span> , progress_bar <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">event_info_data</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="n">run_number</span><span class="p">,</span><span class="s2">&quot;event_info&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [29]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> event_info_data <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">st</span><span style="color: rgb(98,98,98)">.</span>get_df(run_number,<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">event_info</span><span style="color: rgb(175,0,0)">&#34;</span>)
+
+<span class="ansi-red-fg">NameError</span>: name &#39;st&#39; is not defined
+</pre></div></div>
+</div>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">XENON fuse</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Setup and basics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setting up fuse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation_chain.html">Simulation Chain</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../microphysics_simulation.html">Microphysics Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../detector_physics.html">Detector Physics Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pmt_and_daq.html">PMT and DAQ Simulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using XENON fuse</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Microphysics Plugins</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../plugins/ChunkInput.html">ChunkInput</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../pmt_and_daq.html" title="previous chapter">PMT and DAQ Simulation</a></li>
+      <li>Next: <a href="../plugins/ChunkInput.html" title="next chapter">ChunkInput</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Henning Schulze Eißing.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../_sources/tutorials/Simulation_Refactor.ipynb.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
