@@ -22,7 +22,7 @@ class ChunkCsvInput(strax.Plugin):
 
     depends_on = tuple()
     provides = "microphysics_summary"
-    data_kind = "clustered_interactions"
+    data_kind = "interactions_in_roi"
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -42,7 +42,7 @@ class ChunkCsvInput(strax.Plugin):
              ('e_field', np.float32),
              ('ed', np.float32),
              ('nestid', np.int32),
-             ('t', np.int32), #Remove them later as they are not in the usual micropyhsics summary
+             ('t', np.int64), #Remove them later as they are not in the usual micropyhsics summary
              ('eventid', np.int32),#Remove them later as they are not in the usual micropyhsics summary
             ]
     dtype = dtype + strax.time_fields
@@ -66,7 +66,9 @@ class ChunkCsvInput(strax.Plugin):
 
     source_rate = straxen.URLConfig(
         default=1, type=(int, float),
-        help='source_rate',
+        help='Source rate used to generate event times'
+             'Use a value >0 to generate event times in fuse'
+             'Use source_rate = 0 to use event times from the input file (only for csv input)',
     )
 
     n_interactions_per_chunk = straxen.URLConfig(
@@ -175,7 +177,7 @@ class csv_file_loader():
                       ('e_field', np.float32),
                       ('ed', np.float32),
                       ('nestid', np.int32),
-                      ('t', np.int32), #Remove them later as they are not in the usual micropyhsics summary
+                      ('t', np.int64), #Remove them later as they are not in the usual micropyhsics summary
                       ('eventid', np.int32),#Remove them later as they are not in the usual micropyhsics summary
                       ]
         self.dtype = self.dtype + strax.time_fields
@@ -191,15 +193,21 @@ class csv_file_loader():
         instructions, n_simulated_events = self.__load_csv_file()
 
         #Assign event times and dynamic chunking
-        event_times = self.rng.uniform(low = 0,
-                                        high = n_simulated_events/self.event_rate,
-                                        size = n_simulated_events
-                                        ).astype(np.int64)
-        event_times = np.sort(event_times)
+        if self.event_rate > 0:
+            event_times = self.rng.uniform(low = 0,
+                                            high = n_simulated_events/self.event_rate,
+                                            size = n_simulated_events
+                                            ).astype(np.int64)
+            event_times = np.sort(event_times)
 
-        structure = np.unique(instructions["eventid"], return_counts = True)[1]
-        interaction_time = np.repeat(event_times[:len(structure)], structure)
-        instructions["time"] = interaction_time + instructions["t"]
+            structure = np.unique(instructions["eventid"], return_counts = True)[1]
+            interaction_time = np.repeat(event_times[:len(structure)], structure)
+            instructions["time"] = interaction_time + instructions["t"]
+        elif self.event_rate == 0:
+            instructions["time"] = instructions["t"]
+            log.debug("Using event times from provided input file.")
+        else:
+            raise ValueError("Source rate cannot be negative!")
 
         sort_idx = np.argsort(instructions["time"])
         instructions = instructions[sort_idx]
