@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>S1PhotonHits &#8212; XENON fuse 0.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=039e1c02" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=525cde36"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="S1PhotonPropagation" href="S1PhotonPropagation.html" />
+    <link rel="prev" title="MicrophysicsSummary" href="../micro_physics/MicrophysicsSummary.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="s1photonhits">
+<h1>S1PhotonHits<a class="headerlink" href="#s1photonhits" title="Permalink to this heading">¶</a></h1>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">XENON fuse</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Setup and basics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">Setting up fuse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation_chain.html">Simulation Chain</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../microphysics_simulation.html">Microphysics Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../detector_physics.html">Detector Physics Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../pmt_and_daq.html">PMT and DAQ Simulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/Simulation_Refactor.html">Using XENON fuse</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Microphysics Plugins</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../micro_physics/ChunkInput.html">ChunkInput</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../micro_physics/FindCluster.html">FindCluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../micro_physics/MergeCluster.html">MergeCluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../micro_physics/XENONnT_TPC.html">XENONnT_TPC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../micro_physics/XENONnT_BelowCathode.html">XENONnT_BelowCathode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../micro_physics/VolumesMerger.html">VolumesMerger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../micro_physics/ElectricField.html">ElectricField</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../micro_physics/NestYields.html">NestYields</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../micro_physics/MicrophysicsSummary.html">MicrophysicsSummary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Detector Physics Plugins</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">S1PhotonHits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="S1PhotonPropagation.html">S1PhotonPropagation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ElectronDrift.html">ElectronDrift</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ElectronExtraction.html">ElectronExtraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ElectronTiming.html">ElectronTiming</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SecondaryScintillation.html">SecondaryScintillation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="S2PhotonPropagation.html">S2PhotonPropagation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Delayed_Electrons.html">Delayed Electrons</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../micro_physics/MicrophysicsSummary.html" title="previous chapter">MicrophysicsSummary</a></li>
+      <li>Next: <a href="S1PhotonPropagation.html" title="next chapter">S1PhotonPropagation</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Henning Schulze Eißing.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../../_sources/plugins/detector_physics/S1PhotonHits.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
