@@ -1,0 +1,2 @@
+Deterministic Random Seed
+=========================

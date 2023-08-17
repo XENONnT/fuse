@@ -1,8 +1,3 @@
-.. XENON fuse documentation master file, created by
-   sphinx-quickstart on Wed Aug 16 16:06:00 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to the documentation of XENON fuse!
 ===========================================
 
@@ -36,38 +31,10 @@ a flexible way to add new features.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Microphysics Plugins
+   :caption: Technical Features
    
-   plugins/micro_physics/ChunkInput
-   plugins/micro_physics/FindCluster
-   plugins/micro_physics/MergeCluster
-   plugins/micro_physics/XENONnT_TPC
-   plugins/micro_physics/XENONnT_BelowCathode
-   plugins/micro_physics/VolumesMerger
-   plugins/micro_physics/ElectricField
-   plugins/micro_physics/NestYields
-   plugins/micro_physics/MicrophysicsSummary
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Detector Physics Plugins
-   
-   plugins/detector_physics/S1PhotonHits
-   plugins/detector_physics/S1PhotonPropagation
-   plugins/detector_physics/ElectronDrift
-   plugins/detector_physics/ElectronExtraction
-   plugins/detector_physics/ElectronTiming
-   plugins/detector_physics/SecondaryScintillation
-   plugins/detector_physics/S2PhotonPropagation
-   plugins/detector_physics/Delayed_Electrons
-
-.. toctree::
-   :maxdepth: 1
-   :caption: PMT and DAQ Plugins
-   
-   plugins/pmt_and_daq/PMTAfterPulses
-   plugins/pmt_and_daq/PhotonSummary
-   plugins/pmt_and_daq/PMTResponseAndDAQ
+   tech_features/DeterministicSeed
+   tech_features/DynamicChunking
 
 .. Indices and tables
 .. ==================
