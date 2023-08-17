@@ -5,25 +5,27 @@ import logging
 
 from numba import njit
 from scipy.stats import skewnorm
-from scipy.interpolate import interp1d
+from scipy import constants
 
-from strax import deterministic_hash
 export, __all__ = strax.exporter()
 
-from ...common import DummyMap, loop_uniform_to_pe_arr, FUSE_PLUGIN_TIMEOUT
+from ...common import DummyMap, init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output, FUSE_PLUGIN_TIMEOUT
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('fuse.detector_physics.S2_Signal')
+log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
 
+conversion_to_bar = 1/constants.elementary_charge / 1e1
 
 @export
-class S2PhotonPropagation(strax.Plugin):
+class S2PhotonPropagationBase(strax.Plugin):
     
     __version__ = "0.0.0"
     
     depends_on = ("s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
     provides = "propagated_s2_photons"
     data_kind = "S2_photons"
+
+    #dtype is the same for S1 and S2
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -38,7 +40,7 @@ class S2PhotonPropagation(strax.Plugin):
             ]
     dtype = dtype + strax.time_fields
 
-    #Config options
+    #Config options shared by S1 and S2 simulation 
     debug = straxen.URLConfig(
         default=False, type=bool,track=False,
         help='Show debug informations',
@@ -53,63 +55,10 @@ class S2PhotonPropagation(strax.Plugin):
         type=(int, float),
         help='pmt_transit_time_spread',
     )
-    
+
     pmt_transit_time_mean = straxen.URLConfig(
         type=(int, float),
         help='pmt_transit_time_mean',
-    )
-
-    triplet_lifetime_gas = straxen.URLConfig(
-        type=(int, float),
-        help='triplet_lifetime_gas',
-    )
-
-    singlet_lifetime_gas = straxen.URLConfig(
-        type=(int, float),
-        help='singlet_lifetime_gas',
-    )
-
-    triplet_lifetime_liquid = straxen.URLConfig(
-        type=(int, float),
-        help='triplet_lifetime_liquid',
-    )
-
-    singlet_lifetime_liquid = straxen.URLConfig(
-        type=(int, float),
-        help='singlet_lifetime_liquid',
-    )
-
-    s2_time_spread = straxen.URLConfig(
-        type=(int, float),
-        help='s2_time_spread',
-    )
-
-    s2_time_model = straxen.URLConfig(
-        help='s2_time_model',
-    )
-
-    singlet_fraction_gas = straxen.URLConfig(
-        type=(int, float),
-        help='singlet_fraction_gas',
-    )
-    #needed as config?
-    phase_s2 = straxen.URLConfig(
-        default="gas",
-        help='phase_s2',
-    )
-
-    s2_luminescence_model = straxen.URLConfig(
-        help='s2_luminescence_model',
-    )
-
-    drift_velocity_liquid = straxen.URLConfig(
-        type=(int, float),
-        help='drift_velocity_liquid',
-    )
-
-    tpc_length = straxen.URLConfig(
-        type=(int, float),
-        help='tpc_length',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -127,11 +76,6 @@ class S2PhotonPropagation(strax.Plugin):
         help='digitizer_voltage_range',
     )
 
-    tpc_radius = straxen.URLConfig(
-        type=(int, float),
-        help='tpc_radius',
-    )
-
     n_top_pmts = straxen.URLConfig(
         type=(int),
         help='Number of PMTs on top array',
@@ -140,6 +84,37 @@ class S2PhotonPropagation(strax.Plugin):
     n_tpc_pmts = straxen.URLConfig(
         type=(int),
         help='Number of PMTs in the TPC',
+    )
+
+    gains = straxen.URLConfig(
+        cache=True,
+        help='pmt gains',
+    )
+
+    photon_area_distribution = straxen.URLConfig(
+        cache=True,
+        help='photon_area_distribution',
+    )
+
+    #Config options specific to S2 simulation
+    phase_s2 = straxen.URLConfig(
+        default="gas",
+        help='phase_s2',
+    )
+
+    drift_velocity_liquid = straxen.URLConfig(
+        type=(int, float),
+        help='drift_velocity_liquid',
+    )
+
+    tpc_length = straxen.URLConfig(
+        type=(int, float),
+        help='tpc_length',
+    )
+
+    tpc_radius = straxen.URLConfig(
+        type=(int, float),
+        help='tpc_radius',
     )
 
     diffusion_constant_transverse = straxen.URLConfig(
@@ -161,38 +136,39 @@ class S2PhotonPropagation(strax.Plugin):
         help='enable_field_dependencies',
     )
     
-    gains = straxen.URLConfig(
-        cache=True,
-        help='pmt gains',
-    )
-    
     s2_pattern_map = straxen.URLConfig(
         cache=True,
         help='s2_pattern_map',
     )
-    
-    photon_area_distribution = straxen.URLConfig(
-        cache=True,
-        help='photon_area_distribution',
-    )
-    
-    s2_optical_propagation_spline = straxen.URLConfig(
-        cache=True,
-        help='s2_optical_propagation_spline',
-    )
-    
-    s2_luminescence_map = straxen.URLConfig(
-        cache=True,
-        help='s2_luminescence_map',
-    )
-    
-    garfield_gas_gap_map = straxen.URLConfig(
-        cache=True,
-        help='garfield_gas_gap_map',
-    )
+
     #stupid naming problem...
     field_dependencies_map_tmp = straxen.URLConfig(
         help='field_dependencies_map',
+    )
+
+    singlet_fraction_gas = straxen.URLConfig(
+        type=(int, float),
+        help='singlet_fraction_gas',
+    )
+
+    triplet_lifetime_gas = straxen.URLConfig(
+        type=(int, float),
+        help='triplet_lifetime_gas',
+    )
+
+    singlet_lifetime_gas = straxen.URLConfig(
+        type=(int, float),
+        help='singlet_lifetime_gas',
+    )
+
+    triplet_lifetime_liquid = straxen.URLConfig(
+        type=(int, float),
+        help='triplet_lifetime_liquid',
+    )
+
+    singlet_lifetime_liquid = straxen.URLConfig(
+        type=(int, float),
+        help='singlet_lifetime_liquid',
     )
 
     deterministic_seed = straxen.URLConfig(
@@ -223,6 +199,10 @@ class S2PhotonPropagation(strax.Plugin):
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
         
+        #I dont like this part -> clean up before merging the PR
+        self._cached_uniform_to_pe_arr = {}
+        self.__uniform_to_pe_arr = init_spe_scaling_factor_distributions(self.photon_area_distribution)
+
         #Move this part into a nice URLConfig protocol?
         # Field dependencies 
         if any(self.enable_field_dependencies.values()):
@@ -237,11 +217,6 @@ class S2PhotonPropagation(strax.Plugin):
                 r = np.sqrt(xy[:, 0]**2 + xy[:, 1]**2)
                 return self.field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
             self.field_dependencies_map = rz_map
-
-            
-        self._cached_uniform_to_pe_arr = {}
-        self.__uniform_to_pe_arr = self.init_spe_scaling_factor_distributions()
-
 
     def compute(self, individual_electrons, interactions_in_roi):
 
@@ -271,29 +246,25 @@ class S2PhotonPropagation(strax.Plugin):
         #Do i want to save both -> timings with and without pmt transition time spread?
         # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
         # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-        _photon_timings += self.rng.normal(self.pmt_transit_time_mean,
-                                            self.pmt_transit_time_spread / 2.35482,
-                                            len(_photon_timings)).astype(np.int64)
-        _photon_is_dpe = self.rng.binomial(n=1,
-                                            p=self.p_double_pe_emision,
-                                            size=len(_photon_timings)).astype(np.bool_)
-        _photon_gains = self.gains[_photon_channels] \
-            * loop_uniform_to_pe_arr(self.rng.random(len(_photon_channels)), _photon_channels, self.__uniform_to_pe_arr)
+        _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
+            _photon_timings=_photon_timings,
+            _photon_channels=_photon_channels,
+            pmt_transit_time_mean=self.pmt_transit_time_mean,
+            pmt_transit_time_spread=self.pmt_transit_time_spread,
+            p_double_pe_emision=self.p_double_pe_emision,
+            gains=self.gains,
+            __uniform_to_pe_arr=self.__uniform_to_pe_arr,
+            rng=self.rng,
+            )
 
-        # Add some double photoelectron emission by adding another sampled gain
-        n_double_pe = _photon_is_dpe.sum()
-        _photon_gains[_photon_is_dpe] += self.gains[_photon_channels[_photon_is_dpe]] \
-            * loop_uniform_to_pe_arr(self.rng.random(n_double_pe), _photon_channels[_photon_is_dpe], self.__uniform_to_pe_arr) 
-
-        
-        #we may need to sort this output by time and channel??
-        result = np.zeros(len(_photon_channels), dtype = self.dtype)
-        result["channel"] = _photon_channels
-        result["time"] = _photon_timings
-        result["endtime"] = _photon_timings
-        result["dpe"] = _photon_is_dpe
-        result["photon_gain"] = _photon_gains
-        
+        result = build_photon_propagation_output(
+            dtype=self.dtype,
+            _photon_timings=_photon_timings,
+            _photon_channels=_photon_channels,
+            _photon_gains=_photon_gains,
+            _photon_is_dpe=_photon_is_dpe,
+            )
+    
         return result
     
        
@@ -403,37 +374,6 @@ class S2PhotonPropagation(strax.Plugin):
             n0 += ne
 
         return pattern
-    
-    
-    def photon_timings(self, positions, n_photons, _photon_channels):
-        
-        if self.s2_luminescence_model == "simple":
-            print("Not Implemented!")
-            #_photon_timings = luminescence_timings_simple(positions, n_photons_per_xy)
-        elif self.s2_luminescence_model == "garfield":
-            print("Not Implemented!")
-        elif self.s2_luminescence_model == "garfield_gas_gap":
-            _photon_timings = self.luminescence_timings_garfield_gasgap(positions, n_photons)
-        else:
-            raise KeyError(f"{self.s2_luminescence_model} is not valid! Use 'simple' or 'garfield' or 'garfield_gas_gap'")
-            
-        # Emission Delay
-        _photon_timings += self.singlet_triplet_delays(len(_photon_timings), self.singlet_fraction_gas)
-        
-        # Optical Propagation Delay
-        if "optical_propagation" in self.s2_time_model:
-            # optical propagation splitting top and bottom
-            _photon_timings += self.optical_propagation(_photon_channels)
-        elif "zero_delay" in self.s2_time_model:
-            # no optical propagation delay
-            _photon_timings += np.zeros_like(_photon_timings, dtype=np.int64)
-        elif "s2_time_spread around zero" in self.s2_time_model:
-            # simple/existing delay
-            _photon_timings += self.rng.normal(0, self.s2_time_spread, len(_photon_timings)).astype(np.int64)
-        else:
-            raise KeyError(f"{self.s2_time_model} is not in any of the valid s2 time models")
-        
-        return _photon_timings
 
     def singlet_triplet_delays(self, size, singlet_ratio):
         """
@@ -456,24 +396,52 @@ class S2PhotonPropagation(strax.Plugin):
         delay = self.rng.choice([t1, t3], size, replace=True,
                                  p=[singlet_ratio, 1 - singlet_ratio])
         return (self.rng.exponential(1, size) * delay).astype(np.int64)
+    
+    def photon_timings(self, positions, n_photons, _photon_channels):
+        raise NotImplementedError # This is implemented in the child class
 
     
-    def optical_propagation(self, channels):
-        """Function getting times from s2 timing splines:
-        :param channels: The channels of all s2 photon
-        """
-        prop_time = np.zeros_like(channels)
-        u_rand = self.rng.random(len(channels))[:, None]
-
-        is_top = channels < self.n_top_pmts
-        prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name='top')
-
-        is_bottom = channels >= self.n_top_pmts
-        prop_time[is_bottom] = self.s2_optical_propagation_spline(u_rand[is_bottom], map_name='bottom')
-
-        return prop_time.astype(np.int64)
+@export
+class S2PhotonPropagation(S2PhotonPropagationBase):
+    """
+    This class is used to simulate the propagation of photons from an S2 signal using 
+    luminescence timing from garfield gasgap, singlet and tripled delays and optical propagation
+    """
+    __version__ = "0.0.0"
     
-    
+    child_plugin = True
+
+    s2_luminescence_map = straxen.URLConfig(
+        cache=True,
+        help='s2_luminescence_map',
+    )
+
+    garfield_gas_gap_map = straxen.URLConfig(
+        cache=True,
+        help='garfield_gas_gap_map',
+    )
+
+    s2_optical_propagation_spline = straxen.URLConfig(
+        cache=True,
+        help='s2_optical_propagation_spline',
+    )
+
+    def setup(self):
+        super().setup()
+        log.debug("Using Garfield GasGap luminescence timing and optical propagation")
+
+    def photon_timings(self, positions, n_photons, _photon_channels):
+
+        _photon_timings = self.luminescence_timings_garfield_gasgap(positions, n_photons)
+
+        # Emission Delay
+        _photon_timings += self.singlet_triplet_delays(len(_photon_timings), self.singlet_fraction_gas)
+        
+        # Optical Propagation Delay
+        _photon_timings += self.optical_propagation(_photon_channels)
+        
+        return _photon_timings
+
     def luminescence_timings_garfield_gasgap(self, xy, n_photons):
         """
         Luminescence time distribution computation according to garfield scintillation maps
@@ -498,46 +466,161 @@ class S2PhotonPropagation(strax.Plugin):
                                      d_gasgap,
                                      self.rng
                                     )
+
+    def optical_propagation(self, channels):
+        """Function getting times from s2 timing splines:
+        :param channels: The channels of all s2 photon
+        """
+        prop_time = np.zeros_like(channels)
+        u_rand = self.rng.random(len(channels))[:, None]
+
+        is_top = channels < self.n_top_pmts
+        prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name='top')
+
+        is_bottom = channels >= self.n_top_pmts
+        prop_time[is_bottom] = self.s2_optical_propagation_spline(u_rand[is_bottom], map_name='bottom')
+
+        return prop_time.astype(np.int64)
+
+@export
+class S2PhotonPropagationSimple(S2PhotonPropagationBase):
+    """
+    This class is used to simulate the propagation of photons from an S2 signal using 
+    the simple liminescence model, singlet and tripled delays and optical propagation
+    """
+    __version__ = "0.0.0"
     
-    def init_spe_scaling_factor_distributions(self):
-        #This code will be duplicate with the corresponding S2 class 
-        # Improve!!
-        config="PLACEHOLDER_FIX_THIS_PART"
-        h = deterministic_hash(config) # What is this part doing?
-        #if h in self._cached_uniform_to_pe_arr:
-        #    __uniform_to_pe_arr = self._cached_uniform_to_pe_arr[h]
-        #    return __uniform_to_pe_arr
+    child_plugin = True
 
-        # Extract the spe pdf from a csv file into a pandas dataframe
-        spe_shapes = self.photon_area_distribution
+    pressure = straxen.URLConfig(
+        type=(int, float),
+        help='pressure',
+    )
 
-        # Create a converter array from uniform random numbers to SPE gains (one interpolator per channel)
-        # Scale the distributions so that they have an SPE mean of 1 and then calculate the cdf
-        uniform_to_pe_arr = []
-        for ch in spe_shapes.columns[1:]:  # skip the first element which is the 'charge' header
-            if spe_shapes[ch].sum() > 0:
-                # mean_spe = (spe_shapes['charge'].values * spe_shapes[ch]).sum() / spe_shapes[ch].sum()
-                scaled_bins = spe_shapes['charge'].values  # / mean_spe
-                cdf = np.cumsum(spe_shapes[ch]) / np.sum(spe_shapes[ch])
-            else:
-                # if sum is 0, just make some dummy axes to pass to interpolator
-                cdf = np.linspace(0, 1, 10)
-                scaled_bins = np.zeros_like(cdf)
+    temperature = straxen.URLConfig(
+        type=(int, float),
+        help='temperature',
+    )
 
-            grid_cdf = np.linspace(0, 1, 2001)
-            grid_scale = interp1d(cdf, scaled_bins,
-                                  kind='next',
-                                  bounds_error=False,
-                                  fill_value=(scaled_bins[0], scaled_bins[-1]))(grid_cdf)
+    gas_drift_velocity_slope = straxen.URLConfig(
+        type=(int, float),
+        help='gas_drift_velocity_slope',
+    )
 
-            uniform_to_pe_arr.append(grid_scale)
+    enable_gas_gap_warping = straxen.URLConfig(
+        type=(int, float),
+        help='enable_gas_gap_warping',
+    )
 
-        if len(uniform_to_pe_arr):
-            __uniform_to_pe_arr = np.stack(uniform_to_pe_arr)
-            self._cached_uniform_to_pe_arr[h] = __uniform_to_pe_arr
+    elr_gas_gap_length = straxen.URLConfig(
+        type=(int, float),
+        help='elr_gas_gap_length',
+    )
 
-        log.debug('Spe scaling factors created, cached with key %s' % h)
-        return __uniform_to_pe_arr
+    gas_gap_map = straxen.URLConfig(
+        cache=True,
+        help='gas_gap_map',
+    )
+
+    anode_field_domination_distance = straxen.URLConfig(
+        type=(int, float),
+        help='anode_field_domination_distance',
+    )
+
+    anode_wire_radius = straxen.URLConfig(
+        type=(int, float),
+        help='anode_wire_radius',
+    )
+
+    gate_to_anode_distance = straxen.URLConfig(
+        type=(int, float),
+        help='gate_to_anode_distance',
+    )
+
+    anode_voltage = straxen.URLConfig(
+        type=(int, float),
+        help='anode_voltage',
+    )
+
+    lxe_dielectric_constant = straxen.URLConfig(
+        type=(int, float),
+        help='lxe_dielectric_constant',
+    )
+
+    s2_optical_propagation_spline = straxen.URLConfig(
+        cache=True,
+        help='s2_optical_propagation_spline',
+    )
+
+    def setup(self):
+        super().setup()
+        log.debug("Using simple luminescence timing and optical propagation")
+        log.warn("This is a legacy option, do you really want to use the simple luminescence model?")
+
+    def photon_timings(self, positions, n_photons, _photon_channels):
+
+        _photon_timings = self.luminescence_timings_simple(positions, n_photons)
+
+        # Emission Delay
+        _photon_timings += self.singlet_triplet_delays(len(_photon_timings), self.singlet_fraction_gas)
+        
+        # Optical Propagation Delay
+        _photon_timings += self.optical_propagation(_photon_channels)
+        
+        return _photon_timings
+
+    def luminescence_timings_simple(self, xy, n_photons):
+
+        """
+        Luminescence time distribution computation according to simple s2 model (many many many single electrons)
+        :param xy: 1d array with positions
+        :param n_photons: 1d array with ints for number of xy positions
+        :param config: dict wfsim config
+        :param resource: instance of wfsim resource
+        returns _luminescence_timings_simple
+        """
+        assert len(n_photons) == len(xy), 'Input number of n_photons should have same length as positions'
+
+        number_density_gas = self.pressure / \
+            (constants.Boltzmann/constants.elementary_charge * self.temperature)
+        alpha = self.gas_drift_velocity_slope / number_density_gas
+        uE = 1000 / 1 #V/cm
+        pressure = self.pressure / conversion_to_bar
+
+        if self.enable_gas_gap_warping:
+            dG = self.gas_gap_map.lookup(*xy.T)
+            dG = np.ma.getdata(dG) #Convert from masked array to ndarray?
+        else:
+            dG = np.ones(len(xy)) * self.elr_gas_gap_length
+        rA = self.anode_field_domination_distance
+        rW = self.anode_wire_radius
+        dL = self.gate_to_anode_distance - dG
+
+        VG = self.anode_voltage / (1 + dL / dG / self.lxe_dielectric_constant)
+        E0 = VG / ((dG - rA) / rA + np.log(rA / rW))  # V / cm
+
+        dr = 0.0001  # cm
+        r = np.arange(np.max(dG), rW, -dr)
+        rr = np.clip(1 / r, 1 / rA, 1 / rW)
+
+        return _luminescence_timings_simple(len(xy), dG, E0, 
+                                            r, dr, rr, alpha, uE,
+                                            pressure, n_photons)
+
+    def optical_propagation(self, channels):
+        """Function getting times from s2 timing splines:
+        :param channels: The channels of all s2 photon
+        """
+        prop_time = np.zeros_like(channels)
+        u_rand = self.rng.random(len(channels))[:, None]
+
+        is_top = channels < self.n_top_pmts
+        prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name='top')
+
+        is_bottom = channels >= self.n_top_pmts
+        prop_time[is_bottom] = self.s2_optical_propagation_spline(u_rand[is_bottom], map_name='bottom')
+
+        return prop_time.astype(np.int64)
 
 @njit
 def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap, rng):
@@ -586,3 +669,40 @@ def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_ga
         timings[count:count+n] = T
         count+=n
     return timings
+
+@njit
+def _luminescence_timings_simple(
+    n,
+    dG,
+    E0,
+    r,
+    dr,
+    rr,
+    alpha,
+    uE,
+    p,
+    n_photons,
+    rng,
+    ):
+    """
+    Luminescence time distribution computation, calculates emission timings of photons from the excited electrons
+    return 1d nested array with ints
+    """
+    emission_time = np.zeros(np.sum(n_photons), np.int64)
+
+    ci = 0
+    for i in range(n):
+        npho = n_photons[i]
+        dt = dr / (alpha * E0[i] * rr)
+        dy = E0[i] * rr / uE - 0.8 * p  # arXiv:physics/0702142
+        avgt = np.sum(np.cumsum(dt) * dy) / np.sum(dy)
+
+        j = np.argmax(r <= dG[i])
+        t = np.cumsum(dt[j:]) - avgt
+        y = np.cumsum(dy[j:])
+
+        probabilities = rng.random(npho)
+        emission_time[ci:ci+npho] = np.interp(probabilities, y / y[-1], t).astype(np.int64)
+        ci += npho
+
+    return emission_time

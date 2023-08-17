@@ -151,8 +151,8 @@ class SecondaryScintillation(strax.Plugin):
         mask = interactions_in_roi["n_electron_extracted"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
-            return dict(s2_photons=np.zeros(0, self.dtype["s2_photons"]),
-                        s2_photons_sum=np.zeros(0, self.dtype["s2_photons_sum"]))
+            return dict(s2_photons=np.empty(0, self.dtype["s2_photons"]),
+                        s2_photons_sum=np.empty(0, self.dtype["s2_photons_sum"]))
         
         positions = np.array([interactions_in_roi[mask]["x"], interactions_in_roi[mask]["y"]]).T
         
@@ -176,9 +176,9 @@ class SecondaryScintillation(strax.Plugin):
         
         result_sum_photons = np.zeros(len(interactions_in_roi), dtype = self.dtype["s2_photons_sum"])
         result_sum_photons["sum_s2_photons"][mask] = sum_photons_per_interaction
-        result_sum_photons["time"][mask] = interactions_in_roi[mask]["time"]
-        result_sum_photons["endtime"][mask] = interactions_in_roi[mask]["endtime"]
-        
+        result_sum_photons["time"] = interactions_in_roi["time"]
+        result_sum_photons["endtime"]= interactions_in_roi["endtime"]
+
         return dict(s2_photons=result_photons,
                     s2_photons_sum=result_sum_photons)
         
