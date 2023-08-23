@@ -113,6 +113,10 @@ class PMTResponseAndDAQ(strax.Plugin):
         help='samples_to_store_before',
     )
 
+    special_thresholds = straxen.URLConfig(
+        help='special_thresholds',
+    )
+
     def setup(self):
 
         if self.debug:
@@ -141,7 +145,12 @@ class PMTResponseAndDAQ(strax.Plugin):
 
         self._pmt_current_templates, _template_length = self.init_pmt_current_templates()
 
-        self.threshold = self.digitizer_reference_baseline - self.zle_threshold - 1
+        threshold = self.digitizer_reference_baseline - self.zle_threshold - 1
+        self.thresholds = threshold = np.ones(494)*threshold #put n pmts into config!
+        for key, value in self.special_thresholds.items():
+            if np.int32(key) < 494:
+                self.thresholds[np.int32(key)] = self.digitizer_reference_baseline - value - 1
+
         self.pulse_left_extension = + int(self.samples_to_store_before)+ self.samples_before_pulse_center
 
     def compute(self, propagated_photons, pulse_windows):
@@ -169,7 +178,7 @@ class PMTResponseAndDAQ(strax.Plugin):
             self.noise_std,
             self.digitizer_reference_baseline,
             self.rng,
-            self.threshold,
+            self.thresholds,
             self.trigger_window
             )
 
@@ -235,7 +244,7 @@ def build_waveform(
     noise_std,
     digitizer_reference_baseline,
     rng,
-    threshold,
+    thresholds,
     trigger_window,
     ):
     
@@ -276,7 +285,7 @@ def build_waveform(
             pulse_waveform_buffer,
             waveform_buffer,
             buffer_level,
-            threshold,
+            thresholds[pulse["channel"]],
             trigger_window,
             pulse["channel"],
             pulse["time"],

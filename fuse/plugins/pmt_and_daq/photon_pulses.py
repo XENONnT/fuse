@@ -32,6 +32,8 @@ class PulseWindow(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
 
+    save_when = strax.SaveWhen.TARGET
+
     #Config options
     debug = straxen.URLConfig(
         default=False, type=bool,track=False,
