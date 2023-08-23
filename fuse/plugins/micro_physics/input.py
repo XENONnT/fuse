@@ -88,7 +88,7 @@ class ChunkInput(strax.Plugin):
     )
 
     n_interactions_per_chunk = straxen.URLConfig(
-        default=1e5, type=(int, float),
+        default=1e4, type=(int, float),
         help='n_interactions_per_chunk',
     )
 

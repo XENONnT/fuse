@@ -222,52 +222,6 @@ def offset_range(offsets):
         i += o
     return res
 
-@numba.jit(numba.int32(numba.int64[:], numba.int64, numba.int64, numba.int64[:, :]),
-           nopython=True)
-def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
-    """Fills result_buffer with l, r bounds of intervals in w < threshold.
-    :param w: Waveform to do hitfinding in
-    :param threshold: Threshold for including an interval
-    :param holdoff: Holdoff number of samples after the pulse return back down to threshold
-    :param result_buffer: numpy N*2 array of ints, will be filled by function.
-                          if more than N intervals are found, none past the first N will be processed.
-    :returns : number of intervals processed
-    Boundary indices are inclusive, i.e. the right boundary is the last index which was < threshold
-    """
-    result_buffer_size = len(result_buffer)
-    last_index_in_w = len(w) - 1
-
-    in_interval = False
-    current_interval = 0
-    current_interval_start = -1
-    current_interval_end = -1
-
-    for i, x in enumerate(w):
-
-        if x < threshold:
-            if not in_interval:
-                # Start of an interval
-                in_interval = True
-                current_interval_start = i
-
-            current_interval_end = i
-
-        if ((i == last_index_in_w and in_interval) or
-                (x >= threshold and i >= current_interval_end + holdoff and in_interval)):
-            # End of the current interval
-            in_interval = False
-
-            # Add bounds to result buffer
-            result_buffer[current_interval, 0] = current_interval_start
-            result_buffer[current_interval, 1] = current_interval_end
-            current_interval += 1
-
-            if current_interval == result_buffer_size:
-                result_buffer[current_interval, 1] = len(w) - 1
-
-    n_intervals = current_interval  # No +1, as current_interval was incremented also when the last interval closed
-    return n_intervals
-
 
 #Code shared between S1 and S2 photon propagation
 def init_spe_scaling_factor_distributions(spe_shapes):

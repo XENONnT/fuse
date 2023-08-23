@@ -59,6 +59,7 @@ full_chain_modules = [fuse.micro_physics.ChunkInput,
                       fuse.detector_physics.S2PhotonPropagation,
                       fuse.pmt_and_daq.PMTAfterPulses,
                       fuse.pmt_and_daq.PhotonSummary,
+                      fuse.pmt_and_daq.PulseWindow,
                       fuse.pmt_and_daq.PMTResponseAndDAQ,
                      ]
 
@@ -180,7 +181,7 @@ def full_chain_context(out_dir, config):
         "pe_pulse_ys": config["pe_pulse_ys"],
         "rext": 100000,
         "special_thresholds": config["special_thresholds"],
-        "noise_data_tmp": 'simple_load://resource://format://'
+        "noise_data": 'simple_load://resource://format://'
                          f'{config["noise_file"]}?'
                           '&fmt=npy',
 
