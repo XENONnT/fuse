@@ -87,9 +87,6 @@ class PulseWindow(strax.Plugin):
                     "pulse_ids" : np.zeros(0, self.dtype["pulse_ids"])}
         
         single_photon_pulses = np.zeros(len(propagated_photons), dtype=strax.interval_dtype)
-
-        #Can be removed if i sort it in photon summary!!
-        propagated_photons = strax.sort_by_time(propagated_photons)
         
         single_photon_pulses["length"] = 22 #get this one from the single photon pmt pulse shape thingy
         single_photon_pulses["dt"] = self.dt

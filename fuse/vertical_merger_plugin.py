@@ -29,11 +29,7 @@ class VerticalMergerPlugin(Plugin):
 
         merged_data = np.concatenate([kwargs[x] for x in kwargs])
 
-        #Sort everything by time
-        sortind = np.argsort(merged_data["time"])
-        merged_data = merged_data[sortind]
-
-        return merged_data
+        return strax.sort_by_time(merged_data)
     
     @staticmethod
     def all_equal(iterable):

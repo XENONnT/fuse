@@ -140,8 +140,8 @@ class PMTResponseAndDAQ(strax.Plugin):
 
         #Lets use normal distributed noise for now. 
         #Check later if we need to add "real measured" noise
-        self.noise_mean = np.mean(self.noise_data['arr_0'], axis=0)
-        self.noise_std = np.std(self.noise_data['arr_0'], axis=0)
+        #self.noise_mean = np.mean(self.noise_data['arr_0'], axis=0)
+        #self.noise_std = np.std(self.noise_data['arr_0'], axis=0)
 
         self._pmt_current_templates, _template_length = self.init_pmt_current_templates()
 
@@ -174,8 +174,9 @@ class PMTResponseAndDAQ(strax.Plugin):
             self.dt,
             self._pmt_current_templates,
             self.current_2_adc,
-            self.noise_mean,
-            self.noise_std,
+            self.noise_data['arr_0'],
+            #self.noise_mean,
+            #self.noise_std,
             self.digitizer_reference_baseline,
             self.rng,
             self.thresholds,
@@ -240,8 +241,9 @@ def build_waveform(
     dt, 
     pmt_current_templates,
     current_2_adc,
-    noise_mean,
-    noise_std,
+    noise_data,
+    #noise_mean,
+    #noise_std,
     digitizer_reference_baseline,
     rng,
     thresholds,
@@ -272,12 +274,14 @@ def build_waveform(
         
         pulse_waveform_buffer = - pulse_waveform_buffer * current_2_adc
         #Add normal distributed noise
-        noise = np.around(rng.normal(noise_mean[pulse["channel"]],
-                                        noise_std[pulse["channel"]],
-                                        size = pulse_length,
-                                        )).astype(np.int64).T
+        #noise = np.around(rng.normal(noise_mean[pulse["channel"]],
+        #                                noise_std[pulse["channel"]],
+        #                                size = pulse_length,
+        #                                )).astype(np.int64).T
+        #pulse_waveform_buffer += noise
 
-        pulse_waveform_buffer += noise
+        #Remember to transpose the noise... 
+        pulse_waveform_buffer = add_noise(pulse_waveform_buffer, pulse["time"], noise_data.T[pulse["channel"]])
 
         add_baseline(pulse_waveform_buffer, digitizer_reference_baseline)
 
@@ -295,6 +299,17 @@ def build_waveform(
 
     return buffer_level
 
+@njit()
+def add_noise(array, time, noise_in_channel):
+
+    time = np.int64(time/10)
+
+    len_data = len(array)
+    len_noise = len(noise_in_channel)
+
+    index = ( time + np.arange(len_data) + 1) % len_noise
+    
+    return array + noise_in_channel[index]
 
 @njit()
 def convert_pulse_to_fragments(
