@@ -73,9 +73,9 @@ class PulseWindow(strax.Plugin):
         else: 
             log.setLevel('WARNING')
 
-        self.pulse_left_extenstion = self.samples_to_store_before + self.samples_before_pulse_center
-        #self.pulse_left_extenstion = 0 #Hmm check again what values make sense here
-        self.pulse_right_extenstion = self.samples_to_store_after + self.samples_after_pulse_center
+        #Lets double the samples_to_store_x values to avoid overlapping records when triggering on noise.. 
+        self.pulse_left_extenstion = np.int64(2*self.samples_to_store_before) + self.samples_before_pulse_center
+        self.pulse_right_extenstion = np.int64(2*self.samples_to_store_after) + self.samples_after_pulse_center
 
     def compute(self, propagated_photons):
 
