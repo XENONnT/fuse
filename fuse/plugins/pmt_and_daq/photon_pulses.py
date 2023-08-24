@@ -34,6 +34,9 @@ class PulseWindow(strax.Plugin):
 
     save_when = strax.SaveWhen.TARGET
 
+    #Forbid rechunking
+    rechunk_on_save = False
+
     #Config options
     debug = straxen.URLConfig(
         default=False, type=bool,track=False,
