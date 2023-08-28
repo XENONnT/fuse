@@ -30,6 +30,8 @@ class PMTResponseAndDAQ(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
 
+    rechunk_on_save = False
+
     #Config options
     debug = straxen.URLConfig(
         default=False, type=bool,track=False,
@@ -117,6 +119,16 @@ class PMTResponseAndDAQ(strax.Plugin):
         help='special_thresholds',
     )
 
+    raw_records_file_size_target = straxen.URLConfig(
+        type=(int, float), default = 200, track=False,
+        help='target for the raw records file size in MB',
+    )
+
+    min_gap_length_for_splitting = straxen.URLConfig(
+        type=(int, float), default = 1e5, track=False,
+        help='chunk can not be split if gap between pulses is smaller than this value given in ns',
+    )
+
     def setup(self):
 
         if self.debug:
@@ -153,32 +165,89 @@ class PMTResponseAndDAQ(strax.Plugin):
 
         self.pulse_left_extension = + int(self.samples_to_store_before)+ self.samples_before_pulse_center
 
-    def compute(self, propagated_photons, pulse_windows):
+    def compute(self, propagated_photons, pulse_windows, start, end):
 
         if len(propagated_photons) == 0 or len(pulse_windows) == 0:
-            return np.zeros(0, dtype=self.dtype)
-        
-        #use an upper limit for the waveform buffer
-        length_waveform_buffer = np.int32(np.sum(np.ceil(pulse_windows["length"]/strax.DEFAULT_RECORD_LENGTH)))
-        waveform_buffer = np.zeros(length_waveform_buffer, dtype = self.dtype)
+            log.debug("No photons or pulse windows found, Last empty chunk!")
 
+            yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
+        
         propagated_photons = propagated_photons[propagated_photons["pulse_id"].argsort()]
         index_values = np.unique(propagated_photons["pulse_id"], return_index=True)[1]
 
-        buffer_level = build_waveform(
+        #Split into "sub-chunks"
+        pulse_gaps = strax.endtime(pulse_windows[1:]) - pulse_windows["time"][:-1] 
+        pulse_gaps = np.append(pulse_gaps, 0) #Add last pulse gap
+
+        split_index = find_split_index(
             pulse_windows,
+            pulse_gaps,
+            file_size_limit = self.raw_records_file_size_target,
+            min_gap_length = self.min_gap_length_for_splitting,
+            )
+        
+        pulse_window_chunks = np.array_split(pulse_windows, split_index)
+        
+        index_chunks = np.array_split(index_values, split_index)
+        n_chunks = len(index_chunks)
+        for i in range(n_chunks):
+            if i < n_chunks-1:
+                index_chunks[i] = np.append(index_chunks[i], index_chunks[i+1][0])
+            else:
+                index_chunks[i] = np.append(index_chunks[i], len(propagated_photons))
+
+        log.debug("Splitting into %d chunks" % n_chunks)
+
+        last_start = start
+
+        if n_chunks>1:
+            for pulse_group, index_group in zip(pulse_window_chunks[:-1], index_chunks[:-1]):
+
+                #use an upper limit for the waveform buffer
+                length_waveform_buffer = np.int32(np.sum(np.ceil(pulse_group["length"]/strax.DEFAULT_RECORD_LENGTH)))
+                waveform_buffer = np.zeros(length_waveform_buffer, dtype = self.dtype)
+
+                buffer_level = build_waveform(
+                    pulse_group,
+                    propagated_photons,
+                    index_group,
+                    waveform_buffer,
+                    self.dt,
+                    self._pmt_current_templates,
+                    self.current_2_adc,
+                    self.noise_data['arr_0'],
+                    self.digitizer_reference_baseline,
+                    self.thresholds,
+                    self.trigger_window
+                    )
+
+                records = waveform_buffer[:buffer_level] 
+
+                #Digitzier saturation
+                #Clip negative values to 0
+                records['data'][records['data']<0] = 0   
+
+                records = strax.sort_by_time(records)
+                    
+                chunk_end = np.max(strax.endtime(records))
+                chunk = self.chunk(start=last_start, end=chunk_end, data=records)
+                last_start = chunk_end
+                yield chunk
+
+        #And the last chunk
+        length_waveform_buffer = np.int32(np.sum(np.ceil(pulse_window_chunks[-1]["length"]/strax.DEFAULT_RECORD_LENGTH)))
+        waveform_buffer = np.zeros(length_waveform_buffer, dtype = self.dtype)
+        
+        buffer_level = build_waveform(
+            pulse_window_chunks[-1],
             propagated_photons,
-            index_values,
+            index_chunks[-1],
             waveform_buffer,
-            self.pulse_left_extension,
             self.dt,
             self._pmt_current_templates,
             self.current_2_adc,
             self.noise_data['arr_0'],
-            #self.noise_mean,
-            #self.noise_std,
             self.digitizer_reference_baseline,
-            self.rng,
             self.thresholds,
             self.trigger_window
             )
@@ -191,7 +260,9 @@ class PMTResponseAndDAQ(strax.Plugin):
 
         records = strax.sort_by_time(records)
 
-        return records
+        chunk = self.chunk(start=last_start, end=end, data=records)
+        yield chunk
+
 
     def init_pmt_current_templates(self):
         """
@@ -232,53 +303,60 @@ class PMTResponseAndDAQ(strax.Plugin):
 
 
 @njit()
+def find_split_index(pulses, gaps, file_size_limit, min_gap_length):
+    
+    data_size_mb = 0
+    split_index = []
+
+    for i, (p, g) in enumerate(zip(pulses, gaps)):
+        #Assumes data is later saved as int16
+        data_size_mb += p["length"] * 2 / 1e6 
+
+        if data_size_mb < file_size_limit: 
+            continue
+
+        if g >= min_gap_length:
+            data_size_mb = 0
+            split_index.append(i)
+
+    return np.array(split_index)+1
+
+
+@njit()
 def build_waveform(
     photon_pulses,
     photons,
     index_values,
     waveform_buffer,
-    pulse_left_extension,
     dt, 
     pmt_current_templates,
     current_2_adc,
     noise_data,
-    #noise_mean,
-    #noise_std,
     digitizer_reference_baseline,
-    rng,
     thresholds,
     trigger_window,
     ):
     
     buffer_level = 0
-    start = index_values
-    stop = np.zeros(len(index_values), dtype = np.int64)
-    stop[:-1] = index_values[1:]
-    stop[-1] = len(photons)
-
+    start = index_values[0:-1]
+    stop = index_values[1:]
+    
     #Iterate over all pulses
-    # for pulse, photons_to_put_into_pulse in zip(photon_pulses, photons_per_pulse):
     for i, pulse in enumerate(photon_pulses):
 
-        pulse_length = pulse["length"] + pulse_left_extension
+        pulse_length = pulse["length"]
         pulse_waveform_buffer = np.zeros(pulse_length)
 
         photons_to_put_into_pulse = photons[start[i]:stop[i]]
             
         add_current(photons_to_put_into_pulse['time'],
                     photons_to_put_into_pulse['photon_gain'],
-                    pulse["time"]//dt-pulse_left_extension,
+                    pulse["time"]//dt,
                     dt,
                     pmt_current_templates,
                     pulse_waveform_buffer)
         
         pulse_waveform_buffer = - pulse_waveform_buffer * current_2_adc
-        #Add normal distributed noise
-        #noise = np.around(rng.normal(noise_mean[pulse["channel"]],
-        #                                noise_std[pulse["channel"]],
-        #                                size = pulse_length,
-        #                                )).astype(np.int64).T
-        #pulse_waveform_buffer += noise
 
         #Remember to transpose the noise... 
         pulse_waveform_buffer = add_noise(pulse_waveform_buffer, pulse["time"], noise_data.T[pulse["channel"]])
@@ -294,7 +372,6 @@ def build_waveform(
             pulse["channel"],
             pulse["time"],
             dt,
-            pulse_left_extension
             )
 
     return buffer_level
@@ -320,8 +397,7 @@ def convert_pulse_to_fragments(
     trigger_window,
     pulse_channel,
     pulse_time,
-    dt,
-    pulse_left_extension
+    dt
     ): 
 
     zle_intervals_buffer = -1 * np.ones((np.int64(len(single_waveform)/2), 2), dtype=np.int64)
@@ -352,7 +428,7 @@ def convert_pulse_to_fragments(
         s = slice(buffer_level, buffer_level + records_needed)
         waveform_buffer['channel'][s] = pulse_channel
         waveform_buffer['data'][s] = waveform_split
-        waveform_buffer['time'][s] =  dt * (pulse_time//dt + interval[0] + strax.DEFAULT_RECORD_LENGTH * np.arange(records_needed)) - 10 * pulse_left_extension
+        waveform_buffer['time'][s] =  dt * (pulse_time//dt + interval[0] + strax.DEFAULT_RECORD_LENGTH * np.arange(records_needed))
         waveform_buffer['dt'][s] = dt
         waveform_buffer['pulse_length'][s] = pulse_length
         waveform_buffer['record_i'][s] = np.arange(records_needed)
