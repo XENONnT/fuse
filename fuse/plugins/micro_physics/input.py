@@ -159,12 +159,13 @@ class ChunkInput(strax.Plugin):
             self.source_done = source_done
 
             return self.chunk(start=chunk_left,
-                          end=chunk_right,
-                          data=chunk_data,
-                          data_type='geant4_interactions')
+                              end=chunk_right,
+                              data=chunk_data,
+                              data_type='geant4_interactions'
+                              )
 
         except StopIteration:
-            raise RuntimeError("Bug in chunk division!")
+            raise RuntimeError("Bug in chunk building!")
 
     
     def source_finished(self):
