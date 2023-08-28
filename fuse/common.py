@@ -18,19 +18,24 @@ def dynamic_chunking(data, scale, n_min):
 
     diff = data_sorted[1:] - data_sorted[:-1]
 
-    clusters = np.array([0])
+    clusters = [0]
     c = 0
+    n_cluster = 0
     for value in diff:
         if value <= scale:
-            clusters = np.append(clusters, c)
-            
-        elif len(clusters[clusters == c]) < n_min:
-            clusters = np.append(clusters, c)
+            clusters.append(c)
+            n_cluster += 1
+
+        elif n_cluster+1 < n_min:
+            clusters.append(c)
+            n_cluster += 1
             
         elif value > scale:
             c = c + 1
-            clusters = np.append(clusters, c)
+            clusters.append(c)
+            n_cluster = 0
 
+    clusters = np.array(clusters)
     clusters_undo_sort = clusters[idx_undo_sort]
 
     return clusters_undo_sort
