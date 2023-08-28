@@ -27,9 +27,9 @@ class PMTAfterPulses(strax.Plugin):
     
     data_kind = "AP_photons"
     
-    dtype = [('channel', np.int64),
+    dtype = [('channel', np.int16),
              ('dpe', np.bool_),
-             ('photon_gain', np.int64),
+             ('photon_gain', np.int32),
             ]
     dtype = dtype + strax.time_fields
 

@@ -180,7 +180,6 @@ def _concat_overlapping_hits(hits,
 
         last_hit_in_channel = last_hit_in_channel_buffer[hit_channel - first_channel]
         
-
         found_no_hit_for_channel_yet = last_hit_in_channel['time'] == 0
         if found_no_hit_for_channel_yet:
             last_hit_in_channel['time'] = max(time_with_le, chunk_start)
