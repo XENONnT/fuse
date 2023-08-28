@@ -340,6 +340,7 @@ class file_loader():
         
         source_done = False
         unique_chunk_index_values = np.unique(chunk_idx)
+        log.debug(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
         for c_ix, chunk_left, chunk_right in zip(unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]):
             
             if c_ix == unique_chunk_index_values[-1]:
