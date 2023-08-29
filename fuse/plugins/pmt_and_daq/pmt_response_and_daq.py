@@ -176,7 +176,7 @@ class PMTResponseAndDAQ(strax.Plugin):
         index_values = np.unique(propagated_photons["pulse_id"], return_index=True)[1]
 
         #Split into "sub-chunks"
-        pulse_gaps = strax.endtime(pulse_windows[1:]) - pulse_windows["time"][:-1] 
+        pulse_gaps = pulse_windows["time"][1:] - strax.endtime(pulse_windows)[:-1] 
         pulse_gaps = np.append(pulse_gaps, 0) #Add last pulse gap
 
         split_index = find_split_index(
