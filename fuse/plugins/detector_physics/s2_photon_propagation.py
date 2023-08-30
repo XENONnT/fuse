@@ -346,15 +346,9 @@ class S2PhotonPropagationBase(strax.Plugin):
             diffusion_constant_radial = self.diffusion_constant_transverse
             diffusion_constant_azimuthal = self.diffusion_constant_transverse
 
-        hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
-        hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
+        hdiff = np.zeros((np.sum(n_electron), 2))
+        hdiff = simulate_horizontal_shift(n_electron, drift_time_mean,xy, diffusion_constant_radial, diffusion_constant_azimuthal, hdiff, self.rng)
 
-        hdiff_radial = self.rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron, axis=0)
-        hdiff_azimuthal = self.rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron, axis=0)
-        hdiff = np.column_stack([hdiff_radial, hdiff_azimuthal])
-        theta = np.arctan2(xy[:,1], xy[:,0])
-        matrix = np.array([[np.cos(theta), np.sin(theta)], [-np.sin(theta), np.cos(theta)]]).T
-        hdiff = np.vstack([(matrix[i] @ np.split(hdiff, np.cumsum(n_electron))[:-1][i].T).T for i in range(len(matrix))])
         # Should we also output this xy position in truth?
         xy_multi = np.repeat(xy, n_electron, axis=0) + hdiff  # One entry xy per electron
         # Remove points outside tpc, and the pattern will be the average inside tpc
@@ -706,3 +700,36 @@ def _luminescence_timings_simple(
         ci += npho
 
     return emission_time
+
+@numba.njit()
+def simulate_horizontal_shift(n_electron, drift_time_mean,xy, diffusion_constant_radial, diffusion_constant_azimuthal,result, rng):
+
+     hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
+     hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
+     hdiff_radial = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron)
+     hdiff_azimuthal = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron)
+     hdiff = np.column_stack((hdiff_radial, hdiff_azimuthal))
+     theta = np.arctan2(xy[:,1], xy[:,0])
+
+     sin_theta = np.sin(theta)
+     cos_theta = np.cos(theta)
+     matrix = build_rotation_matrix(sin_theta, cos_theta)
+
+     split_hdiff = np.split(hdiff, np.cumsum(n_electron))[:-1]
+
+     start_idx = np.append([0], np.cumsum(n_electron)[:-1])
+     stop_idx = np.cumsum(n_electron)
+
+     for i in range(len(matrix)):
+          result[start_idx[i]: stop_idx[i]] = (matrix[i] @ split_hdiff[i].T).T 
+
+     return result
+
+@numba.njit()
+def build_rotation_matrix(sin_theta, cos_theta):
+    matrix = np.zeros((2, 2, len(sin_theta)))
+    matrix[0, 0] = cos_theta
+    matrix[0, 1] = sin_theta
+    matrix[1, 0] = -sin_theta
+    matrix[1, 1] = cos_theta
+    return matrix.T
