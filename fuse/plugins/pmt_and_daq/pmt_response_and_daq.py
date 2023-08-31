@@ -124,7 +124,7 @@ class PMTResponseAndDAQ(strax.Plugin):
         help='target for the raw records file size in MB',
     )
 
-    min_gap_length_for_splitting = straxen.URLConfig(
+    min_records_gap_length_for_splitting = straxen.URLConfig(
         type=(int, float), default = 1e5, track=False,
         help='chunk can not be split if gap between pulses is smaller than this value given in ns',
     )
@@ -168,7 +168,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     def compute(self, propagated_photons, pulse_windows, start, end):
 
         if len(propagated_photons) == 0 or len(pulse_windows) == 0:
-            log.debug("No photons or pulse windows found, Last empty chunk!")
+            log.debug("No photons or pulse windows found for chunk!")
 
             yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
         
@@ -183,7 +183,7 @@ class PMTResponseAndDAQ(strax.Plugin):
             pulse_windows,
             pulse_gaps,
             file_size_limit = self.raw_records_file_size_target,
-            min_gap_length = self.min_gap_length_for_splitting,
+            min_gap_length = self.min_records_gap_length_for_splitting,
             )
         
         pulse_window_chunks = np.array_split(pulse_windows, split_index)
@@ -196,7 +196,8 @@ class PMTResponseAndDAQ(strax.Plugin):
             else:
                 index_chunks[i] = np.append(index_chunks[i], len(propagated_photons))
 
-        log.debug("Splitting into %d chunks" % n_chunks)
+        if n_chunks > 1:
+            log.debug("Splitting into %d chunks" % n_chunks)
 
         last_start = start
 

@@ -345,7 +345,7 @@ class file_loader():
             
             if c_ix == unique_chunk_index_values[-1]:
                 source_done = True
-                log.debug("Build last chunk.")
+                log.debug("Last chunk created!")
 
             yield inter_reshaped[chunk_idx == c_ix], chunk_left, chunk_right, source_done
     

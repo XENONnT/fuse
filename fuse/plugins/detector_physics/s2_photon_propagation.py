@@ -176,6 +176,16 @@ class S2PhotonPropagationBase(strax.Plugin):
         help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
 
+    propagated_s2_photons_file_size_target = straxen.URLConfig(
+        type=(int, float), default = 200, track=False,
+        help='target for the propagated_s2_photons file size in MB',
+    )
+
+    min_electron_gap_length_for_splitting = straxen.URLConfig(
+        type=(int, float), default = 1e5, track=False,
+        help='chunk can not be split if gap between photons is smaller than this value given in ns',
+    )
+
     def setup(self):
 
         if self.debug:
@@ -199,8 +209,6 @@ class S2PhotonPropagationBase(strax.Plugin):
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
         
-        #I dont like this part -> clean up before merging the PR
-        self._cached_uniform_to_pe_arr = {}
         self.__uniform_to_pe_arr = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
         #Move this part into a nice URLConfig protocol?
@@ -218,55 +226,125 @@ class S2PhotonPropagationBase(strax.Plugin):
                 return self.field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
             self.field_dependencies_map = rz_map
 
-    def compute(self, individual_electrons, interactions_in_roi):
+    def compute(self, individual_electrons, interactions_in_roi, start, end):
 
         #Just apply this to clusters with photons
         mask = interactions_in_roi["n_electron_extracted"] > 0
 
         if len(individual_electrons) == 0:
-            return np.zeros(0, dtype=self.dtype)
-        
-        positions = np.array([interactions_in_roi[mask]["x"], interactions_in_roi[mask]["y"]]).T
-        
-        _photon_channels = self.photon_channels(interactions_in_roi[mask]["n_electron_extracted"],
-                                                interactions_in_roi[mask]["z_obs"],
-                                                positions,
-                                                interactions_in_roi[mask]["drift_time_mean"] ,
-                                                interactions_in_roi[mask]["sum_s2_photons"],
-                                               )
-        #_photon_channels = _photon_channels.astype(np.int64)
-        _photon_timings = self.photon_timings(positions,
-                                              interactions_in_roi[mask]["sum_s2_photons"],
-                                              _photon_channels,
-                                             )
-        
-        #repeat for n photons per electron # Should this be before adding delays?
-        _photon_timings += np.repeat(individual_electrons["time"], individual_electrons["n_s2_photons"])
-        
-        #Do i want to save both -> timings with and without pmt transition time spread?
-        # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
-        # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-        _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
-            _photon_timings=_photon_timings,
-            _photon_channels=_photon_channels,
-            pmt_transit_time_mean=self.pmt_transit_time_mean,
-            pmt_transit_time_spread=self.pmt_transit_time_spread,
-            p_double_pe_emision=self.p_double_pe_emision,
-            gains=self.gains,
-            __uniform_to_pe_arr=self.__uniform_to_pe_arr,
-            rng=self.rng,
+            yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
+            
+        #Split into "sub-chunks"
+        electron_time_gaps = individual_electrons["time"][1:] - individual_electrons["time"][:-1] 
+        electron_time_gaps = np.append(electron_time_gaps, 0) #Add last gap
+
+        #Index to match the electrons to the corresponding interaction_in_roi (and vice versa)
+        electron_index = build_electron_index(individual_electrons, interactions_in_roi[mask])
+
+        split_index = find_electron_split_index(
+            individual_electrons,
+            electron_time_gaps,
+            file_size_limit = self.propagated_s2_photons_file_size_target,
+            min_gap_length = self.min_electron_gap_length_for_splitting,
             )
 
+        electron_chunks = np.array_split(individual_electrons, split_index)
+        index_chunks = np.array_split(electron_index, split_index)
+
+        n_chunks = len(index_chunks)
+        if n_chunks > 1:
+            log.debug("Splitting into %d chunks" % n_chunks)
+        
+        last_start = start
+        if n_chunks>1:
+            for electron_group, index_group in zip(electron_chunks[:-1], index_chunks[:-1]):
+                
+                interactions_chunk = interactions_in_roi[mask][np.min(index_group):np.max(index_group)+1]
+                positions = np.array([interactions_chunk["x"], interactions_chunk["y"]]).T
+
+                _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
+                                                        interactions_chunk["z_obs"],
+                                                        positions,
+                                                        interactions_chunk["drift_time_mean"] ,
+                                                        interactions_chunk["sum_s2_photons"],
+                                                    )
+                
+                _photon_timings = self.photon_timings(positions,
+                                                    interactions_chunk["sum_s2_photons"],
+                                                    _photon_channels,
+                                                    )
+        
+                #repeat for n photons per electron # Should this be before adding delays?
+                _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
+                
+                #Do i want to save both -> timings with and without pmt transition time spread?
+                # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
+                # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
+                _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
+                    _photon_timings=_photon_timings,
+                    _photon_channels=_photon_channels,
+                    pmt_transit_time_mean=self.pmt_transit_time_mean,
+                    pmt_transit_time_spread=self.pmt_transit_time_spread,
+                    p_double_pe_emision=self.p_double_pe_emision,
+                    gains=self.gains,
+                    __uniform_to_pe_arr=self.__uniform_to_pe_arr,
+                    rng=self.rng,
+                    )
+
+                result = build_photon_propagation_output(
+                    dtype=self.dtype,
+                    _photon_timings=_photon_timings,
+                    _photon_channels=_photon_channels,
+                    _photon_gains=_photon_gains,
+                    _photon_is_dpe=_photon_is_dpe,
+                    )
+
+                #move the chunk bound 90% of the minimal gap length to the next photon to make space for afterpluses
+                chunk_end = np.max(strax.endtime(result)) + np.int64(self.min_electron_gap_length_for_splitting*0.9)
+                chunk = self.chunk(start=last_start, end=chunk_end, data=result)
+                last_start = chunk_end
+                yield chunk
+    
+        #And the last chunk
+        interactions_chunk = interactions_in_roi[mask][np.min(index_chunks[-1]):np.max(index_chunks[-1])+1]
+        positions = np.array([interactions_chunk["x"], interactions_chunk["y"]]).T
+
+        _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
+                                                interactions_chunk["z_obs"],
+                                                positions,
+                                                interactions_chunk["drift_time_mean"] ,
+                                                interactions_chunk["sum_s2_photons"],
+                                                )
+        
+        _photon_timings = self.photon_timings(positions,
+                                              interactions_chunk["sum_s2_photons"],
+                                              _photon_channels,
+                                              )
+
+        _photon_timings += np.repeat(electron_chunks[-1]["time"], electron_chunks[-1]["n_s2_photons"])
+
+        _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
+                    _photon_timings=_photon_timings,
+                    _photon_channels=_photon_channels,
+                    pmt_transit_time_mean=self.pmt_transit_time_mean,
+                    pmt_transit_time_spread=self.pmt_transit_time_spread,
+                    p_double_pe_emision=self.p_double_pe_emision,
+                    gains=self.gains,
+                    __uniform_to_pe_arr=self.__uniform_to_pe_arr,
+                    rng=self.rng,
+                    )
+
         result = build_photon_propagation_output(
-            dtype=self.dtype,
-            _photon_timings=_photon_timings,
-            _photon_channels=_photon_channels,
-            _photon_gains=_photon_gains,
-            _photon_is_dpe=_photon_is_dpe,
-            )
-    
-        return result
-    
+                    dtype=self.dtype,
+                    _photon_timings=_photon_timings,
+                    _photon_channels=_photon_channels,
+                    _photon_gains=_photon_gains,
+                    _photon_is_dpe=_photon_is_dpe,
+                    )
+
+        chunk = self.chunk(start=last_start, end=end, data=result)
+        yield chunk
+
        
     def photon_channels(self, n_electron, z_obs, positions, drift_time_mean, n_photons):
         
@@ -701,7 +779,7 @@ def _luminescence_timings_simple(
 
     return emission_time
 
-@numba.njit()
+@njit()
 def simulate_horizontal_shift(n_electron, drift_time_mean,xy, diffusion_constant_radial, diffusion_constant_azimuthal,result, rng):
 
      hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
@@ -725,7 +803,7 @@ def simulate_horizontal_shift(n_electron, drift_time_mean,xy, diffusion_constant
 
      return result
 
-@numba.njit()
+@njit()
 def build_rotation_matrix(sin_theta, cos_theta):
     matrix = np.zeros((2, 2, len(sin_theta)))
     matrix[0, 0] = cos_theta
@@ -733,3 +811,38 @@ def build_rotation_matrix(sin_theta, cos_theta):
     matrix[1, 0] = -sin_theta
     matrix[1, 1] = cos_theta
     return matrix.T
+
+@njit()
+def find_electron_split_index(electrons, gaps, file_size_limit, min_gap_length):
+    
+    n_bytes_per_photon = 23 # 8 + 8 + 4 + 2 + 1
+
+    data_size_mb = 0
+    split_index = []
+
+    for i, (e, g) in enumerate(zip(electrons, gaps)):
+        #Assumes data is later saved as int16
+        data_size_mb += n_bytes_per_photon / 1e6 
+
+        if data_size_mb < file_size_limit: 
+            continue
+
+        if g >= min_gap_length:
+            data_size_mb = 0
+            split_index.append(i)
+
+    return np.array(split_index)+1
+
+def build_electron_index(individual_electrons, interactions_in_roi):
+    "Function to match the electrons to the correct interaction_in_roi"
+
+    electrons_split = np.split(individual_electrons, np.cumsum(interactions_in_roi["n_electron_extracted"]))[:-1]
+
+    index = []
+    k = 0
+    for element in electrons_split:
+        index.append(np.repeat(k, len(element)))
+        k+=1
+    index = np.concatenate(index)
+
+    return index 
