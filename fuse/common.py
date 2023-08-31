@@ -4,9 +4,8 @@ import numba
 
 from scipy.interpolate import interp1d
 
-#strax uses a default of 80 seconds,
-#but this can be a bit limiting for the simulation 
-FUSE_PLUGIN_TIMEOUT = 240 
+#Lets wait 10 minutes for the plugin to finish
+FUSE_PLUGIN_TIMEOUT = 600 
 
 @numba.njit()
 def dynamic_chunking(data, scale, n_min):
