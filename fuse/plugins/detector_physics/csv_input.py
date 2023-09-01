@@ -18,7 +18,7 @@ class ChunkCsvInput(strax.Plugin):
     Plugin which reads a CSV file containing instructions for the detector physics simulation
     and returns the data in chunks
     """
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
 
     depends_on = tuple()
     provides = "microphysics_summary"

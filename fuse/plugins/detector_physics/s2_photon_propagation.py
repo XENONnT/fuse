@@ -19,7 +19,7 @@ conversion_to_bar = 1/constants.elementary_charge / 1e1
 @export
 class S2PhotonPropagationBase(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ("s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
     provides = "propagated_s2_photons"
@@ -489,7 +489,7 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
     This class is used to simulate the propagation of photons from an S2 signal using 
     luminescence timing from garfield gasgap, singlet and tripled delays and optical propagation
     """
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     child_plugin = True
 
@@ -570,7 +570,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     This class is used to simulate the propagation of photons from an S2 signal using 
     the simple liminescence model, singlet and tripled delays and optical propagation
     """
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     child_plugin = True
 

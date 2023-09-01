@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.detector_physics.electron_timing')
 @export
 class ElectronTiming(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ("drifted_electrons", "extracted_electrons")
     provides = "electron_time"

@@ -17,7 +17,7 @@ log = logging.getLogger('fuse.micro_physics.output')
 @export
 class output_plugin(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ["interactions_in_roi", "quanta", "electric_field_values"] #Add times later
     

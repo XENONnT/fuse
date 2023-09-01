@@ -19,7 +19,7 @@ log = logging.getLogger('fuse.micro_physics.input')
 @export
 class ChunkInput(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = tuple()
     provides = "geant4_interactions"

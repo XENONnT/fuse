@@ -17,7 +17,7 @@ log = logging.getLogger('fuse.micro_physics.find_cluster')
 @export
 class FindCluster(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ("geant4_interactions",)
     

@@ -19,7 +19,7 @@ nest_rng = nestpy.RandomGen.rndm()
 @export
 class NestYields(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
@@ -177,7 +177,7 @@ class NestYields(strax.Plugin):
     
 class BetaYields(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
@@ -310,7 +310,7 @@ class BetaYields(strax.Plugin):
 
 class BBFYields(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"

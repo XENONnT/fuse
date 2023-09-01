@@ -16,7 +16,7 @@ class ElectricField(strax.Plugin):
     Plugin that calculates the electric field values for the detector.
     """
 
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
 
     depends_on = ("interactions_in_roi",)
     provides = "electric_field_values"

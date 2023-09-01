@@ -18,7 +18,7 @@ nest_rng = nestpy.RandomGen.rndm()
 @export
 class S1PhotonPropagationBase(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ("s1_photons", "microphysics_summary")
     provides = "propagated_s1_photons"
@@ -230,7 +230,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     optical propagation and luminescence timing from nestpy
     """
 
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
 
     child_plugin = True
 
