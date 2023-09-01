@@ -168,11 +168,14 @@ class SecondaryScintillation(strax.Plugin):
         sum_photons_per_interaction = [np.sum(x) for x in np.split(n_photons_per_ele, np.cumsum(interactions_in_roi[mask]["n_electron_extracted"]))[:-1]]
         
         n_photons_per_ele[n_photons_per_ele < 0] = 0
+
+        reorder_electrons = np.argsort(individual_electrons, order = ["order_index", "time"])
         
         result_photons = np.zeros(len(n_photons_per_ele), dtype = self.dtype["s2_photons"])
         result_photons["n_s2_photons"] = n_photons_per_ele
-        result_photons["time"] = individual_electrons["time"]
-        result_photons["endtime"] = individual_electrons["endtime"]
+        result_photons["time"] = individual_electrons["time"][reorder_electrons]
+        result_photons["endtime"] = individual_electrons["endtime"][reorder_electrons]
+        result_photons = strax.sort_by_time(result_photons)
         
         result_sum_photons = np.zeros(len(interactions_in_roi), dtype = self.dtype["s2_photons_sum"])
         result_sum_photons["sum_s2_photons"][mask] = sum_photons_per_interaction

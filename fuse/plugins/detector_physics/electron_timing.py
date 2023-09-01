@@ -30,6 +30,7 @@ class ElectronTiming(strax.Plugin):
     
     dtype = [('x', np.float64),
              ('y', np.float64),
+             ('order_index', np.int64),
             ]
     dtype = dtype + strax.time_fields
     
@@ -89,7 +90,11 @@ class ElectronTiming(strax.Plugin):
         result["endtime"] = result["time"]
         result["x"] = x
         result["y"] = y
-        
+
+        #result["order_index"] = np.arange(len(timing))
+        result["order_index"] = np.repeat(np.arange(len(interactions_in_roi[mask])), interactions_in_roi[mask]["n_electron_extracted"])
+        result = strax.sort_by_time(result)
+
         return result
         
     

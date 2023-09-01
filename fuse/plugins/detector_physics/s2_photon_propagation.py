@@ -21,7 +21,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     
     __version__ = "0.1.0"
     
-    depends_on = ("s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
+    depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
     provides = "propagated_s2_photons"
     data_kind = "S2_photons"
 
@@ -244,7 +244,8 @@ class S2PhotonPropagationBase(strax.Plugin):
         electron_time_gaps = np.append(electron_time_gaps, 0) #Add last gap
 
         #Index to match the electrons to the corresponding interaction_in_roi (and vice versa)
-        electron_index = build_electron_index(individual_electrons, interactions_in_roi[mask])
+        #electron_index = build_electron_index(individual_electrons, interactions_in_roi[mask])
+        #electron_index = individual_electrons["order_index"]
 
         split_index = find_electron_split_index(
             individual_electrons,
@@ -255,17 +256,18 @@ class S2PhotonPropagationBase(strax.Plugin):
             )
 
         electron_chunks = np.array_split(individual_electrons, split_index)
-        index_chunks = np.array_split(electron_index, split_index)
+        #index_chunks = np.array_split(electron_index, split_index)
 
-        n_chunks = len(index_chunks)
+        n_chunks = len(electron_chunks)
         if n_chunks > 1:
             log.debug("Splitting into %d chunks" % n_chunks)
         
         last_start = start
         if n_chunks>1:
-            for electron_group, index_group in zip(electron_chunks[:-1], index_chunks[:-1]):
-                
-                interactions_chunk = interactions_in_roi[mask][np.min(index_group):np.max(index_group)+1]
+            #for electron_group, index_group in zip(electron_chunks[:-1], index_chunks[:-1]):
+            for electron_group in electron_chunks[:-1]:
+                interactions_chunk = interactions_in_roi[mask][np.unique(electron_group["order_index"])]
+                #interactions_chunk = interactions_in_roi[mask][np.min(index_group):np.max(index_group)+1]
                 positions = np.array([interactions_chunk["x"], interactions_chunk["y"]]).T
 
                 _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
@@ -314,7 +316,8 @@ class S2PhotonPropagationBase(strax.Plugin):
                 yield chunk
     
         #And the last chunk
-        interactions_chunk = interactions_in_roi[mask][np.min(index_chunks[-1]):np.max(index_chunks[-1])+1]
+        interactions_chunk = interactions_in_roi[mask][np.unique(electron_chunks[-1]["order_index"])]
+        #interactions_chunk = interactions_in_roi[mask][np.min(index_chunks[-1]):np.max(index_chunks[-1])+1]
         positions = np.array([interactions_chunk["x"], interactions_chunk["y"]]).T
 
         _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
