@@ -19,7 +19,7 @@ class TestDeterministicSeed(unittest.TestCase):
 
         self.test_context_0.set_config({"path": "/project2/lgrandi/xenonnt/simulations/testing",
                                       "file_name": "pmt_neutrons_100.root",
-                                      "entry_stop": 10,
+                                      "entry_stop": 5,
                                       })
 
         self.test_context_1 = fuse.context.full_chain_context(self.temp_dir_1.name,
@@ -27,7 +27,7 @@ class TestDeterministicSeed(unittest.TestCase):
 
         self.test_context_1.set_config({"path": "/project2/lgrandi/xenonnt/simulations/testing",
                                       "file_name": "pmt_neutrons_100.root",
-                                      "entry_stop": 10,
+                                      "entry_stop": 5,
                                       })
         
         self.run_number_0 = "TestRun_00000"

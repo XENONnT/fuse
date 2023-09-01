@@ -59,6 +59,7 @@ full_chain_modules = [fuse.micro_physics.ChunkInput,
                       fuse.detector_physics.S2PhotonPropagation,
                       fuse.pmt_and_daq.PMTAfterPulses,
                       fuse.pmt_and_daq.PhotonSummary,
+                      fuse.pmt_and_daq.PulseWindow,
                       fuse.pmt_and_daq.PMTResponseAndDAQ,
                      ]
 
@@ -123,10 +124,6 @@ def full_chain_context(out_dir, config):
         "pmt_transit_time_spread": config["pmt_transit_time_spread"],
         "pmt_transit_time_mean": config["pmt_transit_time_mean"],
         "maximum_recombination_time": config["maximum_recombination_time"],
-        "s1_decay_spread": config["s1_decay_spread"],
-        "s1_decay_time": config["s1_decay_time"],
-        "s1_model_type": config["s1_model_type"],
-        "s1_model_type": config["s1_model_type"],
         "n_top_pmts": 253,
         "n_tpc_pmts": 494,
         "s1_detection_efficiency": 1,
@@ -149,10 +146,7 @@ def full_chain_context(out_dir, config):
         "singlet_lifetime_gas": config["singlet_lifetime_gas"],
         "triplet_lifetime_liquid": config["triplet_lifetime_liquid"],
         "singlet_lifetime_liquid": config["singlet_lifetime_liquid"],
-        "s2_time_spread": config["s2_time_spread"],
-        "s2_time_model": config["s2_time_model"],
         "singlet_fraction_gas": config["singlet_fraction_gas"],
-        "s2_luminescence_model": config["s2_luminescence_model"],
         "tpc_radius": config["tpc_radius"],
         "diffusion_constant_transverse": config["diffusion_constant_transverse"],
         "s2_aft_skewness": config["s2_aft_skewness"],
@@ -173,8 +167,6 @@ def full_chain_context(out_dir, config):
                           '&fmt=json.gz',
         "zle_threshold": config["zle_threshold"],
         "digitizer_reference_baseline": config["digitizer_reference_baseline"],
-        "enable_noise": config["enable_noise"],
-        "high_energy_deamplification_factor": config["high_energy_deamplification_factor"],
         "trigger_window": config["trigger_window"],
         "external_amplification": config["external_amplification"],
         "pmt_pulse_time_rounding": config["pmt_pulse_time_rounding"],
@@ -185,9 +177,8 @@ def full_chain_context(out_dir, config):
         "dt": config["sample_duration"],
         "pe_pulse_ts": config["pe_pulse_ts"],
         "pe_pulse_ys": config["pe_pulse_ys"],
-        "rext": 100000,
         "special_thresholds": config["special_thresholds"],
-        "noise_data_tmp": 'simple_load://resource://format://'
+        "noise_data": 'simple_load://resource://format://'
                          f'{config["noise_file"]}?'
                           '&fmt=npy',
 

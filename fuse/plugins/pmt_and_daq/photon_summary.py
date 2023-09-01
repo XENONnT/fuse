@@ -14,7 +14,7 @@ class PhotonSummary(VerticalMergerPlugin):
     
     provides = 'photon_summary'
     data_kind = 'propagated_photons'
-    __version__ = '0.0.0'
+    __version__ = '0.1.0'
 
     #Forbid rechunking
     rechunk_on_save = False

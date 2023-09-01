@@ -17,9 +17,9 @@ log = logging.getLogger('fuse.micro_physics.output')
 @export
 class output_plugin(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
-    depends_on = ["clustered_interactions", "quanta", "electric_field_values"] #Add times later
+    depends_on = ["interactions_in_roi", "quanta", "electric_field_values"] #Add times later
     
     provides = "wfsim_instructions"
     data_kind = 'wfsim_instructions'
@@ -60,16 +60,16 @@ class output_plugin(strax.Plugin):
         
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running output_plugin in debug mode")
+            log.debug(f"Running output_plugin version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 
-    def compute(self, clustered_interactions):
+    def compute(self, interactions_in_roi):
 
-        if len(clustered_interactions) == 0:
+        if len(interactions_in_roi) == 0:
             return np.zeros(0, dtype=self.dtype)
         
-        instructions = self.awkward_to_wfsim_row_style(clustered_interactions)
+        instructions = self.awkward_to_wfsim_row_style(interactions_in_roi)
         
         return instructions
     

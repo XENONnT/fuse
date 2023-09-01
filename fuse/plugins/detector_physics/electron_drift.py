@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.detector_physics.electron_drift')
 @export
 class ElectronDrift(strax.Plugin):
     
-    __version__ = "0.0.1"
+    __version__ = "0.1.0"
     
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
@@ -92,7 +92,7 @@ class ElectronDrift(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ElectronDrift in debug mode")
+            log.debug(f"Running ElectronDrift version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
         
