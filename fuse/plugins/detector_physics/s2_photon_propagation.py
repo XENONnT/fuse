@@ -299,6 +299,8 @@ class S2PhotonPropagationBase(strax.Plugin):
                     _photon_is_dpe=_photon_is_dpe,
                     )
 
+                result = strax.sort_by_time(result)
+
                 #move the chunk bound 90% of the minimal gap length to the next photon to make space for afterpluses
                 chunk_end = np.max(strax.endtime(result)) + np.int64(self.min_electron_gap_length_for_splitting*0.9)
                 chunk = self.chunk(start=last_start, end=chunk_end, data=result)
@@ -341,6 +343,8 @@ class S2PhotonPropagationBase(strax.Plugin):
                     _photon_gains=_photon_gains,
                     _photon_is_dpe=_photon_is_dpe,
                     )
+        
+        result = strax.sort_by_time(result)
 
         chunk = self.chunk(start=last_start, end=end, data=result)
         yield chunk
@@ -845,4 +849,4 @@ def build_electron_index(individual_electrons, interactions_in_roi):
         k+=1
     index = np.concatenate(index)
 
-    return index 
+    return index

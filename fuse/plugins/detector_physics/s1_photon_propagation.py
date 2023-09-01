@@ -192,6 +192,8 @@ class S1PhotonPropagationBase(strax.Plugin):
             _photon_is_dpe=_photon_is_dpe,
             )
 
+        result = strax.sort_by_time(result)
+
         return result
     
     def photon_channels(self, positions, n_photon_hits):

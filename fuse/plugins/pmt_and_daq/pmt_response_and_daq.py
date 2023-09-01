@@ -30,6 +30,7 @@ class PMTResponseAndDAQ(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
 
+    #Forbid automatic rechunking by strax as we will do it manually
     rechunk_on_save = False
 
     #Config options
