@@ -186,6 +186,11 @@ class S2PhotonPropagationBase(strax.Plugin):
         help='chunk can not be split if gap between photons is smaller than this value given in ns',
     )
 
+    s2_secondary_sc_gain = straxen.URLConfig(
+        type=(int, float),
+        help='s2_secondary_sc_gain',
+    )
+
     def setup(self):
 
         if self.debug:
@@ -246,6 +251,7 @@ class S2PhotonPropagationBase(strax.Plugin):
             electron_time_gaps,
             file_size_limit = self.propagated_s2_photons_file_size_target,
             min_gap_length = self.min_electron_gap_length_for_splitting,
+            mean_n_photons_per_electron = self.s2_secondary_sc_gain
             )
 
         electron_chunks = np.array_split(individual_electrons, split_index)
@@ -817,7 +823,7 @@ def build_rotation_matrix(sin_theta, cos_theta):
     return matrix.T
 
 @njit()
-def find_electron_split_index(electrons, gaps, file_size_limit, min_gap_length):
+def find_electron_split_index(electrons, gaps, file_size_limit, min_gap_length, mean_n_photons_per_electron):
     
     n_bytes_per_photon = 23 # 8 + 8 + 4 + 2 + 1
 
@@ -826,7 +832,7 @@ def find_electron_split_index(electrons, gaps, file_size_limit, min_gap_length):
 
     for i, (e, g) in enumerate(zip(electrons, gaps)):
         #Assumes data is later saved as int16
-        data_size_mb += n_bytes_per_photon / 1e6 
+        data_size_mb += n_bytes_per_photon * mean_n_photons_per_electron / 1e6 
 
         if data_size_mb < file_size_limit: 
             continue
