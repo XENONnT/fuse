@@ -49,7 +49,7 @@ class ElectricField(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ElectricField in debug mode")
+            log.debug(f"Running ElectricField version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 

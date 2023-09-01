@@ -190,7 +190,7 @@ class S2PhotonPropagationBase(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running S2PhotonPropagation in debug mode")
+            log.debug(f"Running S2PhotonPropagation version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 
@@ -500,7 +500,7 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 
     def setup(self):
         super().setup()
-        log.debug("Using Garfield GasGap luminescence timing and optical propagation")
+        log.debug(f"Using Garfield GasGap luminescence timing and optical propagation with plugin version {self.__version__}")
 
     def photon_timings(self, positions, n_photons, _photon_channels):
 

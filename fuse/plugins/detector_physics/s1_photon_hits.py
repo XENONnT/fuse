@@ -61,7 +61,7 @@ class S1PhotonHits(strax.Plugin):
         
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running S1PhotonHits in debug mode")
+            log.debug(f"Running S1PhotonHits version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
         

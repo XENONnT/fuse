@@ -68,11 +68,16 @@ class PulseWindow(strax.Plugin):
         help='samples_to_store_before',
     )
 
+    n_tpc_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs in the TPC',
+    )
+
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running PulseWindow in debug mode")
+            log.debug(f"Running PulseWindow version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 
@@ -88,7 +93,7 @@ class PulseWindow(strax.Plugin):
         
         single_photon_pulses = np.zeros(len(propagated_photons), dtype=strax.interval_dtype)
         
-        single_photon_pulses["length"] = 22 #get this one from the single photon pmt pulse shape thingy
+        single_photon_pulses["length"] = self.samples_before_pulse_center + self.samples_after_pulse_center
         single_photon_pulses["dt"] = self.dt
         single_photon_pulses["time"] = propagated_photons["time"]
         single_photon_pulses["channel"] = propagated_photons["channel"]
@@ -96,9 +101,9 @@ class PulseWindow(strax.Plugin):
         photon_pulses, photon_id = concat_overlapping_hits(
             single_photon_pulses,
             (self.pulse_left_extenstion,self.pulse_right_extenstion),
-            (0,493), #Set this from the config args
-            single_photon_pulses["time"].min(), #This sould also be something different i guess
-            single_photon_pulses["time"].max() #This sould also be something different i guess
+            (0,self.n_tpc_pmts), 
+            single_photon_pulses["time"].min(), 
+            single_photon_pulses["time"].max()
             )
         photon_pulses = strax.sort_by_time(photon_pulses)
 

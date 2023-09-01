@@ -121,7 +121,7 @@ class ChunkInput(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ChunkInput in debug mode")
+            log.debug(f"Running ChunkInput version {self.__version__} in debug mode")
         else:
             log.setLevel('WARNING')
 

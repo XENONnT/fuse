@@ -85,7 +85,7 @@ class ChunkCsvInput(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ChunkCsvInput in debug mode")
+            log.debug(f"Running ChunkCsvInput version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 

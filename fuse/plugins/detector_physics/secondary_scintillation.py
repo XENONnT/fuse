@@ -104,7 +104,7 @@ class SecondaryScintillation(strax.Plugin):
         
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running SecondaryScintillation in debug mode")
+            log.debug(f"Running SecondaryScintillation version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
         

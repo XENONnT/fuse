@@ -110,7 +110,7 @@ class S1PhotonPropagationBase(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running S1PhotonPropagation in debug mode")
+            log.debug(f"Running S1PhotonPropagation version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 

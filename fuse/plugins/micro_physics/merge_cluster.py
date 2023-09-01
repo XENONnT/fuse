@@ -62,7 +62,7 @@ class MergeCluster(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running MergeCluster in debug mode")
+            log.debug(f"Running MergeCluster version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 

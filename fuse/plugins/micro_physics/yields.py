@@ -53,7 +53,7 @@ class NestYields(strax.Plugin):
     def setup(self):
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running NestYields in debug mode")
+            log.debug(f"Running NestYields version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 
@@ -230,7 +230,7 @@ class BetaYields(strax.Plugin):
     def setup(self):
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running BetaYields in debug mode")
+            log.debug(f"Running BetaYields version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
         
@@ -337,7 +337,7 @@ class BBFYields(strax.Plugin):
 
         if self.debug:
             log.setLevel("DEBUG")
-            log.debug("Running BBFYields in debug mode")
+            log.debug(f"Running BBFYields version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 

@@ -108,7 +108,7 @@ class XENONnT_TPC(VolumePlugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running XENONnT_TPC in debug mode")
+            log.debug(f"Running XENONnT_TPC version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 
@@ -204,7 +204,7 @@ class XENONnT_BelowCathode(VolumePlugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running XENONnT_BelowCathode in debug mode")
+            log.debug(f"Running XENONnT_BelowCathode version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 

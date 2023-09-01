@@ -129,11 +129,16 @@ class PMTResponseAndDAQ(strax.Plugin):
         help='chunk can not be split if gap between pulses is smaller than this value given in ns',
     )
 
+    n_tpc_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs in the TPC',
+    )
+
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running PMTResponseAndDAQ in debug mode")
+            log.debug(f"Running PMTResponseAndDAQ version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 
@@ -150,17 +155,12 @@ class PMTResponseAndDAQ(strax.Plugin):
                 * self.external_amplification \
                 / (self.digitizer_voltage_range / 2 ** (self.digitizer_bits))
 
-        #Lets use normal distributed noise for now. 
-        #Check later if we need to add "real measured" noise
-        #self.noise_mean = np.mean(self.noise_data['arr_0'], axis=0)
-        #self.noise_std = np.std(self.noise_data['arr_0'], axis=0)
-
         self._pmt_current_templates, _template_length = self.init_pmt_current_templates()
 
         threshold = self.digitizer_reference_baseline - self.zle_threshold - 1
-        self.thresholds = threshold = np.ones(494)*threshold #put n pmts into config!
+        self.thresholds = threshold = np.ones(self.n_tpc_pmts)*threshold #put n pmts into config!
         for key, value in self.special_thresholds.items():
-            if np.int32(key) < 494:
+            if np.int32(key) < self.n_tpc_pmts:
                 self.thresholds[np.int32(key)] = self.digitizer_reference_baseline - value - 1
 
         self.pulse_left_extension = + int(self.samples_to_store_before)+ self.samples_before_pulse_center
@@ -177,7 +177,7 @@ class PMTResponseAndDAQ(strax.Plugin):
 
         #Split into "sub-chunks"
         pulse_gaps = pulse_windows["time"][1:] - strax.endtime(pulse_windows)[:-1] 
-        pulse_gaps = np.append(pulse_gaps, 0) #Add last pulse gap
+        pulse_gaps = np.append(pulse_gaps, 0) #Add 0 for last pulse gap
 
         split_index = find_split_index(
             pulse_windows,
@@ -197,7 +197,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                 index_chunks[i] = np.append(index_chunks[i], len(propagated_photons))
 
         if n_chunks > 1:
-            log.debug("Splitting into %d chunks" % n_chunks)
+            log.debug("Splitting input into %d chunk(s)" % n_chunks)
 
         last_start = start
 

@@ -53,7 +53,7 @@ class ElectronTiming(strax.Plugin):
         
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ElectronTiming in debug mode")
+            log.debug(f"Running ElectronTiming version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 

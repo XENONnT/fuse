@@ -60,7 +60,7 @@ class output_plugin(strax.Plugin):
         
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running output_plugin in debug mode")
+            log.debug(f"Running output_plugin version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 
