@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.detector_physics.s1_photon_hits')
 @export
 class S1PhotonHits(strax.Plugin):
 
-    __version__ = '0.0.0'
+    __version__ = '0.1.0'
 
     depends_on = ("microphysics_summary")
     provides = "s1_photons"
@@ -61,7 +61,7 @@ class S1PhotonHits(strax.Plugin):
         
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running S1PhotonHits in debug mode")
+            log.debug(f"Running S1PhotonHits version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
         

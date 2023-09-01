@@ -17,7 +17,7 @@ log = logging.getLogger('fuse.micro_physics.output')
 @export
 class output_plugin(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ["interactions_in_roi", "quanta", "electric_field_values"] #Add times later
     
@@ -60,7 +60,7 @@ class output_plugin(strax.Plugin):
         
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running output_plugin in debug mode")
+            log.debug(f"Running output_plugin version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 

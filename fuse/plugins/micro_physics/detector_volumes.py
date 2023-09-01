@@ -20,7 +20,7 @@ class VolumesMerger(VerticalMergerPlugin):
 
     provides = "interactions_in_roi"
     data_kind = "interactions_in_roi"
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -45,7 +45,7 @@ class XENONnT_TPC(VolumePlugin):
 
     provides = "tpc_interactions"
     data_kind = "tpc_interactions"
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -108,7 +108,7 @@ class XENONnT_TPC(VolumePlugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running XENONnT_TPC in debug mode")
+            log.debug(f"Running XENONnT_TPC version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 
@@ -141,7 +141,7 @@ class XENONnT_BelowCathode(VolumePlugin):
 
     provides = "below_cathode_interactions"
     data_kind = "below_cathode_interactions"
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -204,7 +204,7 @@ class XENONnT_BelowCathode(VolumePlugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running XENONnT_BelowCathode in debug mode")
+            log.debug(f"Running XENONnT_BelowCathode version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 
@@ -237,7 +237,7 @@ class XENONnT_GasPhase(VolumePlugin):
 
     provides = "gas_phase_interactions"
     data_kind = "gas_phase_interactions"
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
 
     #Forbid rechunking
     rechunk_on_save = False

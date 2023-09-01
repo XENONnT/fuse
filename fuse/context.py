@@ -59,6 +59,7 @@ full_chain_modules = [fuse.micro_physics.ChunkInput,
                       fuse.detector_physics.S2PhotonPropagation,
                       fuse.pmt_and_daq.PMTAfterPulses,
                       fuse.pmt_and_daq.PhotonSummary,
+                      fuse.pmt_and_daq.PulseWindow,
                       fuse.pmt_and_daq.PMTResponseAndDAQ,
                      ]
 
@@ -166,8 +167,6 @@ def full_chain_context(out_dir, config):
                           '&fmt=json.gz',
         "zle_threshold": config["zle_threshold"],
         "digitizer_reference_baseline": config["digitizer_reference_baseline"],
-        "enable_noise": config["enable_noise"],
-        "high_energy_deamplification_factor": config["high_energy_deamplification_factor"],
         "trigger_window": config["trigger_window"],
         "external_amplification": config["external_amplification"],
         "pmt_pulse_time_rounding": config["pmt_pulse_time_rounding"],
@@ -178,9 +177,8 @@ def full_chain_context(out_dir, config):
         "dt": config["sample_duration"],
         "pe_pulse_ts": config["pe_pulse_ts"],
         "pe_pulse_ys": config["pe_pulse_ys"],
-        "rext": 100000,
         "special_thresholds": config["special_thresholds"],
-        "noise_data_tmp": 'simple_load://resource://format://'
+        "noise_data": 'simple_load://resource://format://'
                          f'{config["noise_file"]}?'
                           '&fmt=npy',
 

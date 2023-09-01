@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.micro_physics.merge_cluster')
 @export
 class MergeCluster(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ("geant4_interactions", "cluster_index")
     
@@ -62,7 +62,7 @@ class MergeCluster(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running MergeCluster in debug mode")
+            log.debug(f"Running MergeCluster version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 

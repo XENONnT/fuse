@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
 @export
 class PMTAfterPulses(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"
@@ -27,9 +27,9 @@ class PMTAfterPulses(strax.Plugin):
     
     data_kind = "AP_photons"
     
-    dtype = [('channel', np.int64),
+    dtype = [('channel', np.int16),
              ('dpe', np.bool_),
-             ('photon_gain', np.int64),
+             ('photon_gain', np.int32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -83,7 +83,7 @@ class PMTAfterPulses(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running PMTAfterPulses in debug mode")
+            log.debug(f"Running PMTAfterPulses version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 

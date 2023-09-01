@@ -4,9 +4,8 @@ import numba
 
 from scipy.interpolate import interp1d
 
-#strax uses a default of 80 seconds,
-#but this can be a bit limiting for the simulation 
-FUSE_PLUGIN_TIMEOUT = 240 
+#Lets wait 10 minutes for the plugin to finish
+FUSE_PLUGIN_TIMEOUT = 600 
 
 @numba.njit()
 def dynamic_chunking(data, scale, n_min):
@@ -18,19 +17,24 @@ def dynamic_chunking(data, scale, n_min):
 
     diff = data_sorted[1:] - data_sorted[:-1]
 
-    clusters = np.array([0])
+    clusters = [0]
     c = 0
+    n_cluster = 0
     for value in diff:
         if value <= scale:
-            clusters = np.append(clusters, c)
-            
-        elif len(clusters[clusters == c]) < n_min:
-            clusters = np.append(clusters, c)
+            clusters.append(c)
+            n_cluster += 1
+
+        elif n_cluster+1 < n_min:
+            clusters.append(c)
+            n_cluster += 1
             
         elif value > scale:
             c = c + 1
-            clusters = np.append(clusters, c)
+            clusters.append(c)
+            n_cluster = 0
 
+    clusters = np.array(clusters)
     clusters_undo_sort = clusters[idx_undo_sort]
 
     return clusters_undo_sort
@@ -221,52 +225,6 @@ def offset_range(offsets):
         res[i:i+o] = ind
         i += o
     return res
-
-@numba.jit(numba.int32(numba.int64[:], numba.int64, numba.int64, numba.int64[:, :]),
-           nopython=True)
-def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
-    """Fills result_buffer with l, r bounds of intervals in w < threshold.
-    :param w: Waveform to do hitfinding in
-    :param threshold: Threshold for including an interval
-    :param holdoff: Holdoff number of samples after the pulse return back down to threshold
-    :param result_buffer: numpy N*2 array of ints, will be filled by function.
-                          if more than N intervals are found, none past the first N will be processed.
-    :returns : number of intervals processed
-    Boundary indices are inclusive, i.e. the right boundary is the last index which was < threshold
-    """
-    result_buffer_size = len(result_buffer)
-    last_index_in_w = len(w) - 1
-
-    in_interval = False
-    current_interval = 0
-    current_interval_start = -1
-    current_interval_end = -1
-
-    for i, x in enumerate(w):
-
-        if x < threshold:
-            if not in_interval:
-                # Start of an interval
-                in_interval = True
-                current_interval_start = i
-
-            current_interval_end = i
-
-        if ((i == last_index_in_w and in_interval) or
-                (x >= threshold and i >= current_interval_end + holdoff and in_interval)):
-            # End of the current interval
-            in_interval = False
-
-            # Add bounds to result buffer
-            result_buffer[current_interval, 0] = current_interval_start
-            result_buffer[current_interval, 1] = current_interval_end
-            current_interval += 1
-
-            if current_interval == result_buffer_size:
-                result_buffer[current_interval, 1] = len(w) - 1
-
-    n_intervals = current_interval  # No +1, as current_interval was incremented also when the last interval closed
-    return n_intervals
 
 
 #Code shared between S1 and S2 photon propagation

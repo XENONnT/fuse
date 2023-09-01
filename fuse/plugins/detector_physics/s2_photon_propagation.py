@@ -19,7 +19,7 @@ conversion_to_bar = 1/constants.elementary_charge / 1e1
 @export
 class S2PhotonPropagationBase(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ("s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
     provides = "propagated_s2_photons"
@@ -34,9 +34,9 @@ class S2PhotonPropagationBase(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
 
-    dtype = [('channel', np.int64),
+    dtype = [('channel', np.int16),
              ('dpe', np.bool_),
-             ('photon_gain', np.int64),
+             ('photon_gain', np.int32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -176,11 +176,26 @@ class S2PhotonPropagationBase(strax.Plugin):
         help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
 
+    propagated_s2_photons_file_size_target = straxen.URLConfig(
+        type=(int, float), default = 200, track=False,
+        help='target for the propagated_s2_photons file size in MB',
+    )
+
+    min_electron_gap_length_for_splitting = straxen.URLConfig(
+        type=(int, float), default = 1e5, track=False,
+        help='chunk can not be split if gap between photons is smaller than this value given in ns',
+    )
+
+    s2_secondary_sc_gain = straxen.URLConfig(
+        type=(int, float),
+        help='s2_secondary_sc_gain',
+    )
+
     def setup(self):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running S2PhotonPropagation in debug mode")
+            log.debug(f"Running S2PhotonPropagation version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 
@@ -199,8 +214,6 @@ class S2PhotonPropagationBase(strax.Plugin):
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
         
-        #I dont like this part -> clean up before merging the PR
-        self._cached_uniform_to_pe_arr = {}
         self.__uniform_to_pe_arr = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
         #Move this part into a nice URLConfig protocol?
@@ -218,55 +231,130 @@ class S2PhotonPropagationBase(strax.Plugin):
                 return self.field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
             self.field_dependencies_map = rz_map
 
-    def compute(self, individual_electrons, interactions_in_roi):
+    def compute(self, individual_electrons, interactions_in_roi, start, end):
 
         #Just apply this to clusters with photons
         mask = interactions_in_roi["n_electron_extracted"] > 0
 
         if len(individual_electrons) == 0:
-            return np.zeros(0, dtype=self.dtype)
-        
-        positions = np.array([interactions_in_roi[mask]["x"], interactions_in_roi[mask]["y"]]).T
-        
-        _photon_channels = self.photon_channels(interactions_in_roi[mask]["n_electron_extracted"],
-                                                interactions_in_roi[mask]["z_obs"],
-                                                positions,
-                                                interactions_in_roi[mask]["drift_time_mean"] ,
-                                                interactions_in_roi[mask]["sum_s2_photons"],
-                                               )
-        #_photon_channels = _photon_channels.astype(np.int64)
-        _photon_timings = self.photon_timings(positions,
-                                              interactions_in_roi[mask]["sum_s2_photons"],
-                                              _photon_channels,
-                                             )
-        
-        #repeat for n photons per electron # Should this be before adding delays?
-        _photon_timings += np.repeat(individual_electrons["time"], individual_electrons["n_s2_photons"])
-        
-        #Do i want to save both -> timings with and without pmt transition time spread?
-        # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
-        # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-        _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
-            _photon_timings=_photon_timings,
-            _photon_channels=_photon_channels,
-            pmt_transit_time_mean=self.pmt_transit_time_mean,
-            pmt_transit_time_spread=self.pmt_transit_time_spread,
-            p_double_pe_emision=self.p_double_pe_emision,
-            gains=self.gains,
-            __uniform_to_pe_arr=self.__uniform_to_pe_arr,
-            rng=self.rng,
+            yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
+            
+        #Split into "sub-chunks"
+        electron_time_gaps = individual_electrons["time"][1:] - individual_electrons["time"][:-1] 
+        electron_time_gaps = np.append(electron_time_gaps, 0) #Add last gap
+
+        #Index to match the electrons to the corresponding interaction_in_roi (and vice versa)
+        electron_index = build_electron_index(individual_electrons, interactions_in_roi[mask])
+
+        split_index = find_electron_split_index(
+            individual_electrons,
+            electron_time_gaps,
+            file_size_limit = self.propagated_s2_photons_file_size_target,
+            min_gap_length = self.min_electron_gap_length_for_splitting,
+            mean_n_photons_per_electron = self.s2_secondary_sc_gain
             )
 
+        electron_chunks = np.array_split(individual_electrons, split_index)
+        index_chunks = np.array_split(electron_index, split_index)
+
+        n_chunks = len(index_chunks)
+        if n_chunks > 1:
+            log.debug("Splitting into %d chunks" % n_chunks)
+        
+        last_start = start
+        if n_chunks>1:
+            for electron_group, index_group in zip(electron_chunks[:-1], index_chunks[:-1]):
+                
+                interactions_chunk = interactions_in_roi[mask][np.min(index_group):np.max(index_group)+1]
+                positions = np.array([interactions_chunk["x"], interactions_chunk["y"]]).T
+
+                _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
+                                                        interactions_chunk["z_obs"],
+                                                        positions,
+                                                        interactions_chunk["drift_time_mean"] ,
+                                                        interactions_chunk["sum_s2_photons"],
+                                                    )
+                
+                _photon_timings = self.photon_timings(positions,
+                                                    interactions_chunk["sum_s2_photons"],
+                                                    _photon_channels,
+                                                    )
+        
+                #repeat for n photons per electron # Should this be before adding delays?
+                _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
+                
+                #Do i want to save both -> timings with and without pmt transition time spread?
+                # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
+                # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
+                _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
+                    _photon_timings=_photon_timings,
+                    _photon_channels=_photon_channels,
+                    pmt_transit_time_mean=self.pmt_transit_time_mean,
+                    pmt_transit_time_spread=self.pmt_transit_time_spread,
+                    p_double_pe_emision=self.p_double_pe_emision,
+                    gains=self.gains,
+                    __uniform_to_pe_arr=self.__uniform_to_pe_arr,
+                    rng=self.rng,
+                    )
+
+                result = build_photon_propagation_output(
+                    dtype=self.dtype,
+                    _photon_timings=_photon_timings,
+                    _photon_channels=_photon_channels,
+                    _photon_gains=_photon_gains,
+                    _photon_is_dpe=_photon_is_dpe,
+                    )
+
+                result = strax.sort_by_time(result)
+
+                #move the chunk bound 90% of the minimal gap length to the next photon to make space for afterpluses
+                chunk_end = np.max(strax.endtime(result)) + np.int64(self.min_electron_gap_length_for_splitting*0.9)
+                chunk = self.chunk(start=last_start, end=chunk_end, data=result)
+                last_start = chunk_end
+                yield chunk
+    
+        #And the last chunk
+        interactions_chunk = interactions_in_roi[mask][np.min(index_chunks[-1]):np.max(index_chunks[-1])+1]
+        positions = np.array([interactions_chunk["x"], interactions_chunk["y"]]).T
+
+        _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
+                                                interactions_chunk["z_obs"],
+                                                positions,
+                                                interactions_chunk["drift_time_mean"] ,
+                                                interactions_chunk["sum_s2_photons"],
+                                                )
+        
+        _photon_timings = self.photon_timings(positions,
+                                              interactions_chunk["sum_s2_photons"],
+                                              _photon_channels,
+                                              )
+
+        _photon_timings += np.repeat(electron_chunks[-1]["time"], electron_chunks[-1]["n_s2_photons"])
+
+        _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
+                    _photon_timings=_photon_timings,
+                    _photon_channels=_photon_channels,
+                    pmt_transit_time_mean=self.pmt_transit_time_mean,
+                    pmt_transit_time_spread=self.pmt_transit_time_spread,
+                    p_double_pe_emision=self.p_double_pe_emision,
+                    gains=self.gains,
+                    __uniform_to_pe_arr=self.__uniform_to_pe_arr,
+                    rng=self.rng,
+                    )
+
         result = build_photon_propagation_output(
-            dtype=self.dtype,
-            _photon_timings=_photon_timings,
-            _photon_channels=_photon_channels,
-            _photon_gains=_photon_gains,
-            _photon_is_dpe=_photon_is_dpe,
-            )
-    
-        return result
-    
+                    dtype=self.dtype,
+                    _photon_timings=_photon_timings,
+                    _photon_channels=_photon_channels,
+                    _photon_gains=_photon_gains,
+                    _photon_is_dpe=_photon_is_dpe,
+                    )
+        
+        result = strax.sort_by_time(result)
+
+        chunk = self.chunk(start=last_start, end=end, data=result)
+        yield chunk
+
        
     def photon_channels(self, n_electron, z_obs, positions, drift_time_mean, n_photons):
         
@@ -346,15 +434,9 @@ class S2PhotonPropagationBase(strax.Plugin):
             diffusion_constant_radial = self.diffusion_constant_transverse
             diffusion_constant_azimuthal = self.diffusion_constant_transverse
 
-        hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
-        hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
+        hdiff = np.zeros((np.sum(n_electron), 2))
+        hdiff = simulate_horizontal_shift(n_electron, drift_time_mean,xy, diffusion_constant_radial, diffusion_constant_azimuthal, hdiff, self.rng)
 
-        hdiff_radial = self.rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron, axis=0)
-        hdiff_azimuthal = self.rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron, axis=0)
-        hdiff = np.column_stack([hdiff_radial, hdiff_azimuthal])
-        theta = np.arctan2(xy[:,1], xy[:,0])
-        matrix = np.array([[np.cos(theta), np.sin(theta)], [-np.sin(theta), np.cos(theta)]]).T
-        hdiff = np.vstack([(matrix[i] @ np.split(hdiff, np.cumsum(n_electron))[:-1][i].T).T for i in range(len(matrix))])
         # Should we also output this xy position in truth?
         xy_multi = np.repeat(xy, n_electron, axis=0) + hdiff  # One entry xy per electron
         # Remove points outside tpc, and the pattern will be the average inside tpc
@@ -407,7 +489,7 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
     This class is used to simulate the propagation of photons from an S2 signal using 
     luminescence timing from garfield gasgap, singlet and tripled delays and optical propagation
     """
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     child_plugin = True
 
@@ -428,7 +510,7 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 
     def setup(self):
         super().setup()
-        log.debug("Using Garfield GasGap luminescence timing and optical propagation")
+        log.debug(f"Using Garfield GasGap luminescence timing and optical propagation with plugin version {self.__version__}")
 
     def photon_timings(self, positions, n_photons, _photon_channels):
 
@@ -488,7 +570,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     This class is used to simulate the propagation of photons from an S2 signal using 
     the simple liminescence model, singlet and tripled delays and optical propagation
     """
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     child_plugin = True
 
@@ -706,3 +788,71 @@ def _luminescence_timings_simple(
         ci += npho
 
     return emission_time
+
+@njit()
+def simulate_horizontal_shift(n_electron, drift_time_mean,xy, diffusion_constant_radial, diffusion_constant_azimuthal,result, rng):
+
+     hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
+     hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
+     hdiff_radial = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron)
+     hdiff_azimuthal = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron)
+     hdiff = np.column_stack((hdiff_radial, hdiff_azimuthal))
+     theta = np.arctan2(xy[:,1], xy[:,0])
+
+     sin_theta = np.sin(theta)
+     cos_theta = np.cos(theta)
+     matrix = build_rotation_matrix(sin_theta, cos_theta)
+
+     split_hdiff = np.split(hdiff, np.cumsum(n_electron))[:-1]
+
+     start_idx = np.append([0], np.cumsum(n_electron)[:-1])
+     stop_idx = np.cumsum(n_electron)
+
+     for i in range(len(matrix)):
+          result[start_idx[i]: stop_idx[i]] = (matrix[i] @ split_hdiff[i].T).T 
+
+     return result
+
+@njit()
+def build_rotation_matrix(sin_theta, cos_theta):
+    matrix = np.zeros((2, 2, len(sin_theta)))
+    matrix[0, 0] = cos_theta
+    matrix[0, 1] = sin_theta
+    matrix[1, 0] = -sin_theta
+    matrix[1, 1] = cos_theta
+    return matrix.T
+
+@njit()
+def find_electron_split_index(electrons, gaps, file_size_limit, min_gap_length, mean_n_photons_per_electron):
+    
+    n_bytes_per_photon = 23 # 8 + 8 + 4 + 2 + 1
+
+    data_size_mb = 0
+    split_index = []
+
+    for i, (e, g) in enumerate(zip(electrons, gaps)):
+        #Assumes data is later saved as int16
+        data_size_mb += n_bytes_per_photon * mean_n_photons_per_electron / 1e6 
+
+        if data_size_mb < file_size_limit: 
+            continue
+
+        if g >= min_gap_length:
+            data_size_mb = 0
+            split_index.append(i)
+
+    return np.array(split_index)+1
+
+def build_electron_index(individual_electrons, interactions_in_roi):
+    "Function to match the electrons to the correct interaction_in_roi"
+
+    electrons_split = np.split(individual_electrons, np.cumsum(interactions_in_roi["n_electron_extracted"]))[:-1]
+
+    index = []
+    k = 0
+    for element in electrons_split:
+        index.append(np.repeat(k, len(element)))
+        k+=1
+    index = np.concatenate(index)
+
+    return index

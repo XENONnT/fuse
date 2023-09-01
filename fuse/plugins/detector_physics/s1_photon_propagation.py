@@ -18,7 +18,7 @@ nest_rng = nestpy.RandomGen.rndm()
 @export
 class S1PhotonPropagationBase(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ("s1_photons", "microphysics_summary")
     provides = "propagated_s1_photons"
@@ -33,9 +33,9 @@ class S1PhotonPropagationBase(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
 
-    dtype = [('channel', np.int64),
+    dtype = [('channel', np.int16),
              ('dpe', np.bool_),
-             ('photon_gain', np.int64),
+             ('photon_gain', np.int32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -110,7 +110,7 @@ class S1PhotonPropagationBase(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running S1PhotonPropagation in debug mode")
+            log.debug(f"Running S1PhotonPropagation version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 
@@ -192,6 +192,8 @@ class S1PhotonPropagationBase(strax.Plugin):
             _photon_is_dpe=_photon_is_dpe,
             )
 
+        result = strax.sort_by_time(result)
+
         return result
     
     def photon_channels(self, positions, n_photon_hits):
@@ -228,7 +230,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     optical propagation and luminescence timing from nestpy
     """
 
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
 
     child_plugin = True
 

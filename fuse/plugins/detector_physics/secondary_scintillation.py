@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 @export
 class SecondaryScintillation(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
     provides = ("s2_photons", "s2_photons_sum")
@@ -104,7 +104,7 @@ class SecondaryScintillation(strax.Plugin):
         
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running SecondaryScintillation in debug mode")
+            log.debug(f"Running SecondaryScintillation version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
         

@@ -19,7 +19,7 @@ log = logging.getLogger('fuse.micro_physics.input')
 @export
 class ChunkInput(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
     
     depends_on = tuple()
     provides = "geant4_interactions"
@@ -121,7 +121,7 @@ class ChunkInput(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ChunkInput in debug mode")
+            log.debug(f"Running ChunkInput version {self.__version__} in debug mode")
         else:
             log.setLevel('WARNING')
 
@@ -153,22 +153,19 @@ class ChunkInput(strax.Plugin):
     def compute(self):
         
         try: 
-            
-            chunk_data, chunk_left, chunk_right = next(self.file_reader_iterator)
+            chunk_data, chunk_left, chunk_right, source_done = next(self.file_reader_iterator)
             chunk_data["endtime"] = chunk_data["time"]
 
+            self.source_done = source_done
+
+            return self.chunk(start=chunk_left,
+                              end=chunk_right,
+                              data=chunk_data,
+                              data_type='geant4_interactions'
+                              )
+
         except StopIteration:
-            self.source_done = True
-            
-            chunk_left = self.file_reader.last_chunk_bounds()
-            chunk_right = chunk_left + np.int64(1e4) #Add this as config option
-            
-            chunk_data = np.zeros(0, dtype=self.dtype)
-        
-        return self.chunk(start=chunk_left,
-                          end=chunk_right,
-                          data=chunk_data,
-                          data_type='geant4_interactions')
+            raise RuntimeError("Bug in chunk building!")
 
     
     def source_finished(self):
@@ -341,9 +338,16 @@ class file_loader():
             log.warning("Only one Chunk! Rate to high?")
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
         
-        for c_ix, chunk_left, chunk_right in zip(np.unique(chunk_idx), self.chunk_bounds[:-1], self.chunk_bounds[1:]):
+        source_done = False
+        unique_chunk_index_values = np.unique(chunk_idx)
+        log.debug(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
+        for c_ix, chunk_left, chunk_right in zip(unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]):
             
-            yield inter_reshaped[chunk_idx == c_ix], chunk_left, chunk_right
+            if c_ix == unique_chunk_index_values[-1]:
+                source_done = True
+                log.debug("Last chunk created!")
+
+            yield inter_reshaped[chunk_idx == c_ix], chunk_left, chunk_right, source_done
     
     def last_chunk_bounds(self):
         return self.chunk_bounds[-1]
