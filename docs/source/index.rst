@@ -27,7 +27,7 @@ a flexible way to add new features.
    :maxdepth: 1
    :caption: Usage
    
-   tutorials/Simulation_Refactor.ipynb
+   tutorials/Getting_Started.ipynb
 
 .. toctree::
    :maxdepth: 1
