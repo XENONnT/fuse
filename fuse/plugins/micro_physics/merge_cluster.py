@@ -78,7 +78,7 @@ class MergeCluster(strax.Plugin):
         
         return result
 
-@numba.njit()
+#@numba.njit()
 def cluster_and_classify(result, interactions, tag_cluster_by):
 
     interaction_cluster = [interactions[interactions["cluster_ids"] == i] for i in np.unique(interactions["cluster_ids"])]
