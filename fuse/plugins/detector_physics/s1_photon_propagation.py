@@ -24,8 +24,6 @@ class S1PhotonPropagationBase(strax.Plugin):
     provides = "propagated_s1_photons"
     data_kind = "S1_photons"
     
-    #dtype is the same for S1 and S2
-    
     #Forbid rechunking
     rechunk_on_save = False
 
@@ -42,37 +40,37 @@ class S1PhotonPropagationBase(strax.Plugin):
     #Config options shared by S1 and S2 simulation 
     debug = straxen.URLConfig(
         default=False, type=bool,track=False,
-        help='Show debug informations',
+        help='Show debug information during simulation',
     )
 
     p_double_pe_emision = straxen.URLConfig(
         type=(int, float),
-        help='p_double_pe_emision',
+        help='Probability of double photo-electron emission',
     )
 
     pmt_transit_time_spread = straxen.URLConfig(
         type=(int, float),
-        help='pmt_transit_time_spread',
+        help='Spread of the PMT transit times',
     )
 
     pmt_transit_time_mean = straxen.URLConfig(
         type=(int, float),
-        help='pmt_transit_time_mean',
+        help='Mean of the PMT transit times',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
         type=(int, float),
-        help='pmt_circuit_load_resistor',
+        help='PMT circuit load resistor',
     )
 
     digitizer_bits = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_bits',
+        help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_voltage_range',
+        help='Voltage range of the digitizer boards',
     )
 
     n_top_pmts = straxen.URLConfig(
@@ -87,18 +85,17 @@ class S1PhotonPropagationBase(strax.Plugin):
 
     gains = straxen.URLConfig(
         cache=True,
-        help='pmt gains',
+        help='PMT gains',
     )
 
     photon_area_distribution = straxen.URLConfig(
         cache=True,
-        help='photon_area_distribution',
+        help='Photon area distribution',
     )
 
-    #Config options specific to S1 simulation
     s1_pattern_map = straxen.URLConfig(
         cache=True,
-        help='s1_pattern_map',
+        help='S1 pattern map',
     )
 
     deterministic_seed = straxen.URLConfig(
@@ -236,12 +233,12 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
 
     maximum_recombination_time = straxen.URLConfig(
         type=(int, float),
-        help='maximum_recombination_time',
+        help='Maximum recombination time',
     )
 
     s1_optical_propagation_spline = straxen.URLConfig(
         cache=True,
-        help='s1_optical_propagation_spline',
+        help='Spline for the optical propagation',
     )
 
     def setup(self):

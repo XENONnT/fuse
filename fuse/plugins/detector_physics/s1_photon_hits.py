@@ -39,17 +39,17 @@ class S1PhotonHits(strax.Plugin):
 
     s1_lce_correction_map = straxen.URLConfig(
         cache=True,
-        help='s1_lce_correction_map',
+        help='S1 light collection efficiency map',
     )
 
     p_double_pe_emision = straxen.URLConfig(
         type=(int, float),
-        help='p_double_pe_emision',
+        help='Probability of double photo-electron emission',
     )
 
     s1_detection_efficiency = straxen.URLConfig(
         type=(int, float),
-        help='Some placeholder for s1_detection_efficiency',
+        help='S1 detection efficiency',
     )
     
     deterministic_seed = straxen.URLConfig(
