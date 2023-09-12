@@ -14,7 +14,7 @@ a flexible way to add new features.
    are made on a regular basis.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Setup and basics
    
    setup

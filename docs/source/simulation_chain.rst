@@ -1,3 +1,4 @@
+================
 Simulation Chain
 ================
 
@@ -6,7 +7,7 @@ This makes it easy to exchange or add new simulation steps while keeping the res
 As a bonus, the output of the simulation steps can be easily accessed.
 
 Simulation overview
--------------------
+===================
 
 .. image:: figures/fuse_simulation_overview.pdf
     :alt: Overview of the simulation chain.
