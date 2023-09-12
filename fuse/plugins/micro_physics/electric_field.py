@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.micro_physics.electric_field')
 @export
 class ElectricField(strax.Plugin):
     """
-    Plugin that calculates the electric field values for the detector.
+    Plugin that calculates the electric field values for the cluster position.
     """
 
     __version__ = "0.1.0"
