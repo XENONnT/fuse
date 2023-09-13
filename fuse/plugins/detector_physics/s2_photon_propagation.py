@@ -268,7 +268,7 @@ class S2PhotonPropagationBase(strax.Plugin):
             for electron_group in electron_chunks[:-1]:
                 interactions_chunk = interactions_in_roi[mask][np.unique(electron_group["order_index"])]
                 #interactions_chunk = interactions_in_roi[mask][np.min(index_group):np.max(index_group)+1]
-                positions = np.array([interactions_chunk["x"], interactions_chunk["y"]]).T
+                positions = np.array([interactions_chunk["x_obs"], interactions_chunk["y_obs"]]).T
 
                 _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
                                                         interactions_chunk["z_obs"],
@@ -318,7 +318,7 @@ class S2PhotonPropagationBase(strax.Plugin):
         #And the last chunk
         interactions_chunk = interactions_in_roi[mask][np.unique(electron_chunks[-1]["order_index"])]
         #interactions_chunk = interactions_in_roi[mask][np.min(index_chunks[-1]):np.max(index_chunks[-1])+1]
-        positions = np.array([interactions_chunk["x"], interactions_chunk["y"]]).T
+        positions = np.array([interactions_chunk["x_obs"], interactions_chunk["y_obs"]]).T
 
         _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
                                                 interactions_chunk["z_obs"],

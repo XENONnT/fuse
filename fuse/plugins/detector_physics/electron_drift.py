@@ -22,8 +22,8 @@ class ElectronDrift(strax.Plugin):
     dtype = [('n_electron_interface', np.int64),
              ('drift_time_mean', np.int64),
              ('drift_time_spread', np.int64),
-             ('x', np.float64),
-             ('y', np.float64),
+             ('x_obs', np.float64),
+             ('y_obs', np.float64),
              ('z_obs', np.float64),
             ]
     dtype = dtype + strax.time_fields
@@ -170,8 +170,8 @@ class ElectronDrift(strax.Plugin):
         result["drift_time_spread"][mask] = drift_time_spread
         
         #These ones are needed later
-        result["x"][mask] = positions.T[0]
-        result["y"][mask] = positions.T[1]
+        result["x_obs"][mask] = positions.T[0]
+        result["y_obs"][mask] = positions.T[1]
         result["z_obs"][mask] = z_obs
         
         return result

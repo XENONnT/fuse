@@ -143,8 +143,8 @@ class ElectronExtraction(strax.Plugin):
         if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, self.dtype)
 
-        x = interactions_in_roi[mask]["x"]
-        y = interactions_in_roi[mask]["y"]
+        x = interactions_in_roi[mask]["x_obs"]
+        y = interactions_in_roi[mask]["y_obs"]
         
         xy_int = np.array([x, y]).T # maps are in R_true, so orginal position should be here
 

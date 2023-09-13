@@ -82,8 +82,8 @@ class ElectronTiming(strax.Plugin):
                                      )
         
         
-        x = np.repeat(interactions_in_roi[mask]["x"], interactions_in_roi[mask]["n_electron_extracted"])
-        y = np.repeat(interactions_in_roi[mask]["y"], interactions_in_roi[mask]["n_electron_extracted"])
+        x = np.repeat(interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["n_electron_extracted"])
+        y = np.repeat(interactions_in_roi[mask]["y_obs"], interactions_in_roi[mask]["n_electron_extracted"])
         
         result = np.zeros(len(timing), dtype = self.dtype)
         result["time"] = timing

@@ -154,7 +154,7 @@ class SecondaryScintillation(strax.Plugin):
             return dict(s2_photons=np.empty(0, self.dtype["s2_photons"]),
                         s2_photons_sum=np.empty(0, self.dtype["s2_photons_sum"]))
         
-        positions = np.array([interactions_in_roi[mask]["x"], interactions_in_roi[mask]["y"]]).T
+        positions = np.array([interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["y_obs"]]).T
         
         sc_gain = self.get_s2_light_yield(positions=positions)
         
