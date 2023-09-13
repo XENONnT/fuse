@@ -44,12 +44,12 @@ Provided Columns
    * - drift_time_spread
      - int64
      - Spread of the drift time of the electrons in the cluster
-   * - x
+   * - x_obs
      - float64
-     - x position of the cluster !Should be renamed to x_obs!
-   * - y
+     - observed x position of the cluster at liquid-gas interface
+   * - y_obs
      - float64
-     - y position of the cluster !Should be renamed to y_obs!
+     - observed y position of the cluster at liquid-gas interface
    * - z_obs
      - float64
      - observed z position of the cluster after field distortion correction. 
