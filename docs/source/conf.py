@@ -16,13 +16,12 @@ release = '0.0.0'
 
 extensions = [
     'sphinx.ext.autodoc',
-    'nbsphinx',
     'sphinx.ext.viewcode',
+    'nbsphinx',
     ]
 
 templates_path = ['_templates']
 exclude_patterns = []
-
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -31,4 +30,6 @@ exclude_patterns = []
 html_theme = 'alabaster'
 html_static_path = ['_static']
 
+#Lets disable notebook execution for now
 nbsphinx_allow_errors = True
+nbsphinx_execute = 'never'

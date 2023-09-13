@@ -1,3 +1,4 @@
+===============
 Setting up fuse
 ===============
 
@@ -9,7 +10,16 @@ You can install nestpy from the source code by running the following commands:
     $ git clone https://github.com/NESTCollaboration/nestpy
     $ cd nestpy
     $ git submodule update --init --recursive
-    $ pip install .
+    $ pip install . --user
+
+Right now we will also need a custom strax installation. This will hopefully be resolved in a few weeks when the needed strax features make it into the main branch. 
+
+.. code-block:: console
+
+    $ git clone https://github.com/AxFoundation/strax/tree/add_chunk_yielding_for_fuse
+    $ cd strax
+    $ pip install . --user
+
 
 Then its time to install fuse. All other dependencies will be installed automatically.
 
@@ -17,4 +27,4 @@ Then its time to install fuse. All other dependencies will be installed automati
 
     $ git clone https://github.com/XENONnT/fuse.git
     $ cd fuse
-    $ pip install .
+    $ pip install . --user

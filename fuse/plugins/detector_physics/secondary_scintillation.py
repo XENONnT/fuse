@@ -43,56 +43,56 @@ class SecondaryScintillation(strax.Plugin):
 
     s2_gain_spread = straxen.URLConfig(
         type=(int, float),
-        help='s2_gain_spread',
+        help='Spread of the S2 gain',
     )
 
     s2_secondary_sc_gain = straxen.URLConfig(
         type=(int, float),
-        help='s2_secondary_sc_gain',
+        help='Secondary scintillation gain',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
         type=(int, float),
-        help='pmt_circuit_load_resistor',
+        help='PMT circuit load resistor',
     )
 
     digitizer_bits = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_bits',
+        help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_voltage_range',
+        help='Voltage range of the digitizer boards',
     )
 
     se_gain_from_map = straxen.URLConfig(
-        help='se_gain_from_map',
+        help='Boolean indication if the secondary scintillation gain is taken from a map',
     )
 
     p_double_pe_emision = straxen.URLConfig(
         type=(int, float),
-        help='p_double_pe_emision',
+        help='Probability of double photo-electron emission',
     )
     
     se_gain_map = straxen.URLConfig(
         cache=True,
-        help='se_gain_map',
+        help='Map of the single electron gain ',
     )
     
     s2_correction_map = straxen.URLConfig(
         cache=True,
-        help='s2_correction_map',
+        help='S2 correction map',
     )
     
     gains = straxen.URLConfig(
         cache=True,
-        help='pmt gains',
+        help='PMT gains',
     )
     
     s2_pattern_map = straxen.URLConfig(
         cache=True,
-        help='s2_pattern_map',
+        help='S2 pattern map',
     )
 
     deterministic_seed = straxen.URLConfig(

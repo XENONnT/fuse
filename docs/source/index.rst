@@ -14,7 +14,7 @@ a flexible way to add new features.
    are made on a regular basis.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Setup and basics
    
    setup
@@ -28,6 +28,10 @@ a flexible way to add new features.
    :caption: Usage
    
    tutorials/Getting_Started.ipynb
+   tutorials/Microphysics_Simulation.ipynb
+   tutorials/Detectorphysics_Simulation.ipynb
+   tutorials/csv_input.ipynb
+   tutorials/Custom_Simulations.ipynb
 
 .. toctree::
    :maxdepth: 1

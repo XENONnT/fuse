@@ -19,7 +19,7 @@ class FindCluster(strax.Plugin):
     
     __version__ = "0.1.0"
     
-    depends_on = ("geant4_interactions",)
+    depends_on = ("geant4_interactions")
     
     provides = "cluster_index"
     

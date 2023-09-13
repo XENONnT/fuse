@@ -42,7 +42,7 @@ class ElectronTiming(strax.Plugin):
 
     electron_trapping_time = straxen.URLConfig(
         type=(int, float),
-        help='electron_trapping_time',
+        help='Time scale electrons are trapped at the liquid gas interface',
     )
 
     deterministic_seed = straxen.URLConfig(
