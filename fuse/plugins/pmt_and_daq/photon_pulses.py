@@ -23,7 +23,7 @@ class PulseWindow(strax.Plugin):
                  "pulse_ids" : "propagated_photons"
                 }
 
-    dtype_pulse_windows = strax.interval_dtype + [(('pulse_id','ID of the pulse window'), np.int64)]
+    dtype_pulse_windows = strax.interval_dtype + [(('pulse_id'), np.int64)]
     dtype_pulse_ids =  [('pulse_id', np.int64),] + strax.time_fields
 
     dtype = dict()
@@ -144,7 +144,7 @@ def concat_overlapping_hits(hits, extensions, pmt_channels, start, end):
                                    dtype=(strax.interval_dtype
                                           + [(('End time of the interval (ns since unix epoch)',
                                                'endtime'), np.int64),
-                                             (('pulse_id','identifier for the pulse'), np.int64)
+                                             (('pulse_id'), np.int64)
                                                ]))
 
     pulse_id = 0
@@ -155,7 +155,7 @@ def concat_overlapping_hits(hits, extensions, pmt_channels, start, end):
             hits, extensions, first_channel, last_hit_in_channel,photon_identifiers,pulse_id, start, end)
     return hits, photon_identifiers
 
-pulse_dtype = strax.interval_dtype + [(('pulse_id','identifier for the pulse'), np.int64)]
+pulse_dtype = strax.interval_dtype + [(('pulse_id'), np.int64)]
 
 @strax.utils.growing_result(pulse_dtype, chunk_size=int(1e4))
 @numba.njit(nogil=True, cache=True)
