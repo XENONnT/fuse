@@ -36,7 +36,7 @@ Provided Columns
      - int64
      - endtime of the energy deposit (will be the same as time)
    * - cluster_ids
-     - int64
+     - int32
      - Index of the cluster to which the energy deposit belongs.
 
 Config Options

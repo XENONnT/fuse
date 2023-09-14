@@ -45,19 +45,19 @@ Provided Columns
      - float32
      - z position of the cluster
    * - ed
-     - float64
+     - float32
      - Energy of the cluster in keV
    * - nestid
-     - int64
+     - int8
      - NEST interaction type 
    * - A
-     - int64
+     - int8
      - Mass number of the interacting particle
    * - Z
-     - int64
+     - int8
      - Charge number of the interacting particle
    * - evtid
-     - int64
+     - int32
      - Geant4 event ID
    * - x_pri
      - float32
@@ -72,7 +72,7 @@ Provided Columns
      - float32
      - Xenon density at cluster position. Will be set in a later plugin. 
    * - vol_id
-     - int64
+     - int8
      - ID of the volume in which the cluster occured. Will be set in a later plugin.
    * - create_S2
      - bool8

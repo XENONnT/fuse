@@ -35,13 +35,13 @@ Provided Columns
      - int64
      - endtime of the energy deposit (will be the same as time)
    * - photons
-     - float64
+     - int32
      - Number of photons at interaction position. 
    * - electrons
-     - float64
+     - int32
      - Number of electrons at interaction position.
    * - excitons
-     - float64
+     - int32
      - Number of excitons at interaction position. 
 
 

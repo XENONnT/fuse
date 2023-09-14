@@ -34,13 +34,13 @@ Provided Columns
      - int64
      - endtime of the energy deposit (will be the same as time)
    * - x
-     - float32
+     - float64
      - x position of the energy deposit
    * - y
-     - float32
+     - float64
      - y position of the energy deposit
    * - z
-     - float32
+     - float64
      - z position of the energy deposit
    * - t
      - float64
@@ -52,13 +52,13 @@ Provided Columns
      - <U10
      - Particle type 
    * - trackid
-     - int64
+     - int16
      - Geant4 track ID
    * - parenttype
      - <U10
      - Particle type of the parent particle
    * - parentid
-     - int64
+     - int16
      - trackid of the parent particle
    * - creaproc
      - <U10
@@ -67,7 +67,7 @@ Provided Columns
      - <U10
      - Geant4 process destroying the particle
    * - evtid
-     - int64
+     - int32
      - Geant4 event ID
    * - x_pri
      - float32

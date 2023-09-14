@@ -25,9 +25,9 @@ class NestYields(strax.Plugin):
     provides = "quanta"
     data_kind = "interactions_in_roi"
     
-    dtype = [('photons', np.float64),
-             ('electrons', np.float64),
-             ('excitons', np.float64),
+    dtype = [('photons', np.int32),
+             ('electrons', np.int32),
+             ('excitons', np.int32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -183,9 +183,9 @@ class BetaYields(strax.Plugin):
     provides = "quanta"
     data_kind = "interactions_in_roi"
     
-    dtype = [('photons', np.float64),
-             ('electrons', np.float64),
-             ('excitons', np.float64),
+    dtype = [('photons', np.int32),
+             ('electrons', np.int32),
+             ('excitons', np.int32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -315,9 +315,9 @@ class BBFYields(strax.Plugin):
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
     
-    dtype = [('photons', np.float64),
-             ('electrons', np.float64),
-             ('excitons', np.float64),
+    dtype = [('photons', np.int32),
+             ('electrons', np.int32),
+             ('excitons', np.int32),
             ]
     
     dtype = dtype + strax.time_fields
