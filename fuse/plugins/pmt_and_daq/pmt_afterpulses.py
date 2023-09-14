@@ -17,6 +17,7 @@ class PMTAfterPulses(strax.Plugin):
     
     depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"
+    data_kind = "AP_photons"
     
     #Forbid rechunking
     rechunk_on_save = False
@@ -24,8 +25,6 @@ class PMTAfterPulses(strax.Plugin):
     save_when = strax.SaveWhen.TARGET
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
-    
-    data_kind = "AP_photons"
     
     dtype = [('channel', np.int16),
              ('dpe', np.bool_),
@@ -41,37 +40,37 @@ class PMTAfterPulses(strax.Plugin):
 
     pmt_ap_t_modifier = straxen.URLConfig(
         type=(int, float),
-        help='pmt_ap_t_modifier',
+        help='PMT afterpulse time modifier',
     )
 
     pmt_ap_modifier = straxen.URLConfig(
         type=(int, float),
-        help='pmt_ap_modifier',
+        help='PMT afterpulse modifier',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
         type=(int, float),
-        help='pmt_circuit_load_resistor',
+        help='PMT circuit load resistor',
     )
 
     digitizer_bits = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_bits',
+        help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_voltage_range',
+        help='Voltage range of the digitizer boards',
     )
     
     gains = straxen.URLConfig(
         cache=True,
-        help='pmt gains',
+        help='PMT gains',
     )
     
     photon_ap_cdfs = straxen.URLConfig(
         cache=True,
-        help='photon_ap_cdfs',
+        help='Afterpuse cumulative distribution functions',
     )
 
     deterministic_seed = straxen.URLConfig(
