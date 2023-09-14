@@ -23,7 +23,7 @@ class PulseWindow(strax.Plugin):
                  "pulse_ids" : "propagated_photons"
                 }
 
-    dtype_pulse_windows = strax.interval_dtype + [(('pulse_id','identifier for the pulse'), np.int64)]
+    dtype_pulse_windows = strax.interval_dtype + [(('pulse_id','ID of the pulse window'), np.int64)]
     dtype_pulse_ids =  [('pulse_id', np.int64),] + strax.time_fields
 
     dtype = dict()
@@ -45,27 +45,27 @@ class PulseWindow(strax.Plugin):
 
     dt = straxen.URLConfig(
         type=(int),
-        help='sample_duration',
+        help='Width of one sample [ns]',
     )
 
     samples_after_pulse_center = straxen.URLConfig(
         type=(int, float),
-        help='samples_after_pulse_center',
+        help='Number of samples after the pulse center',
     )
 
     samples_to_store_after = straxen.URLConfig(
         type=(int, float),
-        help='samples_to_store_after',
+        help='Number of samples to store after the pulse center',
     )
 
     samples_before_pulse_center = straxen.URLConfig(
         type=(int, float),
-        help='samples_before_pulse_center',
+        help='Number of samples before the pulse center',
     )
 
     samples_to_store_before = straxen.URLConfig(
         type=(int, float),
-        help='samples_to_store_before',
+        help='Number of samples to store before the pulse center',
     )
 
     n_tpc_pmts = straxen.URLConfig(

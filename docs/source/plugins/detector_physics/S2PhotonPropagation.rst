@@ -12,10 +12,8 @@ The plugin is split into a `S2PhotonPropagationBase` class defining the compute
 method as well as the photon channels calculation. The photon timing calculation
 is implemented in the child plugin `S2PhotonPropagation` which inherits from
 `S2PhotonPropagationBase`. This way we can add different timing calculations
-without having to duplicate the photon channel calculation.
-
-`S2PhotonPropagation` simulates the photon timing using luminescence timing in the gas 
-gap using a garfield simulation map, singlet and triplet decays and optical propagation.
+without having to duplicate the photon channel calculation. `S2PhotonPropagation` simulates
+the photon timing using luminescence timing in the gas gap using a garfield simulation map, singlet and triplet decays and optical propagation.
 
 Technical Details
 -----------------

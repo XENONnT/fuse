@@ -10,4 +10,5 @@ PMT and DAQ Simulation
    
    plugins/pmt_and_daq/PMTAfterPulses
    plugins/pmt_and_daq/PhotonSummary
+   plugins/pmt_and_daq/PulseWindow
    plugins/pmt_and_daq/PMTResponseAndDAQ
