@@ -45,7 +45,7 @@ class XENONnT_TPC(VolumePlugin):
 
     provides = "tpc_interactions"
     data_kind = "tpc_interactions"
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -141,7 +141,7 @@ class XENONnT_BelowCathode(VolumePlugin):
 
     provides = "below_cathode_interactions"
     data_kind = "below_cathode_interactions"
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     #Forbid rechunking
     rechunk_on_save = False

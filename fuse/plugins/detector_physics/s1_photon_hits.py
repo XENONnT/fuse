@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.detector_physics.s1_photon_hits')
 @export
 class S1PhotonHits(strax.Plugin):
 
-    __version__ = '0.1.0'
+    __version__ = '0.1.1'
 
     depends_on = ("microphysics_summary")
     provides = "s1_photons"

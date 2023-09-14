@@ -17,7 +17,7 @@ log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
 @export
 class PMTResponseAndDAQ(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     depends_on = ("photon_summary", "pulse_ids", "pulse_windows")
 

@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.pmt_and_daq.photon_pulses')
 @export
 class PulseWindow(strax.Plugin):
 
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     depends_on = ("photon_summary")
 

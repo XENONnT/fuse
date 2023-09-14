@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.micro_physics.merge_cluster')
 @export
 class MergeCluster(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
     
     depends_on = ("geant4_interactions", "cluster_index")
     
