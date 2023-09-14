@@ -36,22 +36,22 @@ Provided Columns
      - int64
      - endtime of the energy deposit (will be the same as time)
    * - n_electron_interface
-     - int64
+     - int32
      - Number of electrons reaching the liquid gas interface
    * - drift_time_mean
-     - int64
+     - int32
      - Mean drift time of the electrons in the cluster
    * - drift_time_spread
-     - int64
+     - int32
      - Spread of the drift time of the electrons in the cluster
    * - x_obs
-     - float64
+     - float32
      - observed x position of the cluster at liquid-gas interface
    * - y_obs
-     - float64
+     - float32
      - observed y position of the cluster at liquid-gas interface
    * - z_obs
-     - float64
+     - float32
      - observed z position of the cluster after field distortion correction. 
 
 

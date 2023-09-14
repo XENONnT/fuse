@@ -33,7 +33,7 @@ Provided Columns
      - int64
      - endtime of the energy deposit (will be the same as time)
    * - n_electron_extracted
-     - int64
+     - int32
      - Number of electrons extracted into the gas phase
 
 

@@ -32,7 +32,7 @@ Provided Columns
      - int64
      - endtime of the energy deposit (will be the same as time)
    * - n_s1_photon_hits
-     - int64
+     - int32
      - Number detected S1 photons
 
 Config Options

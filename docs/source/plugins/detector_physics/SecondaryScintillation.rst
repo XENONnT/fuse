@@ -38,7 +38,7 @@ s2_photons
      - int64
      - Endtime of the electron reaching the gas phase (same values as time)
    * - n_s2_photons
-     - int64
+     - int32
      - number of photons produced by the extracted electron
 
 
@@ -59,7 +59,7 @@ s2_photons_sum
      - int64
      - endtime of the energy deposit (will be the same as time)
    * - sum_s2_photons
-     - int64
+     - int32
      - sum of all photons produced by electrons originating from the same cluster
 
 

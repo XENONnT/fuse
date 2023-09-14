@@ -19,12 +19,12 @@ class ElectronDrift(strax.Plugin):
     provides = "drifted_electrons"
     data_kind = 'interactions_in_roi'
     
-    dtype = [('n_electron_interface', np.int64),
-             ('drift_time_mean', np.int64),
-             ('drift_time_spread', np.int64),
-             ('x_obs', np.float64),
-             ('y_obs', np.float64),
-             ('z_obs', np.float64),
+    dtype = [('n_electron_interface', np.int32),
+             ('drift_time_mean', np.int32),
+             ('drift_time_spread', np.int32),
+             ('x_obs', np.float32),
+             ('y_obs', np.float32),
+             ('z_obs', np.float32),
             ]
     dtype = dtype + strax.time_fields
     

@@ -33,13 +33,13 @@ Provided Columns
      - int64
      - Endtime of the electron reaching the gas phase (same values as time)
    * - x
-     - float64
+     - float32
      - x position of the electron
    * - y
-     - float64
+     - float32
      - y position of the electron
    * - order_index
-     - int64
+     - int32
      - index to order the electrons like they were initially produced. This way they can be easier mapped to the corresponding interactions_in_roi.
 
 Config Options

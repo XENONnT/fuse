@@ -27,7 +27,7 @@ class S1PhotonHits(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
 
-    dtype = [('n_s1_photon_hits', np.int64),
+    dtype = [('n_s1_photon_hits', np.int32),
             ]
     dtype = dtype + strax.time_fields
 

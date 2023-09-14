@@ -28,9 +28,9 @@ class ElectronTiming(strax.Plugin):
     
     data_kind = "individual_electrons"
     
-    dtype = [('x', np.float64),
-             ('y', np.float64),
-             ('order_index', np.int64),
+    dtype = [('x', np.float32),
+             ('y', np.float32),
+             ('order_index', np.int32),
             ]
     dtype = dtype + strax.time_fields
     

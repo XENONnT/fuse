@@ -27,7 +27,7 @@ class ElectronExtraction(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
 
-    dtype = [('n_electron_extracted', np.int64),
+    dtype = [('n_electron_extracted', np.int32),
             ]
     
     dtype = dtype + strax.time_fields

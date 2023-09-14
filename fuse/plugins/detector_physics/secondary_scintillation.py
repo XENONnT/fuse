@@ -21,8 +21,8 @@ class SecondaryScintillation(strax.Plugin):
                  "s2_photons_sum" : "interactions_in_roi"
                 }
     
-    dtype_photons = [('n_s2_photons', np.int64),] + strax.time_fields
-    dtype_sum_photons = [('sum_s2_photons', np.int64),] + strax.time_fields
+    dtype_photons = [('n_s2_photons', np.int32),] + strax.time_fields
+    dtype_sum_photons = [('sum_s2_photons', np.int32),] + strax.time_fields
     
     dtype = dict()
     dtype["s2_photons"] = dtype_photons
