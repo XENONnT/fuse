@@ -2,4 +2,4 @@
 Delayed Electrons
 =================
 
-Feature will be added in a later PR. 
+Feature will be added in a future PR. 
