@@ -17,13 +17,13 @@ log = logging.getLogger('fuse.micro_physics.find_cluster')
 @export
 class FindCluster(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
     
-    depends_on = ("geant4_interactions",)
+    depends_on = ("geant4_interactions")
     
     provides = "cluster_index"
     
-    dtype = [('cluster_ids', np.int64),
+    dtype = [('cluster_ids', np.int32),
             ]
     dtype = dtype + strax.time_fields
 

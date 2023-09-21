@@ -19,7 +19,7 @@ log = logging.getLogger('fuse.micro_physics.input')
 @export
 class ChunkInput(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
     
     depends_on = tuple()
     provides = "geant4_interactions"
@@ -31,18 +31,18 @@ class ChunkInput(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
     
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('z', np.float32),
+    dtype = [('x', np.float64),
+             ('y', np.float64),
+             ('z', np.float64),
              ('t', np.float64),
              ('ed', np.float32),
              ('type', "<U10"),
-             ('trackid', np.int64),
+             ('trackid', np.int16),
              ('parenttype', "<U10"),
-             ('parentid', np.int64),
+             ('parentid', np.int16),
              ('creaproc', "<U10"),
              ('edproc', "<U10"),
-             ('evtid', np.int64),
+             ('evtid', np.int32),
              ('x_pri', np.float32),
              ('y_pri', np.float32),
              ('z_pri', np.float32),
@@ -57,22 +57,22 @@ class ChunkInput(strax.Plugin):
     #Config options
     debug = straxen.URLConfig(
         default=False, type=bool,track=False,
-        help='Show debug informations',
+        help='Show debug information during simulation',
     )
 
     path = straxen.URLConfig(
         track=False,
-        help='Path to search for data',
+        help='Path to the file to simulate from excluding the file name',
     )
 
     file_name = straxen.URLConfig(
         track=False,
-        help='File to open',
+        help='Name of the file to simulate from',
     )
 
     separation_scale = straxen.URLConfig(
         default=1e8, type=(int, float),
-        help='separation_scale',
+        help='Separation scale for the dynamic chunking in ns',
     )
 
     source_rate = straxen.URLConfig(
@@ -84,22 +84,22 @@ class ChunkInput(strax.Plugin):
 
     cut_delayed = straxen.URLConfig(
         default=4e14, type=(int, float),
-        help='delay cut. All interactions happening after this time (including the event time) will be cut.',
+        help='All interactions happening after this time (including the event time) will be cut.',
     )
 
     n_interactions_per_chunk = straxen.URLConfig(
         default=1e5, type=(int, float),
-        help='n_interactions_per_chunk',
+        help='Minimum number of interaction per chunk',
     )
 
     entry_start = straxen.URLConfig(
         default=0, type=(int, float),
-        help='entry_start',
+        help='Geant4 event to start simulation from.',
     )
 
     entry_stop = straxen.URLConfig(
         default=None,
-        help='How many entries from the ROOT file you want to process.',
+        help='Geant4 event to stop simulation at. If None, all events are simulated.',
     )
 
     cut_by_eventid = straxen.URLConfig(
@@ -109,7 +109,7 @@ class ChunkInput(strax.Plugin):
 
     nr_only = straxen.URLConfig(
         default=False, type=bool,
-        help='Add if you want to filter only nuclear recoil events (maximum ER energy deposit 10 keV)',
+        help='Filter only nuclear recoil events (maximum ER energy deposit 10 keV)',
     )
 
     deterministic_seed = straxen.URLConfig(
@@ -238,18 +238,18 @@ class file_loader():
     
         
         
-        self.dtype = [('x', np.float32),
-                     ('y', np.float32),
-                     ('z', np.float32),
+        self.dtype = [('x', np.float64),
+                     ('y', np.float64),
+                     ('z', np.float64),
                      ('t', np.float64),
                      ('ed', np.float32),
                      ('type', "<U10"),
-                     ('trackid', np.int64),
+                     ('trackid', np.int16),
                      ('parenttype', "<U10"),
-                     ('parentid', np.int64),
+                     ('parentid', np.int16),
                      ('creaproc', "<U10"),
                      ('edproc', "<U10"),
-                     ('evtid', np.int64),
+                     ('evtid', np.int32),
                      ('x_pri', np.float32),
                      ('y_pri', np.float32),
                      ('z_pri', np.float32),

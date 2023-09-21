@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.pmt_and_daq.photon_pulses')
 @export
 class PulseWindow(strax.Plugin):
 
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     depends_on = ("photon_summary")
 
@@ -23,7 +23,7 @@ class PulseWindow(strax.Plugin):
                  "pulse_ids" : "propagated_photons"
                 }
 
-    dtype_pulse_windows = strax.interval_dtype + [(('pulse_id','identifier for the pulse'), np.int64)]
+    dtype_pulse_windows = strax.interval_dtype + [(('pulse_id'), np.int64)]
     dtype_pulse_ids =  [('pulse_id', np.int64),] + strax.time_fields
 
     dtype = dict()
@@ -45,27 +45,27 @@ class PulseWindow(strax.Plugin):
 
     dt = straxen.URLConfig(
         type=(int),
-        help='sample_duration',
+        help='Width of one sample [ns]',
     )
 
     samples_after_pulse_center = straxen.URLConfig(
         type=(int, float),
-        help='samples_after_pulse_center',
+        help='Number of samples after the pulse center',
     )
 
     samples_to_store_after = straxen.URLConfig(
         type=(int, float),
-        help='samples_to_store_after',
+        help='Number of samples to store after the pulse center',
     )
 
     samples_before_pulse_center = straxen.URLConfig(
         type=(int, float),
-        help='samples_before_pulse_center',
+        help='Number of samples before the pulse center',
     )
 
     samples_to_store_before = straxen.URLConfig(
         type=(int, float),
-        help='samples_to_store_before',
+        help='Number of samples to store before the pulse center',
     )
 
     n_tpc_pmts = straxen.URLConfig(
@@ -144,7 +144,7 @@ def concat_overlapping_hits(hits, extensions, pmt_channels, start, end):
                                    dtype=(strax.interval_dtype
                                           + [(('End time of the interval (ns since unix epoch)',
                                                'endtime'), np.int64),
-                                             (('pulse_id','identifier for the pulse'), np.int64)
+                                             (('pulse_id'), np.int64)
                                                ]))
 
     pulse_id = 0
@@ -155,7 +155,7 @@ def concat_overlapping_hits(hits, extensions, pmt_channels, start, end):
             hits, extensions, first_channel, last_hit_in_channel,photon_identifiers,pulse_id, start, end)
     return hits, photon_identifiers
 
-pulse_dtype = strax.interval_dtype + [(('pulse_id','identifier for the pulse'), np.int64)]
+pulse_dtype = strax.interval_dtype + [(('pulse_id'), np.int64)]
 
 @strax.utils.growing_result(pulse_dtype, chunk_size=int(1e4))
 @numba.njit(nogil=True, cache=True)

@@ -19,15 +19,15 @@ nest_rng = nestpy.RandomGen.rndm()
 @export
 class NestYields(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
     data_kind = "interactions_in_roi"
     
-    dtype = [('photons', np.float64),
-             ('electrons', np.float64),
-             ('excitons', np.float64),
+    dtype = [('photons', np.int32),
+             ('electrons', np.int32),
+             ('excitons', np.int32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -177,15 +177,15 @@ class NestYields(strax.Plugin):
     
 class BetaYields(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
     data_kind = "interactions_in_roi"
     
-    dtype = [('photons', np.float64),
-             ('electrons', np.float64),
-             ('excitons', np.float64),
+    dtype = [('photons', np.int32),
+             ('electrons', np.int32),
+             ('excitons', np.int32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -310,14 +310,14 @@ class BetaYields(strax.Plugin):
 
 class BBFYields(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
     
-    dtype = [('photons', np.float64),
-             ('electrons', np.float64),
-             ('excitons', np.float64),
+    dtype = [('photons', np.int32),
+             ('electrons', np.int32),
+             ('excitons', np.int32),
             ]
     
     dtype = dtype + strax.time_fields

@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.micro_physics.merge_cluster')
 @export
 class MergeCluster(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
     
     depends_on = ("geant4_interactions", "cluster_index")
     
@@ -31,16 +31,16 @@ class MergeCluster(strax.Plugin):
     dtype = [('x', np.float32),
              ('y', np.float32),
              ('z', np.float32),
-             ('ed', np.float64),
-             ('nestid', np.int64),
-             ('A', np.int64),
-             ('Z', np.int64),
-             ('evtid', np.int64),
+             ('ed', np.float32),
+             ('nestid', np.int8),
+             ('A', np.int8),
+             ('Z', np.int8),
+             ('evtid', np.int32),
              ('x_pri', np.float32),
              ('y_pri', np.float32),
              ('z_pri', np.float32),
              ('xe_density', np.float32), #Will be set i a later plugin
-             ('vol_id', np.int64), #Will be set i a later plugin
+             ('vol_id', np.int8), #Will be set i a later plugin
              ('create_S2', np.bool8), #Will be set i a later plugin
             ]
     
@@ -78,7 +78,7 @@ class MergeCluster(strax.Plugin):
         
         return result
 
-@numba.njit()
+#@numba.njit()
 def cluster_and_classify(result, interactions, tag_cluster_by):
 
     interaction_cluster = [interactions[interactions["cluster_ids"] == i] for i in np.unique(interactions["cluster_ids"])]
@@ -116,7 +116,7 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
 
 
 
-infinity = np.iinfo(np.int16).max
+infinity = np.iinfo(np.int8).max
 classifier_dtype = [(('Interaction type', 'types'), np.dtype('<U30')),
                     (('Interaction type of the parent', 'parenttype'), np.dtype('<U30')),
                     (('Creation process', 'creaproc'), np.dtype('<U30')),

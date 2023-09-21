@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.detector_physics.s1_photon_hits')
 @export
 class S1PhotonHits(strax.Plugin):
 
-    __version__ = '0.1.0'
+    __version__ = '0.1.1'
 
     depends_on = ("microphysics_summary")
     provides = "s1_photons"
@@ -27,7 +27,7 @@ class S1PhotonHits(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
 
-    dtype = [('n_s1_photon_hits', np.int64),
+    dtype = [('n_s1_photon_hits', np.int32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -39,17 +39,17 @@ class S1PhotonHits(strax.Plugin):
 
     s1_lce_correction_map = straxen.URLConfig(
         cache=True,
-        help='s1_lce_correction_map',
+        help='S1 light collection efficiency map',
     )
 
     p_double_pe_emision = straxen.URLConfig(
         type=(int, float),
-        help='p_double_pe_emision',
+        help='Probability of double photo-electron emission',
     )
 
     s1_detection_efficiency = straxen.URLConfig(
         type=(int, float),
-        help='Some placeholder for s1_detection_efficiency',
+        help='S1 detection efficiency',
     )
     
     deterministic_seed = straxen.URLConfig(

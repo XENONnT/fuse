@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.detector_physics.electron_extraction')
 @export
 class ElectronExtraction(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
     
     depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
@@ -27,7 +27,7 @@ class ElectronExtraction(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
 
-    dtype = [('n_electron_extracted', np.int64),
+    dtype = [('n_electron_extracted', np.int32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -40,62 +40,62 @@ class ElectronExtraction(strax.Plugin):
 
     digitizer_voltage_range = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_voltage_range',
+        help='Voltage range of the digitizer boards',
     )
 
     digitizer_bits = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_bits',
+        help='Number of bits of the digitizer boards',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
         type=(int, float),
-        help='pmt_circuit_load_resistor',
+        help='PMT circuit load resistor ',
     )
 
     s2_secondary_sc_gain = straxen.URLConfig(
         type=(int, float),
-        help='s2_secondary_sc_gain',
+        help='Secondary scintillation gain',
     )
     #Rename? -> g2_value in beta_yields model 
     g2_mean = straxen.URLConfig(
         type=(int, float),
-        help='g2_mean',
+        help='mean value of the g2 gain. ',
     )
 
     electron_extraction_yield = straxen.URLConfig(
         type=(int, float),
-        help='electron_extraction_yield',
+        help='Electron extraction yield',
     )
 
     ext_eff_from_map = straxen.URLConfig(
         type=bool,
-        help='ext_eff_from_map',
+        help='Boolean indication if the extraction efficiency is taken from a map',
     )
 
     se_gain_from_map = straxen.URLConfig(
         type=bool,
-        help='se_gain_from_map',
+        help='Boolean indication if the secondary scintillation gain is taken from a map',
     )
 
     gains = straxen.URLConfig(
         cache=True,
-        help='pmt gains',
+        help='PMT gains',
     )
     
     s2_correction_map = straxen.URLConfig(
         cache=True,
-        help='s2_correction_map',
+        help='S2 correction map',
     )
     
     se_gain_map = straxen.URLConfig(
         cache=True,
-        help='se_gain_map',
+        help='Map of the single electron gain',
     )
     
     s2_pattern_map = straxen.URLConfig(
         cache=True,
-        help='s2_pattern_map',
+        help='S2 pattern map',
     )
 
     deterministic_seed = straxen.URLConfig(
@@ -143,8 +143,8 @@ class ElectronExtraction(strax.Plugin):
         if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, self.dtype)
 
-        x = interactions_in_roi[mask]["x"]
-        y = interactions_in_roi[mask]["y"]
+        x = interactions_in_roi[mask]["x_obs"]
+        y = interactions_in_roi[mask]["y_obs"]
         
         xy_int = np.array([x, y]).T # maps are in R_true, so orginal position should be here
 

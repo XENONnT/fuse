@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 @export
 class SecondaryScintillation(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
     
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
     provides = ("s2_photons", "s2_photons_sum")
@@ -21,8 +21,8 @@ class SecondaryScintillation(strax.Plugin):
                  "s2_photons_sum" : "interactions_in_roi"
                 }
     
-    dtype_photons = [('n_s2_photons', np.int64),] + strax.time_fields
-    dtype_sum_photons = [('sum_s2_photons', np.int64),] + strax.time_fields
+    dtype_photons = [('n_s2_photons', np.int32),] + strax.time_fields
+    dtype_sum_photons = [('sum_s2_photons', np.int32),] + strax.time_fields
     
     dtype = dict()
     dtype["s2_photons"] = dtype_photons
@@ -43,56 +43,56 @@ class SecondaryScintillation(strax.Plugin):
 
     s2_gain_spread = straxen.URLConfig(
         type=(int, float),
-        help='s2_gain_spread',
+        help='Spread of the S2 gain',
     )
 
     s2_secondary_sc_gain = straxen.URLConfig(
         type=(int, float),
-        help='s2_secondary_sc_gain',
+        help='Secondary scintillation gain',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
         type=(int, float),
-        help='pmt_circuit_load_resistor',
+        help='PMT circuit load resistor',
     )
 
     digitizer_bits = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_bits',
+        help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_voltage_range',
+        help='Voltage range of the digitizer boards',
     )
 
     se_gain_from_map = straxen.URLConfig(
-        help='se_gain_from_map',
+        help='Boolean indication if the secondary scintillation gain is taken from a map',
     )
 
     p_double_pe_emision = straxen.URLConfig(
         type=(int, float),
-        help='p_double_pe_emision',
+        help='Probability of double photo-electron emission',
     )
     
     se_gain_map = straxen.URLConfig(
         cache=True,
-        help='se_gain_map',
+        help='Map of the single electron gain ',
     )
     
     s2_correction_map = straxen.URLConfig(
         cache=True,
-        help='s2_correction_map',
+        help='S2 correction map',
     )
     
     gains = straxen.URLConfig(
         cache=True,
-        help='pmt gains',
+        help='PMT gains',
     )
     
     s2_pattern_map = straxen.URLConfig(
         cache=True,
-        help='s2_pattern_map',
+        help='S2 pattern map',
     )
 
     deterministic_seed = straxen.URLConfig(
@@ -154,7 +154,7 @@ class SecondaryScintillation(strax.Plugin):
             return dict(s2_photons=np.empty(0, self.dtype["s2_photons"]),
                         s2_photons_sum=np.empty(0, self.dtype["s2_photons_sum"]))
         
-        positions = np.array([interactions_in_roi[mask]["x"], interactions_in_roi[mask]["y"]]).T
+        positions = np.array([interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["y_obs"]]).T
         
         sc_gain = self.get_s2_light_yield(positions=positions)
         
@@ -168,11 +168,14 @@ class SecondaryScintillation(strax.Plugin):
         sum_photons_per_interaction = [np.sum(x) for x in np.split(n_photons_per_ele, np.cumsum(interactions_in_roi[mask]["n_electron_extracted"]))[:-1]]
         
         n_photons_per_ele[n_photons_per_ele < 0] = 0
+
+        reorder_electrons = np.argsort(individual_electrons, order = ["order_index", "time"])
         
         result_photons = np.zeros(len(n_photons_per_ele), dtype = self.dtype["s2_photons"])
         result_photons["n_s2_photons"] = n_photons_per_ele
-        result_photons["time"] = individual_electrons["time"]
-        result_photons["endtime"] = individual_electrons["endtime"]
+        result_photons["time"] = individual_electrons["time"][reorder_electrons]
+        result_photons["endtime"] = individual_electrons["endtime"][reorder_electrons]
+        result_photons = strax.sort_by_time(result_photons)
         
         result_sum_photons = np.zeros(len(interactions_in_roi), dtype = self.dtype["s2_photons_sum"])
         result_sum_photons["sum_s2_photons"][mask] = sum_photons_per_interaction

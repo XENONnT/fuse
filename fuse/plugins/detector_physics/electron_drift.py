@@ -13,19 +13,20 @@ log = logging.getLogger('fuse.detector_physics.electron_drift')
 @export
 class ElectronDrift(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
     
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
     data_kind = 'interactions_in_roi'
     
-    dtype = [('n_electron_interface', np.int64),
-             ('drift_time_mean', np.int64),
-             ('drift_time_spread', np.int64),
-             ('x', np.float64),
-             ('y', np.float64),
-             ('z_obs', np.float64),
+    dtype = [('n_electron_interface', np.int32),
+             ('drift_time_mean', np.int32),
+             ('drift_time_spread', np.int32),
+             ('x_obs', np.float32),
+             ('y_obs', np.float32),
+             ('z_obs', np.float32),
             ]
+    dtype = dtype + strax.time_fields
     
     #Forbid rechunking
     rechunk_on_save = False
@@ -33,8 +34,6 @@ class ElectronDrift(strax.Plugin):
     save_when = strax.SaveWhen.TARGET
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
-    
-    dtype = dtype + strax.time_fields
     
     #Config options
     debug = straxen.URLConfig(
@@ -44,43 +43,43 @@ class ElectronDrift(strax.Plugin):
     
     drift_velocity_liquid = straxen.URLConfig(
         type=(int, float),
-        help='drift_velocity_liquid',
+        help='Drift velocity of electrons in the liquid xenon',
     )
     
     drift_time_gate = straxen.URLConfig(
         type=(int, float),
-        help='drift_time_gate',
+        help='Electron drift time from the gate in ns',
     )
     
     diffusion_constant_longitudinal = straxen.URLConfig(
         type=(int, float),
-        help='diffusion_constant_longitudinal',
+        help='Longitudinal electron drift diffusion constant',
     )
     
     electron_lifetime_liquid = straxen.URLConfig(
         type=(int, float),
-        help='electron_lifetime_liquid',
+        help='Electron lifetime in liquid xenon',
     )
     
     enable_field_dependencies = straxen.URLConfig(
-        help='enable_field_dependencies',
+        help='Field dependencies during electron drift',
     )
 
     tpc_length = straxen.URLConfig(
         type=(int, float),
-        help='tpc_length',
+        help='Length of the XENONnT TPC',
     )
         
     field_distortion_model = straxen.URLConfig(
-        help='field_distortion_model',
+        help='Model for the electric field distortion',
     )
     
     field_dependencies_map_tmp = straxen.URLConfig(
-        help='field_dependencies_map',
+        help='Map for the electric field dependencies',
     )
     
     diffusion_longitudinal_map_tmp = straxen.URLConfig(
-        help='diffusion_longitudinal_map',
+        help='Longitudinal diffusion map',
     )
     
     fdc_map_fuse = straxen.URLConfig(
@@ -171,8 +170,8 @@ class ElectronDrift(strax.Plugin):
         result["drift_time_spread"][mask] = drift_time_spread
         
         #These ones are needed later
-        result["x"][mask] = positions.T[0]
-        result["y"][mask] = positions.T[1]
+        result["x_obs"][mask] = positions.T[0]
+        result["y_obs"][mask] = positions.T[1]
         result["z_obs"][mask] = z_obs
         
         return result

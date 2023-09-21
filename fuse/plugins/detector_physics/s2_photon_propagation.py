@@ -19,13 +19,11 @@ conversion_to_bar = 1/constants.elementary_charge / 1e1
 @export
 class S2PhotonPropagationBase(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
     
-    depends_on = ("s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
+    depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
     provides = "propagated_s2_photons"
     data_kind = "S2_photons"
-
-    #dtype is the same for S1 and S2
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -99,37 +97,37 @@ class S2PhotonPropagationBase(strax.Plugin):
     #Config options specific to S2 simulation
     phase_s2 = straxen.URLConfig(
         default="gas",
-        help='phase_s2',
+        help='phase of the s2 producing region',
     )
 
     drift_velocity_liquid = straxen.URLConfig(
         type=(int, float),
-        help='drift_velocity_liquid',
+        help='Drift velocity of electrons in the liquid xenon',
     )
 
     tpc_length = straxen.URLConfig(
         type=(int, float),
-        help='tpc_length',
+        help='Length of the XENONnT TPC',
     )
 
     tpc_radius = straxen.URLConfig(
         type=(int, float),
-        help='tpc_radius',
+        help='Radius of the XENONnT TPC ',
     )
 
     diffusion_constant_transverse = straxen.URLConfig(
         type=(int, float),
-        help='diffusion_constant_transverse',
+        help='Transverse diffusion constant',
     )
 
     s2_aft_skewness = straxen.URLConfig(
         type=(int, float),
-        help='s2_aft_skewness',
+        help='Skew of the S2 area fraction top',
     )
 
     s2_aft_sigma = straxen.URLConfig(
         type=(int, float),
-        help='s2_aft_sigma',
+        help='Width of the S2 area fraction top',
     )
     
     enable_field_dependencies = straxen.URLConfig(
@@ -138,46 +136,46 @@ class S2PhotonPropagationBase(strax.Plugin):
     
     s2_pattern_map = straxen.URLConfig(
         cache=True,
-        help='s2_pattern_map',
+        help='S2 pattern map',
     )
 
     #stupid naming problem...
     field_dependencies_map_tmp = straxen.URLConfig(
-        help='field_dependencies_map',
+        help='Map for the electric field dependencies',
     )
 
     singlet_fraction_gas = straxen.URLConfig(
         type=(int, float),
-        help='singlet_fraction_gas',
+        help='Fraction of singlet states in GXe',
     )
 
     triplet_lifetime_gas = straxen.URLConfig(
         type=(int, float),
-        help='triplet_lifetime_gas',
+        help='Liftetime of triplet states in GXe',
     )
 
     singlet_lifetime_gas = straxen.URLConfig(
         type=(int, float),
-        help='singlet_lifetime_gas',
+        help='Liftetime of singlet states in GXe',
     )
 
     triplet_lifetime_liquid = straxen.URLConfig(
         type=(int, float),
-        help='triplet_lifetime_liquid',
+        help='Liftetime of triplet states in LXe',
     )
 
     singlet_lifetime_liquid = straxen.URLConfig(
         type=(int, float),
-        help='singlet_lifetime_liquid',
+        help='Liftetime of singlet states in LXe',
     )
 
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+    s2_secondary_sc_gain = straxen.URLConfig(
+        type=(int, float),
+        help='Secondary scintillation gain',
     )
 
     propagated_s2_photons_file_size_target = straxen.URLConfig(
-        type=(int, float), default = 200, track=False,
+        type=(int, float), default = 300, track=False,
         help='target for the propagated_s2_photons file size in MB',
     )
 
@@ -186,9 +184,9 @@ class S2PhotonPropagationBase(strax.Plugin):
         help='chunk can not be split if gap between photons is smaller than this value given in ns',
     )
 
-    s2_secondary_sc_gain = straxen.URLConfig(
-        type=(int, float),
-        help='s2_secondary_sc_gain',
+    deterministic_seed = straxen.URLConfig(
+        default=True, type=bool,
+        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
 
     def setup(self):
@@ -244,7 +242,8 @@ class S2PhotonPropagationBase(strax.Plugin):
         electron_time_gaps = np.append(electron_time_gaps, 0) #Add last gap
 
         #Index to match the electrons to the corresponding interaction_in_roi (and vice versa)
-        electron_index = build_electron_index(individual_electrons, interactions_in_roi[mask])
+        #electron_index = build_electron_index(individual_electrons, interactions_in_roi[mask])
+        #electron_index = individual_electrons["order_index"]
 
         split_index = find_electron_split_index(
             individual_electrons,
@@ -255,18 +254,19 @@ class S2PhotonPropagationBase(strax.Plugin):
             )
 
         electron_chunks = np.array_split(individual_electrons, split_index)
-        index_chunks = np.array_split(electron_index, split_index)
+        #index_chunks = np.array_split(electron_index, split_index)
 
-        n_chunks = len(index_chunks)
+        n_chunks = len(electron_chunks)
         if n_chunks > 1:
             log.debug("Splitting into %d chunks" % n_chunks)
         
         last_start = start
         if n_chunks>1:
-            for electron_group, index_group in zip(electron_chunks[:-1], index_chunks[:-1]):
-                
-                interactions_chunk = interactions_in_roi[mask][np.min(index_group):np.max(index_group)+1]
-                positions = np.array([interactions_chunk["x"], interactions_chunk["y"]]).T
+            #for electron_group, index_group in zip(electron_chunks[:-1], index_chunks[:-1]):
+            for electron_group in electron_chunks[:-1]:
+                interactions_chunk = interactions_in_roi[mask][np.unique(electron_group["order_index"])]
+                #interactions_chunk = interactions_in_roi[mask][np.min(index_group):np.max(index_group)+1]
+                positions = np.array([interactions_chunk["x_obs"], interactions_chunk["y_obs"]]).T
 
                 _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
                                                         interactions_chunk["z_obs"],
@@ -314,8 +314,9 @@ class S2PhotonPropagationBase(strax.Plugin):
                 yield chunk
     
         #And the last chunk
-        interactions_chunk = interactions_in_roi[mask][np.min(index_chunks[-1]):np.max(index_chunks[-1])+1]
-        positions = np.array([interactions_chunk["x"], interactions_chunk["y"]]).T
+        interactions_chunk = interactions_in_roi[mask][np.unique(electron_chunks[-1]["order_index"])]
+        #interactions_chunk = interactions_in_roi[mask][np.min(index_chunks[-1]):np.max(index_chunks[-1])+1]
+        positions = np.array([interactions_chunk["x_obs"], interactions_chunk["y_obs"]]).T
 
         _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
                                                 interactions_chunk["z_obs"],
@@ -495,17 +496,17 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 
     s2_luminescence_map = straxen.URLConfig(
         cache=True,
-        help='s2_luminescence_map',
+        help='Luminescence map for S2 Signals',
     )
 
     garfield_gas_gap_map = straxen.URLConfig(
         cache=True,
-        help='garfield_gas_gap_map',
+        help='Garfield gas gap map',
     )
 
     s2_optical_propagation_spline = straxen.URLConfig(
         cache=True,
-        help='s2_optical_propagation_spline',
+        help='Spline for the optical propagation of S2 signals',
     )
 
     def setup(self):

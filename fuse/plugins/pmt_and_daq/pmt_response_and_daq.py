@@ -17,7 +17,7 @@ log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
 @export
 class PMTResponseAndDAQ(strax.Plugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     depends_on = ("photon_summary", "pulse_ids", "pulse_windows")
 
@@ -50,89 +50,90 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        help='pmt_circuit_load_resistor', type=(int, float),
+        type=(int, float),
+        help='PMT circuit load resistor', 
     )
 
     external_amplification = straxen.URLConfig(
         type=(int, float),
-        help='external_amplification',
+        help='External amplification factor',
     )
 
     digitizer_bits = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_bits',
+        help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_voltage_range',
+        help='Voltage range of the digitizer boards',
     )
 
     noise_data = straxen.URLConfig(
         cache=True,
-        help='noise_data',
+        help='Measured noise data',
     )
 
     pe_pulse_ts = straxen.URLConfig(
-        help='pe_pulse_ts',
+        help='Add a good description here',
     )
     
     pe_pulse_ys = straxen.URLConfig(
-        help='pe_pulse_ys',
+        help='Add a good description here',
     )
 
     pmt_pulse_time_rounding = straxen.URLConfig(
         type=(int, float),
-        help='pmt_pulse_time_rounding',
+        help='Time rounding of the PMT pulse',
     )
 
     samples_after_pulse_center = straxen.URLConfig(
         type=(int, float),
-        help='samples_after_pulse_center',
+        help='Number of samples after the pulse center',
     )
 
     samples_before_pulse_center = straxen.URLConfig(
         type=(int, float),
-        help='samples_before_pulse_center',
+        help=' Number of samples before the pulse center',
     )
 
     digitizer_reference_baseline = straxen.URLConfig(
         type=(int, float),
-        help='digitizer_reference_baseline',
+        help='Digitizer reference baseline',
     )
 
     zle_threshold = straxen.URLConfig(
         type=(int, float),
-        help='zle_threshold',
+        help='Threshold for the zero length encoding',
     )
 
     trigger_window = straxen.URLConfig(
         type=(int, float),
-        help='trigger_window',
+        help='Trigger window',
     )
 
     samples_to_store_before = straxen.URLConfig(
         type=(int, float),
-        help='samples_to_store_before',
+        help=' Number of samples to store before the pulse center',
     )
 
     special_thresholds = straxen.URLConfig(
-        help='special_thresholds',
-    )
-
-    raw_records_file_size_target = straxen.URLConfig(
-        type=(int, float), default = 200, track=False,
-        help='target for the raw records file size in MB',
-    )
-
-    min_records_gap_length_for_splitting = straxen.URLConfig(
-        type=(int, float), default = 1e5, track=False,
-        help='chunk can not be split if gap between pulses is smaller than this value given in ns',
+        help='Special thresholds for certain PMTs',
     )
 
     n_tpc_pmts = straxen.URLConfig(
         type=(int),
         help='Number of PMTs in the TPC',
+    )
+
+    raw_records_file_size_target = straxen.URLConfig(
+        type=(int, float), default = 200, track=False,
+        help='Target for the raw records file size in MB',
+    )
+
+    min_records_gap_length_for_splitting = straxen.URLConfig(
+        type=(int, float), default = 1e5, track=False,
+        help='chunk can not be split if gap between pulses is smaller than this value given in ns',
     )
 
     def setup(self):

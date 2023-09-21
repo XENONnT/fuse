@@ -12,7 +12,7 @@ log = logging.getLogger('fuse.micro_physics.detector_volumes')
 
 class VolumesMerger(VerticalMergerPlugin):
     """
-    Plugin that concatenates the interactions that are in the 
+    Plugin that concatenates the clusters that are in the 
     XENONnT TPC or the volume below the cathode.
     """
 
@@ -45,7 +45,7 @@ class XENONnT_TPC(VolumePlugin):
 
     provides = "tpc_interactions"
     data_kind = "tpc_interactions"
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -54,17 +54,17 @@ class XENONnT_TPC(VolumePlugin):
     dtype = [('x', np.float32),
              ('y', np.float32),
              ('z', np.float32),
-             ('ed', np.float64),
-             ('nestid', np.int64),
-             ('A', np.int64),
-             ('Z', np.int64),
-             ('evtid', np.int64),
+             ('ed', np.float32),
+             ('nestid', np.int8),
+             ('A', np.int8),
+             ('Z', np.int8),
+             ('evtid', np.int32),
              ('x_pri', np.float32),
              ('y_pri', np.float32),
              ('z_pri', np.float32),
              ('xe_density', np.float32),
-             ('vol_id', np.int64),
-             ('create_S2', np.bool8),
+             ('vol_id', np.int8), 
+             ('create_S2', np.bool8), 
             ]
     
     dtype = dtype + strax.time_fields
@@ -78,25 +78,25 @@ class XENONnT_TPC(VolumePlugin):
     xenonnt_z_cathode = straxen.URLConfig(
         default = -148.6515,  # cm ... top of the cathode electrode
         type=(int, float),
-        help='xenonnt_z_cathode',
+        help='z position of the XENONnT cathode',
     )
 
     xenonnt_z_gate_mesh = straxen.URLConfig(
         default = 0.,  # bottom of the gate electrode
         type=(int, float),
-        help='xenonnt_z_gate_mesh',
+        help='z position of the XENONnT gate mesh',
     )
 
     xenonnt_sensitive_volume_radius = straxen.URLConfig(
         default = 66.4,  # cm
         type=(int, float),
-        help='xenonnt_sensitive_volume_radius',
+        help='Radius of the XENONnT TPC',
     )
 
     xenon_density_tpc = straxen.URLConfig(
         default = 2.862,
         type=(int, float),
-        help='xenon_density',
+        help='Density of xenon in the TPC volume in g/cm3',
     )
 
     create_S2_xenonnt_TPC = straxen.URLConfig(
@@ -141,7 +141,7 @@ class XENONnT_BelowCathode(VolumePlugin):
 
     provides = "below_cathode_interactions"
     data_kind = "below_cathode_interactions"
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -150,17 +150,17 @@ class XENONnT_BelowCathode(VolumePlugin):
     dtype = [('x', np.float32),
              ('y', np.float32),
              ('z', np.float32),
-             ('ed', np.float64),
-             ('nestid', np.int64),
-             ('A', np.int64),
-             ('Z', np.int64),
-             ('evtid', np.int64),
+             ('ed', np.float32),
+             ('nestid', np.int8),
+             ('A', np.int8),
+             ('Z', np.int8),
+             ('evtid', np.int32),
              ('x_pri', np.float32),
              ('y_pri', np.float32),
              ('z_pri', np.float32),
              ('xe_density', np.float32),
-             ('vol_id', np.int64),
-             ('create_S2', np.bool8),
+             ('vol_id', np.int8), 
+             ('create_S2', np.bool8), 
             ]
     
     dtype = dtype + strax.time_fields
@@ -180,7 +180,7 @@ class XENONnT_BelowCathode(VolumePlugin):
     xenonnt_z_bottom_pmts = straxen.URLConfig(
         default = -154.6555,  # cm ... top surface of the bottom PMT window
         type=(int, float),
-        help='xenonnt_z_bottom_pmts',
+        help='z position of the XENONnT bottom PMT array',
     )
 
     xenonnt_sensitive_volume_radius = straxen.URLConfig(
@@ -192,12 +192,12 @@ class XENONnT_BelowCathode(VolumePlugin):
     xenon_density_below_cathode = straxen.URLConfig(
         default = 2.862,
         type=(int, float),
-        help='xenon_density',
+        help='Density of xenon in the below-cathode-volume in g/cm3',
     )
 
     create_S2_xenonnt_below_cathode = straxen.URLConfig(
         default=False, type=bool,
-        help='No S2s below the Cathode!',
+        help='No S2s from below the cathode',
     )
 
     def setup(self):
