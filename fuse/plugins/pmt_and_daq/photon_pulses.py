@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.pmt_and_daq.photon_pulses')
 @export
 class PulseWindow(strax.Plugin):
 
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
 
     depends_on = ("photon_summary")
 
@@ -85,7 +85,7 @@ class PulseWindow(strax.Plugin):
         self.pulse_left_extenstion = np.int64(2*self.samples_to_store_before) + self.samples_before_pulse_center
         self.pulse_right_extenstion = np.int64(2*self.samples_to_store_after) + self.samples_after_pulse_center
 
-    def compute(self, propagated_photons):
+    def compute(self, propagated_photons, start, end):
 
         if len(propagated_photons) == 0:
             return {"pulse_windows" : np.zeros(0, self.dtype["pulse_windows"]),
@@ -102,8 +102,8 @@ class PulseWindow(strax.Plugin):
             single_photon_pulses,
             (self.pulse_left_extenstion,self.pulse_right_extenstion),
             (0,self.n_tpc_pmts), 
-            single_photon_pulses["time"].min(), 
-            single_photon_pulses["time"].max()
+            start, 
+            end
             )
         photon_pulses = strax.sort_by_time(photon_pulses)
 
