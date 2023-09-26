@@ -27,11 +27,11 @@ a flexible way to add new features.
    :maxdepth: 1
    :caption: Usage
    
-   tutorials/Getting_Started.ipynb
-   tutorials/Microphysics_Simulation.ipynb
-   tutorials/Detectorphysics_Simulation.ipynb
-   tutorials/csv_input.ipynb
-   tutorials/Custom_Simulations.ipynb
+   tutorials/0_Getting_Started.ipynb
+   tutorials/1_Microphysics_Simulation.ipynb
+   tutorials/2_Detectorphysics_Simulation.ipynb
+   tutorials/3_csv_input.ipynb
+   tutorials/4_Custom_Simulations.ipynb
 
 .. toctree::
    :maxdepth: 1
