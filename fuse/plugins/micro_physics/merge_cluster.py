@@ -114,38 +114,24 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
 
     return result
 
-
-
 infinity = np.iinfo(np.int8).max
-classifier_dtype = [(('Interaction type', 'types'), np.dtype('<U30')),
-                    (('Interaction type of the parent', 'parenttype'), np.dtype('<U30')),
-                    (('Creation process', 'creaproc'), np.dtype('<U30')),
-                    (('Energy deposit process', 'edproc'), np.dtype('<U30')),
-                    (('Atomic mass number', 'A'), np.int16),
-                    (('Atomic number', 'Z'), np.int16),
-                    (('Nest Id for qunata generation', 'nestid'), np.int16)]
-classifier = np.zeros(7, dtype=classifier_dtype)
-classifier['types'] = ['None', 'neutron', 'alpha', 'None', 'None', 'gamma', 'e-']
-classifier['parenttype'] = ['None', 'None', 'None', 'Kr83[9.405]', 'Kr83[41.557]', 'None', 'None']
-classifier['creaproc'] = ['None', 'None', 'None', 'None', 'None', 'None', 'None']
-classifier['edproc'] = ['ionIoni', 'hadElastic', 'None', 'None', 'None', 'None', 'None']
-classifier['A'] = [0, 0, 4, infinity, infinity, 0, 0]
-classifier['Z'] = [0, 0, 2, 0, 0, 0, 0]
-classifier['nestid'] = [0, 0, 6, 11, 11, 7, 8]
 
-
-@numba.njit
 def classify(types, parenttype, creaproc, edproc):
-    for c in classifier:
-        m = 0
-        m += (c['types'] == types) or (c['types'] == 'None')
-        m += (c['parenttype'] == parenttype) or (c['parenttype'] == 'None')
-        m += (c['creaproc'] == creaproc) or (c['creaproc'] == 'None')
-        m += (c['edproc'] == edproc) or (c['edproc'] == 'None')
+    "Function to classify a cluster according to its main interaction"
 
-        if m == 4:
-            return c['A'], c['Z'], c['nestid']
-
-    # If our data does not match any classification make it a nest None type
-    # TODO: fix me
-    return infinity, infinity, 12
+    if  (edproc == "ionIoni") & (types != "alpha"):
+        return 0, 0, 0
+    elif (types == "neutron") & (edproc == "hadElastic"):
+        return 0, 0, 0
+    elif (types == "alpha"):
+        return 4, 2, 6
+    elif (parenttype == "Kr83[9.405]"):
+        return infinity, 0, 11
+    elif (parenttype == "Kr83[41.557]"):
+        return infinity, 0, 11
+    elif (types == "gamma"):
+        return 0, 0, 7
+    elif (types == "e-"):
+        return 0, 0, 8
+    else: 
+        return infinity, infinity, 12
