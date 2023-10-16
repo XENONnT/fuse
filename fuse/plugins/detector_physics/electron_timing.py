@@ -41,7 +41,7 @@ class ElectronTiming(strax.Plugin):
     )
 
     electron_trapping_time = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=electron_trapping_time",
         type=(int, float),

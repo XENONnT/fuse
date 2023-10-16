@@ -45,7 +45,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     p_double_pe_emision = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=p_double_pe_emision",
         type=(int, float),
@@ -53,7 +53,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     pmt_transit_time_spread = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_transit_time_spread",
         type=(int, float),
@@ -61,7 +61,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     pmt_transit_time_mean = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_transit_time_mean",
         type=(int, float),
@@ -69,7 +69,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
@@ -77,7 +77,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     digitizer_bits = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
@@ -85,7 +85,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     digitizer_voltage_range = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
@@ -103,7 +103,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     gains = straxen.URLConfig(
-        default = 'pmt_gains://resource://format://'
+        default = 'pmt_gains://resource://'
                   'to_pe_nt.npy?'
                   '&fmt=npy'
                   '&digitizer_voltage_range=plugin.digitizer_voltage_range'
@@ -129,7 +129,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     drift_velocity_liquid = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=drift_velocity_liquid",
         type=(int, float),
@@ -137,7 +137,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     tpc_length = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=tpc_length",
         type=(int, float),
@@ -145,7 +145,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     tpc_radius = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=tpc_radius",
         type=(int, float),
@@ -153,7 +153,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     diffusion_constant_transverse = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=diffusion_constant_transverse",
         type=(int, float),
@@ -161,7 +161,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     s2_aft_skewness = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_aft_skewness",
         type=(int, float),
@@ -169,7 +169,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     s2_aft_sigma = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_aft_sigma",
         type=(int, float),
@@ -177,7 +177,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
     
     enable_field_dependencies = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=enable_field_dependencies",
         help='enable_field_dependencies',
@@ -204,7 +204,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     singlet_fraction_gas = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=singlet_fraction_gas",
         type=(int, float),
@@ -212,7 +212,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     triplet_lifetime_gas = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=triplet_lifetime_gas",
         type=(int, float),
@@ -220,7 +220,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     singlet_lifetime_gas = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=singlet_lifetime_gas",
         type=(int, float),
@@ -228,7 +228,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     triplet_lifetime_liquid = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=triplet_lifetime_liquid",
         type=(int, float),
@@ -236,7 +236,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     singlet_lifetime_liquid = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=singlet_lifetime_liquid",
         type=(int, float),
@@ -244,7 +244,7 @@ class S2PhotonPropagationBase(strax.Plugin):
     )
 
     s2_secondary_sc_gain = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
@@ -665,7 +665,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     child_plugin = True
 
     pressure = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pressure",
         type=(int, float),
@@ -673,7 +673,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     )
 
     temperature = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=temperature",
         type=(int, float),
@@ -681,7 +681,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     )
 
     gas_drift_velocity_slope = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=gas_drift_velocity_slope",
         type=(int, float),
@@ -689,7 +689,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     )
 
     enable_gas_gap_warping = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=enable_gas_gap_warping",
         type=(int, float),
@@ -697,7 +697,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     )
 
     elr_gas_gap_length = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=elr_gas_gap_length",
         type=(int, float),
@@ -714,7 +714,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     )
 
     anode_field_domination_distance = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=anode_field_domination_distance",
         type=(int, float),
@@ -722,7 +722,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     )
 
     anode_wire_radius = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=anode_wire_radius",
         type=(int, float),
@@ -730,7 +730,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     )
 
     gate_to_anode_distance = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=gate_to_anode_distance",
         type=(int, float),
@@ -738,7 +738,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     )
 
     anode_voltage = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=anode_voltage",
         type=(int, float),
@@ -746,7 +746,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     )
 
     lxe_dielectric_constant = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=lxe_dielectric_constant",
         type=(int, float),

@@ -49,7 +49,7 @@ class SecondaryScintillation(strax.Plugin):
     )
 
     s2_secondary_sc_gain = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
@@ -57,7 +57,7 @@ class SecondaryScintillation(strax.Plugin):
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
@@ -65,7 +65,7 @@ class SecondaryScintillation(strax.Plugin):
     )
 
     digitizer_bits = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
@@ -73,7 +73,7 @@ class SecondaryScintillation(strax.Plugin):
     )
 
     digitizer_voltage_range = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
@@ -81,14 +81,14 @@ class SecondaryScintillation(strax.Plugin):
     )
 
     se_gain_from_map = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=se_gain_from_map",
         help='Boolean indication if the secondary scintillation gain is taken from a map',
     )
 
     p_double_pe_emision = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=p_double_pe_emision",
         type=(int, float),
@@ -114,7 +114,7 @@ class SecondaryScintillation(strax.Plugin):
     )
     
     gains = straxen.URLConfig(
-        default = 'pmt_gains://resource://format://'
+        default = 'pmt_gains://resource://'
                   'to_pe_nt.npy?'
                   '&fmt=npy'
                   '&digitizer_voltage_range=plugin.digitizer_voltage_range'

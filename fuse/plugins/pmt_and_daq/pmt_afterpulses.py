@@ -39,7 +39,7 @@ class PMTAfterPulses(strax.Plugin):
     )
 
     pmt_ap_t_modifier = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_ap_t_modifier",
         type=(int, float),
@@ -47,7 +47,7 @@ class PMTAfterPulses(strax.Plugin):
     )
 
     pmt_ap_modifier = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_ap_modifier",
         type=(int, float),
@@ -55,7 +55,7 @@ class PMTAfterPulses(strax.Plugin):
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
@@ -63,7 +63,7 @@ class PMTAfterPulses(strax.Plugin):
     )
 
     digitizer_bits = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
@@ -71,7 +71,7 @@ class PMTAfterPulses(strax.Plugin):
     )
 
     digitizer_voltage_range = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
@@ -79,7 +79,7 @@ class PMTAfterPulses(strax.Plugin):
     )
     
     gains = straxen.URLConfig(
-        default = 'pmt_gains://resource://format://'
+        default = 'pmt_gains://resource://'
                   'to_pe_nt.npy?'
                   '&fmt=npy'
                   '&digitizer_voltage_range=plugin.digitizer_voltage_range'

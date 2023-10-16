@@ -39,7 +39,7 @@ class ElectronExtraction(strax.Plugin):
     )
 
     digitizer_voltage_range = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
@@ -47,7 +47,7 @@ class ElectronExtraction(strax.Plugin):
     )
 
     digitizer_bits = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
@@ -55,7 +55,7 @@ class ElectronExtraction(strax.Plugin):
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
@@ -63,7 +63,7 @@ class ElectronExtraction(strax.Plugin):
     )
 
     s2_secondary_sc_gain = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
@@ -71,7 +71,7 @@ class ElectronExtraction(strax.Plugin):
     )
     #Rename? -> g2_value in beta_yields model 
     g2_mean = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=g2_mean",
         type=(int, float),
@@ -79,7 +79,7 @@ class ElectronExtraction(strax.Plugin):
     )
 
     electron_extraction_yield = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=electron_extraction_yield",
         type=(int, float),
@@ -87,7 +87,7 @@ class ElectronExtraction(strax.Plugin):
     )
 
     ext_eff_from_map = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=ext_eff_from_map",
         type=bool,
@@ -95,7 +95,7 @@ class ElectronExtraction(strax.Plugin):
     )
 
     se_gain_from_map = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=se_gain_from_map",
         type=bool,
@@ -103,7 +103,7 @@ class ElectronExtraction(strax.Plugin):
     )
 
     gains = straxen.URLConfig(
-        default = 'pmt_gains://resource://format://'
+        default = 'pmt_gains://resource://'
                   'to_pe_nt.npy?'
                   '&fmt=npy'
                   '&digitizer_voltage_range=plugin.digitizer_voltage_range'

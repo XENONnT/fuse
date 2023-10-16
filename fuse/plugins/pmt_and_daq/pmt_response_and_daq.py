@@ -45,7 +45,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     dt = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=sample_duration",
         type=(int),
@@ -53,7 +53,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
@@ -61,7 +61,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     external_amplification = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=external_amplification",
         type=(int, float),
@@ -69,7 +69,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     digitizer_bits = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
@@ -77,7 +77,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     digitizer_voltage_range = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
@@ -94,21 +94,21 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     pe_pulse_ts = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pe_pulse_ts",
         help='Add a good description here',
     )
     
     pe_pulse_ys = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pe_pulse_ys",
         help='Add a good description here',
     )
 
     pmt_pulse_time_rounding = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_pulse_time_rounding",
         type=(int, float),
@@ -116,7 +116,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     samples_after_pulse_center = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=samples_after_pulse_center",
         type=(int, float),
@@ -124,7 +124,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     samples_before_pulse_center = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=samples_before_pulse_center",
         type=(int, float),
@@ -132,7 +132,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     digitizer_reference_baseline = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_reference_baseline",
         type=(int, float),
@@ -140,7 +140,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     zle_threshold = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=zle_threshold",
         type=(int, float),
@@ -148,7 +148,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     trigger_window = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=trigger_window",
         type=(int, float),
@@ -156,7 +156,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     samples_to_store_before = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=samples_to_store_before",
         type=(int, float),
@@ -164,7 +164,7 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     special_thresholds = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=special_thresholds",
         help='Special thresholds for certain PMTs',

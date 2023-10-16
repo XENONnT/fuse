@@ -39,7 +39,7 @@ class S1PhotonHits(strax.Plugin):
     
     #fix this!!
     s1_lce_correction_map = straxen.URLConfig(
-        default = 'itp_map://resource://format://'
+        default = 'itp_map://resource://'
                   'XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz?'
                   '&fmt=json.gz',
         cache=True,
@@ -47,7 +47,7 @@ class S1PhotonHits(strax.Plugin):
     )
 
     p_double_pe_emision = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=p_double_pe_emision",
         type=(int, float),
@@ -55,7 +55,7 @@ class S1PhotonHits(strax.Plugin):
     )
 
     s1_detection_efficiency = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s1_detection_efficiency",
         type=(int, float),

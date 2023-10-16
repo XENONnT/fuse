@@ -42,7 +42,7 @@ class ElectronDrift(strax.Plugin):
     )
     
     drift_velocity_liquid = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=drift_velocity_liquid",
         type=(int, float),
@@ -50,7 +50,7 @@ class ElectronDrift(strax.Plugin):
     )
     
     drift_time_gate = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=drift_time_gate",
         type=(int, float),
@@ -58,7 +58,7 @@ class ElectronDrift(strax.Plugin):
     )
     
     diffusion_constant_longitudinal = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=diffusion_constant_longitudinal",
         type=(int, float),
@@ -66,7 +66,7 @@ class ElectronDrift(strax.Plugin):
     )
     
     electron_lifetime_liquid = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=electron_lifetime_liquid",
         type=(int, float),
@@ -74,14 +74,14 @@ class ElectronDrift(strax.Plugin):
     )
     
     enable_field_dependencies = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=enable_field_dependencies",
         help='Field dependencies during electron drift',
     )
 
     tpc_length = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=tpc_length",
         type=(int, float),
@@ -89,7 +89,7 @@ class ElectronDrift(strax.Plugin):
     )
         
     field_distortion_model = straxen.URLConfig(
-        default = "take://resource://format://"
+        default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=field_distortion_model",
         help='Model for the electric field distortion',
