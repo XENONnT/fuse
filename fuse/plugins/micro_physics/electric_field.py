@@ -40,7 +40,12 @@ class ElectricField(strax.Plugin):
         help='Show debug informations',
     )
 
+    #Field map not yet in simulation config file!
     efield_map = straxen.URLConfig(
+        default = 'itp_map://resource://format://'
+                  'fieldmap_2D_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz?'
+                  '&fmt=json.gz'
+                  '&method=RegularGridInterpolator',
         cache=True,
         help='electric field map',
     )
