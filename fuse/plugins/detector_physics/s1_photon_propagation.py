@@ -44,31 +44,49 @@ class S1PhotonPropagationBase(strax.Plugin):
     )
 
     p_double_pe_emision = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=p_double_pe_emision",
         type=(int, float),
         help='Probability of double photo-electron emission',
     )
 
     pmt_transit_time_spread = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_transit_time_spread",
         type=(int, float),
         help='Spread of the PMT transit times',
     )
 
     pmt_transit_time_mean = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_transit_time_mean",
         type=(int, float),
         help='Mean of the PMT transit times',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_circuit_load_resistor",
         type=(int, float),
         help='PMT circuit load resistor',
     )
 
     digitizer_bits = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_bits",
         type=(int, float),
         help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_voltage_range",
         type=(int, float),
         help='Voltage range of the digitizer boards',
     )
@@ -84,16 +102,31 @@ class S1PhotonPropagationBase(strax.Plugin):
     )
 
     gains = straxen.URLConfig(
+        default = 'pmt_gains://resource://format://'
+                  'to_pe_nt.npy?'
+                  '&fmt=npy'
+                  '&digitizer_voltage_range=plugin.digitizer_voltage_range'
+                  '&digitizer_bits=plugin.digitizer_bits'
+                  '&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
         cache=True,
         help='PMT gains',
     )
 
     photon_area_distribution = straxen.URLConfig(
+        default = 'simple_load://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=photon_area_distribution'
+                  '&fmt=csv',
         cache=True,
         help='Photon area distribution',
     )
 
     s1_pattern_map = straxen.URLConfig(
+        default = 'pattern_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=s1_pattern_map'
+                  '&fmt=pkl'
+                  '&pmt_mask=plugin.pmt_mask',
         cache=True,
         help='S1 pattern map',
     )
@@ -232,11 +265,19 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     child_plugin = True
 
     maximum_recombination_time = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=maximum_recombination_time",
         type=(int, float),
         help='Maximum recombination time',
     )
 
     s1_optical_propagation_spline = straxen.URLConfig(
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=s1_time_spline'
+                  '&fmt=json.gz'
+                  '&method=RegularGridInterpolator',
         cache=True,
         help='Spline for the optical propagation',
     )

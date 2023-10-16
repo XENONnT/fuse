@@ -39,61 +39,104 @@ class ElectronExtraction(strax.Plugin):
     )
 
     digitizer_voltage_range = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_voltage_range",
         type=(int, float),
         help='Voltage range of the digitizer boards',
     )
 
     digitizer_bits = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_bits",
         type=(int, float),
         help='Number of bits of the digitizer boards',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_circuit_load_resistor",
         type=(int, float),
         help='PMT circuit load resistor ',
     )
 
     s2_secondary_sc_gain = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=s2_secondary_sc_gain",
         type=(int, float),
         help='Secondary scintillation gain',
     )
     #Rename? -> g2_value in beta_yields model 
     g2_mean = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=g2_mean",
         type=(int, float),
         help='mean value of the g2 gain. ',
     )
 
     electron_extraction_yield = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=electron_extraction_yield",
         type=(int, float),
         help='Electron extraction yield',
     )
 
     ext_eff_from_map = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=ext_eff_from_map",
         type=bool,
         help='Boolean indication if the extraction efficiency is taken from a map',
     )
 
     se_gain_from_map = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=se_gain_from_map",
         type=bool,
         help='Boolean indication if the secondary scintillation gain is taken from a map',
     )
 
     gains = straxen.URLConfig(
+        default = 'pmt_gains://resource://format://'
+                  'to_pe_nt.npy?'
+                  '&fmt=npy'
+                  '&digitizer_voltage_range=plugin.digitizer_voltage_range'
+                  '&digitizer_bits=plugin.digitizer_bits'
+                  '&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
         cache=True,
         help='PMT gains',
     )
     
     s2_correction_map = straxen.URLConfig(
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=s2_correction_map'
+                  '&fmt=json',
         cache=True,
         help='S2 correction map',
     )
     
     se_gain_map = straxen.URLConfig(
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=se_gain_map'
+                  '&fmt=json',
         cache=True,
         help='Map of the single electron gain',
     )
     
     s2_pattern_map = straxen.URLConfig(
+        default = 'pattern_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=s2_pattern_map'
+                  '&fmt=pkl'
+                  '&pmt_mask=plugin.pmt_mask',
         cache=True,
         help='S2 pattern map',
     )

@@ -41,6 +41,9 @@ class ElectronTiming(strax.Plugin):
     )
 
     electron_trapping_time = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=electron_trapping_time",
         type=(int, float),
         help='Time scale electrons are trapped at the liquid gas interface',
     )
