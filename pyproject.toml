@@ -22,7 +22,7 @@ dependencies = [
     "pandas",
     "scipy",
     "immutabledict",
-    "nestpy == 2.0.0",
+    "nestpy >= 2.0.0",
     "numba == 0.57.0",
     "awkward == 2.2.1",
     "uproot == 5.0.7",
