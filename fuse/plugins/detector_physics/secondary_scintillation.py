@@ -3,7 +3,7 @@ import numpy as np
 import straxen
 import logging
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...common import pmt_gains, FUSE_PLUGIN_TIMEOUT
 
 export, __all__ = strax.exporter()
 
@@ -113,15 +113,10 @@ class SecondaryScintillation(strax.Plugin):
         help='S2 correction map',
     )
     
-    gains = straxen.URLConfig(
-        default = 'pmt_gains://resource://'
-                  'to_pe_nt.npy?'
-                  '&fmt=npy'
-                  '&digitizer_voltage_range=plugin.digitizer_voltage_range'
-                  '&digitizer_bits=plugin.digitizer_bits'
-                  '&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
-        cache=True,
-        help='PMT gains',
+    gain_model_mc = straxen.URLConfig(
+        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        infer_type=False,
+        help='PMT gain model',
     )
     
     s2_pattern_map = straxen.URLConfig(
@@ -147,8 +142,6 @@ class SecondaryScintillation(strax.Plugin):
         else: 
             log.setLevel('WARNING')
         
-        self.pmt_mask = np.array(self.gains)
-        
         #Are these if cases needed?? -> If no remove, if yes, correct the code
         #if self.s2_correction_map_file:
         #    self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
@@ -163,6 +156,12 @@ class SecondaryScintillation(strax.Plugin):
             self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")
         
+        self.gains = pmt_gains(self.gain_model_mc,
+                               digitizer_voltage_range=self.digitizer_voltage_range,
+                               digitizer_bits=self.digitizer_bits,
+                               pmt_circuit_load_resistor=self.pmt_circuit_load_resistor
+                               )
+
         self.pmt_mask = np.array(self.gains)
         
         #Are these if cases needed?? -> If no remove, if yes, correct the code

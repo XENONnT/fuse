@@ -4,7 +4,8 @@ import straxen
 import nestpy
 import logging
 
-from ...common import init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output, FUSE_PLUGIN_TIMEOUT
+from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
+from ...common import init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output
 
 export, __all__ = strax.exporter()
 
@@ -101,15 +102,10 @@ class S1PhotonPropagationBase(strax.Plugin):
         help='Number of PMTs in the TPC',
     )
 
-    gains = straxen.URLConfig(
-        default = 'pmt_gains://resource://'
-                  'to_pe_nt.npy?'
-                  '&fmt=npy'
-                  '&digitizer_voltage_range=plugin.digitizer_voltage_range'
-                  '&digitizer_bits=plugin.digitizer_bits'
-                  '&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
-        cache=True,
-        help='PMT gains',
+    gain_model_mc = straxen.URLConfig(
+        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        infer_type=False,
+        help='PMT gain model',
     )
 
     photon_area_distribution = straxen.URLConfig(
@@ -155,6 +151,12 @@ class S1PhotonPropagationBase(strax.Plugin):
             log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
         else: 
             log.debug(f"Generating random numbers with seed pulled from OS")
+
+        self.gains = pmt_gains(self.gain_model_mc,
+                               digitizer_voltage_range=self.digitizer_voltage_range,
+                               digitizer_bits=self.digitizer_bits,
+                               pmt_circuit_load_resistor=self.pmt_circuit_load_resistor
+                               )
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]

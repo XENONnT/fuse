@@ -97,24 +97,6 @@ def set_simulation_config_file(context, config_file_name):
                 context.config[option_key] = option.default.replace("SIMULATION_CONFIG_FILE", config_file_name)
                 
 
-@URLConfig.register('pmt_gains')
-def pmt_gains(to_pe, digitizer_voltage_range, digitizer_bits, pmt_circuit_load_resistor):
-    """Build PMT Gains"""
-    
-    to_pe = to_pe[0][1]
-    
-    adc_2_current = (digitizer_voltage_range
-                     / 2 ** (digitizer_bits)
-                     / pmt_circuit_load_resistor)
-    
-    gains = np.divide(adc_2_current,
-                      to_pe,
-                      out=np.zeros_like(to_pe),
-                      where=to_pe != 0,
-                     )
-    return gains
-
-
 @URLConfig.register('pattern_map')
 def pattern_map(map_data, pmt_mask, method='WeightedNearestNeighbors'):
     """Pattern map handling"""

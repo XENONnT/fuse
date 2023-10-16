@@ -3,7 +3,7 @@ import numpy as np
 import straxen
 import logging
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
 
 export, __all__ = strax.exporter()
 
@@ -77,16 +77,11 @@ class PMTAfterPulses(strax.Plugin):
         type=(int, float),
         help='Voltage range of the digitizer boards',
     )
-    
-    gains = straxen.URLConfig(
-        default = 'pmt_gains://resource://'
-                  'to_pe_nt.npy?'
-                  '&fmt=npy'
-                  '&digitizer_voltage_range=plugin.digitizer_voltage_range'
-                  '&digitizer_bits=plugin.digitizer_bits'
-                  '&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
-        cache=True,
-        help='PMT gains',
+
+    gain_model_mc = straxen.URLConfig(
+        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        infer_type=False,
+        help='PMT gain model',
     )
     
     photon_ap_cdfs = straxen.URLConfig(
@@ -120,6 +115,12 @@ class PMTAfterPulses(strax.Plugin):
             self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")
         
+        self.gains = pmt_gains(self.gain_model_mc,
+                               digitizer_voltage_range=self.digitizer_voltage_range,
+                               digitizer_bits=self.digitizer_bits,
+                               pmt_circuit_load_resistor=self.pmt_circuit_load_resistor
+                               )
+
         self.uniform_to_pmt_ap = self.photon_ap_cdfs
 
         for k in self.uniform_to_pmt_ap.keys():
