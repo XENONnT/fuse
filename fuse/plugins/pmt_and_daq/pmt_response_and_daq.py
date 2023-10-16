@@ -45,79 +45,128 @@ class PMTResponseAndDAQ(strax.Plugin):
     )
 
     dt = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=sample_duration",
         type=(int),
         help='sample_duration',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_circuit_load_resistor",
         type=(int, float),
         help='PMT circuit load resistor', 
     )
 
     external_amplification = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=external_amplification",
         type=(int, float),
         help='External amplification factor',
     )
 
     digitizer_bits = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_bits",
         type=(int, float),
         help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_voltage_range",
         type=(int, float),
         help='Voltage range of the digitizer boards',
     )
 
     noise_data = straxen.URLConfig(
+        default = 'simple_load://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=noise_file'
+                  '&fmt=npy',
         cache=True,
         help='Measured noise data',
     )
 
     pe_pulse_ts = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pe_pulse_ts",
         help='Add a good description here',
     )
     
     pe_pulse_ys = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pe_pulse_ys",
         help='Add a good description here',
     )
 
     pmt_pulse_time_rounding = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_pulse_time_rounding",
         type=(int, float),
         help='Time rounding of the PMT pulse',
     )
 
     samples_after_pulse_center = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=samples_after_pulse_center",
         type=(int, float),
         help='Number of samples after the pulse center',
     )
 
     samples_before_pulse_center = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=samples_before_pulse_center",
         type=(int, float),
         help=' Number of samples before the pulse center',
     )
 
     digitizer_reference_baseline = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_reference_baseline",
         type=(int, float),
         help='Digitizer reference baseline',
     )
 
     zle_threshold = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=zle_threshold",
         type=(int, float),
         help='Threshold for the zero length encoding',
     )
 
     trigger_window = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=trigger_window",
         type=(int, float),
         help='Trigger window',
     )
 
     samples_to_store_before = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=samples_to_store_before",
         type=(int, float),
         help=' Number of samples to store before the pulse center',
     )
 
     special_thresholds = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=special_thresholds",
         help='Special thresholds for certain PMTs',
     )
 

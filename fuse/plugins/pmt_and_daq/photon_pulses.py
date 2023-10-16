@@ -44,26 +44,41 @@ class PulseWindow(strax.Plugin):
     )
 
     dt = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=sample_duration",
         type=(int),
         help='Width of one sample [ns]',
     )
 
     samples_after_pulse_center = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=samples_after_pulse_center",
         type=(int, float),
         help='Number of samples after the pulse center',
     )
 
     samples_to_store_after = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=samples_to_store_after",
         type=(int, float),
         help='Number of samples to store after the pulse center',
     )
 
     samples_before_pulse_center = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=samples_before_pulse_center",
         type=(int, float),
         help='Number of samples before the pulse center',
     )
 
     samples_to_store_before = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=samples_to_store_before",
         type=(int, float),
         help='Number of samples to store before the pulse center',
     )

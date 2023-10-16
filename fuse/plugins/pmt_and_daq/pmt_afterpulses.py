@@ -39,36 +39,61 @@ class PMTAfterPulses(strax.Plugin):
     )
 
     pmt_ap_t_modifier = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_ap_t_modifier",
         type=(int, float),
         help='PMT afterpulse time modifier',
     )
 
     pmt_ap_modifier = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_ap_modifier",
         type=(int, float),
         help='PMT afterpulse modifier',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_circuit_load_resistor",
         type=(int, float),
         help='PMT circuit load resistor',
     )
 
     digitizer_bits = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_bits",
         type=(int, float),
         help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
+        default = "take://resource://format://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_voltage_range",
         type=(int, float),
         help='Voltage range of the digitizer boards',
     )
     
     gains = straxen.URLConfig(
+        default = 'pmt_gains://resource://format://'
+                  'to_pe_nt.npy?'
+                  '&fmt=npy'
+                  '&digitizer_voltage_range=plugin.digitizer_voltage_range'
+                  '&digitizer_bits=plugin.digitizer_bits'
+                  '&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
         cache=True,
         help='PMT gains',
     )
     
     photon_ap_cdfs = straxen.URLConfig(
+        default = 'simple_load://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=photon_ap_cdfs'
+                  '&fmt=json.gz',
         cache=True,
         help='Afterpuse cumulative distribution functions',
     )
