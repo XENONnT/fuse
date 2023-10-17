@@ -54,7 +54,15 @@ def microphysics_context(output_folder = "./fuse_data"
 
     return st
 
-def full_chain_context(output_folder = "./fuse_data"
+def full_chain_context(output_folder = "./fuse_data",
+                       corrections_version = None,
+                       simulation_config_file = None,
+                       corrections_run_id = None,
+                       run_id_specific_config = {"gain_model_mc":"gain_model",
+                                                 "electron_lifetime_liquid":"elife",
+                                                 "drift_velocity_liquid":"electron_drift_velocity",
+                                                 "drift_time_gate":"electron_drift_time_gate",
+                                                 }
                        ):
     """
     Function to create a fuse full chain simulation context. 
@@ -83,6 +91,24 @@ def full_chain_context(output_folder = "./fuse_data"
     for plugin in pmt_and_daq_plugins:
         st.register(plugin)
 
+    st.apply_xedocs_configs(version=corrections_version)
+
+    set_simulation_config_file(st, simulation_config_file)
+
+    local_versions = st.config
+    for config_name, url_config in local_versions.items():
+        if isinstance(url_config, str):
+            if 'run_id' in url_config:
+                local_versions[config_name] = straxen.URLConfig.format_url_kwargs(url_config, run_id=corrections_run_id)
+    st.config = local_versions
+
+    #Update some run specific config
+    for mc_config, processing_config in run_id_specific_config.items():
+        st.config[mc_config] = st.config[processing_config]
+
+    # No blinding in simulations
+    st.config["event_info_function"] = "disabled"
+
     return st
 
 
@@ -93,8 +119,8 @@ def set_simulation_config_file(context, config_file_name):
     for data_type, plugin in context._plugin_class_registry.items():
         for option_key, option in plugin.takes_config.items():
 
-            if isinstance(option.default, str) and "SIMULATION_CONFIG_FILE" in option.default:
-                context.config[option_key] = option.default.replace("SIMULATION_CONFIG_FILE", config_file_name)
+            if isinstance(option.default, str) and "SIMULATION_CONFIG_FILE.json" in option.default:
+                context.config[option_key] = option.default.replace("SIMULATION_CONFIG_FILE.json", config_file_name)
                 
 
 @URLConfig.register('pattern_map')
