@@ -100,10 +100,10 @@ S2PhotonPropagationBase plugin
      - 
      - True
      - Number of PMTs in the TPC
-   * - gains
+   * - gain_model_mc
      - 
      - True
-     - PMT gains
+     - PMT gain model
    * - photon_area_distribution
      - 
      - True

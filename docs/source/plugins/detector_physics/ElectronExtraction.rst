@@ -84,10 +84,10 @@ Config Options
      - 
      - True
      - Boolean indication if the secondary scintillation gain is taken from a map
-   * - gains
+   * - gain_model_mc
      - 
      - True
-     - PMT gains
+     - PMT gain model
    * - s2_correction_map
      - 
      - True

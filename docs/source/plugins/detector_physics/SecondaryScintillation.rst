@@ -118,10 +118,10 @@ Config Options
      - 
      - True
      - S2 correction map
-   * - gains
+   * - gain_model_mc
      - 
      - True
-     - PMT gains
+     - PMT gain model
    * - s2_pattern_map
      - 
      - True
