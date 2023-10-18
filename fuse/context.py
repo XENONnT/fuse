@@ -56,8 +56,8 @@ def microphysics_context(output_folder = "./fuse_data"
 
 def full_chain_context(output_folder = "./fuse_data",
                        corrections_version = None,
-                       simulation_config_file = None,
-                       corrections_run_id = None,
+                       simulation_config_file = "fax_config_nt_design.json",
+                       corrections_run_id = "026000",
                        run_id_specific_config = {"gain_model_mc":"gain_model",
                                                  "electron_lifetime_liquid":"elife",
                                                  "drift_velocity_liquid":"electron_drift_velocity",
@@ -71,7 +71,7 @@ def full_chain_context(output_folder = "./fuse_data",
     st = strax.Context(storage=strax.DataDirectory(output_folder),
                        **straxen.contexts.xnt_common_opts)
     
-    st.config.update(dict(detector='XENONnT',
+    st.config.update(dict(#detector='XENONnT',
                           check_raw_record_overlaps=True,
                           **straxen.contexts.xnt_common_config))
 
@@ -91,7 +91,8 @@ def full_chain_context(output_folder = "./fuse_data",
     for plugin in pmt_and_daq_plugins:
         st.register(plugin)
 
-    st.apply_xedocs_configs(version=corrections_version)
+    if corrections_version is not None:
+        st.apply_xedocs_configs(version=corrections_version)
 
     set_simulation_config_file(st, simulation_config_file)
 
@@ -104,7 +105,10 @@ def full_chain_context(output_folder = "./fuse_data",
 
     #Update some run specific config
     for mc_config, processing_config in run_id_specific_config.items():
-        st.config[mc_config] = st.config[processing_config]
+        if processing_config in st.config:
+            st.config[mc_config] = st.config[processing_config]
+        else:
+            print(f"Warning! {processing_config} not in context config, skipping...")
 
     # No blinding in simulations
     st.config["event_info_function"] = "disabled"
