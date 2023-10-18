@@ -50,10 +50,26 @@ Config Options
      - False
      - False
      - Show debug information during simulation
-   * - s1_lce_correction_map
+   * - pmt_circuit_load_resistor
      - 
      - True
-     - S1 light collection efficiency map
+     - PMT circuit load resistor
+   * - digitizer_bits
+     - 
+     - True
+     - Number of bits of the digitizer boards
+   * - digitizer_voltage_range
+     - 
+     - True
+     - Voltage range of the digitizer boards
+   * - gain_model_mc
+     - 
+     - True
+     - PMT gain model
+   * - s1_pattern_map
+     - 
+     - True
+     - S1 pattern map
    * - p_double_pe_emision
      - 
      - True
