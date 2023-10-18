@@ -64,7 +64,7 @@ Config Options
      - 
      - True
      - PMT circuit load resistor 
-   * - s2_secondary_sc_gain
+   * - s2_secondary_sc_gain_mc
      - 
      - True
      - Secondary scintillation gain

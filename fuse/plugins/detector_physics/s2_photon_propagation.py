@@ -239,7 +239,7 @@ class S2PhotonPropagationBase(strax.Plugin):
         help='Liftetime of singlet states in LXe',
     )
 
-    s2_secondary_sc_gain = straxen.URLConfig(
+    s2_secondary_sc_gain_mc = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
@@ -329,7 +329,7 @@ class S2PhotonPropagationBase(strax.Plugin):
             electron_time_gaps,
             file_size_limit = self.propagated_s2_photons_file_size_target,
             min_gap_length = self.min_electron_gap_length_for_splitting,
-            mean_n_photons_per_electron = self.s2_secondary_sc_gain
+            mean_n_photons_per_electron = self.s2_secondary_sc_gain_mc
             )
 
         electron_chunks = np.array_split(individual_electrons, split_index)

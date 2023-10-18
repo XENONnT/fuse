@@ -62,7 +62,7 @@ class ElectronExtraction(strax.Plugin):
         help='PMT circuit load resistor ',
     )
 
-    s2_secondary_sc_gain = straxen.URLConfig(
+    s2_secondary_sc_gain_mc = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
@@ -203,7 +203,7 @@ class ElectronExtraction(strax.Plugin):
             else:
                 # is in get_s2_light_yield map is scaled according to relative s2 correction
                 # we also need to do it here to have consistent g2
-                se_gains=rel_s2_cor*self.s2_secondary_sc_gain
+                se_gains=rel_s2_cor*self.s2_secondary_sc_gain_mc
             cy = self.g2_mean*rel_s2_cor/se_gains
         else:
             cy = self.electron_extraction_yield

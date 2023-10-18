@@ -48,7 +48,7 @@ class SecondaryScintillation(strax.Plugin):
         help='Spread of the S2 gain',
     )
 
-    s2_secondary_sc_gain = straxen.URLConfig(
+    s2_secondary_sc_gain_mc = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
@@ -237,7 +237,7 @@ class SecondaryScintillation(strax.Plugin):
         else:
             # calculate it from MC pattern map directly if no "se_gain_map" is given
             sc_gain = self.s2_correction_map(positions)
-            sc_gain *= self.s2_secondary_sc_gain
+            sc_gain *= self.s2_secondary_sc_gain_mc
 
         # depending on if you use the data driven or mc pattern map for light yield for S2
         # the shape of n_photon_hits will change. Mc needs a squeeze

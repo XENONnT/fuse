@@ -168,7 +168,7 @@ S2PhotonPropagationBase plugin
      - 
      - True
      - Liftetime of singlet states in LXe
-   * - s2_secondary_sc_gain
+   * - s2_secondary_sc_gain_mc
      - 
      - True
      - Secondary scintillation gain

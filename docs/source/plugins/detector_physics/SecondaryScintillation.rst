@@ -86,7 +86,7 @@ Config Options
      - 
      - True
      - Spread of the S2 gain
-   * - s2_secondary_sc_gain
+   * - s2_secondary_sc_gain_mc
      - 
      - True
      - Secondary scintillation gain
