@@ -163,11 +163,6 @@ class SecondaryScintillation(strax.Plugin):
             log.debug(f"Running SecondaryScintillation version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
-        
-        #Are these if cases needed?? -> If no remove, if yes, correct the code
-        #if self.s2_correction_map_file:
-        #    self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
-        #else:
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -185,25 +180,6 @@ class SecondaryScintillation(strax.Plugin):
                                )
 
         self.pmt_mask = np.array(self.gains)
-        
-        #Are these if cases needed?? -> If no remove, if yes, correct the code
-        #if self.s2_correction_map_file:
-        #    self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
-        #else:
-
-        #    self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
-
-        #    self.s2_pattern_map = make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
-            
-            
-        #    s2cmap = deepcopy(self.s2_pattern_map)
-            # Lower the LCE by removing contribution from dead PMTs
-            # AT: masking is a bit redundant due to PMT mask application in make_patternmap
-        #    s2cmap.data['map'] = np.sum(s2cmap.data['map'][:][:], axis=2, keepdims=True, where=self.pmt_mask)
-            # Scale by median value
-        #    s2cmap.data['map'] = s2cmap.data['map'] / np.median(s2cmap.data['map'][s2cmap.data['map'] > 0])
-        #    s2cmap.__init__(s2cmap.data)
-        #    self.s2_correction_map = s2cmap
     
     def compute(self, interactions_in_roi, individual_electrons):
         
