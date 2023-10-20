@@ -20,7 +20,7 @@ conversion_to_bar = 1/constants.elementary_charge / 1e1
 @export
 class S2PhotonPropagationBase(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
     provides = "propagated_s2_photons"
@@ -178,13 +178,25 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "&take=enable_field_dependencies",
         help='enable_field_dependencies',
     )
+
+    s2_mean_area_fraction_top = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=s2_mean_area_fraction_top",
+        type=(int, float),
+        help='Mean S2 area fraction top',
+    )
     
     s2_pattern_map = straxen.URLConfig(
-        default = 'pattern_map://resource://simulation_config://'
+        default = 's2_aft_scaling://pattern_map://resource://simulation_config://'
                   'SIMULATION_CONFIG_FILE.json?'
                   '&key=s2_pattern_map'
                   '&fmt=pkl'
-                  '&pmt_mask=plugin.pmt_mask',
+                  '&pmt_mask=plugin.pmt_mask'
+                  '&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top'
+                  '&n_tpc_pmts=plugin.n_tpc_pmts'
+                  '&n_top_pmts=plugin.n_top_pmts'
+                  ,
         cache=True,
         help='S2 pattern map',
     )

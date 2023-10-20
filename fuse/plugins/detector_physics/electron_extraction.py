@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.detector_physics.electron_extraction')
 @export
 class ElectronExtraction(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
@@ -125,13 +125,35 @@ class ElectronExtraction(strax.Plugin):
         cache=True,
         help='Map of the single electron gain',
     )
+
+    n_top_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs on top array',
+    )
+
+    n_tpc_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs in the TPC',
+    )
+
+    s2_mean_area_fraction_top = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=s2_mean_area_fraction_top",
+        type=(int, float),
+        help='Mean S2 area fraction top',
+    )
     
     s2_pattern_map = straxen.URLConfig(
-        default = 'pattern_map://resource://simulation_config://'
+        default = 's2_aft_scaling://pattern_map://resource://simulation_config://'
                   'SIMULATION_CONFIG_FILE.json?'
                   '&key=s2_pattern_map'
                   '&fmt=pkl'
-                  '&pmt_mask=plugin.pmt_mask',
+                  '&pmt_mask=plugin.pmt_mask'
+                  '&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top'
+                  '&n_tpc_pmts=plugin.n_tpc_pmts'
+                  '&n_top_pmts=plugin.n_top_pmts'
+                  ,
         cache=True,
         help='S2 pattern map',
     )
