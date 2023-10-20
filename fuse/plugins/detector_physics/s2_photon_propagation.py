@@ -314,7 +314,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                 if self.enable_field_dependencies['norm_drift_velocity']:
                     norm_dvel = self.field_dependencies_map_tmp(np.array([ [0], [- self.tpc_length]]).T, map_name='drift_speed_map')[0]
                     norm_dvel*=1e-4
-                    drift_velocity_scaling = self.drift_velocity_liquid/norm_dvel
+                    self.drift_velocity_scaling = self.drift_velocity_liquid/norm_dvel
             def rz_map(z, xy, **kwargs):
                 r = np.sqrt(xy[:, 0]**2 + xy[:, 1]**2)
                 return self.field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
