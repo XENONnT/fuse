@@ -48,6 +48,7 @@ class PulseWindow(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=sample_duration",
         type=(int),
+        cache=True,
         help='Width of one sample [ns]',
     )
 
@@ -56,6 +57,7 @@ class PulseWindow(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=samples_after_pulse_center",
         type=(int, float),
+        cache=True,
         help='Number of samples after the pulse center',
     )
 
@@ -64,6 +66,7 @@ class PulseWindow(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=samples_to_store_after",
         type=(int, float),
+        cache=True,
         help='Number of samples to store after the pulse center',
     )
 
@@ -72,6 +75,7 @@ class PulseWindow(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=samples_before_pulse_center",
         type=(int, float),
+        cache=True,
         help='Number of samples before the pulse center',
     )
 
@@ -80,6 +84,7 @@ class PulseWindow(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=samples_to_store_before",
         type=(int, float),
+        cache=True,
         help='Number of samples to store before the pulse center',
     )
 

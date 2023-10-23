@@ -49,6 +49,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=sample_duration",
         type=(int),
+        cache=True,
         help='sample_duration',
     )
 
@@ -57,6 +58,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
+        cache=True,
         help='PMT circuit load resistor', 
     )
 
@@ -65,6 +67,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=external_amplification",
         type=(int, float),
+        cache=True,
         help='External amplification factor',
     )
 
@@ -73,6 +76,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
+        cache=True,
         help='Number of bits of the digitizer boards',
     )
 
@@ -81,6 +85,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
+        cache=True,
         help='Voltage range of the digitizer boards',
     )
 
@@ -97,6 +102,7 @@ class PMTResponseAndDAQ(strax.Plugin):
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pe_pulse_ts",
+        cache=True,
         help='Add a good description here',
     )
     
@@ -104,6 +110,7 @@ class PMTResponseAndDAQ(strax.Plugin):
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pe_pulse_ys",
+        cache=True,
         help='Add a good description here',
     )
 
@@ -112,6 +119,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_pulse_time_rounding",
         type=(int, float),
+        cache=True,
         help='Time rounding of the PMT pulse',
     )
 
@@ -120,6 +128,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=samples_after_pulse_center",
         type=(int, float),
+        cache=True,
         help='Number of samples after the pulse center',
     )
 
@@ -128,6 +137,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=samples_before_pulse_center",
         type=(int, float),
+        cache=True,
         help=' Number of samples before the pulse center',
     )
 
@@ -136,6 +146,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_reference_baseline",
         type=(int, float),
+        cache=True,
         help='Digitizer reference baseline',
     )
 
@@ -144,6 +155,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=zle_threshold",
         type=(int, float),
+        cache=True,
         help='Threshold for the zero length encoding',
     )
 
@@ -152,6 +164,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=trigger_window",
         type=(int, float),
+        cache=True,
         help='Trigger window',
     )
 
@@ -160,6 +173,7 @@ class PMTResponseAndDAQ(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=samples_to_store_before",
         type=(int, float),
+        cache=True,
         help=' Number of samples to store before the pulse center',
     )
 
@@ -167,6 +181,7 @@ class PMTResponseAndDAQ(strax.Plugin):
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=special_thresholds",
+        cache=True,
         help='Special thresholds for certain PMTs',
     )
 

@@ -53,6 +53,7 @@ class SecondaryScintillation(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
+        cache=True,
         help='Secondary scintillation gain',
     )
 
@@ -61,6 +62,7 @@ class SecondaryScintillation(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
+        cache=True,
         help='PMT circuit load resistor',
     )
 
@@ -69,6 +71,7 @@ class SecondaryScintillation(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
+        cache=True,
         help='Number of bits of the digitizer boards',
     )
 
@@ -77,6 +80,7 @@ class SecondaryScintillation(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
+        cache=True,
         help='Voltage range of the digitizer boards',
     )
 
@@ -84,6 +88,7 @@ class SecondaryScintillation(strax.Plugin):
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=se_gain_from_map",
+        cache=True,
         help='Boolean indication if the secondary scintillation gain is taken from a map',
     )
 
@@ -92,6 +97,7 @@ class SecondaryScintillation(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=p_double_pe_emision",
         type=(int, float),
+        cache=True,
         help='Probability of double photo-electron emission',
     )
     
@@ -134,6 +140,7 @@ class SecondaryScintillation(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_mean_area_fraction_top",
         type=(int, float),
+        cache=True,
         help='Mean S2 area fraction top',
     )
     

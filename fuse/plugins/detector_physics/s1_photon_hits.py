@@ -43,6 +43,7 @@ class S1PhotonHits(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
+        cache=True,
         help='PMT circuit load resistor',
     )
 
@@ -51,6 +52,7 @@ class S1PhotonHits(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
+        cache=True,
         help='Number of bits of the digitizer boards',
     )
 
@@ -59,6 +61,7 @@ class S1PhotonHits(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
+        cache=True,
         help='Voltage range of the digitizer boards',
     )
 
@@ -83,6 +86,7 @@ class S1PhotonHits(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=p_double_pe_emision",
         type=(int, float),
+        cache=True,
         help='Probability of double photo-electron emission',
     )
 
@@ -91,6 +95,7 @@ class S1PhotonHits(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s1_detection_efficiency",
         type=(int, float),
+        cache=True,
         help='S1 detection efficiency',
     )
     

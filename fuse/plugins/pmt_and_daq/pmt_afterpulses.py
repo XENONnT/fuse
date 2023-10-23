@@ -43,6 +43,7 @@ class PMTAfterPulses(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_ap_t_modifier",
         type=(int, float),
+        cache=True,
         help='PMT afterpulse time modifier',
     )
 
@@ -51,6 +52,7 @@ class PMTAfterPulses(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_ap_modifier",
         type=(int, float),
+        cache=True,
         help='PMT afterpulse modifier',
     )
 
@@ -59,6 +61,7 @@ class PMTAfterPulses(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
+        cache=True,
         help='PMT circuit load resistor',
     )
 
@@ -67,6 +70,7 @@ class PMTAfterPulses(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
+        cache=True,
         help='Number of bits of the digitizer boards',
     )
 
@@ -75,6 +79,7 @@ class PMTAfterPulses(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
+        cache=True,
         help='Voltage range of the digitizer boards',
     )
 

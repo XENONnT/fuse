@@ -43,6 +43,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
+        cache=True,
         help='Voltage range of the digitizer boards',
     )
 
@@ -51,6 +52,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
+        cache=True,
         help='Number of bits of the digitizer boards',
     )
 
@@ -59,6 +61,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
+        cache=True,
         help='PMT circuit load resistor ',
     )
 
@@ -67,6 +70,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
+        cache=True,
         help='Secondary scintillation gain',
     )
     #Rename? -> g2_value in beta_yields model 
@@ -75,6 +79,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=g2_mean",
         type=(int, float),
+        cache=True,
         help='mean value of the g2 gain. ',
     )
 
@@ -83,6 +88,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=electron_extraction_yield",
         type=(int, float),
+        cache=True,
         help='Electron extraction yield',
     )
 
@@ -91,6 +97,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=ext_eff_from_map",
         type=bool,
+        cache=True,
         help='Boolean indication if the extraction efficiency is taken from a map',
     )
 
@@ -99,6 +106,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=se_gain_from_map",
         type=bool,
+        cache=True,
         help='Boolean indication if the secondary scintillation gain is taken from a map',
     )
 
@@ -141,6 +149,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_mean_area_fraction_top",
         type=(int, float),
+        cache=True,
         help='Mean S2 area fraction top',
     )
     
@@ -152,8 +161,7 @@ class ElectronExtraction(strax.Plugin):
                   '&pmt_mask=plugin.pmt_mask'
                   '&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top'
                   '&n_tpc_pmts=plugin.n_tpc_pmts'
-                  '&n_top_pmts=plugin.n_top_pmts'
-                  ,
+                  '&n_top_pmts=plugin.n_top_pmts',
         cache=True,
         help='S2 pattern map',
     )
