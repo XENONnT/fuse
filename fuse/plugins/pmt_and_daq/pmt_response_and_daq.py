@@ -15,7 +15,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
 
 @export
-class PMTResponseAndDAQ(strax.Plugin):
+class PMTResponseAndDAQ(strax.DownChunkingPlugin):
     
     __version__ = "0.1.1"
 

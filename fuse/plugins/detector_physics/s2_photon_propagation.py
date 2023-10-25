@@ -18,7 +18,7 @@ log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
 conversion_to_bar = 1/constants.elementary_charge / 1e1
 
 @export
-class S2PhotonPropagationBase(strax.Plugin):
+class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     
     __version__ = "0.1.2"
     
