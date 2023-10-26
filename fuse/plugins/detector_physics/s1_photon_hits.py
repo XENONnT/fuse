@@ -24,7 +24,7 @@ class S1PhotonHits(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
 
-    save_when = strax.SaveWhen.TARGET
+    save_when = strax.SaveWhen.ALWAYS
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
 
