@@ -138,7 +138,7 @@ class ElectronDrift(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug(f"Running ElectronDrift version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
         
         #Can i do this scaling in the url config?
         if self.field_distortion_model == "inverse_fdc":
