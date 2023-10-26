@@ -172,7 +172,7 @@ class SecondaryScintillation(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug(f"Running SecondaryScintillation version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
