@@ -219,7 +219,7 @@ class ElectronDrift(strax.Plugin):
                                                                            z_int = z)
         electron_lifetime_correction = np.exp(- 1 * drift_time_mean / self.electron_lifetime_liquid)
         
-        n_electron = self.rng.binomial(n=n_electron, p=electron_lifetime_correction)
+        n_electron = self.rng.binomial(n=n_electron.astype(np.int32), p=electron_lifetime_correction)
         
         result = np.zeros(len(interactions_in_roi), dtype = self.dtype)
         result["time"] = interactions_in_roi["time"]
