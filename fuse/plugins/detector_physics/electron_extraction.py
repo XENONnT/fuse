@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.detector_physics.electron_extraction')
 @export
 class ElectronExtraction(strax.Plugin):
     
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
     
     depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
@@ -129,7 +129,10 @@ class ElectronExtraction(strax.Plugin):
         mask = interactions_in_roi["electrons"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
-            return np.zeros(len(interactions_in_roi), self.dtype)
+            empty_result = np.zeros(len(interactions_in_roi), self.dtype)
+            empty_result["time"] = interactions_in_roi["time"]
+            empty_result["endtime"] = interactions_in_roi["endtime"]
+            return empty_result
 
         x = interactions_in_roi[mask]["x_obs"]
         y = interactions_in_roi[mask]["y_obs"]
