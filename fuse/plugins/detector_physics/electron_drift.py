@@ -187,7 +187,7 @@ class ElectronDrift(strax.Plugin):
         mask = interactions_in_roi["electrons"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
-            return np.zeros(0, self.dtype)
+            return np.zeros(len(interactions_in_roi), self.dtype)
         
         t = interactions_in_roi[mask]["time"]
         x = interactions_in_roi[mask]["x"]

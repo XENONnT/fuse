@@ -215,7 +215,7 @@ class ElectronExtraction(strax.Plugin):
         mask = interactions_in_roi["electrons"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
-            return np.zeros(0, self.dtype)
+            return np.zeros(len(interactions_in_roi), self.dtype)
 
         x = interactions_in_roi[mask]["x_obs"]
         y = interactions_in_roi[mask]["y_obs"]
