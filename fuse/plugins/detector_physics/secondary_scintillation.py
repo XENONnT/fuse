@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 @export
 class SecondaryScintillation(strax.Plugin):
     
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
     
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
     provides = ("s2_photons", "s2_photons_sum")
@@ -197,8 +197,12 @@ class SecondaryScintillation(strax.Plugin):
         mask = interactions_in_roi["n_electron_extracted"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
+            empty_result = np.zeros(len(interactions_in_roi), self.dtype["s2_photons_sum"])
+            empty_result["time"] = interactions_in_roi["time"]
+            empty_result["endtime"] = interactions_in_roi["endtime"]
+            
             return dict(s2_photons=np.zeros(0, self.dtype["s2_photons"]),
-                        s2_photons_sum=np.zeros(len(interactions_in_roi), self.dtype["s2_photons_sum"]))
+                        s2_photons_sum=empty_result)
         
         positions = np.array([interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["y_obs"]]).T
         

@@ -20,7 +20,7 @@ conversion_to_bar = 1/constants.elementary_charge / 1e1
 @export
 class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
     
     depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
     provides = "propagated_s2_photons"
@@ -348,6 +348,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
 
         if len(individual_electrons) == 0:
             yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
+            return
             
         #Split into "sub-chunks"
         electron_time_gaps = individual_electrons["time"][1:] - individual_electrons["time"][:-1] 
