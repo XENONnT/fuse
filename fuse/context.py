@@ -34,6 +34,7 @@ pmt_and_daq_plugins = [fuse.pmt_and_daq.PMTAfterPulses,
                        fuse.pmt_and_daq.PhotonSummary,
                        fuse.pmt_and_daq.PulseWindow,
                        fuse.pmt_and_daq.PMTResponseAndDAQ,
+                       fuse.pmt_and_daq.Truth,
                        ]
 
 def microphysics_context(output_folder = "./fuse_data"
