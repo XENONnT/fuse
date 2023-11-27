@@ -159,6 +159,8 @@ class PMTAfterPulses(strax.Plugin):
         result["endtime"] = ap_photon_timings
         result["dpe"] = ap_photon_is_dpe
         result["photon_gain"] = ap_photon_gains
+
+        result = strax.sort_by_time(result)
         
         return result
 
