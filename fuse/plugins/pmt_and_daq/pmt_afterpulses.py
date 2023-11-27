@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
 @export
 class PMTAfterPulses(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"
