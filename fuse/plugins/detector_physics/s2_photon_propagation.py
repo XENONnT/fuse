@@ -10,7 +10,7 @@ from scipy import constants
 export, __all__ = strax.exporter()
 
 from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
-from ...common import DummyMap, init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output
+from ...common import init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
@@ -558,10 +558,8 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         # Should be done naturally with the s2 pattern map, however, there's some bug there, so we apply this hard cut
         mask = np.sum(xy_multi ** 2, axis=1) <= self.tpc_radius ** 2
 
-        if isinstance(self.s2_pattern_map, DummyMap):
-            output_dim = self.s2_pattern_map.shape[-1]
-        else:
-            output_dim = self.s2_pattern_map.data['map'].shape[-1]
+        output_dim = self.s2_pattern_map.data['map'].shape[-1]
+
         pattern = np.zeros((len(n_electron), output_dim))
         n0 = 0
         # Average over electrons for each s2
