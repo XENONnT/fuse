@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.detector_physics.electron_extraction')
 @export
 class ElectronExtraction(strax.Plugin):
     
-    __version__ = "0.1.3"
+    __version__ = "0.1.4"
     
     depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
@@ -240,6 +240,9 @@ class ElectronExtraction(strax.Plugin):
             cy = self.g2_mean*rel_s2_cor/se_gains
         else:
             cy = self.electron_extraction_yield
+
+        #Clip the cy to the range 0 to 1
+        cy = np.clip(cy, 0, 1)
             
         n_electron = self.rng.binomial(n=interactions_in_roi[mask]["n_electron_interface"], p=cy)
         
