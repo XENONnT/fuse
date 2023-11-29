@@ -114,6 +114,8 @@ def full_chain_context(output_folder = "./fuse_data",
     # No blinding in simulations
     st.config["event_info_function"] = "disabled"
 
+    st.deregister_plugins_with_missing_dependencies()
+
     return st
 
 
