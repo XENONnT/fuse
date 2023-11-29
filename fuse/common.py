@@ -70,41 +70,6 @@ def loop_uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
     return np.array(result)
 
 
-#WFSim functions
-def parse_extension(name):
-    """Get the extention from a file name. If zipped or tarred, can contain a dot"""
-    split_name = name.split('.')
-    if len(split_name) == 2:
-        fmt = split_name[-1]
-    elif len(split_name) > 2 and 'gz' in name:
-        fmt = '.'.join(split_name[-2:])
-    else:
-        fmt = split_name[-1]
-    #log.warning(f'Using {fmt} for unspecified {name}')
-    return fmt
-
-class DummyMap:
-    """Return constant results
-        the length match the length of input
-        but from the second dimensions the shape is user defined input
-    """
-    def __init__(self, const, shape=()):
-        self.const = const
-        self.shape = shape
-
-    def __call__(self, x, **kwargs):
-        shape = [len(x)] + list(self.shape)
-        return np.ones(shape) * self.const
-
-    def reduce_last_dim(self):
-        assert len(self.shape) >= 1, 'Need at least 1 dim to reduce further'
-        const = self.const * self.shape[-1]
-        shape = list(self.shape)
-        shape[-1] = 1
-
-        return DummyMap(const, shape)
-    
-
 
 # Epix functions
 
