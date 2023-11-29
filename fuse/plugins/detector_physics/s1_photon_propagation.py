@@ -5,7 +5,7 @@ import nestpy
 import logging
 
 from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
-from ...common import init_spe_scaling_factor_distributions, pmt_transition_time_spread, photon_gain_calculation 
+from ...common import init_spe_scaling_factor_distributions, pmt_transit_time_spread, photon_gain_calculation 
 from ...common import build_photon_propagation_output
 
 export, __all__ = strax.exporter()
@@ -207,14 +207,14 @@ class S1PhotonPropagationBase(strax.Plugin):
         _photon_channels = _photon_channels[sortind]
         _photon_timings = _photon_timings[sortind]
 
-        #Do i want to save both -> timings with and without pmt transition time spread?
-        # Correct for PMT Transition Time Spread
+        #Do i want to save both -> timings with and without pmt transit time spread?
+        # Correct for PMT transit Time Spread
         
-        _photon_timings = pmt_transition_time_spread(_photon_timings=_photon_timings,
-                                                     pmt_transit_time_mean=self.pmt_transit_time_mean,
-                                                     pmt_transit_time_spread=self.pmt_transit_time_spread,
-                                                     rng=self.rng,
-                                                     )
+        _photon_timings = pmt_transit_time_spread(_photon_timings=_photon_timings,
+                                                  pmt_transit_time_mean=self.pmt_transit_time_mean,
+                                                  pmt_transit_time_spread=self.pmt_transit_time_spread,
+                                                  rng=self.rng,
+                                                  )
 
         _photon_gains, _photon_is_dpe = photon_gain_calculation(_photon_channels=_photon_channels,
                                                                 p_double_pe_emision=self.p_double_pe_emision,
