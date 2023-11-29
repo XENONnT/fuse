@@ -261,13 +261,11 @@ def photon_gain_calculation(_photon_channels,
 
     #rename this function...
     spe_scaling_factors = sample_spe_scaling_factors(rng.random(len(_photon_channels)), _photon_channels, spe_scaling_factor_distributions)
-
     _photon_gains = gains[_photon_channels] * spe_scaling_factors
 
     # Add some double photoelectron emission by adding another sampled gain
-    spe_scaling_factors_dpe = sample_spe_scaling_factors(rng.random(n_double_pe), _photon_channels[_photon_is_dpe], spe_scaling_factor_distributions) 
-
     n_double_pe = _photon_is_dpe.sum()
+    spe_scaling_factors_dpe = sample_spe_scaling_factors(rng.random(n_double_pe), _photon_channels[_photon_is_dpe], spe_scaling_factor_distributions) 
     _photon_gains[_photon_is_dpe] += gains[_photon_channels[_photon_is_dpe]] * spe_scaling_factors_dpe
 
     return _photon_gains, _photon_is_dpe
@@ -277,7 +275,7 @@ def build_photon_propagation_output(dtype,
                                     _photon_timings,
                                     _photon_channels,
                                     _photon_gains,
-                                    _photon_is_dp
+                                    _photon_is_dpe,
                                     ):
 
     result = np.zeros(_photon_channels.shape[0], dtype = dtype)
