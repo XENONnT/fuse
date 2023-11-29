@@ -324,7 +324,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
         
-        self.__uniform_to_pe_arr = init_spe_scaling_factor_distributions(self.photon_area_distribution)
+        self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
         #Move this part into a nice URLConfig protocol?
         # Field dependencies 
@@ -407,7 +407,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                     pmt_transit_time_spread=self.pmt_transit_time_spread,
                     p_double_pe_emision=self.p_double_pe_emision,
                     gains=self.gains,
-                    __uniform_to_pe_arr=self.__uniform_to_pe_arr,
+                    spe_scaling_factor_distributions=self.spe_scaling_factor_distributions,
                     rng=self.rng,
                     )
 
@@ -453,7 +453,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                     pmt_transit_time_spread=self.pmt_transit_time_spread,
                     p_double_pe_emision=self.p_double_pe_emision,
                     gains=self.gains,
-                    __uniform_to_pe_arr=self.__uniform_to_pe_arr,
+                    spe_scaling_factor_distributions=self.spe_scaling_factor_distributions,
                     rng=self.rng,
                     )
 
