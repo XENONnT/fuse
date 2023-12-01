@@ -324,7 +324,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
-        
+
         self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
         #Move this part into a nice URLConfig protocol?

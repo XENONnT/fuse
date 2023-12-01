@@ -285,6 +285,9 @@ def build_photon_propagation_output(dtype,
     result["photon_gain"] = _photon_gains 
     result["dpe"] = _photon_is_dpe
 
+    #Remove photons with photon_gain <= 0
+    result = result[result["photon_gain"] > 0]
+
     return result
         
     
