@@ -45,29 +45,8 @@ class XENONnT_TPC(VolumePlugin):
 
     provides = "tpc_interactions"
     data_kind = "tpc_interactions"
-    __version__ = "0.1.1"
-
-    #Forbid rechunking
-    rechunk_on_save = False
-
-    #Can we import this from MergeCluster and just add the needed fields?
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('z', np.float32),
-             ('ed', np.float32),
-             ('nestid', np.int8),
-             ('A', np.int8),
-             ('Z', np.int8),
-             ('evtid', np.int32),
-             ('x_pri', np.float32),
-             ('y_pri', np.float32),
-             ('z_pri', np.float32),
-             ('xe_density', np.float32),
-             ('vol_id', np.int8), 
-             ('create_S2', np.bool8), 
-            ]
     
-    dtype = dtype + strax.time_fields
+    __version__ = "0.1.2"
 
     #Config options
     debug = straxen.URLConfig(
@@ -141,29 +120,8 @@ class XENONnT_BelowCathode(VolumePlugin):
 
     provides = "below_cathode_interactions"
     data_kind = "below_cathode_interactions"
-    __version__ = "0.1.1"
-
-    #Forbid rechunking
-    rechunk_on_save = False
-
-    #Can we import this from MergeCluster and just add the needed fields?
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('z', np.float32),
-             ('ed', np.float32),
-             ('nestid', np.int8),
-             ('A', np.int8),
-             ('Z', np.int8),
-             ('evtid', np.int32),
-             ('x_pri', np.float32),
-             ('y_pri', np.float32),
-             ('z_pri', np.float32),
-             ('xe_density', np.float32),
-             ('vol_id', np.int8), 
-             ('create_S2', np.bool8), 
-            ]
     
-    dtype = dtype + strax.time_fields
+    __version__ = "0.1.2"
 
     #Config options
     debug = straxen.URLConfig(
@@ -237,29 +195,7 @@ class XENONnT_GasPhase(VolumePlugin):
 
     provides = "gas_phase_interactions"
     data_kind = "gas_phase_interactions"
-    __version__ = "0.1.0"
-
-    #Forbid rechunking
-    rechunk_on_save = False
-
-    #Can we import this from MergeCluster and just add the needed fields?
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('z', np.float32),
-             ('ed', np.float64),
-             ('nestid', np.int64),
-             ('A', np.int64),
-             ('Z', np.int64),
-             ('evtid', np.int64),
-             ('x_pri', np.float32),
-             ('y_pri', np.float32),
-             ('z_pri', np.float32),
-             ('xe_density', np.float32),
-             ('vol_id', np.int64),
-             ('create_S2', np.bool8),
-            ]
-    
-    dtype = dtype + strax.time_fields
+    __version__ = "0.1.1"
 
     #Config options
     debug = straxen.URLConfig(

@@ -1,5 +1,7 @@
 from strax import Plugin, SaveWhen
 
+import strax
+
 import numba
 import numpy as np
 
@@ -13,6 +15,28 @@ class VolumePlugin(Plugin):
     save_when = SaveWhen.NEVER
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
+
+    #Forbid rechunking
+    rechunk_on_save = False
+
+    __version__ = "0.0.1"
+
+    def infer_dtype(self):
+        dtype = [('x', np.float32),
+                ('y', np.float32),
+                ('z', np.float32),
+                ('ed', np.float32),
+                ('nestid', np.int8),
+                ('A', np.int16),
+                ('Z', np.int16),
+                ('evtid', np.int32),
+                ('xe_density', np.float32),
+                ('vol_id', np.int8), 
+                ('create_S2', np.bool8), 
+                ]
+        
+        dtype = dtype + strax.time_fields
+        return dtype
 
     def in_ROI(self, interactions, min_z, max_z, max_r):
         """
