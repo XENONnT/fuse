@@ -36,9 +36,6 @@ class MergeCluster(strax.Plugin):
              ('A', np.int8),
              ('Z', np.int8),
              ('evtid', np.int32),
-             ('x_pri', np.float32),
-             ('y_pri', np.float32),
-             ('z_pri', np.float32),
              ('xe_density', np.float32), #Will be set i a later plugin
              ('vol_id', np.int8), #Will be set i a later plugin
              ('create_S2', np.bool8), #Will be set i a later plugin
@@ -107,9 +104,6 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
         result[i]["Z"] = Z
         result[i]["nestid"] = nestid
 
-        result[i]["x_pri"] = cluster["x_pri"][main_interaction_index]
-        result[i]["y_pri"] = cluster["y_pri"][main_interaction_index]
-        result[i]["z_pri"] = cluster["z_pri"][main_interaction_index]
         result[i]["evtid"] = cluster["evtid"][main_interaction_index]
 
     return result
