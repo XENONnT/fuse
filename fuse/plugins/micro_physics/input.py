@@ -19,7 +19,7 @@ log = logging.getLogger('fuse.micro_physics.input')
 @export
 class ChunkInput(strax.Plugin):
     
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
     
     depends_on = tuple()
     provides = "geant4_interactions"
@@ -286,8 +286,8 @@ class file_loader():
             interactions = interactions[(e_dep_er<10) & (e_dep_nr>0)]
 
         # Removing all events with no interactions:
-        m = ak.num(interactions['ed']) > 0
-        interactions = interactions[m]
+        #m = ak.num(interactions['ed']) > 0
+        #interactions = interactions[m]
 
         #Sort interactions in events by time and subtract time of the first interaction
         interactions = interactions[ak.argsort(interactions['t'])]
@@ -321,7 +321,10 @@ class file_loader():
         log.info(f"Removing {np.sum(~delay_cut)} ( {np.sum(~delay_cut)/len(delay_cut) *100:.4} %) interactions later than {self.cut_delayed:.2e} ns.")
         inter_reshaped = inter_reshaped[delay_cut]
  
-        sort_idx = np.argsort(inter_reshaped["time"])
+        #sort_idx = np.argsort(inter_reshaped["time"])
+        #Sort by time and then t 
+        sort_idx = np.lexsort((inter_reshaped["t"], inter_reshaped["time"]))
+        
         inter_reshaped = inter_reshaped[sort_idx]
 
         #Group into chunks
