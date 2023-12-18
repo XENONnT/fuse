@@ -7,8 +7,8 @@ from copy import deepcopy
 
 #Plugins to simulate microphysics
 microphysics_plugins = [fuse.micro_physics.ChunkInput,
-                        fuse.micro_physics.FindCluster,
-                        fuse.micro_physics.MergeCluster,
+                        fuse.micro_physics.LineageClustering,
+                        fuse.micro_physics.MergeLineage,
                         fuse.micro_physics.XENONnT_TPC,
                         fuse.micro_physics.XENONnT_BelowCathode,
                         fuse.micro_physics.VolumesMerger,
