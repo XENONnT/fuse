@@ -33,8 +33,8 @@ class MergeCluster(strax.Plugin):
              ('z', np.float32),
              ('ed', np.float32),
              ('nestid', np.int8),
-             ('A', np.int8),
-             ('Z', np.int8),
+             ('A', np.int16),
+             ('Z', np.int16),
              ('evtid', np.int32),
              ('xe_density', np.float32), #Will be set i a later plugin
              ('vol_id', np.int8), #Will be set i a later plugin
