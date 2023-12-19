@@ -6,15 +6,22 @@ from straxen import URLConfig
 from copy import deepcopy
 
 #Plugins to simulate microphysics
-microphysics_plugins = [fuse.micro_physics.ChunkInput,
-                        fuse.micro_physics.LineageClustering,
-                        fuse.micro_physics.MergeLineage,
-                        fuse.micro_physics.XENONnT_TPC,
-                        fuse.micro_physics.XENONnT_BelowCathode,
-                        fuse.micro_physics.VolumesMerger,
-                        fuse.micro_physics.ElectricField,
-                        fuse.micro_physics.NestYields,
-                        fuse.micro_physics.MicroPhysicsSummary]
+
+
+microphysics_plugins_dbscan_clustering = [fuse.micro_physics.ChunkInput,
+                                          fuse.micro_physics.FindCluster,
+                                          fuse.micro_physics.MergeCluster]
+
+microphysics_plugins_lineage_clustering = [fuse.micro_physics.ChunkInput,
+                                           fuse.micro_physics.LineageClustering,
+                                           fuse.micro_physics.MergeLineage]
+
+remaining_microphysics_plugins = [fuse.micro_physics.XENONnT_TPC,
+                                  fuse.micro_physics.XENONnT_BelowCathode,
+                                  fuse.micro_physics.VolumesMerger,
+                                  fuse.micro_physics.ElectricField,
+                                  fuse.micro_physics.NestYields,
+                                  fuse.micro_physics.MicroPhysicsSummary]
 
 #Plugins to simulate S1 signals
 s1_simulation_plugins = [fuse.detector_physics.S1PhotonHits,
@@ -56,6 +63,7 @@ def microphysics_context(output_folder = "./fuse_data"
     return st
 
 def full_chain_context(output_folder = "./fuse_data",
+                       clustering_method = "dbscan",
                        corrections_version = None,
                        simulation_config_file = "fax_config_nt_design.json",
                        corrections_run_id = "026000",
@@ -77,7 +85,16 @@ def full_chain_context(output_folder = "./fuse_data",
                           **straxen.contexts.xnt_common_config))
 
     #Register microphysics plugins
-    for plugin in microphysics_plugins:
+    if clustering_method == "dbscan":
+        for plugin in microphysics_plugins_dbscan_clustering:
+            st.register(plugin)
+    elif clustering_method == "lineage":
+        for plugin in microphysics_plugins_lineage_clustering:
+            st.register(plugin)
+    else:
+        raise ValueError(f"Clustering method {clustering_method} not implemented!")
+    
+    for plugin in remaining_microphysics_plugins:
         st.register(plugin)
 
     #Register S1 plugins
