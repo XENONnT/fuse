@@ -59,6 +59,9 @@ class MergeLineage(strax.Plugin):
 
     def compute(self, geant4_interactions):
 
+        #Remove all clusters that have no energy deposition
+        geant4_interactions = geant4_interactions[geant4_interactions["ed"] > 0]
+
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
