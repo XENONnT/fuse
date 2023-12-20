@@ -271,12 +271,13 @@ class file_loader():
             raise ValueError(f'Cannot load events from file "{self.file}": .root or .cvs file needed.')        
         
         # Removing all events with zero energy deposit
-        m = interactions['ed'] > 0
+        #m = interactions['ed'] > 0
+        #Remove neutrinos....
         if self.cut_by_eventid:
             # ufunc does not work here...
             m2 = (interactions['evtid'] >= start) & (interactions['evtid'] < stop)
             m = m & m2
-        interactions = interactions[m]
+            interactions = interactions[m]
 
         if self.cut_nr_only:
             log.info("'nr_only' set to True, keeping only the NR events")
