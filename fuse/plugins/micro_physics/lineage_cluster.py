@@ -135,11 +135,11 @@ class LineageClustering(strax.Plugin):
             parent, parent_lineage = get_parent(event, tmp_result, particle)
 
             #Replace the parent in case a particle has multiple interactions in the same event
-            if (parent is not None):
-                if len(parent_lineage) > 1:
-                    parent, parent_lineage = get_previous_parent_interaction(parent, parent_lineage, particle)
-                else:
-                    parent = parent[0]
+            #if (parent is not None):
+            #    if len(parent_lineage) > 1:
+            #        parent, parent_lineage = get_previous_parent_interaction(parent, parent_lineage, particle)
+            #    else:
+            #        parent = parent[0]
 
             if parent is None: #If there is no parent particle
 
@@ -147,7 +147,39 @@ class LineageClustering(strax.Plugin):
                 particle_already_in_lineage = is_particle_in_lineage(particle_lineage)
 
                 if particle_already_in_lineage:
-                    #Add the particle to the lineage
+                    
+                    #Check if the lineage will be broken -> a gamma scattering at multiple places
+                    last_particle_interaction, last_particle_lineage = get_last_particle_interaction(event, particle, particle_lineage)
+
+                    if last_particle_interaction:
+                        #There is a last interaction!
+                        #Check if the lineage is broken
+                        broken_lineage = is_lineage_broken(particle,
+                                                           last_particle_interaction,
+                                                           last_particle_lineage,
+                                                           gamma_distance_threshold = self.gamma_distance_threshold,
+                                                           time_threshold = self.time_threshold
+                                                           )
+                        if broken_lineage:
+                            #New lineage
+                            running_lineage_index += 1
+                            lineage_class, lineage_A, lineage_Z = lineage_classification(particle, broken_lineage = True)
+
+                            tmp_result[i]["lineage_index"] = running_lineage_index
+                            tmp_result[i]["lineage_type"] = lineage_class
+                            tmp_result[i]["lineage_A"] = lineage_A
+                            tmp_result[i]["lineage_Z"] = lineage_Z
+                        
+                        else:
+                            #Add the particle to the lineage
+                            tmp_result[i]["lineage_index"] = last_particle_lineage["lineage_index"]#[0]
+                            tmp_result[i]["lineage_type"] = last_particle_lineage["lineage_type"]#[0]
+                            tmp_result[i]["lineage_A"] = last_particle_lineage["lineage_A"]#[0]
+                            tmp_result[i]["lineage_Z"] = last_particle_lineage["lineage_Z"]#[0]
+                        continue
+                        
+
+                    #If the particle has no last interaction, or the lineage is not broken, we can add the particle to the lineage
                     tmp_result[i]["lineage_index"] = particle_lineage["lineage_index"][0]
                     tmp_result[i]["lineage_type"] = particle_lineage["lineage_type"][0]
                     tmp_result[i]["lineage_A"] = particle_lineage["lineage_A"][0]
@@ -163,7 +195,42 @@ class LineageClustering(strax.Plugin):
                     tmp_result[i]["lineage_A"] = lineage_A
                     tmp_result[i]["lineage_Z"] = lineage_Z
                 continue
+            
+            #If there is a parent particle, we need to check if the particle is already in a lineage
+            particle_already_in_lineage = is_particle_in_lineage(particle_lineage)
+            if particle_already_in_lineage:
+                #Check if the lineage will be broken -> a gamma scattering at multiple places
+                last_particle_interaction, last_particle_lineage = get_last_particle_interaction(event, particle, particle_lineage)
 
+                if last_particle_interaction:
+                    #There is a last interaction!
+                    #Check if the lineage is broken
+                    broken_lineage = is_lineage_broken(particle,
+                                                        last_particle_interaction,
+                                                        last_particle_lineage,
+                                                        gamma_distance_threshold = self.gamma_distance_threshold,
+                                                        time_threshold = self.time_threshold
+                                                        )
+                    if broken_lineage:
+                        #New lineage
+                        running_lineage_index += 1
+                        lineage_class, lineage_A, lineage_Z = lineage_classification(particle, broken_lineage = True)
+
+                        tmp_result[i]["lineage_index"] = running_lineage_index
+                        tmp_result[i]["lineage_type"] = lineage_class
+                        tmp_result[i]["lineage_A"] = lineage_A
+                        tmp_result[i]["lineage_Z"] = lineage_Z
+                        
+                    else:
+                        #Add the particle to the lineage
+                        tmp_result[i]["lineage_index"] = last_particle_lineage["lineage_index"]#[0]
+                        tmp_result[i]["lineage_type"] = last_particle_lineage["lineage_type"]#[0]
+                        tmp_result[i]["lineage_A"] = last_particle_lineage["lineage_A"]#[0]
+                        tmp_result[i]["lineage_Z"] = last_particle_lineage["lineage_Z"]#[0]
+                    continue
+
+
+            #There is no parent particle and the particle is not in a lineage yet: 
             #Check if the lineage is broken
             broken_lineage = is_lineage_broken(particle,
                                                parent,
@@ -174,23 +241,23 @@ class LineageClustering(strax.Plugin):
 
             if broken_lineage:
 
-                #If the lineage was broken due to the ion case and the particle was already put into a lineage, we need to second interaction as well
-                if (parent_lineage["lineage_type"] == 6) & is_particle_in_lineage(particle_lineage):
+                #If the lineage was broken due to the ion case and the particle was already put into a lineage
+                #if (parent_lineage["lineage_type"] == 6) & is_particle_in_lineage(particle_lineage):
                     #Add the particle to the lineage
-                    tmp_result[i]["lineage_index"] = particle_lineage["lineage_index"][0]
-                    tmp_result[i]["lineage_type"] = particle_lineage["lineage_type"][0]
-                    tmp_result[i]["lineage_A"] = particle_lineage["lineage_A"][0]
-                    tmp_result[i]["lineage_Z"] = particle_lineage["lineage_Z"][0]
+                #    tmp_result[i]["lineage_index"] = particle_lineage["lineage_index"][0]
+                #    tmp_result[i]["lineage_type"] = particle_lineage["lineage_type"][0]
+                #    tmp_result[i]["lineage_A"] = particle_lineage["lineage_A"][0]
+                #    tmp_result[i]["lineage_Z"] = particle_lineage["lineage_Z"][0]
 
-                else:
+                #else:
                     #New lineage
-                    running_lineage_index += 1
-                    lineage_class, lineage_A, lineage_Z = lineage_classification(particle, broken_lineage)
+                running_lineage_index += 1
+                lineage_class, lineage_A, lineage_Z = lineage_classification(particle, broken_lineage)
                     
-                    tmp_result[i]["lineage_type"] = lineage_class
-                    tmp_result[i]["lineage_index"] = running_lineage_index
-                    tmp_result[i]["lineage_A"] = lineage_A
-                    tmp_result[i]["lineage_Z"] = lineage_Z
+                tmp_result[i]["lineage_type"] = lineage_class
+                tmp_result[i]["lineage_index"] = running_lineage_index
+                tmp_result[i]["lineage_A"] = lineage_A
+                tmp_result[i]["lineage_Z"] = lineage_Z
 
 
             else:# If the lineage is not broken, add the particle to the parents lineage
@@ -211,6 +278,23 @@ def get_particle(event_interactions, event_lineage, index):
 
     return event, event_lineage[event_interactions["trackid"] == event["trackid"]]
 
+
+def get_last_particle_interaction(event_interactions, particle, particle_lineage):
+    """
+    Function to get the last interaction of a particle
+    """
+    
+    all_particle_interactions = event_interactions[event_interactions["trackid"] == particle["trackid"]]
+    particle_mask = all_particle_interactions == particle
+    last_interaction_index = np.where(particle_mask)[0][0]-1
+
+    if last_interaction_index < 0:
+        return None, None
+    else:
+        return all_particle_interactions[last_interaction_index], particle_lineage[last_interaction_index]
+
+
+
 def get_parent(event_interactions,event_lineage, particle):
     """
     Returns the parent particle and its lineage of the given particle
@@ -223,20 +307,31 @@ def get_parent(event_interactions,event_lineage, particle):
     parent_interactions = event_interactions[index_of_parent_particle]
     parent_lineages = event_lineage[index_of_parent_particle]
 
-
-    #Sometimes we can have parents that are after the particle. This is not allowed
-    #E.g. a gamma leaving the TPC and then coming back... 
+    #Sometimes we can have parents that are after the particle. This makes no sense.
     parent_interactions_time_cut = parent_interactions["t"] <= particle["t"]
 
-    if np.sum(parent_interactions_time_cut) == 0: #There is no parent particle
+    if np.sum(parent_interactions_time_cut) == 0: 
+        #there is no parent particle interaction before the particle. Why is this happening? 
+        #lets return the first parent interaction..
+        #parent_to_return = np.argmin(parent_interactions["t"])
+        #return parent_interactions[parent_to_return], parent_lineages[parent_to_return]
 
         return None, None
+
+    #In case there are multiple parent interactions before the particle, we need to take the last one
+    possible_parents = parent_interactions[parent_interactions_time_cut]
+    possible_parents_lineages = parent_lineages[parent_interactions_time_cut]
+
+    return possible_parents[-1], possible_parents_lineages[-1]
     
-    return parent_interactions[parent_interactions_time_cut], parent_lineages[parent_interactions_time_cut]
+    #return parent_interactions[parent_interactions_time_cut], parent_lineages[parent_interactions_time_cut]
 
 def get_previous_parent_interaction(parent_interactions, parent_lineages, particle):
     """
     Returns the parent interaction before the current particle
+
+    Merge this function with get_parent... 
+
     """
 
     possible_parents_mask = parent_interactions["t"] <= particle["t"]
@@ -292,12 +387,14 @@ def lineage_classification(particle_interaction, broken_lineage = False):
             return 8, 0 , 0
         elif particle_interaction["creaproc"] == "phot":
             return 7, 0 , 0
+        else:
+            return 12, 0 , 0
     
     elif particle_interaction["type"] == "e-": #more cases to consider for beta decays??
         return 8, 0 , 0
     
     #The ion case #Only here A and Z are needed 
-    elif (particle_interaction["creaproc"] == "Radioactiv"):
+    elif (particle_interaction["creaproc"] == "Radioactiv") or (particle_interaction["parenttype"] == "none"):
         if num_there(particle_interaction["type"]):
             
             element_number, mass = get_element_and_mass(particle_interaction["type"])
@@ -315,10 +412,10 @@ def lineage_classification(particle_interaction, broken_lineage = False):
                 return 8, 0 , 0
             elif particle_interaction["edproc"] == "phot":
                 return 7, 0 , 0
+            else:
+                return 12, 0 , 0
 
         else:
-            print("Case not covered!")
-            print(particle_interaction)
             return 12, 0 , 0
         
     #A lineage can only be broken if we have a ion (see last case or if we have a gamma. This case)
@@ -332,6 +429,9 @@ def lineage_classification(particle_interaction, broken_lineage = False):
                 return 8, 0 , 0
             elif particle_interaction["edproc"] == "phot":
                 return 7, 0 , 0
+
+            else:
+                return 12, 0 , 0
         
         else:
             return 12, 0 , 0
@@ -356,6 +456,10 @@ def is_lineage_broken(particle,
     
     #For gamma rays, check the distance between the parent and the particle
     if particle["type"] == "gamma":
+        
+        #Break the lineage for these transportation gammas
+        if parent["edproc"] == "Transporta":
+            return True
 
         particle_position = np.array([particle["x"],particle["y"],particle["z"]])
         parent_position = np.array([parent["x"],parent["y"],parent["z"]])
