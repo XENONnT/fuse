@@ -164,21 +164,7 @@ class ElectronExtraction(strax.Plugin):
                                pmt_circuit_load_resistor=self.pmt_circuit_load_resistor
                                )
 
-        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
-        
-        #Is this else case ever used? if no -> remove
-        #if self.s2_correction_map_file:
-        #    self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
-        #else:
-        #    s2cmap = deepcopy(self.s2_pattern_map)
-        #    # Lower the LCE by removing contribution from dead PMTs
-        #    # AT: masking is a bit redundant due to PMT mask application in make_patternmap
-        #    s2cmap.data['map'] = np.sum(s2cmap.data['map'][:][:], axis=2, keepdims=True, where=self.pmt_mask)
-        #    # Scale by median value
-        #    s2cmap.data['map'] = s2cmap.data['map'] / np.median(s2cmap.data['map'][s2cmap.data['map'] > 0])
-        #    s2cmap.__init__(s2cmap.data)
-        #    self.s2_correction_map = s2cmap
-    
+        self.pmt_mask = np.array(self.gains) > 0 
     def compute(self, interactions_in_roi):
         
         #Just apply this to clusters with photons
