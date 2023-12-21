@@ -165,6 +165,7 @@ class ElectronExtraction(strax.Plugin):
                                )
 
         self.pmt_mask = np.array(self.gains) > 0 
+        
     def compute(self, interactions_in_roi):
         
         #Just apply this to clusters with photons
