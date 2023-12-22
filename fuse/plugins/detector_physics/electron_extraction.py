@@ -4,7 +4,7 @@ import numpy as np
 import os
 import logging
 
-from ...common import pmt_gains, FUSE_PLUGIN_TIMEOUT
+from ...common import FUSE_PLUGIN_TIMEOUT
 
 export, __all__ = strax.exporter()
 
@@ -36,30 +36,6 @@ class ElectronExtraction(strax.Plugin):
     debug = straxen.URLConfig(
         default=False, type=bool,track=False,
         help='Show debug informations',
-    )
-
-    digitizer_voltage_range = straxen.URLConfig(
-        default = "take://resource://"
-                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                  "&take=digitizer_voltage_range",
-        type=(int, float),
-        help='Voltage range of the digitizer boards',
-    )
-
-    digitizer_bits = straxen.URLConfig(
-        default = "take://resource://"
-                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                  "&take=digitizer_bits",
-        type=(int, float),
-        help='Number of bits of the digitizer boards',
-    )
-
-    pmt_circuit_load_resistor = straxen.URLConfig(
-        default = "take://resource://"
-                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                  "&take=pmt_circuit_load_resistor",
-        type=(int, float),
-        help='PMT circuit load resistor ',
     )
 
     s2_secondary_sc_gain_mc = straxen.URLConfig(
@@ -100,12 +76,6 @@ class ElectronExtraction(strax.Plugin):
                   "&take=se_gain_from_map",
         type=bool,
         help='Boolean indication if the secondary scintillation gain is taken from a map',
-    )
-
-    gain_model_mc = straxen.URLConfig(
-        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
-        infer_type=False,
-        help='PMT gain model',
     )
     
     s2_correction_map = straxen.URLConfig(
@@ -148,14 +118,6 @@ class ElectronExtraction(strax.Plugin):
             self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")
 
-        self.gains = self.gains = pmt_gains(self.gain_model_mc,
-                               digitizer_voltage_range=self.digitizer_voltage_range,
-                               digitizer_bits=self.digitizer_bits,
-                               pmt_circuit_load_resistor=self.pmt_circuit_load_resistor
-                               )
-
-        self.pmt_mask = np.array(self.gains) > 0 
-        
     def compute(self, interactions_in_roi):
         
         #Just apply this to clusters with photons
