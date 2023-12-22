@@ -125,16 +125,6 @@ class ElectronExtraction(strax.Plugin):
         cache=True,
         help='Map of the single electron gain',
     )
-    
-    s2_pattern_map = straxen.URLConfig(
-        default = 'pattern_map://resource://simulation_config://'
-                  'SIMULATION_CONFIG_FILE.json?'
-                  '&key=s2_pattern_map'
-                  '&fmt=pkl'
-                  '&pmt_mask=plugin.pmt_mask',
-        cache=True,
-        help='S2 pattern map',
-    )
 
     deterministic_seed = straxen.URLConfig(
         default=True, type=bool,
