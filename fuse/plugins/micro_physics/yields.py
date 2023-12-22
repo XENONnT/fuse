@@ -55,7 +55,7 @@ class NestYields(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug(f"Running NestYields version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         log.debug(f'Using nestpy version {nestpy.__version__}')
 
