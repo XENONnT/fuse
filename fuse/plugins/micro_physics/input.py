@@ -19,7 +19,7 @@ log = logging.getLogger('fuse.micro_physics.input')
 @export
 class ChunkInput(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = tuple()
     provides = "geant4_interactions"
@@ -83,7 +83,7 @@ class ChunkInput(strax.Plugin):
     )
 
     cut_delayed = straxen.URLConfig(
-        default=4e14, type=(int, float),
+        default=9e18, type=(int, float),
         help='All interactions happening after this time (including the event time) will be cut.',
     )
 
@@ -288,7 +288,11 @@ class file_loader():
         # Removing all events with no interactions:
         m = ak.num(interactions['ed']) > 0
         interactions = interactions[m]
-        
+
+        #Sort interactions in events by time and subtract time of the first interaction
+        interactions = interactions[ak.argsort(interactions['t'])]
+        interactions['t'] = interactions['t'] - interactions['t'][:, 0]
+
         inter_reshaped = full_array_to_numpy(interactions, self.dtype)
         
         #Need to check start and stop again....
