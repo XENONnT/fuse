@@ -110,3 +110,7 @@ Config Options
      - 
      - True
      - Field distortion map used in fuse (Check if we can remove _fuse from the name)
+   * - deterministic_seed
+     - True
+     - True
+     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).

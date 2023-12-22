@@ -110,7 +110,7 @@ class XENONnT_TPC(VolumePlugin):
             log.setLevel('DEBUG')
             log.debug(f"Running XENONnT_TPC version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
     def compute(self, clustered_interactions):
         
@@ -206,7 +206,7 @@ class XENONnT_BelowCathode(VolumePlugin):
             log.setLevel('DEBUG')
             log.debug(f"Running XENONnT_BelowCathode version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
     def compute(self, clustered_interactions):
         
@@ -302,7 +302,7 @@ class XENONnT_GasPhase(VolumePlugin):
             log.setLevel('DEBUG')
             log.debug("Running XENONnT_GasPhase in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
     def compute(self, clustered_interactions):
         

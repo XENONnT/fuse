@@ -206,7 +206,7 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
             log.setLevel('DEBUG')
             log.debug(f"Running PMTResponseAndDAQ version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -263,7 +263,8 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
                 index_chunks[i] = np.append(index_chunks[i], len(propagated_photons))
 
         if n_chunks > 1:
-            log.debug("Splitting input into %d chunk(s)" % n_chunks)
+            log.info("Chunk size exceeding file size target.")
+            log.info("Downchunking to %d chunks" % n_chunks)
 
         last_start = start
 
