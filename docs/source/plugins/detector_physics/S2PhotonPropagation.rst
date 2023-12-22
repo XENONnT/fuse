@@ -140,6 +140,10 @@ S2PhotonPropagationBase plugin
      - 
      - True
      - Field dependencies during electron drift
+   * - s2_mean_area_fraction_top
+     - 
+     - True
+     - Mean S2 area fraction top
    * - s2_pattern_map
      - 
      - True

@@ -43,6 +43,7 @@ class S1PhotonHits(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
+        cache=True,
         help='PMT circuit load resistor',
     )
 
@@ -51,6 +52,7 @@ class S1PhotonHits(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
+        cache=True,
         help='Number of bits of the digitizer boards',
     )
 
@@ -59,6 +61,7 @@ class S1PhotonHits(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
+        cache=True,
         help='Voltage range of the digitizer boards',
     )
 
@@ -83,6 +86,7 @@ class S1PhotonHits(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=p_double_pe_emision",
         type=(int, float),
+        cache=True,
         help='Probability of double photo-electron emission',
     )
 
@@ -91,6 +95,7 @@ class S1PhotonHits(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s1_detection_efficiency",
         type=(int, float),
+        cache=True,
         help='S1 detection efficiency',
     )
     
@@ -125,11 +130,11 @@ class S1PhotonHits(strax.Plugin):
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
 
         #Build LCE map from s1 pattern map
-        lce_map = deepcopy(self.s1_pattern_map)
+        lcemap = deepcopy(self.s1_pattern_map)
         # AT: this scaling with mast is redundant to `make_patternmap`, but keep it in for now
-        lce_map.data['map'] = np.sum(lce_map.data['map'][:][:][:], axis=3, keepdims=True, where=self.pmt_mask)
-        lce_map.__init__(lce_map.data)
-        self.s1_lce_correction_map = lce_map
+        lcemap.data['map'] = np.sum(lcemap.data['map'][:][:][:], axis=3, keepdims=True, where=self.pmt_mask)
+        lcemap.__init__(lcemap.data)
+        self.s1_lce_correction_map = lcemap
 
     def compute(self, interactions_in_roi):
 

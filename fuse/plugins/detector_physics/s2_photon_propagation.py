@@ -18,9 +18,9 @@ log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
 conversion_to_bar = 1/constants.elementary_charge / 1e1
 
 @export
-class S2PhotonPropagationBase(strax.Plugin):
+class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
     provides = "propagated_s2_photons"
@@ -50,6 +50,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=p_double_pe_emision",
         type=(int, float),
+        cache=True,
         help='p_double_pe_emision',
     )
 
@@ -58,6 +59,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_transit_time_spread",
         type=(int, float),
+        cache=True,
         help='pmt_transit_time_spread',
     )
 
@@ -66,6 +68,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_transit_time_mean",
         type=(int, float),
+        cache=True,
         help='pmt_transit_time_mean',
     )
 
@@ -74,6 +77,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
+        cache=True,
         help='pmt_circuit_load_resistor',
     )
 
@@ -82,6 +86,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
+        cache=True,
         help='digitizer_bits',
     )
 
@@ -90,6 +95,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
+        cache=True,
         help='digitizer_voltage_range',
     )
 
@@ -129,6 +135,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=drift_velocity_liquid",
         type=(int, float),
+        cache=True,
         help='Drift velocity of electrons in the liquid xenon',
     )
 
@@ -137,6 +144,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=tpc_length",
         type=(int, float),
+        cache=True,
         help='Length of the XENONnT TPC',
     )
 
@@ -145,6 +153,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=tpc_radius",
         type=(int, float),
+        cache=True,
         help='Radius of the XENONnT TPC ',
     )
 
@@ -153,6 +162,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=diffusion_constant_transverse",
         type=(int, float),
+        cache=True,
         help='Transverse diffusion constant',
     )
 
@@ -161,6 +171,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_aft_skewness",
         type=(int, float),
+        cache=True,
         help='Skew of the S2 area fraction top',
     )
 
@@ -169,6 +180,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_aft_sigma",
         type=(int, float),
+        cache=True,
         help='Width of the S2 area fraction top',
     )
     
@@ -176,15 +188,29 @@ class S2PhotonPropagationBase(strax.Plugin):
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=enable_field_dependencies",
+        cache=True,
         help='enable_field_dependencies',
+    )
+
+    s2_mean_area_fraction_top = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=s2_mean_area_fraction_top",
+        type=(int, float),
+        cache=True,
+        help='Mean S2 area fraction top',
     )
     
     s2_pattern_map = straxen.URLConfig(
-        default = 'pattern_map://resource://simulation_config://'
+        default = 's2_aft_scaling://pattern_map://resource://simulation_config://'
                   'SIMULATION_CONFIG_FILE.json?'
                   '&key=s2_pattern_map'
                   '&fmt=pkl'
-                  '&pmt_mask=plugin.pmt_mask',
+                  '&pmt_mask=plugin.pmt_mask'
+                  '&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top'
+                  '&n_tpc_pmts=plugin.n_tpc_pmts'
+                  '&n_top_pmts=plugin.n_top_pmts'
+                  ,
         cache=True,
         help='S2 pattern map',
     )
@@ -196,6 +222,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   '&key=field_dependencies_map'
                   '&fmt=json.gz'
                   '&method=RectBivariateSpline',
+        cache=True,
         help='Map for the electric field dependencies',
     )
 
@@ -204,6 +231,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=singlet_fraction_gas",
         type=(int, float),
+        cache=True,
         help='Fraction of singlet states in GXe',
     )
 
@@ -212,6 +240,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=triplet_lifetime_gas",
         type=(int, float),
+        cache=True,
         help='Liftetime of triplet states in GXe',
     )
 
@@ -220,6 +249,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=singlet_lifetime_gas",
         type=(int, float),
+        cache=True,
         help='Liftetime of singlet states in GXe',
     )
 
@@ -228,6 +258,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=triplet_lifetime_liquid",
         type=(int, float),
+        cache=True,
         help='Liftetime of triplet states in LXe',
     )
 
@@ -236,6 +267,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=singlet_lifetime_liquid",
         type=(int, float),
+        cache=True,
         help='Liftetime of singlet states in LXe',
     )
 
@@ -244,6 +276,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
+        cache=True,
         help='Secondary scintillation gain',
     )
 
@@ -302,7 +335,7 @@ class S2PhotonPropagationBase(strax.Plugin):
                 if self.enable_field_dependencies['norm_drift_velocity']:
                     norm_dvel = self.field_dependencies_map_tmp(np.array([ [0], [- self.tpc_length]]).T, map_name='drift_speed_map')[0]
                     norm_dvel*=1e-4
-                    drift_velocity_scaling = self.drift_velocity_liquid/norm_dvel
+                    self.drift_velocity_scaling = self.drift_velocity_liquid/norm_dvel
             def rz_map(z, xy, **kwargs):
                 r = np.sqrt(xy[:, 0]**2 + xy[:, 1]**2)
                 return self.field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
@@ -671,6 +704,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pressure",
         type=(int, float),
+        cache=True,
         help='pressure',
     )
 
@@ -679,6 +713,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=temperature",
         type=(int, float),
+        cache=True,
         help='temperature',
     )
 
@@ -687,6 +722,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=gas_drift_velocity_slope",
         type=(int, float),
+        cache=True,
         help='gas_drift_velocity_slope',
     )
 
@@ -695,6 +731,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=enable_gas_gap_warping",
         type=(int, float),
+        cache=True,
         help='enable_gas_gap_warping',
     )
 
@@ -703,6 +740,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=elr_gas_gap_length",
         type=(int, float),
+        cache=True,
         help='elr_gas_gap_length',
     )
 
@@ -720,6 +758,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=anode_field_domination_distance",
         type=(int, float),
+        cache=True,
         help='anode_field_domination_distance',
     )
 
@@ -728,6 +767,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=anode_wire_radius",
         type=(int, float),
+        cache=True,
         help='anode_wire_radius',
     )
 
@@ -736,6 +776,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=gate_to_anode_distance",
         type=(int, float),
+        cache=True,
         help='gate_to_anode_distance',
     )
 
@@ -744,6 +785,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=anode_voltage",
         type=(int, float),
+        cache=True,
         help='anode_voltage',
     )
 
@@ -752,6 +794,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=lxe_dielectric_constant",
         type=(int, float),
+        cache=True,
         help='lxe_dielectric_constant',
     )
 

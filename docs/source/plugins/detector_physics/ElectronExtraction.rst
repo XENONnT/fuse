@@ -96,6 +96,18 @@ Config Options
      - 
      - True
      - Map of the single electron gain
+   * - n_top_pmts
+     - 
+     - True
+     - Number of PMTs on top array
+   * - n_tpc_pmts
+     - 
+     - True
+     - Number of PMTs in the TPC
+   * - s2_mean_area_fraction_top
+     - 
+     - True
+     - Mean S2 area fraction top
    * - s2_pattern_map
      - 
      - True

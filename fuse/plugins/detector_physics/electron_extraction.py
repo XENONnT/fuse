@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.detector_physics.electron_extraction')
 @export
 class ElectronExtraction(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
@@ -43,6 +43,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
+        cache=True,
         help='Secondary scintillation gain',
     )
     #Rename? -> g2_value in beta_yields model 
@@ -51,6 +52,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=g2_mean",
         type=(int, float),
+        cache=True,
         help='mean value of the g2 gain. ',
     )
 
@@ -59,6 +61,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=electron_extraction_yield",
         type=(int, float),
+        cache=True,
         help='Electron extraction yield',
     )
 
@@ -67,6 +70,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=ext_eff_from_map",
         type=bool,
+        cache=True,
         help='Boolean indication if the extraction efficiency is taken from a map',
     )
 
@@ -75,6 +79,7 @@ class ElectronExtraction(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=se_gain_from_map",
         type=bool,
+        cache=True,
         help='Boolean indication if the secondary scintillation gain is taken from a map',
     )
     

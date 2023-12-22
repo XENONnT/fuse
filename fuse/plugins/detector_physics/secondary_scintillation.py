@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 @export
 class SecondaryScintillation(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
     provides = ("s2_photons", "s2_photons_sum")
@@ -53,6 +53,7 @@ class SecondaryScintillation(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
+        cache=True,
         help='Secondary scintillation gain',
     )
 
@@ -61,6 +62,7 @@ class SecondaryScintillation(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
+        cache=True,
         help='PMT circuit load resistor',
     )
 
@@ -69,6 +71,7 @@ class SecondaryScintillation(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
+        cache=True,
         help='Number of bits of the digitizer boards',
     )
 
@@ -77,6 +80,7 @@ class SecondaryScintillation(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
+        cache=True,
         help='Voltage range of the digitizer boards',
     )
 
@@ -84,6 +88,7 @@ class SecondaryScintillation(strax.Plugin):
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=se_gain_from_map",
+        cache=True,
         help='Boolean indication if the secondary scintillation gain is taken from a map',
     )
 
@@ -92,6 +97,7 @@ class SecondaryScintillation(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=p_double_pe_emision",
         type=(int, float),
+        cache=True,
         help='Probability of double photo-electron emission',
     )
     
@@ -118,13 +124,36 @@ class SecondaryScintillation(strax.Plugin):
         infer_type=False,
         help='PMT gain model',
     )
+
+    n_top_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs on top array',
+    )
+
+    n_tpc_pmts = straxen.URLConfig(
+        type=(int),
+        help='Number of PMTs in the TPC',
+    )
+
+    s2_mean_area_fraction_top = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=s2_mean_area_fraction_top",
+        type=(int, float),
+        cache=True,
+        help='Mean S2 area fraction top',
+    )
     
     s2_pattern_map = straxen.URLConfig(
-        default = 'pattern_map://resource://simulation_config://'
+        default = 's2_aft_scaling://pattern_map://resource://simulation_config://'
                   'SIMULATION_CONFIG_FILE.json?'
                   '&key=s2_pattern_map'
                   '&fmt=pkl'
-                  '&pmt_mask=plugin.pmt_mask',
+                  '&pmt_mask=plugin.pmt_mask'
+                  '&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top'
+                  '&n_tpc_pmts=plugin.n_tpc_pmts'
+                  '&n_top_pmts=plugin.n_top_pmts'
+                  ,
         cache=True,
         help='S2 pattern map',
     )
@@ -141,11 +170,6 @@ class SecondaryScintillation(strax.Plugin):
             log.debug(f"Running SecondaryScintillation version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
-        
-        #Are these if cases needed?? -> If no remove, if yes, correct the code
-        #if self.s2_correction_map_file:
-        #    self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
-        #else:
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -163,25 +187,6 @@ class SecondaryScintillation(strax.Plugin):
                                )
 
         self.pmt_mask = np.array(self.gains)
-        
-        #Are these if cases needed?? -> If no remove, if yes, correct the code
-        #if self.s2_correction_map_file:
-        #    self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
-        #else:
-
-        #    self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
-
-        #    self.s2_pattern_map = make_patternmap(self.s2_pattern_map_file, fmt='pkl', pmt_mask=self.pmt_mask)
-            
-            
-        #    s2cmap = deepcopy(self.s2_pattern_map)
-            # Lower the LCE by removing contribution from dead PMTs
-            # AT: masking is a bit redundant due to PMT mask application in make_patternmap
-        #    s2cmap.data['map'] = np.sum(s2cmap.data['map'][:][:], axis=2, keepdims=True, where=self.pmt_mask)
-            # Scale by median value
-        #    s2cmap.data['map'] = s2cmap.data['map'] / np.median(s2cmap.data['map'][s2cmap.data['map'] > 0])
-        #    s2cmap.__init__(s2cmap.data)
-        #    self.s2_correction_map = s2cmap
     
     def compute(self, interactions_in_roi, individual_electrons):
         

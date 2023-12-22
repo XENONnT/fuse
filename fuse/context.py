@@ -3,6 +3,7 @@ import straxen
 import fuse
 import numpy as np
 from straxen import URLConfig
+from copy import deepcopy
 
 #Plugins to simulate microphysics
 microphysics_plugins = [fuse.micro_physics.ChunkInput,
@@ -144,6 +145,22 @@ def pattern_map(map_data, pmt_mask, method='WeightedNearestNeighbors'):
         assert (map_data['map'].shape[-1]==pmt_mask.shape[0]), "Error! Pattern map and PMT gains must have same dimensions!"
         map_data['map'][..., ~pmt_mask]=0.0
     return straxen.InterpolatingMap(map_data, method=method)
+
+@URLConfig.register('s2_aft_scaling')
+def modify_s2_pattern_map(s2_pattern_map, s2_mean_area_fraction_top, n_tpc_pmts, n_top_pmts):
+    """Modify the S2 pattern map to match a given input AFT"""
+    
+    s2map=deepcopy(s2_pattern_map)
+    s2map_topeff_=s2map.data['map'][...,0:n_top_pmts].sum(axis=2)
+    s2map_toteff_=s2map.data['map'].sum(axis=2)
+    orig_aft_=np.mean((s2map_topeff_/s2map_toteff_)[s2map_toteff_>0.0])
+    # getting scales for top/bottom separately to preserve total efficiency
+    scale_top_=s2_mean_area_fraction_top/orig_aft_
+    scale_bot_=(1 - s2_mean_area_fraction_top)/(1 - orig_aft_)
+    s2map.data['map'][:,:,0:n_top_pmts]*=scale_top_
+    s2map.data['map'][:,:,n_top_pmts:n_tpc_pmts]*=scale_bot_
+    s2_pattern_map.__init__(s2map.data)
+    return s2_pattern_map
 
 #Probably not needed!
 @URLConfig.register('simple_load')

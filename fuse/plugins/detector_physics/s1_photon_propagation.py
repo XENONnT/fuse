@@ -49,6 +49,7 @@ class S1PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=p_double_pe_emision",
         type=(int, float),
+        cache=True,
         help='Probability of double photo-electron emission',
     )
 
@@ -57,6 +58,7 @@ class S1PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_transit_time_spread",
         type=(int, float),
+        cache=True,
         help='Spread of the PMT transit times',
     )
 
@@ -65,6 +67,7 @@ class S1PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_transit_time_mean",
         type=(int, float),
+        cache=True,
         help='Mean of the PMT transit times',
     )
 
@@ -73,6 +76,7 @@ class S1PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
+        cache=True,
         help='PMT circuit load resistor',
     )
 
@@ -81,6 +85,7 @@ class S1PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_bits",
         type=(int, float),
+        cache=True,
         help='Number of bits of the digitizer boards',
     )
 
@@ -89,6 +94,7 @@ class S1PhotonPropagationBase(strax.Plugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=digitizer_voltage_range",
         type=(int, float),
+        cache=True,
         help='Voltage range of the digitizer boards',
     )
 
@@ -271,6 +277,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=maximum_recombination_time",
         type=(int, float),
+        cache=True,
         help='Maximum recombination time',
     )
 
