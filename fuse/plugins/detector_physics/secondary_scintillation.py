@@ -2,6 +2,7 @@ import strax
 import numpy as np
 import straxen
 import logging
+from immutabledict import immutabledict
 
 from ...common import pmt_gains, FUSE_PLUGIN_TIMEOUT
 
@@ -31,7 +32,9 @@ class SecondaryScintillation(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
 
-    save_when = strax.SaveWhen.TARGET
+    save_when = immutabledict(s2_photons=strax.SaveWhen.TARGET,
+                              s2_photons_sum=strax.SaveWhen.ALWAYS
+                              )
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
     
@@ -169,7 +172,7 @@ class SecondaryScintillation(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug(f"Running SecondaryScintillation version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))

@@ -56,7 +56,7 @@ class ElectricField(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug(f"Running ElectricField version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
     def compute(self, interactions_in_roi):
         """

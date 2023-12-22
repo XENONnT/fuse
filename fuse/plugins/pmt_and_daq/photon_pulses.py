@@ -99,7 +99,7 @@ class PulseWindow(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug(f"Running PulseWindow version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         #Lets double the samples_to_store_x values to avoid overlapping records when triggering on noise.. 
         self.pulse_left_extenstion = np.int64(2*self.samples_to_store_before) + self.samples_before_pulse_center
