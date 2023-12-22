@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.detector_physics.electron_drift')
 @export
 class ElectronDrift(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
@@ -42,47 +42,83 @@ class ElectronDrift(strax.Plugin):
     )
     
     drift_velocity_liquid = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=drift_velocity_liquid",
         type=(int, float),
         help='Drift velocity of electrons in the liquid xenon',
     )
     
     drift_time_gate = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=drift_time_gate",
         type=(int, float),
         help='Electron drift time from the gate in ns',
     )
     
     diffusion_constant_longitudinal = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=diffusion_constant_longitudinal",
         type=(int, float),
         help='Longitudinal electron drift diffusion constant',
     )
     
     electron_lifetime_liquid = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=electron_lifetime_liquid",
         type=(int, float),
         help='Electron lifetime in liquid xenon',
     )
     
     enable_field_dependencies = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=enable_field_dependencies",
         help='Field dependencies during electron drift',
     )
 
     tpc_length = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=tpc_length",
         type=(int, float),
         help='Length of the XENONnT TPC',
     )
         
     field_distortion_model = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=field_distortion_model",
         help='Model for the electric field distortion',
     )
     
     field_dependencies_map_tmp = straxen.URLConfig(
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=field_dependencies_map'
+                  '&fmt=json.gz'
+                  '&method=RectBivariateSpline',
         help='Map for the electric field dependencies',
     )
     
     diffusion_longitudinal_map_tmp = straxen.URLConfig(
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=diffusion_longitudinal_map'
+                  '&fmt=json.gz'
+                  '&method=WeightedNearestNeighbors',
         help='Longitudinal diffusion map',
     )
     
     fdc_map_fuse = straxen.URLConfig(
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=field_distortion_comsol_map'
+                  '&fmt=json.gz'
+                  '&method=RectBivariateSpline',
         cache=True,
         help='fdc_map',
     )
@@ -107,7 +143,7 @@ class ElectronDrift(strax.Plugin):
                 if self.enable_field_dependencies['norm_drift_velocity']:
                     norm_dvel = self.field_dependencies_map_tmp(np.array([ [0], [- self.tpc_length]]).T, map_name='drift_speed_map')[0]
                     norm_dvel*=1e-4
-                    drift_velocity_scaling = self.drift_velocity_liquid/norm_dvel
+                    self.drift_velocity_scaling = self.drift_velocity_liquid/norm_dvel
             def rz_map(z, xy, **kwargs):
                 r = np.sqrt(xy[:, 0]**2 + xy[:, 1]**2)
                 return self.field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)

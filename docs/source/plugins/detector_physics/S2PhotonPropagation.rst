@@ -100,10 +100,10 @@ S2PhotonPropagationBase plugin
      - 
      - True
      - Number of PMTs in the TPC
-   * - gains
+   * - gain_model_mc
      - 
      - True
-     - PMT gains
+     - PMT gain model
    * - photon_area_distribution
      - 
      - True
@@ -168,7 +168,7 @@ S2PhotonPropagationBase plugin
      - 
      - True
      - Liftetime of singlet states in LXe
-   * - s2_secondary_sc_gain
+   * - s2_secondary_sc_gain_mc
      - 
      - True
      - Secondary scintillation gain

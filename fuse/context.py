@@ -1,210 +1,131 @@
-# Define simulation cotexts here
-# When fuse gets public this needs to be moved to e.g. cutax?
-
 import strax
-import cutax
 import straxen
 import fuse
-import os
 import numpy as np
-
 from straxen import URLConfig
 
-#Microphysics context
-def microphysics_context(out_dir):
-    st = strax.Context(register = [fuse.micro_physics.ChunkInput,
-                                   fuse.micro_physics.FindCluster,
-                                   fuse.micro_physics.MergeCluster,
-                                   fuse.micro_physics.XENONnT_TPC,
-                                   fuse.micro_physics.XENONnT_BelowCathode,
-                                   fuse.micro_physics.VolumesMerger,
-                                   fuse.micro_physics.ElectricField,
-                                   fuse.micro_physics.NestYields,
-                                   fuse.micro_physics.MicroPhysicsSummary],
-                    storage = [strax.DataDirectory(out_dir)]
-                    )
+#Plugins to simulate microphysics
+microphysics_plugins = [fuse.micro_physics.ChunkInput,
+                        fuse.micro_physics.FindCluster,
+                        fuse.micro_physics.MergeCluster,
+                        fuse.micro_physics.XENONnT_TPC,
+                        fuse.micro_physics.XENONnT_BelowCathode,
+                        fuse.micro_physics.VolumesMerger,
+                        fuse.micro_physics.ElectricField,
+                        fuse.micro_physics.NestYields,
+                        fuse.micro_physics.MicroPhysicsSummary]
 
-    st.set_config({
-        "efield_map": 'itp_map://resource://format://'
-                      'fieldmap_2D_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz?'
-                      '&fmt=json.gz'
-                      '&method=RegularGridInterpolator',
-        #'g1_value' : 0.151, 
-        #'g2_value' : 16.45,
-        #'cs1_spline_path': '/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs1_func_E_option2.pkl',
-        #'cs2_spline_path' : '/project2/lgrandi/pkavrigin/2023-04-24_epix_data_files/cs2_func_E_option2.pkl',
-    })
+#Plugins to simulate S1 signals
+s1_simulation_plugins = [fuse.detector_physics.S1PhotonHits,
+                         fuse.detector_physics.S1PhotonPropagation,
+                        ]
+
+#Plugins to simulate S2 signals
+s2_simulation_plugins = [fuse.detector_physics.ElectronDrift,
+                         fuse.detector_physics.ElectronExtraction,
+                         fuse.detector_physics.ElectronTiming,
+                         fuse.detector_physics.SecondaryScintillation,
+                         fuse.detector_physics.S2PhotonPropagation
+                         ]
+
+#Plugins to simulate PMTs and DAQ
+pmt_and_daq_plugins = [fuse.pmt_and_daq.PMTAfterPulses,
+                       fuse.pmt_and_daq.PhotonSummary,
+                       fuse.pmt_and_daq.PulseWindow,
+                       fuse.pmt_and_daq.PMTResponseAndDAQ,
+                       ]
+
+def microphysics_context(output_folder = "./fuse_data"
+                         ):
+    """
+    Function to create a fuse microphysics simulation context. 
+    """
+
+    st = strax.Context(storage=strax.DataDirectory(output_folder),
+                       **straxen.contexts.xnt_common_opts)
     
+    st.config.update(dict(detector='XENONnT',
+                          check_raw_record_overlaps=True,
+                          **straxen.contexts.xnt_common_config))
+    
+    #Register microphysics plugins
+    for plugin in microphysics_plugins:
+        st.register(plugin)
+
     return st
 
+def full_chain_context(output_folder = "./fuse_data",
+                       corrections_version = None,
+                       simulation_config_file = "fax_config_nt_design.json",
+                       corrections_run_id = "026000",
+                       run_id_specific_config = {"gain_model_mc":"gain_model",
+                                                 "electron_lifetime_liquid":"elife",
+                                                 "drift_velocity_liquid":"electron_drift_velocity",
+                                                 "drift_time_gate":"electron_drift_time_gate",
+                                                 }
+                       ):
+    """
+    Function to create a fuse full chain simulation context. 
+    """
 
-#Full Chain Context
-#For now lets just hijack the cutax simulations context 
+    st = strax.Context(storage=strax.DataDirectory(output_folder),
+                       **straxen.contexts.xnt_common_opts)
+    
+    st.config.update(dict(#detector='XENONnT',
+                          check_raw_record_overlaps=True,
+                          **straxen.contexts.xnt_common_config))
 
-full_chain_modules = [fuse.micro_physics.ChunkInput,
-                      fuse.micro_physics.FindCluster,
-                      fuse.micro_physics.MergeCluster,
-                      fuse.micro_physics.XENONnT_TPC,
-                      fuse.micro_physics.XENONnT_BelowCathode,
-                      fuse.micro_physics.VolumesMerger,
-                      fuse.micro_physics.ElectricField,
-                      fuse.micro_physics.NestYields,
-                      fuse.micro_physics.MicroPhysicsSummary,
-                      fuse.detector_physics.S1PhotonHits,
-                      fuse.detector_physics.S1PhotonPropagation,
-                      fuse.detector_physics.ElectronDrift,
-                      fuse.detector_physics.ElectronExtraction,
-                      fuse.detector_physics.ElectronTiming,
-                      fuse.detector_physics.SecondaryScintillation,
-                      fuse.detector_physics.S2PhotonPropagation,
-                      fuse.pmt_and_daq.PMTAfterPulses,
-                      fuse.pmt_and_daq.PhotonSummary,
-                      fuse.pmt_and_daq.PulseWindow,
-                      fuse.pmt_and_daq.PMTResponseAndDAQ,
-                     ]
+    #Register microphysics plugins
+    for plugin in microphysics_plugins:
+        st.register(plugin)
 
-def full_chain_context(out_dir, config):
+    #Register S1 plugins
+    for plugin in s1_simulation_plugins:
+        st.register(plugin)
 
-    st = cutax.contexts.xenonnt_sim_SR0v3_cmt_v9(output_folder = out_dir)
+    #Register S2 plugins
+    for plugin in s2_simulation_plugins:
+        st.register(plugin)
 
-    for module in full_chain_modules:
-        st.register(module)
+    #Register PMT and DAQ plugins
+    for plugin in pmt_and_daq_plugins:
+        st.register(plugin)
 
-    st.set_config({
-        "detector": "XENONnT",
-        "efield_map": 'itp_map://resource://format://'
-                      'fieldmap_2D_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz?'
-                      '&fmt=json.gz'
-                      '&method=RegularGridInterpolator',
-        "drift_velocity_liquid": config["drift_velocity_liquid"],
-        "drift_time_gate": config["drift_time_gate"],
-        "diffusion_constant_longitudinal": config["diffusion_constant_longitudinal"],
-        "electron_lifetime_liquid": config["electron_lifetime_liquid"],
-        "enable_field_dependencies": config["enable_field_dependencies"],
-        "tpc_length": config["tpc_length"],
-        "field_distortion_model": config["field_distortion_model"],
-        "field_dependencies_map_tmp": 'itp_map://resource://format://'
-                                      'field_dependent_radius_depth_maps_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz?'
-                                      '&fmt=json.gz'
-                                      '&method=RectBivariateSpline',
-        "diffusion_longitudinal_map_tmp":'itp_map://resource://format://'
-                                         'data_driven_diffusion_map_XENONnTSR0V2.json.gz?'
-                                         '&fmt=json.gz'
-                                         '&method=WeightedNearestNeighbors',
-        "fdc_map_fuse": 'itp_map://resource://format://'
-                        'init_to_final_position_mapping_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz?'
-                        '&fmt=json.gz'
-                        '&method=RectBivariateSpline',
-        "digitizer_voltage_range": config["digitizer_voltage_range"],
-        "digitizer_bits": config["digitizer_bits"],
-        "pmt_circuit_load_resistor": config["pmt_circuit_load_resistor"],
-        "s2_secondary_sc_gain": config["s2_secondary_sc_gain"],
-        "g2_mean": config["g2_mean"],
-        "electron_extraction_yield": config["electron_extraction_yield"],
-        "ext_eff_from_map": config["ext_eff_from_map"],
-        "se_gain_from_map": config["se_gain_from_map"],
-        "gains": 'pmt_gains://resource://format://'
-                 'to_pe_nt.npy?'
-                 '&fmt=npy'
-                 '&digitizer_voltage_range=plugin.digitizer_voltage_range'
-                 '&digitizer_bits=plugin.digitizer_bits'
-                 '&pmt_circuit_load_resistor=plugin.pmt_circuit_load_resistor',
-        "s2_correction_map": 'itp_map://resource://format://'
-                             'XENONnT_s2_xy_map_v4_210503_mlp_3_in_1_iterated.json?'
-                             '&fmt=json',
-        "se_gain_map": 'itp_map://resource://format://'
-                       'XENONnT_se_xy_map_v1_mlp.json?'
-                       '&fmt=json',
-        "s2_pattern_map": 'pattern_map://resource://format://'
-                          'XENONnT_s2_xy_patterns_GXe_LCE_corrected_qes_MCv4.3.0_wires.pkl?'
-                          '&fmt=pkl'
-                          '&pmt_mask=plugin.pmt_mask',
-        "electron_trapping_time": config["electron_trapping_time"],
-        "p_double_pe_emision": config["p_double_pe_emision"],
-        "pmt_transit_time_spread": config["pmt_transit_time_spread"],
-        "pmt_transit_time_mean": config["pmt_transit_time_mean"],
-        "maximum_recombination_time": config["maximum_recombination_time"],
-        "n_top_pmts": 253,
-        "n_tpc_pmts": 494,
-        "s1_detection_efficiency": 1,
-        "s1_lce_correction_map": 'itp_map://resource://format://'
-                                 'XENONnT_s1_xyz_LCE_corrected_qes_MCva43fa9b_wires.json.gz?'
-                                 '&fmt=json.gz',
-        "s1_pattern_map":'pattern_map://resource://format://'
-                        'XENONnT_s1_xyz_patterns_corrected_qes_MCva43fa9b_wires.pkl?'
-                        '&fmt=pkl'
-                        '&pmt_mask=None',
-        "s1_optical_propagation_spline": 'itp_map://resource://format://'
-                                         'XENONnT_s1_proponly_va43fa9b_wires_20200625.json.gz?'
-                                         '&fmt=json.gz'
-                                         '&method=RegularGridInterpolator',
-        "photon_area_distribution": 'simple_load://resource://format://'
-                                   f'{config["photon_area_distribution"]}?'
-                                    '&fmt=csv',
-        "s2_gain_spread": 0,
-        "triplet_lifetime_gas": config["triplet_lifetime_gas"],
-        "singlet_lifetime_gas": config["singlet_lifetime_gas"],
-        "triplet_lifetime_liquid": config["triplet_lifetime_liquid"],
-        "singlet_lifetime_liquid": config["singlet_lifetime_liquid"],
-        "singlet_fraction_gas": config["singlet_fraction_gas"],
-        "tpc_radius": config["tpc_radius"],
-        "diffusion_constant_transverse": config["diffusion_constant_transverse"],
-        "s2_aft_skewness": config["s2_aft_skewness"],
-        "s2_aft_sigma": config["s2_aft_sigma"],
-        "s2_optical_propagation_spline":'itp_map://resource://format://'
-                                        'XENONnT_s2_opticalprop_time_v0.json.gz?'
-                                        '&fmt=json.gz',
-        "s2_luminescence_map":'simple_load://resource://format://'
-                              'garfield_timing_map_gas_gap_sr0.npy?'
-                              '&fmt=npy',
-        "garfield_gas_gap_map": 'itp_map://resource://format://'
-                                'garfield_gas_gap_map_sr0.json?'
-                                '&fmt=json',
-        "pmt_ap_t_modifier": config["pmt_ap_t_modifier"],
-        "pmt_ap_modifier": config["pmt_ap_modifier"],
-        "photon_ap_cdfs": 'simple_load://resource://format://'
-                         f'{config["photon_ap_cdfs"]}?'
-                          '&fmt=json.gz',
-        "zle_threshold": config["zle_threshold"],
-        "digitizer_reference_baseline": config["digitizer_reference_baseline"],
-        "trigger_window": config["trigger_window"],
-        "external_amplification": config["external_amplification"],
-        "pmt_pulse_time_rounding": config["pmt_pulse_time_rounding"],
-        "samples_after_pulse_center": config["samples_after_pulse_center"],
-        "samples_to_store_after": config["samples_to_store_after"],
-        "samples_before_pulse_center": config["samples_before_pulse_center"],
-        "samples_to_store_before": config["samples_to_store_before"],
-        "dt": config["sample_duration"],
-        "pe_pulse_ts": config["pe_pulse_ts"],
-        "pe_pulse_ys": config["pe_pulse_ys"],
-        "special_thresholds": config["special_thresholds"],
-        "noise_data": 'simple_load://resource://format://'
-                         f'{config["noise_file"]}?'
-                          '&fmt=npy',
+    if corrections_version is not None:
+        st.apply_xedocs_configs(version=corrections_version)
 
-    })
+    set_simulation_config_file(st, simulation_config_file)
+
+    local_versions = st.config
+    for config_name, url_config in local_versions.items():
+        if isinstance(url_config, str):
+            if 'run_id' in url_config:
+                local_versions[config_name] = straxen.URLConfig.format_url_kwargs(url_config, run_id=corrections_run_id)
+    st.config = local_versions
+
+    #Update some run specific config
+    for mc_config, processing_config in run_id_specific_config.items():
+        if processing_config in st.config:
+            st.config[mc_config] = st.config[processing_config]
+        else:
+            print(f"Warning! {processing_config} not in context config, skipping...")
+
+    # No blinding in simulations
+    st.config["event_info_function"] = "disabled"
 
     return st
 
 
+def set_simulation_config_file(context, config_file_name):
+    """
+    Function to loop over the plugin config and replace SIMULATION_CONFIG_FILE with the actual file name
+    """
+    for data_type, plugin in context._plugin_class_registry.items():
+        for option_key, option in plugin.takes_config.items():
 
-@URLConfig.register('pmt_gains')
-def pmt_gains(to_pe, digitizer_voltage_range, digitizer_bits, pmt_circuit_load_resistor):
-    """Build PMT Gains"""
-    
-    to_pe = to_pe[0][1]
-    
-    adc_2_current = (digitizer_voltage_range
-                     / 2 ** (digitizer_bits)
-                     / pmt_circuit_load_resistor)
-    
-    gains = np.divide(adc_2_current,
-                      to_pe,
-                      out=np.zeros_like(to_pe),
-                      where=to_pe != 0,
-                     )
-    return gains
-
+            if isinstance(option.default, str) and "SIMULATION_CONFIG_FILE.json" in option.default:
+                context.config[option_key] = option.default.replace("SIMULATION_CONFIG_FILE.json", config_file_name)
+                
 
 @URLConfig.register('pattern_map')
 def pattern_map(map_data, pmt_mask, method='WeightedNearestNeighbors'):
@@ -229,3 +150,11 @@ def pattern_map(map_data, pmt_mask, method='WeightedNearestNeighbors'):
 def load(data):
     """Some Documentation"""
     return data
+
+@URLConfig.register('simulation_config')
+def from_config(config_name, key):
+    """
+    Return a value from a json config file
+    """
+    config = straxen.get_resource(config_name, fmt="json")
+    return config[key]

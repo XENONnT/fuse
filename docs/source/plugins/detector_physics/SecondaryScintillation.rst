@@ -86,7 +86,7 @@ Config Options
      - 
      - True
      - Spread of the S2 gain
-   * - s2_secondary_sc_gain
+   * - s2_secondary_sc_gain_mc
      - 
      - True
      - Secondary scintillation gain
@@ -118,10 +118,10 @@ Config Options
      - 
      - True
      - S2 correction map
-   * - gains
+   * - gain_model_mc
      - 
      - True
-     - PMT gains
+     - PMT gain model
    * - s2_pattern_map
      - 
      - True

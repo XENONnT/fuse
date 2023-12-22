@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fuse"
-version = "0.1.1"
+version = "0.2.0"
 authors = [
   { name="Henning Schulze Eißing", email="h_schu55@uni-muenster.de" },
   { name="Diego Ramírez García", email="diego.ramirez@physik.uzh.ch" }

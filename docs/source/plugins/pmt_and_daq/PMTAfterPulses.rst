@@ -79,10 +79,10 @@ Config Options
      - 
      - True
      - Voltage range of the digitizer boards
-   * - gains
+   * - gain_model_mc
      - 
      - True
-     - PMT gains
+     - PMT gain model
    * - photon_ap_cdfs
      - 
      - True

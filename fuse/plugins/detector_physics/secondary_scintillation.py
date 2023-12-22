@@ -3,7 +3,7 @@ import numpy as np
 import straxen
 import logging
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...common import pmt_gains, FUSE_PLUGIN_TIMEOUT
 
 export, __all__ = strax.exporter()
 
@@ -41,56 +41,90 @@ class SecondaryScintillation(strax.Plugin):
         help='Show debug informations',
     )
 
+    #Move this into the config
     s2_gain_spread = straxen.URLConfig(
+        default = 0,
         type=(int, float),
         help='Spread of the S2 gain',
     )
 
-    s2_secondary_sc_gain = straxen.URLConfig(
+    s2_secondary_sc_gain_mc = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=s2_secondary_sc_gain",
         type=(int, float),
         help='Secondary scintillation gain',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_circuit_load_resistor",
         type=(int, float),
         help='PMT circuit load resistor',
     )
 
     digitizer_bits = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_bits",
         type=(int, float),
         help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_voltage_range",
         type=(int, float),
         help='Voltage range of the digitizer boards',
     )
 
     se_gain_from_map = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=se_gain_from_map",
         help='Boolean indication if the secondary scintillation gain is taken from a map',
     )
 
     p_double_pe_emision = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=p_double_pe_emision",
         type=(int, float),
         help='Probability of double photo-electron emission',
     )
     
     se_gain_map = straxen.URLConfig(
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=se_gain_map'
+                  '&fmt=json',
         cache=True,
         help='Map of the single electron gain ',
     )
     
     s2_correction_map = straxen.URLConfig(
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=s2_correction_map'
+                  '&fmt=json',
         cache=True,
         help='S2 correction map',
     )
     
-    gains = straxen.URLConfig(
-        cache=True,
-        help='PMT gains',
+    gain_model_mc = straxen.URLConfig(
+        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        infer_type=False,
+        help='PMT gain model',
     )
     
     s2_pattern_map = straxen.URLConfig(
+        default = 'pattern_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=s2_pattern_map'
+                  '&fmt=pkl'
+                  '&pmt_mask=plugin.pmt_mask',
         cache=True,
         help='S2 pattern map',
     )
@@ -108,8 +142,6 @@ class SecondaryScintillation(strax.Plugin):
         else: 
             log.setLevel('WARNING')
         
-        self.pmt_mask = np.array(self.gains)
-        
         #Are these if cases needed?? -> If no remove, if yes, correct the code
         #if self.s2_correction_map_file:
         #    self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
@@ -124,6 +156,12 @@ class SecondaryScintillation(strax.Plugin):
             self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")
         
+        self.gains = pmt_gains(self.gain_model_mc,
+                               digitizer_voltage_range=self.digitizer_voltage_range,
+                               digitizer_bits=self.digitizer_bits,
+                               pmt_circuit_load_resistor=self.pmt_circuit_load_resistor
+                               )
+
         self.pmt_mask = np.array(self.gains)
         
         #Are these if cases needed?? -> If no remove, if yes, correct the code
@@ -199,7 +237,7 @@ class SecondaryScintillation(strax.Plugin):
         else:
             # calculate it from MC pattern map directly if no "se_gain_map" is given
             sc_gain = self.s2_correction_map(positions)
-            sc_gain *= self.s2_secondary_sc_gain
+            sc_gain *= self.s2_secondary_sc_gain_mc
 
         # depending on if you use the data driven or mc pattern map for light yield for S2
         # the shape of n_photon_hits will change. Mc needs a squeeze

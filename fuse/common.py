@@ -303,3 +303,16 @@ def build_photon_propagation_output(
     return result
         
     
+def pmt_gains(to_pe, digitizer_voltage_range, digitizer_bits, pmt_circuit_load_resistor):
+    """Build PMT Gains from PMT gain model and digitizer parameters"""
+
+    adc_2_current = (digitizer_voltage_range
+                     / 2 ** (digitizer_bits)
+                     / pmt_circuit_load_resistor)
+    
+    gains = np.divide(adc_2_current,
+                      to_pe,
+                      out=np.zeros_like(to_pe),
+                      where=to_pe != 0,
+                     )
+    return gains
