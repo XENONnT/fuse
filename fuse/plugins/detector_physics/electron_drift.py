@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.detector_physics.electron_drift')
 @export
 class ElectronDrift(strax.Plugin):
     
-    __version__ = "0.1.3"
+    __version__ = "0.1.4"
     
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
@@ -187,7 +187,10 @@ class ElectronDrift(strax.Plugin):
         mask = interactions_in_roi["electrons"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
-            return np.zeros(0, self.dtype)
+            empty_result = np.zeros(len(interactions_in_roi), self.dtype)
+            empty_result["time"] = interactions_in_roi["time"]
+            empty_result["endtime"] = interactions_in_roi["endtime"]
+            return empty_result
         
         t = interactions_in_roi[mask]["time"]
         x = interactions_in_roi[mask]["x"]

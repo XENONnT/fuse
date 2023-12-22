@@ -15,7 +15,7 @@ log = logging.getLogger('fuse.detector_physics.s1_photon_hits')
 @export
 class S1PhotonHits(strax.Plugin):
 
-    __version__ = '0.1.2'
+    __version__ = '0.1.3'
 
     depends_on = ("microphysics_summary")
     provides = "s1_photons"
@@ -142,7 +142,10 @@ class S1PhotonHits(strax.Plugin):
         mask = interactions_in_roi["photons"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
-            return np.zeros(0, self.dtype)
+            empty_result = np.zeros(len(interactions_in_roi), self.dtype)
+            empty_result["time"] = interactions_in_roi["time"]
+            empty_result["endtime"] = interactions_in_roi["endtime"]
+            return empty_result
         
         x = interactions_in_roi[mask]['x']
         y = interactions_in_roi[mask]['y']
