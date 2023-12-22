@@ -282,7 +282,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     )
 
     propagated_s2_photons_file_size_target = straxen.URLConfig(
-        type=(int, float), default = 300, track=False,
+        type=(int, float), default = 500, track=False,
         help='target for the propagated_s2_photons file size in MB',
     )
 
@@ -302,7 +302,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
             log.setLevel('DEBUG')
             log.debug(f"Running S2PhotonPropagation version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -349,6 +349,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
 
         if len(individual_electrons) == 0:
             yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
+            return
             
         #Split into "sub-chunks"
         electron_time_gaps = individual_electrons["time"][1:] - individual_electrons["time"][:-1] 
@@ -371,7 +372,8 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
 
         n_chunks = len(electron_chunks)
         if n_chunks > 1:
-            log.debug("Splitting into %d chunks" % n_chunks)
+            log.info("Chunk size exceeding file size target.")
+            log.info("Downchunking to %d chunks" % n_chunks)
         
         last_start = start
         if n_chunks>1:

@@ -17,7 +17,7 @@ log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
 @export
 class PMTResponseAndDAQ(strax.DownChunkingPlugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
 
     depends_on = ("photon_summary", "pulse_ids", "pulse_windows")
 
@@ -206,7 +206,7 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
             log.setLevel('DEBUG')
             log.debug(f"Running PMTResponseAndDAQ version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -263,7 +263,8 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
                 index_chunks[i] = np.append(index_chunks[i], len(propagated_photons))
 
         if n_chunks > 1:
-            log.debug("Splitting input into %d chunk(s)" % n_chunks)
+            log.info("Chunk size exceeding file size target.")
+            log.info("Downchunking to %d chunks" % n_chunks)
 
         last_start = start
 
@@ -423,7 +424,7 @@ def build_waveform(
                     pmt_current_templates,
                     pulse_waveform_buffer)
         
-        pulse_waveform_buffer = - pulse_waveform_buffer * current_2_adc
+        pulse_waveform_buffer = - np.around(pulse_waveform_buffer * current_2_adc).astype(np.int64)
 
         #Remember to transpose the noise... 
         pulse_waveform_buffer = add_noise(pulse_waveform_buffer, pulse["time"], noise_data.T[pulse["channel"]])

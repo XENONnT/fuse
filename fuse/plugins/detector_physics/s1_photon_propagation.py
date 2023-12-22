@@ -145,7 +145,7 @@ class S1PhotonPropagationBase(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug(f"Running S1PhotonPropagation version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -294,7 +294,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     def setup(self):
         super().setup()
 
-        log.info('Using NEST for scintillation time without set calculator\n'
+        log.debug('Using NEST for scintillation time without set calculator\n'
                  'Creating new nestpy calculator')
         self.nestpy_calc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
 

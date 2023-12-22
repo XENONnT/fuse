@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
 @export
 class PMTAfterPulses(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"
@@ -109,7 +109,7 @@ class PMTAfterPulses(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug(f"Running PMTAfterPulses version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -159,6 +159,8 @@ class PMTAfterPulses(strax.Plugin):
         result["endtime"] = ap_photon_timings
         result["dpe"] = ap_photon_is_dpe
         result["photon_gain"] = ap_photon_gains
+
+        result = strax.sort_by_time(result)
         
         return result
 

@@ -64,7 +64,7 @@ class MergeCluster(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug(f"Running MergeCluster version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
     def compute(self, geant4_interactions):
 
