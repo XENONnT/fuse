@@ -123,7 +123,7 @@ class ChunkInput(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug(f"Running ChunkInput version {self.__version__} in debug mode")
         else:
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -279,7 +279,7 @@ class file_loader():
         interactions = interactions[m]
 
         if self.cut_nr_only:
-            log.debug("'nr_only' set to True, keeping only the NR events")
+            log.info("'nr_only' set to True, keeping only the NR events")
             m = ((interactions['type'] == "neutron")&(interactions['edproc'] == "hadElastic")) | (interactions['edproc'] == "ionIoni")
             e_dep_er = ak.sum(interactions[~m]['ed'], axis=1)
             e_dep_nr = ak.sum(interactions[m]['ed'], axis=1)
@@ -309,7 +309,7 @@ class file_loader():
             interaction_time = np.repeat(event_times[:len(structure)], structure)
             inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
         elif self.event_rate == 0:
-            log.debug("Using event times from provided input file.")
+            log.info("Using event times from provided input file.")
             if self.file.endswith(".root"):
                 log.warning("Using event times from root file is not recommended! Use a source_rate > 0 instead.")
             inter_reshaped["time"] = inter_reshaped["t"]
@@ -318,7 +318,7 @@ class file_loader():
         
         #Remove interactions that happen way after the run ended
         delay_cut = inter_reshaped["t"] <= self.cut_delayed
-        log.debug(f"Removing {np.sum(~delay_cut)} delayed interactions")
+        log.info(f"Removing {np.sum(~delay_cut)} ( {np.sum(~delay_cut)/len(delay_cut) *100:.4} %) interactions later than {self.cut_delayed:.2e} ns.")
         inter_reshaped = inter_reshaped[delay_cut]
  
         sort_idx = np.argsort(inter_reshaped["time"])
@@ -339,12 +339,13 @@ class file_loader():
             self.chunk_bounds = np.append(chunk_start[0]-self.first_chunk_left, chunk_bounds)
             
         else: 
-            log.warning("Only one Chunk! Rate to high?")
+            log.warning("Only one Chunk created! Only a few events simulated? If no, your chunking parameters might not be optimal.")
+            log.warning("Try to decrease the source_rate or decrease the n_interactions_per_chunk")
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
         
         source_done = False
         unique_chunk_index_values = np.unique(chunk_idx)
-        log.debug(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
+        log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
         for c_ix, chunk_left, chunk_right in zip(unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]):
             
             if c_ix == unique_chunk_index_values[-1]:
@@ -369,7 +370,7 @@ class file_loader():
         ttree, n_simulated_events = self._get_ttree()
 
         if self.arg_debug:
-            log.debug(f'Total entries in input file = {ttree.num_entries}')
+            log.info(f'Total entries in input file = {ttree.num_entries}')
             cutby_string='output file entry'
             if self.cut_by_eventid:
                 cutby_string='g4 eventid'

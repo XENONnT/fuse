@@ -2,6 +2,7 @@ import strax
 import numpy as np
 import straxen
 import logging
+from immutabledict import immutabledict
 
 from ...common import pmt_gains, FUSE_PLUGIN_TIMEOUT
 
@@ -13,7 +14,7 @@ log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 @export
 class SecondaryScintillation(strax.Plugin):
     
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
     
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
     provides = ("s2_photons", "s2_photons_sum")
@@ -31,7 +32,9 @@ class SecondaryScintillation(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
 
-    save_when = strax.SaveWhen.TARGET
+    save_when = immutabledict(s2_photons=strax.SaveWhen.TARGET,
+                              s2_photons_sum=strax.SaveWhen.ALWAYS
+                              )
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
     
@@ -169,7 +172,7 @@ class SecondaryScintillation(strax.Plugin):
             log.setLevel('DEBUG')
             log.debug(f"Running SecondaryScintillation version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -194,8 +197,12 @@ class SecondaryScintillation(strax.Plugin):
         mask = interactions_in_roi["n_electron_extracted"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
-            return dict(s2_photons=np.empty(0, self.dtype["s2_photons"]),
-                        s2_photons_sum=np.empty(0, self.dtype["s2_photons_sum"]))
+            empty_result = np.zeros(len(interactions_in_roi), self.dtype["s2_photons_sum"])
+            empty_result["time"] = interactions_in_roi["time"]
+            empty_result["endtime"] = interactions_in_roi["endtime"]
+            
+            return dict(s2_photons=np.zeros(0, self.dtype["s2_photons"]),
+                        s2_photons_sum=empty_result)
         
         positions = np.array([interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["y_obs"]]).T
         
