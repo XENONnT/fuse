@@ -20,9 +20,9 @@ conversion_to_bar = 1/constants.elementary_charge / 1e1
 @export
 class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     
-    __version__ = "0.1.3"
+    __version__ = "0.1.4"
     
-    depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
+    depends_on = ("electron_time", "s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum", "microphysics_summary")
     provides = "propagated_s2_photons"
     data_kind = "S2_photons"
 
@@ -36,6 +36,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     dtype = [('channel', np.int16),
              ('dpe', np.bool_),
              ('photon_gain', np.int32),
+             ('cluster_id', np.int32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -396,6 +397,8 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         
                 #repeat for n photons per electron # Should this be before adding delays?
                 _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
+
+                _cluster_id = np.repeat(interactions_chunk['cluster_id'], interactions_chunk["sum_s2_photons"])
                 
                 #Do i want to save both -> timings with and without pmt transition time spread?
                 # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
@@ -417,6 +420,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                     _photon_channels=_photon_channels,
                     _photon_gains=_photon_gains,
                     _photon_is_dpe=_photon_is_dpe,
+                    _cluster_id=_cluster_id,
                     )
 
                 result = strax.sort_by_time(result)
@@ -446,6 +450,8 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
 
         _photon_timings += np.repeat(electron_chunks[-1]["time"], electron_chunks[-1]["n_s2_photons"])
 
+        _cluster_id = np.repeat(interactions_chunk['cluster_id'], interactions_chunk["sum_s2_photons"])
+
         _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
                     _photon_timings=_photon_timings,
                     _photon_channels=_photon_channels,
@@ -463,6 +469,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                     _photon_channels=_photon_channels,
                     _photon_gains=_photon_gains,
                     _photon_is_dpe=_photon_is_dpe,
+                    _cluster_id=_cluster_id,
                     )
         
         result = strax.sort_by_time(result)

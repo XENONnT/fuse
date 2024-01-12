@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
 @export
 class PMTAfterPulses(strax.Plugin):
     
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
     
     depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"
@@ -29,6 +29,7 @@ class PMTAfterPulses(strax.Plugin):
     dtype = [('channel', np.int16),
              ('dpe', np.bool_),
              ('photon_gain', np.int32),
+             ('cluster_id', np.int32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -159,6 +160,8 @@ class PMTAfterPulses(strax.Plugin):
         result["endtime"] = ap_photon_timings
         result["dpe"] = ap_photon_is_dpe
         result["photon_gain"] = ap_photon_gains
+
+        result["cluster_id"] = -1 * np.ones(len(ap_photon_channels))
 
         result = strax.sort_by_time(result)
         

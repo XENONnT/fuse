@@ -19,7 +19,7 @@ nest_rng = nestpy.RandomGen.rndm()
 @export
 class S1PhotonPropagationBase(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("s1_photons", "microphysics_summary")
     provides = "propagated_s1_photons"
@@ -35,6 +35,7 @@ class S1PhotonPropagationBase(strax.Plugin):
     dtype = [('channel', np.int16),
              ('dpe', np.bool_),
              ('photon_gain', np.int32),
+             ('cluster_id', np.int32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -187,6 +188,9 @@ class S1PhotonPropagationBase(strax.Plugin):
         recoil_type = instruction['nestid']
         positions = np.array([x, y, z]).T  # For map interpolation
         
+
+        _cluster_id = np.repeat(instruction['cluster_id'], instruction["n_s1_photon_hits"])
+
         # The new way interpolation is written always require a list
         _photon_channels = self.photon_channels(positions=positions,
                                                 n_photon_hits=instruction["n_s1_photon_hits"],
@@ -207,6 +211,7 @@ class S1PhotonPropagationBase(strax.Plugin):
         sortind = np.argsort(_photon_timings)
         _photon_channels = _photon_channels[sortind]
         _photon_timings = _photon_timings[sortind]
+        _cluster_id = _cluster_id[sortind]
 
         #Do i want to save both -> timings with and without pmt transition time spread?
         # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
@@ -228,6 +233,7 @@ class S1PhotonPropagationBase(strax.Plugin):
             _photon_channels=_photon_channels,
             _photon_gains=_photon_gains,
             _photon_is_dpe=_photon_is_dpe,
+            _cluster_id=_cluster_id,
             )
 
         result = strax.sort_by_time(result)
