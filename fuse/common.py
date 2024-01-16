@@ -292,6 +292,7 @@ def build_photon_propagation_output(
     _photon_gains,
     _photon_is_dpe,
     _cluster_id,
+    photon_type,
     ):
 
     result = np.zeros(_photon_channels.shape[0], dtype = dtype)
@@ -301,6 +302,7 @@ def build_photon_propagation_output(
     result["photon_gain"] = _photon_gains 
     result["dpe"] = _photon_is_dpe
     result["cluster_id"] = _cluster_id
+    result["photon_type"] = photon_type
 
     return result
         

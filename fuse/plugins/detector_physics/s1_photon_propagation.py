@@ -36,6 +36,7 @@ class S1PhotonPropagationBase(strax.Plugin):
              ('dpe', np.bool_),
              ('photon_gain', np.int32),
              ('cluster_id', np.int32),
+             ('photon_type', np.int8),
             ]
     dtype = dtype + strax.time_fields
 
@@ -234,6 +235,7 @@ class S1PhotonPropagationBase(strax.Plugin):
             _photon_gains=_photon_gains,
             _photon_is_dpe=_photon_is_dpe,
             _cluster_id=_cluster_id,
+            photon_type = 1,
             )
 
         result = strax.sort_by_time(result)

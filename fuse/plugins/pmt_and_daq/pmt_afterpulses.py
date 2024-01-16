@@ -30,6 +30,7 @@ class PMTAfterPulses(strax.Plugin):
              ('dpe', np.bool_),
              ('photon_gain', np.int32),
              ('cluster_id', np.int32),
+             ('photon_type', np.int8),
             ]
     dtype = dtype + strax.time_fields
 
