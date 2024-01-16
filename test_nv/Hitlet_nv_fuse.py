@@ -30,14 +30,14 @@ import time
 
 #This hitlet simulator is an extension of the work of Diego Ramirez, Daniel Wenz, Andrea Mancuso and Pavel Kavrigin.
 #Functions of SPE charge sampling are in the PDF function based in the calibrations of nVeto done by Andrea Mancuso. Daniel Wenz provides a code that takes into account this functions to sample the charge. This leas to SPE_PDF function in the SN_hitlet.
-#We use the QE efficiencies for each PMT as a wavelength function for nVeto provided by Andrea Mancuso and the QEs for Hammatsu for mVeto PMTs.
+#We use the QE efficiencies for each PMT as a wavelength function for nVeto provided by Andrea Mancuso.
 
 
-#The details of this hitlet simulation leading to the main functions 'G4_nveto_hitlets' and 'G4_nveto_hitlets' for muon and neutron Vetos:
+#The details of this hitlet simulation leading to the main functions 'G4_nveto_hitlets' and 'G4_mveto_hitlets' for muon and neutron Vetos:
 #https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:xenonnt:layos:snhitlet_from_geant4_output
 
 #In the note mentioned above we test several approaches of charge sampling, for that we can use the function 'G4_to_Veto_hitlets_comparison'.
-
+#However, for these first note an update is ongoing here: https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:xenonnt:layos:vetohitlets_v2
 
 
 #--------------------------------------------------------HITLETS AUXILIAR FUNCTIONS--------------------------------------------------------------------#
