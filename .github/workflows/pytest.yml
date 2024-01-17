@@ -36,10 +36,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install dependencies and fuse
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install pytest coverage coveralls
+
+      - name: Install fuse
+        run: |
           pip install .
 
       - name: Test package
