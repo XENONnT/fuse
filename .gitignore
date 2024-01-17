@@ -1,4 +1,3 @@
-
 fuse/__pycache__/*
 fuse.egg-info/*
 .eggs/*
@@ -7,3 +6,5 @@ build/*
 .vscode/*
 docs/build/*
 tests/resource_cache/*
+.coverage
+.hypothesis
