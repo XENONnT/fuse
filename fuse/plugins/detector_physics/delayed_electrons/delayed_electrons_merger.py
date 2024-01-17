@@ -14,7 +14,7 @@ class DriftedElectronsMerger(VerticalMergerPlugin):
     
     provides = 'merged_drifted_electrons'
     data_kind = 'interactions_in_roi'
-    __version__ = '0.0.0'
+    __version__ = '0.0.1'
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -30,7 +30,7 @@ class ExtractedElectronsMerger(VerticalMergerPlugin):
     
     provides = 'merged_extracted_electrons'
     data_kind = 'interactions_in_roi'
-    __version__ = '0.0.0'
+    __version__ = '0.0.1'
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -45,7 +45,7 @@ class SecondaryScintillationPhotonsMerger(VerticalMergerPlugin):
     
     provides = 'merged_s2_photons'
     data_kind = 'individual_electrons'
-    __version__ = '0.0.0'
+    __version__ = '0.0.1'
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -60,71 +60,22 @@ class SecondaryScintillationPhotonSumMerger(VerticalMergerPlugin):
     
     provides = 'merged_s2_photons_sum'
     data_kind = 'interactions_in_roi'
-    __version__ = '0.0.0'
-
-    #Forbid rechunking
-    rechunk_on_save = False
-
-
-
-#The following plugins are used for simulations without delayed electrons
-#Using separate plugins enables us to use the same S2PhotonPropagation plugin for both
-@export
-class DriftedElectronsRename(VerticalMergerPlugin):
-    """
-    Plugin which basically renames the output of the regular electron drift plugin
-    """
-    
-    depends_on = ("drifted_electrons")
-    
-    provides = 'merged_drifted_electrons'
-    data_kind = 'interactions_in_roi'
-    __version__ = '0.0.0'
+    __version__ = '0.0.1'
 
     #Forbid rechunking
     rechunk_on_save = False
 
 @export
-class ExtractedElectronsRename(VerticalMergerPlugin):
+class ElectronTimingMerger(VerticalMergerPlugin):
     """
-    Plugin which basically renames the output of the regular electron extraction plugin
-    """
-    
-    depends_on = ("extracted_electrons")
-    
-    provides = 'merged_extracted_electrons'
-    data_kind = 'interactions_in_roi'
-    __version__ = '0.0.0'
-
-    #Forbid rechunking
-    rechunk_on_save = False
-
-@export
-class SecondaryScintillationPhotonsRename(VerticalMergerPlugin):
-    """
-    Plugin which basically renames the output of the regular secondary scintillation plugin
+    Plugin which concatenates the output of the regular and delayed electron secondary scintillation plugins
     """
     
-    depends_on = ("s2_photons")
+    depends_on = ("electron_time", "delayed_electrons_time")
     
-    provides = 'merged_s2_photons'
+    provides = 'merged_electron_time'
     data_kind = 'individual_electrons'
-    __version__ = '0.0.0'
-
-    #Forbid rechunking
-    rechunk_on_save = False
-
-@export
-class SecondaryScintillationPhotonSumRename(VerticalMergerPlugin):
-    """
-    Plugin which basically renames the output of the regular secondary scintillation plugin
-    """
-    
-    depends_on = ("s2_photons_sum")
-    
-    provides = 'merged_s2_photons_sum'
-    data_kind = 'interactions_in_roi'
-    __version__ = '0.0.0'
+    __version__ = '0.0.1'
 
     #Forbid rechunking
     rechunk_on_save = False

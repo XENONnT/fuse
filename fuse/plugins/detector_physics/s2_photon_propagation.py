@@ -20,7 +20,7 @@ conversion_to_bar = 1/constants.elementary_charge / 1e1
 @export
 class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     
-    __version__ = "0.1.3"
+    __version__ = "0.1.4"
     
     depends_on = ("merged_electron_time" ,"merged_s2_photons", "merged_extracted_electrons", "merged_drifted_electrons", "merged_s2_photons_sum")
     provides = "propagated_s2_photons"

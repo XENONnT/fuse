@@ -15,6 +15,9 @@ log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 class SecondaryScintillation(strax.Plugin):
     
     __version__ = "0.1.3"
+
+    result_name_photons = "s2_photons"
+    result_name_photons_sum = "s2_photons_sum"
     
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
     provides = (result_name_photons, result_name_photons_sum)
@@ -32,9 +35,9 @@ class SecondaryScintillation(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
 
-    save_when = immutabledict(s2_photons=strax.SaveWhen.TARGET,
-                              s2_photons_sum=strax.SaveWhen.ALWAYS
-                              )
+    save_when = immutabledict({result_name_photons:strax.SaveWhen.TARGET,
+                               result_name_photons_sum:strax.SaveWhen.ALWAYS
+                              })
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
     
@@ -197,12 +200,12 @@ class SecondaryScintillation(strax.Plugin):
         mask = interactions_in_roi["n_electron_extracted"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
-            empty_result = np.zeros(len(interactions_in_roi), self.dtype["s2_photons_sum"])
+            empty_result = np.zeros(len(interactions_in_roi), self.dtype[self.result_name_photons_sum])
             empty_result["time"] = interactions_in_roi["time"]
             empty_result["endtime"] = interactions_in_roi["endtime"]
             
-            return dict(s2_photons=np.zeros(0, self.dtype["s2_photons"]),
-                        s2_photons_sum=empty_result)
+            return {self.result_name_photons : np.zeros(0, self.dtype[self.result_name_photons]),
+                    self.result_name_photons_sum : empty_result}
         
         positions = np.array([interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["y_obs"]]).T
         
@@ -232,8 +235,8 @@ class SecondaryScintillation(strax.Plugin):
         result_sum_photons["time"] = interactions_in_roi["time"]
         result_sum_photons["endtime"]= interactions_in_roi["endtime"]
 
-        return dict(s2_photons=result_photons,
-                    s2_photons_sum=result_sum_photons)
+        return {self.result_name_photons : result_photons,
+                self.result_name_photons_sum : result_sum_photons}
         
         
     def get_s2_light_yield(self, positions):

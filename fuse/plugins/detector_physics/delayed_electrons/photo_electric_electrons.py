@@ -16,7 +16,7 @@ log = logging.getLogger('fuse.detector_physics.delayed_electrons.photo_electric_
 @export
 class PhotoElectricElectrons(strax.Plugin):
 
-    __version__ = "0.0.0"
+    __version__ = "0.0.1"
 
     #Try to build these ones from the SecondaryScintillation output first
     # We are now having the number of photons of an interaction as input

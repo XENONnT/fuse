@@ -15,7 +15,7 @@ log = logging.getLogger('fuse.detector_physics.delayed_electrons.photo_ionizatio
 @export
 class PhotoIonizationElectrons(strax.Plugin):
 
-    __version__ = "0.0.0"
+    __version__ = "0.0.1"
 
     #Try to build these ones from the SecondaryScintillation output first
     # We are now having the number of photons of an interaction as input
@@ -67,33 +67,56 @@ class PhotoIonizationElectrons(strax.Plugin):
         help='Show debug informations',
     )
 
+    enable_delayed_electrons = straxen.URLConfig(
+        default=False, type=bool, track=True,
+        help='Decide if you want to to enable delayed electrons from photoionization',
+    )
+
     deterministic_seed = straxen.URLConfig(
         default=True, type=bool,
         help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
 
+    #Move the filename to the config file
     delaytime_pmf_hist = straxen.URLConfig(
         help='delaytime_pmf_hist',
+        default = 'simple_load://resource://format://xnt_se_afterpulse_delaytime.pkl.gz?&fmt=pkl.gz',
     )
 
     photoionization_modifier = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=photoionization_modifier",
         type=(int, float),
-        help='photoionization_modifier',
+        cache=True,
+        help='Photoionization modifier',
     )
 
     diffusion_constant_longitudinal = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=diffusion_constant_longitudinal",
         type=(int, float),
-        help='diffusion_constant_longitudinal',
+        cache=True,
+        help='Longitudinal electron drift diffusion constant',
     )
 
     drift_velocity_liquid = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=drift_velocity_liquid",
         type=(int, float),
-        help='drift_velocity_liquid',
+        cache=True,
+        help='Drift velocity of electrons in the liquid xenon',
     )
 
     tpc_radius = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=tpc_radius",
         type=(int, float),
-        help='tpc_radius',
+        cache=True,
+        help='Radius of the XENONnT TPC ',
     )
 
     def setup(self):
@@ -118,7 +141,8 @@ class PhotoIonizationElectrons(strax.Plugin):
         #Just apply this to clusters with S2 photons
         mask = interactions_in_roi["sum_s2_photons"] > 0
 
-        if len(interactions_in_roi[mask]) == 0:
+        if (len(interactions_in_roi[mask]) == 0) or (self.enable_delayed_electrons == False):
+            log.debug("No interactions with S2 photons found or delayed electrons are disabled")
             return np.zeros(0, self.dtype)
 
         electrons_per_interaction = np.split(individual_electrons, np.cumsum(interactions_in_roi[mask]["n_electron_extracted"]))[:-1]

@@ -29,6 +29,23 @@ s2_simulation_plugins = [fuse.detector_physics.ElectronDrift,
                          fuse.detector_physics.S2PhotonPropagation
                          ]
 
+#Plugins to simulate delayed electrons
+delayed_electron_simulation_plugins = [fuse.detector_physics.delayed_electrons.PhotoIonizationElectrons,
+                                       fuse.detector_physics.delayed_electrons.DelayedElectronsDrift,
+                                       fuse.detector_physics.delayed_electrons.DelayedElectronsExtraction,
+                                       fuse.detector_physics.delayed_electrons.DelayedElectronsTiming,
+                                       fuse.detector_physics.delayed_electrons.DelayedElectronsSecondaryScintillation,
+                                       fuse.detector_physics.delayed_electrons.DelayedElectronsDrift,
+                                       ]
+
+#Plugins to merge delayed and regular electrons
+delayed_electron_merger_plugins = [fuse.detector_physics.delayed_electrons.DriftedElectronsMerger,
+                                   fuse.detector_physics.delayed_electrons.ExtractedElectronsMerger,
+                                   fuse.detector_physics.delayed_electrons.ElectronTimingMerger,
+                                   fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonsMerger,
+                                   fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonSumMerger,
+                                   ]
+
 #Plugins to simulate PMTs and DAQ
 pmt_and_daq_plugins = [fuse.pmt_and_daq.PMTAfterPulses,
                        fuse.pmt_and_daq.PhotonSummary,
@@ -88,6 +105,14 @@ def full_chain_context(output_folder = "./fuse_data",
     for plugin in s2_simulation_plugins:
         st.register(plugin)
 
+    #Register delayed Electrons plugins
+    for plugin in delayed_electron_simulation_plugins:
+        st.register(plugin)
+
+    #Register merger plugins. 
+    for plugin in delayed_electron_merger_plugins:
+        st.register(plugin)
+
     #Register PMT and DAQ plugins
     for plugin in pmt_and_daq_plugins:
         st.register(plugin)
@@ -116,60 +141,6 @@ def full_chain_context(output_folder = "./fuse_data",
 
     # deregister plugins with missing dependencies
     st.deregister_plugins_with_missing_dependencies()
-
-#Plugins to simulate S1 signals
-s1_simulation_plugins = [fuse.detector_physics.S1PhotonHits,
-                         fuse.detector_physics.S1PhotonPropagation,
-                        ]
-
-#Plugins to simulate S2 signals
-#S2PhotonPropagation is registered separately since it is also used for delayed electrons
-s2_simulation_plugins = [fuse.detector_physics.ElectronDrift,
-                         fuse.detector_physics.ElectronExtraction,
-                         fuse.detector_physics.ElectronTiming,
-                         fuse.detector_physics.SecondaryScintillation,
-                         ]
-
-s2_simulation_rename_plugins = [fuse.detector_physics.delayed_electrons.DriftedElectronsRename,
-                                fuse.detector_physics.delayed_electrons.ExtractedElectronsRename,
-                                fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonsRename,
-                                fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonSumRename,
-                                ]
-
-pmt_and_daq_plugins = [fuse.pmt_and_daq.PMTAfterPulses,
-                       fuse.pmt_and_daq.PhotonSummary,
-                       fuse.pmt_and_daq.PMTResponseAndDAQ,
-                       ]
-
-
-def full_chain_context(out_dir, config):
-
-    st = cutax.contexts.xenonnt_sim_SR0v3_cmt_v9(output_folder = out_dir)
-
-    #Register microphysics plugins
-    for plugin in microphysics_plugins:
-        st.register(plugin)
-
-    #Register S1 plugins
-    for plugin in s1_simulation_plugins:
-        st.register(plugin)
-
-    #Register S2 plugins
-    for plugin in s2_simulation_plugins:
-        st.register(plugin)
-
-    #Register S2 renaming plugins
-    for plugin in s2_simulation_rename_plugins:
-        st.register(plugin)
-
-    st.register(fuse.detector_physics.S2PhotonPropagation)
-
-    #Register PMT and DAQ plugins
-    for plugin in pmt_and_daq_plugins:
-        st.register(plugin)
-
-
-    set_full_chain_config(st, config)
 
     return st
 

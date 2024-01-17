@@ -12,7 +12,7 @@ class DelayedElectronsTiming(ElectronTiming):
     """
     This class is used to simulate the timing of electrons from the sources of electron afterpulses. 
     """
-    __version__ = "0.0.0"
+    __version__ = "0.0.1"
     
     child_plugin = True
 
