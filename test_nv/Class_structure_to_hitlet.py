@@ -34,19 +34,19 @@ def energytowavelenght(E):
     Joules_to_eV=1.602*1e-19
     return 1e9*const.h*const.c/(E*Joules_to_eV)
 #---------------------------------------------------------------
-# SPE PDFs (currently reading SR1 spectra)
-def reading_pdf(x_data="x_data_per_channel.npy", y_data="pdf_per_channel.npy"):
-    x=np.load(x_data,allow_pickle=True)
-    y=np.load(y_data,allow_pickle=True)
-    return x, y
+
+def reading_aux_files(SPE_file,acc_file):
+    with open(SPE_file,'r') as f:
+        SPE = json.loads(f.read())
+    x,y = SPE['charge'],SPE['SPE_values']
+    with open(acc_file,'r') as f:
+        acceptance = json.loads(f.read())
+    acc= acceptance['acceptance']
+    return x, y,acc
 
 
 
 #---------------------------------------------------------------
-# SPE acceptance per PMT (SR0 values) #consider these just as a placeholder (SR1 values need to be calculated!)
-#THIS IS THE SR0 ACCEPTANCE???? COMBINED WITH SR1  SPE???? This is compensated by CE value????
-spe_acc=np.array([91.2,91.1,92.9,89.8,92.7,94.8,93.0,90.6,90.0,89.9,89.0,84.2,89.0,93.7,92.3,91.1,91.8,91.1,92.7,92.4,86.7,93.8,93.7,92.7,92.9,94.1,92.3,84.5,89.6,91.9,86.5,91.5,92.6,89.5,92.5,90.1,92.9,92.8,88.0,91.3,92.5,88.2,95.0,94.2,90.8,88.0,92.5,91.3,89.4,93.4,91.7,92.2,93.0,91.0,83.5,87.9,88.3,90.1,91.2,90.6,92.5,92.3,93.2,89.4,90.9,88.0,92.6,91.4,93.2,92.3,86.9,93.8,92.2,93.6,92.1,91.4,93.0,92.0,93.6,91.4,86.6,94.7,93.7,93.2,91.3,92.3,94.7,91.2,94.4,93.6,91.4,94.9,89.4,91.5,90.7,92.2,91.4,91.5,93.1,91.9,87.5,92.2,92.1,90.1,93.0,93.3,89.2,88.7,92.0,94.2,88.9,90.3,92.3,87.6,91.0,89.8,91.9,91.6,92.2,93.9])*10**-2
-
 # Sampling charge from SPE spectra
 
 def _get_charge(pmthits, spe_pdfs,x_data):
@@ -214,15 +214,14 @@ def convert_to_events(pseudo_hitlets):#WHY DON'T USE JUST CUTAX PLUGIN?????
     return pseudo_events
 class Hitlet_nv(object):
     def __init__(self, path, g4_file):
-        self.x_interp, self.pdf_per_channel = reading_pdf(x_data=path+"x_data_per_channel.npy", y_data=path+"pdf_per_channel.npy")
+        self.x_interp, self.pdf_per_channel, self.acceptance = reading_aux_files(path+'SPE_SR1_test_fuse.json',path+'acceptance_SR0_test_fuse.json')
         self.g4_file = g4_file
         self.quantum_efficiency = _init_quantum_efficiency()
-        self.acceptance = spe_acc
     def nv_hitlets(self, number):
         data=[]
         for i in range(0,number):
             try:
-                file_root = '/project2/lgrandi/layos/output_n_Veto_neutron_AmBe_9'+str(i)+'.root'
+                file_root = g4_file +str(i)+'.root'
                 #print("Opening File :",file_root)
                 root_file = uproot.open(file_root)
                 root_data = root_file['events'].arrays(['eventid', 'pmthitTime', 'pmthitEnergy', 'pmthitID'])
