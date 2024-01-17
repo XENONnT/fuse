@@ -65,7 +65,7 @@ class XENONnT_TPC(VolumePlugin):
              ('cluster_id', np.int32),
              ('xe_density', np.float32),
              ('vol_id', np.int8), 
-             ('create_S2', np.bool8), 
+             ('create_S2', np.bool_), 
             ]
     
     dtype = dtype + strax.time_fields
@@ -162,7 +162,7 @@ class XENONnT_BelowCathode(VolumePlugin):
              ('cluster_id', np.int32),
              ('xe_density', np.float32),
              ('vol_id', np.int8), 
-             ('create_S2', np.bool8), 
+             ('create_S2', np.bool_), 
             ]
     
     dtype = dtype + strax.time_fields
@@ -259,7 +259,7 @@ class XENONnT_GasPhase(VolumePlugin):
              ('cluster_id', np.int32),
              ('xe_density', np.float32),
              ('vol_id', np.int64),
-             ('create_S2', np.bool8),
+             ('create_S2', np.bool_),
             ]
     
     dtype = dtype + strax.time_fields
