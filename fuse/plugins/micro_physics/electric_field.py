@@ -13,10 +13,10 @@ log = logging.getLogger('fuse.micro_physics.electric_field')
 @export
 class ElectricField(strax.Plugin):
     """
-    Plugin that calculates the electric field values for the detector.
+    Plugin that calculates the electric field values for the cluster position.
     """
 
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
 
     depends_on = ("interactions_in_roi",)
     provides = "electric_field_values"
@@ -40,7 +40,12 @@ class ElectricField(strax.Plugin):
         help='Show debug informations',
     )
 
+    #Field map not yet in simulation config file!
     efield_map = straxen.URLConfig(
+        default = 'itp_map://resource://'
+                  'fieldmap_2D_B2d75n_C2d75n_G0d3p_A4d9p_T0d9n_PMTs1d3n_FSR0d65p_QPTFE_0d5n_0d4p.json.gz?'
+                  '&fmt=json.gz'
+                  '&method=RegularGridInterpolator',
         cache=True,
         help='electric field map',
     )
@@ -49,9 +54,9 @@ class ElectricField(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ElectricField in debug mode")
+            log.debug(f"Running ElectricField version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
     def compute(self, interactions_in_roi):
         """

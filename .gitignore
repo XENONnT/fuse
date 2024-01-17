@@ -5,3 +5,5 @@ fuse.egg-info/*
 build/*
 .DS_Store
 .vscode/*
+docs/build/*
+tests/resource_cache/*

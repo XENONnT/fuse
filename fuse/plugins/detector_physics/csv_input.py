@@ -18,11 +18,11 @@ class ChunkCsvInput(strax.Plugin):
     Plugin which reads a CSV file containing instructions for the detector physics simulation
     and returns the data in chunks
     """
-    __version__ = "0.0.0"
+    __version__ = "0.1.0"
 
     depends_on = tuple()
     provides = "microphysics_summary"
-    data_kind = "clustered_interactions"
+    data_kind = "interactions_in_roi"
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -42,7 +42,7 @@ class ChunkCsvInput(strax.Plugin):
              ('e_field', np.float32),
              ('ed', np.float32),
              ('nestid', np.int32),
-             ('t', np.int32), #Remove them later as they are not in the usual micropyhsics summary
+             ('t', np.int64), #Remove them later as they are not in the usual micropyhsics summary
              ('eventid', np.int32),#Remove them later as they are not in the usual micropyhsics summary
             ]
     dtype = dtype + strax.time_fields
@@ -66,11 +66,13 @@ class ChunkCsvInput(strax.Plugin):
 
     source_rate = straxen.URLConfig(
         default=1, type=(int, float),
-        help='source_rate',
+        help='Source rate used to generate event times'
+             'Use a value >0 to generate event times in fuse'
+             'Use source_rate = 0 to use event times from the input file (only for csv input)',
     )
 
     n_interactions_per_chunk = straxen.URLConfig(
-        default=25, type=(int, float),
+        default=1e5, type=(int, float),
         help='n_interactions_per_chunk',
     )
 
@@ -83,9 +85,9 @@ class ChunkCsvInput(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ChunkCsvInput in debug mode")
+            log.debug(f"Running ChunkCsvInput version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -109,24 +111,21 @@ class ChunkCsvInput(strax.Plugin):
     def compute(self):
         try: 
             
-            chunk_data, chunk_left, chunk_right = next(self.file_reader_iterator)
+            chunk_data, chunk_left, chunk_right, source_done = next(self.file_reader_iterator)
             chunk_data["endtime"] = chunk_data["time"]
 
-        except StopIteration:
-            self.source_done = True
-            
-            chunk_left = self.file_reader.last_chunk_bounds()
-            chunk_right = chunk_left + np.int64(1e4) #Add this as config option
-            
-            chunk_data = np.zeros(0, dtype=self.dtype)
+            self.source_done = source_done
+
+            return self.chunk(start=chunk_left,
+                              end=chunk_right,
+                              data=chunk_data,
+                              data_type='geant4_interactions'
+                              )
         
-        return self.chunk(start=chunk_left,
-                          end=chunk_right,
-                          data=chunk_data,
-                          data_type='geant4_interactions')
-
-
-
+        except StopIteration:
+            raise RuntimeError("Bug in chunk building!")
+        
+        
     def source_finished(self):
         return self.source_done
     
@@ -175,7 +174,7 @@ class csv_file_loader():
                       ('e_field', np.float32),
                       ('ed', np.float32),
                       ('nestid', np.int32),
-                      ('t', np.int32), #Remove them later as they are not in the usual micropyhsics summary
+                      ('t', np.int64), #Remove them later as they are not in the usual micropyhsics summary
                       ('eventid', np.int32),#Remove them later as they are not in the usual micropyhsics summary
                       ]
         self.dtype = self.dtype + strax.time_fields
@@ -191,15 +190,21 @@ class csv_file_loader():
         instructions, n_simulated_events = self.__load_csv_file()
 
         #Assign event times and dynamic chunking
-        event_times = self.rng.uniform(low = 0,
-                                        high = n_simulated_events/self.event_rate,
-                                        size = n_simulated_events
-                                        ).astype(np.int64)
-        event_times = np.sort(event_times)
+        if self.event_rate > 0:
+            event_times = self.rng.uniform(low = 0,
+                                            high = n_simulated_events/self.event_rate,
+                                            size = n_simulated_events
+                                            ).astype(np.int64)
+            event_times = np.sort(event_times)
 
-        structure = np.unique(instructions["eventid"], return_counts = True)[1]
-        interaction_time = np.repeat(event_times[:len(structure)], structure)
-        instructions["time"] = interaction_time + instructions["t"]
+            structure = np.unique(instructions["eventid"], return_counts = True)[1]
+            interaction_time = np.repeat(event_times[:len(structure)], structure)
+            instructions["time"] = interaction_time + instructions["t"]
+        elif self.event_rate == 0:
+            instructions["time"] = instructions["t"]
+            log.debug("Using event times from provided input file.")
+        else:
+            raise ValueError("Source rate cannot be negative!")
 
         sort_idx = np.argsort(instructions["time"])
         instructions = instructions[sort_idx]
@@ -222,9 +227,15 @@ class csv_file_loader():
             log.warn("Only one Chunk! Rate to high?")
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
         
-        for c_ix, chunk_left, chunk_right in zip(np.unique(chunk_idx), self.chunk_bounds[:-1], self.chunk_bounds[1:]):
+        source_done = False
+        unique_chunk_index_values = np.unique(chunk_idx)
+        for c_ix, chunk_left, chunk_right in zip(unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]):
             
-            yield instructions[chunk_idx == c_ix], chunk_left, chunk_right
+            if c_ix == unique_chunk_index_values[-1]:
+                source_done = True
+                log.debug("Build last chunk.")
+
+            yield instructions[chunk_idx == c_ix], chunk_left, chunk_right, source_done
 
     def last_chunk_bounds(self):
         return self.chunk_bounds[-1]

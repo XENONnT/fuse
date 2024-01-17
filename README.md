@@ -19,4 +19,5 @@ At the moment the intallation procedure is not very advanced. I would recommend 
 
 The full simulation chain in split into multiple plugins. An overview of the simulation structure can be found below.
 
-![fuse_plugin_structure_with_delayed_electrons](https://github.com/XENONnT/fuse/assets/27280678/0b8b7a6e-688b-4e78-90e3-0dd7918b11ae)
+![fuse plugin structure](docs/source/figures/fuse_simulation_chain.png)
+

@@ -19,7 +19,7 @@ log = logging.getLogger('fuse.micro_physics.input')
 @export
 class ChunkInput(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.2"
     
     depends_on = tuple()
     provides = "geant4_interactions"
@@ -31,18 +31,18 @@ class ChunkInput(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
     
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('z', np.float32),
+    dtype = [('x', np.float64),
+             ('y', np.float64),
+             ('z', np.float64),
              ('t', np.float64),
              ('ed', np.float32),
              ('type', "<U10"),
-             ('trackid', np.int64),
+             ('trackid', np.int16),
              ('parenttype', "<U10"),
-             ('parentid', np.int64),
+             ('parentid', np.int16),
              ('creaproc', "<U10"),
              ('edproc', "<U10"),
-             ('evtid', np.int64),
+             ('evtid', np.int32),
              ('x_pri', np.float32),
              ('y_pri', np.float32),
              ('z_pri', np.float32),
@@ -57,47 +57,49 @@ class ChunkInput(strax.Plugin):
     #Config options
     debug = straxen.URLConfig(
         default=False, type=bool,track=False,
-        help='Show debug informations',
+        help='Show debug information during simulation',
     )
 
     path = straxen.URLConfig(
         track=False,
-        help='Path to search for data',
+        help='Path to the file to simulate from excluding the file name',
     )
 
     file_name = straxen.URLConfig(
         track=False,
-        help='File to open',
+        help='Name of the file to simulate from',
     )
 
     separation_scale = straxen.URLConfig(
         default=1e8, type=(int, float),
-        help='separation_scale',
+        help='Separation scale for the dynamic chunking in ns',
     )
 
     source_rate = straxen.URLConfig(
         default=1, type=(int, float),
-        help='source_rate',
+        help='Source rate used to generate event times'
+             'Use a value >0 to generate event times in fuse'
+             'Use source_rate = 0 to use event times from the input file (only for csv input)',
     )
 
     cut_delayed = straxen.URLConfig(
-        default=4e14, type=(int, float),
-        help='cut_delayed',
+        default=9e18, type=(int, float),
+        help='All interactions happening after this time (including the event time) will be cut.',
     )
 
     n_interactions_per_chunk = straxen.URLConfig(
         default=1e5, type=(int, float),
-        help='n_interactions_per_chunk',
+        help='Minimum number of interaction per chunk',
     )
 
     entry_start = straxen.URLConfig(
         default=0, type=(int, float),
-        help='entry_start',
+        help='Geant4 event to start simulation from.',
     )
 
     entry_stop = straxen.URLConfig(
         default=None,
-        help='How many entries from the ROOT file you want to process. I think it is not working at the moment',
+        help='Geant4 event to stop simulation at. If None, all events are simulated.',
     )
 
     cut_by_eventid = straxen.URLConfig(
@@ -107,7 +109,7 @@ class ChunkInput(strax.Plugin):
 
     nr_only = straxen.URLConfig(
         default=False, type=bool,
-        help='Add if you want to filter only nuclear recoil events (maximum ER energy deposit 10 keV)',
+        help='Filter only nuclear recoil events (maximum ER energy deposit 10 keV)',
     )
 
     deterministic_seed = straxen.URLConfig(
@@ -119,9 +121,9 @@ class ChunkInput(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ChunkInput in debug mode")
+            log.debug(f"Running ChunkInput version {self.__version__} in debug mode")
         else:
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -151,22 +153,19 @@ class ChunkInput(strax.Plugin):
     def compute(self):
         
         try: 
-            
-            chunk_data, chunk_left, chunk_right = next(self.file_reader_iterator)
+            chunk_data, chunk_left, chunk_right, source_done = next(self.file_reader_iterator)
             chunk_data["endtime"] = chunk_data["time"]
 
+            self.source_done = source_done
+
+            return self.chunk(start=chunk_left,
+                              end=chunk_right,
+                              data=chunk_data,
+                              data_type='geant4_interactions'
+                              )
+
         except StopIteration:
-            self.source_done = True
-            
-            chunk_left = self.file_reader.last_chunk_bounds()
-            chunk_right = chunk_left + np.int64(1e4) #Add this as config option
-            
-            chunk_data = np.zeros(0, dtype=self.dtype)
-        
-        return self.chunk(start=chunk_left,
-                          end=chunk_right,
-                          data=chunk_data,
-                          data_type='geant4_interactions')
+            raise RuntimeError("Bug in chunk building!")
 
     
     def source_finished(self):
@@ -239,18 +238,18 @@ class file_loader():
     
         
         
-        self.dtype = [('x', np.float32),
-                     ('y', np.float32),
-                     ('z', np.float32),
+        self.dtype = [('x', np.float64),
+                     ('y', np.float64),
+                     ('z', np.float64),
                      ('t', np.float64),
                      ('ed', np.float32),
                      ('type', "<U10"),
-                     ('trackid', np.int64),
+                     ('trackid', np.int16),
                      ('parenttype', "<U10"),
-                     ('parentid', np.int64),
+                     ('parentid', np.int16),
                      ('creaproc', "<U10"),
                      ('edproc', "<U10"),
-                     ('evtid', np.int64),
+                     ('evtid', np.int32),
                      ('x_pri', np.float32),
                      ('y_pri', np.float32),
                      ('z_pri', np.float32),
@@ -280,7 +279,7 @@ class file_loader():
         interactions = interactions[m]
 
         if self.cut_nr_only:
-            log.debug("'nr_only' set to True, keeping only the NR events")
+            log.info("'nr_only' set to True, keeping only the NR events")
             m = ((interactions['type'] == "neutron")&(interactions['edproc'] == "hadElastic")) | (interactions['edproc'] == "ionIoni")
             e_dep_er = ak.sum(interactions[~m]['ed'], axis=1)
             e_dep_nr = ak.sum(interactions[m]['ed'], axis=1)
@@ -289,26 +288,39 @@ class file_loader():
         # Removing all events with no interactions:
         m = ak.num(interactions['ed']) > 0
         interactions = interactions[m]
-        
+
+        #Sort interactions in events by time and subtract time of the first interaction
+        interactions = interactions[ak.argsort(interactions['t'])]
+        interactions['t'] = interactions['t'] - interactions['t'][:, 0]
+
         inter_reshaped = full_array_to_numpy(interactions, self.dtype)
         
         #Need to check start and stop again....
-        event_times = self.rng.uniform(low = start/self.event_rate,
-                                        high = stop/self.event_rate,
-                                        size = stop-start
-                                        ).astype(np.int64)
-        event_times = np.sort(event_times)
+        if self.event_rate > 0:
+            event_times = self.rng.uniform(low = start/self.event_rate,
+                                            high = stop/self.event_rate,
+                                            size = stop-start
+                                            ).astype(np.int64)
+            event_times = np.sort(event_times)
+
+            structure = np.unique(inter_reshaped["evtid"], return_counts = True)[1]
+
+            #Check again why [:len(structure)] is needed 
+            interaction_time = np.repeat(event_times[:len(structure)], structure)
+            inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
+        elif self.event_rate == 0:
+            log.info("Using event times from provided input file.")
+            if self.file.endswith(".root"):
+                log.warning("Using event times from root file is not recommended! Use a source_rate > 0 instead.")
+            inter_reshaped["time"] = inter_reshaped["t"]
+        else:
+            raise ValueError("Source rate cannot be negative!")
         
         #Remove interactions that happen way after the run ended
-        inter_reshaped = inter_reshaped[inter_reshaped["t"] < np.max(event_times) + self.cut_delayed]
-        
-        structure = np.unique(inter_reshaped["evtid"], return_counts = True)[1]
-        
-        #Check again why [:len(structure)] is needed 
-        interaction_time = np.repeat(event_times[:len(structure)], structure)
-
-        inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
-        
+        delay_cut = inter_reshaped["t"] <= self.cut_delayed
+        log.info(f"Removing {np.sum(~delay_cut)} ( {np.sum(~delay_cut)/len(delay_cut) *100:.4} %) interactions later than {self.cut_delayed:.2e} ns.")
+        inter_reshaped = inter_reshaped[delay_cut]
+ 
         sort_idx = np.argsort(inter_reshaped["time"])
         inter_reshaped = inter_reshaped[sort_idx]
 
@@ -327,12 +339,20 @@ class file_loader():
             self.chunk_bounds = np.append(chunk_start[0]-self.first_chunk_left, chunk_bounds)
             
         else: 
-            log.warning("Only one Chunk! Rate to high?")
+            log.warning("Only one Chunk created! Only a few events simulated? If no, your chunking parameters might not be optimal.")
+            log.warning("Try to decrease the source_rate or decrease the n_interactions_per_chunk")
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
         
-        for c_ix, chunk_left, chunk_right in zip(np.unique(chunk_idx), self.chunk_bounds[:-1], self.chunk_bounds[1:]):
+        source_done = False
+        unique_chunk_index_values = np.unique(chunk_idx)
+        log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
+        for c_ix, chunk_left, chunk_right in zip(unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]):
             
-            yield inter_reshaped[chunk_idx == c_ix], chunk_left, chunk_right
+            if c_ix == unique_chunk_index_values[-1]:
+                source_done = True
+                log.debug("Last chunk created!")
+
+            yield inter_reshaped[chunk_idx == c_ix], chunk_left, chunk_right, source_done
     
     def last_chunk_bounds(self):
         return self.chunk_bounds[-1]
@@ -350,7 +370,7 @@ class file_loader():
         ttree, n_simulated_events = self._get_ttree()
 
         if self.arg_debug:
-            log.debug(f'Total entries in input file = {ttree.num_entries}')
+            log.info(f'Total entries in input file = {ttree.num_entries}')
             cutby_string='output file entry'
             if self.cut_by_eventid:
                 cutby_string='g4 eventid'
@@ -466,12 +486,12 @@ class file_loader():
         if not set(self.column_names).issubset(instr_df.columns):
             log.warning("Not all needed columns provided!")
 
-        n_simulated_events = len(np.unique(instr_df.evtid))
+        n_simulated_events = len(np.unique(instr_df.eventid))
 
         if self.outer_cylinder:
             instr_df = instr_df.query(self.cut_string)
             
-        instr_df = instr_df[self.column_names+["evtid", "x_pri", "y_pri", "z_pri"]]
+        instr_df = instr_df[self.column_names+["eventid", "x_pri", "y_pri", "z_pri"]]
 
         interactions = self._awkwardify_df(instr_df)
 
@@ -494,7 +514,7 @@ class file_loader():
 
         """
 
-        _, evt_offsets = np.unique(df["evtid"], return_counts = True)
+        _, evt_offsets = np.unique(df["eventid"], return_counts = True)
     
         dictionary = {"x": reshape_awkward(df["x"].values , evt_offsets),
                       "y": reshape_awkward(df["y"].values , evt_offsets),
@@ -510,7 +530,7 @@ class file_loader():
                       "parentid": reshape_awkward(df["parentid"].values , evt_offsets),
                       "creaproc": reshape_awkward(np.array(df["creaproc"], dtype=str) , evt_offsets),
                       "edproc": reshape_awkward(np.array(df["edproc"], dtype=str) , evt_offsets),
-                      "evtid": reshape_awkward(df["evtid"].values , evt_offsets),
+                      "evtid": reshape_awkward(df["eventid"].values , evt_offsets),
                     }
 
         return ak.Array(dictionary)

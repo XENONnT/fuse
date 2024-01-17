@@ -19,15 +19,15 @@ nest_rng = nestpy.RandomGen.rndm()
 @export
 class NestYields(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.1"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
     data_kind = "interactions_in_roi"
     
-    dtype = [('photons', np.float64),
-             ('electrons', np.float64),
-             ('excitons', np.float64),
+    dtype = [('photons', np.int32),
+             ('electrons', np.int32),
+             ('excitons', np.int32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -53,9 +53,9 @@ class NestYields(strax.Plugin):
     def setup(self):
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running NestYields in debug mode")
+            log.debug(f"Running NestYields version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         log.debug(f'Using nestpy version {nestpy.__version__}')
 
@@ -177,15 +177,15 @@ class NestYields(strax.Plugin):
     
 class BetaYields(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.1"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
     data_kind = "interactions_in_roi"
     
-    dtype = [('photons', np.float64),
-             ('electrons', np.float64),
-             ('excitons', np.float64),
+    dtype = [('photons', np.int32),
+             ('electrons', np.int32),
+             ('excitons', np.int32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -230,7 +230,7 @@ class BetaYields(strax.Plugin):
     def setup(self):
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running BetaYields in debug mode")
+            log.debug(f"Running BetaYields version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
         
@@ -310,14 +310,14 @@ class BetaYields(strax.Plugin):
 
 class BBFYields(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.1"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
     
-    dtype = [('photons', np.float64),
-             ('electrons', np.float64),
-             ('excitons', np.float64),
+    dtype = [('photons', np.int32),
+             ('electrons', np.int32),
+             ('excitons', np.int32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -337,7 +337,7 @@ class BBFYields(strax.Plugin):
 
         if self.debug:
             log.setLevel("DEBUG")
-            log.debug("Running BBFYields in debug mode")
+            log.debug(f"Running BBFYields version {self.__version__} in debug mode")
         else: 
             log.setLevel('WARNING')
 

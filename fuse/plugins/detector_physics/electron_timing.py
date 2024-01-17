@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.detector_physics.electron_timing')
 @export
 class ElectronTiming(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.1"
     
     depends_on = ("drifted_electrons", "extracted_electrons")
     provides = "electron_time"
@@ -28,8 +28,9 @@ class ElectronTiming(strax.Plugin):
     
     data_kind = "individual_electrons"
     
-    dtype = [('x', np.float64),
-             ('y', np.float64),
+    dtype = [('x', np.float32),
+             ('y', np.float32),
+             ('order_index', np.int32),
             ]
     dtype = dtype + strax.time_fields
     
@@ -40,8 +41,12 @@ class ElectronTiming(strax.Plugin):
     )
 
     electron_trapping_time = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=electron_trapping_time",
         type=(int, float),
-        help='electron_trapping_time',
+        cache=True,
+        help='Time scale electrons are trapped at the liquid gas interface',
     )
 
     deterministic_seed = straxen.URLConfig(
@@ -53,9 +58,9 @@ class ElectronTiming(strax.Plugin):
         
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ElectronTiming in debug mode")
+            log.debug(f"Running ElectronTiming version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -81,15 +86,19 @@ class ElectronTiming(strax.Plugin):
                                      )
         
         
-        x = np.repeat(interactions_in_roi[mask]["x"], interactions_in_roi[mask]["n_electron_extracted"])
-        y = np.repeat(interactions_in_roi[mask]["y"], interactions_in_roi[mask]["n_electron_extracted"])
+        x = np.repeat(interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["n_electron_extracted"])
+        y = np.repeat(interactions_in_roi[mask]["y_obs"], interactions_in_roi[mask]["n_electron_extracted"])
         
         result = np.zeros(len(timing), dtype = self.dtype)
         result["time"] = timing
         result["endtime"] = result["time"]
         result["x"] = x
         result["y"] = y
-        
+
+        #result["order_index"] = np.arange(len(timing))
+        result["order_index"] = np.repeat(np.arange(len(interactions_in_roi[mask])), interactions_in_roi[mask]["n_electron_extracted"])
+        result = strax.sort_by_time(result)
+
         return result
         
     

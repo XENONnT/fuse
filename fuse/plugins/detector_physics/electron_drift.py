@@ -13,25 +13,25 @@ log = logging.getLogger('fuse.detector_physics.electron_drift')
 @export
 class ElectronDrift(strax.Plugin):
     
-    __version__ = "0.0.1"
+    __version__ = "0.1.4"
     
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
     data_kind = 'interactions_in_roi'
     
-    dtype = [('n_electron_interface', np.int64),
-             ('drift_time_mean', np.int64),
-             ('drift_time_spread', np.int64),
-             ('x', np.float64),
-             ('y', np.float64),
-             ('z_obs', np.float64),
+    dtype = [('n_electron_interface', np.int32),
+             ('drift_time_mean', np.int32),
+             ('drift_time_spread', np.int32),
+             ('x_obs', np.float32),
+             ('y_obs', np.float32),
+             ('z_obs', np.float32),
             ]
     dtype = dtype + strax.time_fields
     
     #Forbid rechunking
     rechunk_on_save = False
 
-    save_when = strax.SaveWhen.TARGET
+    save_when = strax.SaveWhen.ALWAYS
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
     
@@ -42,47 +42,92 @@ class ElectronDrift(strax.Plugin):
     )
     
     drift_velocity_liquid = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=drift_velocity_liquid",
         type=(int, float),
-        help='drift_velocity_liquid',
+        cache=True,
+        help='Drift velocity of electrons in the liquid xenon',
     )
     
     drift_time_gate = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=drift_time_gate",
         type=(int, float),
-        help='drift_time_gate',
+        cache=True,
+        help='Electron drift time from the gate in ns',
     )
     
     diffusion_constant_longitudinal = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=diffusion_constant_longitudinal",
         type=(int, float),
-        help='diffusion_constant_longitudinal',
+        cache=True,
+        help='Longitudinal electron drift diffusion constant',
     )
     
     electron_lifetime_liquid = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=electron_lifetime_liquid",
         type=(int, float),
-        help='electron_lifetime_liquid',
+        cache=True,
+        help='Electron lifetime in liquid xenon',
     )
     
     enable_field_dependencies = straxen.URLConfig(
-        help='enable_field_dependencies',
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=enable_field_dependencies",
+        cache=True,
+        help='Field dependencies during electron drift',
     )
 
     tpc_length = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=tpc_length",
         type=(int, float),
-        help='tpc_length',
+        cache=True,
+        help='Length of the XENONnT TPC',
     )
         
     field_distortion_model = straxen.URLConfig(
-        help='field_distortion_model',
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=field_distortion_model",
+        cache=True,
+        help='Model for the electric field distortion',
     )
     
     field_dependencies_map_tmp = straxen.URLConfig(
-        help='field_dependencies_map',
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=field_dependencies_map'
+                  '&fmt=json.gz'
+                  '&method=RectBivariateSpline',
+        cache=True,
+        help='Map for the electric field dependencies',
     )
     
     diffusion_longitudinal_map_tmp = straxen.URLConfig(
-        help='diffusion_longitudinal_map',
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=diffusion_longitudinal_map'
+                  '&fmt=json.gz'
+                  '&method=WeightedNearestNeighbors',
+        cache=True,
+        help='Longitudinal diffusion map',
     )
     
     fdc_map_fuse = straxen.URLConfig(
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=field_distortion_comsol_map'
+                  '&fmt=json.gz'
+                  '&method=RectBivariateSpline',
         cache=True,
         help='fdc_map',
     )
@@ -96,9 +141,9 @@ class ElectronDrift(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ElectronDrift in debug mode")
+            log.debug(f"Running ElectronDrift version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -121,7 +166,7 @@ class ElectronDrift(strax.Plugin):
                 if self.enable_field_dependencies['norm_drift_velocity']:
                     norm_dvel = self.field_dependencies_map_tmp(np.array([ [0], [- self.tpc_length]]).T, map_name='drift_speed_map')[0]
                     norm_dvel*=1e-4
-                    drift_velocity_scaling = self.drift_velocity_liquid/norm_dvel
+                    self.drift_velocity_scaling = self.drift_velocity_liquid/norm_dvel
             def rz_map(z, xy, **kwargs):
                 r = np.sqrt(xy[:, 0]**2 + xy[:, 1]**2)
                 return self.field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
@@ -142,7 +187,10 @@ class ElectronDrift(strax.Plugin):
         mask = interactions_in_roi["electrons"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
-            return np.zeros(0, self.dtype)
+            empty_result = np.zeros(len(interactions_in_roi), self.dtype)
+            empty_result["time"] = interactions_in_roi["time"]
+            empty_result["endtime"] = interactions_in_roi["endtime"]
+            return empty_result
         
         t = interactions_in_roi[mask]["time"]
         x = interactions_in_roi[mask]["x"]
@@ -161,20 +209,20 @@ class ElectronDrift(strax.Plugin):
         else:
             z_obs, positions = z, np.array([x, y]).T
         
-        #This logic is quite different form existing wfsim logic!
         #Remove electrons from Charge Insensitive Volume
-        p_surv = self.kill_electrons(xy_int = np.array([x, y]).T, # maps are in R_true, so orginal position should be here
-                                     z_int = z, # maps are in Z_true, so orginal position should be here
-                                    )
+        #interaction_in_civ can either be 0 or 1
+        interaction_in_civ = self.in_charge_sensitive_volume(xy_int = np.array([x, y]).T, # maps are in R_true, so orginal position should be here
+                                                             z_int = z, # maps are in Z_true, so orginal position should be here
+                                                             )
+        n_electron = n_electron*interaction_in_civ
         
         #Absorb electrons during the drift
-        # Average drift time of the electrons
+        #Average drift time of the electrons
         drift_time_mean, drift_time_spread = self.get_s2_drift_time_params(xy_int = np.array([x, y]).T,
                                                                            z_int = z)
         electron_lifetime_correction = np.exp(- 1 * drift_time_mean / self.electron_lifetime_liquid)
         
-        #Electron absorption is a binomial process
-        n_electron = self.rng.binomial(n=n_electron, p=p_surv * electron_lifetime_correction)
+        n_electron = self.rng.binomial(n=n_electron.astype(np.int32), p=electron_lifetime_correction)
         
         result = np.zeros(len(interactions_in_roi), dtype = self.dtype)
         result["time"] = interactions_in_roi["time"]
@@ -184,8 +232,8 @@ class ElectronDrift(strax.Plugin):
         result["drift_time_spread"][mask] = drift_time_spread
         
         #These ones are needed later
-        result["x"][mask] = positions.T[0]
-        result["y"][mask] = positions.T[1]
+        result["x_obs"][mask] = positions.T[0]
+        result["y_obs"][mask] = positions.T[1]
         result["z_obs"][mask] = z_obs
         
         return result
@@ -234,7 +282,7 @@ class ElectronDrift(strax.Plugin):
         positions = np.array([x_obs, y_obs]).T 
         return z, positions
     
-    def kill_electrons(self, xy_int, z_int):
+    def in_charge_sensitive_volume(self, xy_int, z_int):
 
         if self.enable_field_dependencies['survival_probability_map']:
             p_surv = self.field_dependencies_map(z_int, xy_int, map_name='survival_probability_map')

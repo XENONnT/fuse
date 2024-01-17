@@ -3,7 +3,7 @@ import numpy as np
 import straxen
 import logging
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
 
 export, __all__ = strax.exporter()
 
@@ -13,10 +13,11 @@ log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
 @export
 class PMTAfterPulses(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.2"
     
     depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"
+    data_kind = "AP_photons"
     
     #Forbid rechunking
     rechunk_on_save = False
@@ -25,11 +26,9 @@ class PMTAfterPulses(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
     
-    data_kind = "AP_photons"
-    
-    dtype = [('channel', np.int64),
+    dtype = [('channel', np.int16),
              ('dpe', np.bool_),
-             ('photon_gain', np.int64),
+             ('photon_gain', np.int32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -40,38 +39,63 @@ class PMTAfterPulses(strax.Plugin):
     )
 
     pmt_ap_t_modifier = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_ap_t_modifier",
         type=(int, float),
-        help='pmt_ap_t_modifier',
+        cache=True,
+        help='PMT afterpulse time modifier',
     )
 
     pmt_ap_modifier = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_ap_modifier",
         type=(int, float),
-        help='pmt_ap_modifier',
+        cache=True,
+        help='PMT afterpulse modifier',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_circuit_load_resistor",
         type=(int, float),
-        help='pmt_circuit_load_resistor',
+        cache=True,
+        help='PMT circuit load resistor',
     )
 
     digitizer_bits = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_bits",
         type=(int, float),
-        help='digitizer_bits',
+        cache=True,
+        help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_voltage_range",
         type=(int, float),
-        help='digitizer_voltage_range',
-    )
-    
-    gains = straxen.URLConfig(
         cache=True,
-        help='pmt gains',
+        help='Voltage range of the digitizer boards',
+    )
+
+    gain_model_mc = straxen.URLConfig(
+        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        infer_type=False,
+        help='PMT gain model',
     )
     
     photon_ap_cdfs = straxen.URLConfig(
+        default = 'simple_load://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=photon_ap_cdfs'
+                  '&fmt=json.gz',
         cache=True,
-        help='photon_ap_cdfs',
+        help='Afterpuse cumulative distribution functions',
     )
 
     deterministic_seed = straxen.URLConfig(
@@ -83,9 +107,9 @@ class PMTAfterPulses(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running PMTAfterPulses in debug mode")
+            log.debug(f"Running PMTAfterPulses version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -96,6 +120,12 @@ class PMTAfterPulses(strax.Plugin):
             self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")
         
+        self.gains = pmt_gains(self.gain_model_mc,
+                               digitizer_voltage_range=self.digitizer_voltage_range,
+                               digitizer_bits=self.digitizer_bits,
+                               pmt_circuit_load_resistor=self.pmt_circuit_load_resistor
+                               )
+
         self.uniform_to_pmt_ap = self.photon_ap_cdfs
 
         for k in self.uniform_to_pmt_ap.keys():
@@ -129,6 +159,8 @@ class PMTAfterPulses(strax.Plugin):
         result["endtime"] = ap_photon_timings
         result["dpe"] = ap_photon_is_dpe
         result["photon_gain"] = ap_photon_gains
+
+        result = strax.sort_by_time(result)
         
         return result
 

@@ -6,3 +6,6 @@ from .pmt_response_and_daq import *
 
 from . import photon_summary
 from .photon_summary import *
+
+from .photon_pulses import *
+from . import photon_pulses

@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.detector_physics.electron_extraction')
 @export
 class ElectronExtraction(strax.Plugin):
     
-    __version__ = "0.0.0"
+    __version__ = "0.1.3"
     
     depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
@@ -23,11 +23,11 @@ class ElectronExtraction(strax.Plugin):
     #Forbid rechunking
     rechunk_on_save = False
     
-    save_when = strax.SaveWhen.TARGET
+    save_when = strax.SaveWhen.ALWAYS
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
 
-    dtype = [('n_electron_extracted', np.int64),
+    dtype = [('n_electron_extracted', np.int32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -38,64 +38,67 @@ class ElectronExtraction(strax.Plugin):
         help='Show debug informations',
     )
 
-    digitizer_voltage_range = straxen.URLConfig(
+    s2_secondary_sc_gain_mc = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=s2_secondary_sc_gain",
         type=(int, float),
-        help='digitizer_voltage_range',
-    )
-
-    digitizer_bits = straxen.URLConfig(
-        type=(int, float),
-        help='digitizer_bits',
-    )
-
-    pmt_circuit_load_resistor = straxen.URLConfig(
-        type=(int, float),
-        help='pmt_circuit_load_resistor',
-    )
-
-    s2_secondary_sc_gain = straxen.URLConfig(
-        type=(int, float),
-        help='s2_secondary_sc_gain',
+        cache=True,
+        help='Secondary scintillation gain',
     )
     #Rename? -> g2_value in beta_yields model 
     g2_mean = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=g2_mean",
         type=(int, float),
-        help='g2_mean',
+        cache=True,
+        help='mean value of the g2 gain. ',
     )
 
     electron_extraction_yield = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=electron_extraction_yield",
         type=(int, float),
-        help='electron_extraction_yield',
+        cache=True,
+        help='Electron extraction yield',
     )
 
     ext_eff_from_map = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=ext_eff_from_map",
         type=bool,
-        help='ext_eff_from_map',
+        cache=True,
+        help='Boolean indication if the extraction efficiency is taken from a map',
     )
 
     se_gain_from_map = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=se_gain_from_map",
         type=bool,
-        help='se_gain_from_map',
-    )
-
-    gains = straxen.URLConfig(
         cache=True,
-        help='pmt gains',
+        help='Boolean indication if the secondary scintillation gain is taken from a map',
     )
     
     s2_correction_map = straxen.URLConfig(
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=s2_correction_map'
+                  '&fmt=json',
         cache=True,
-        help='s2_correction_map',
+        help='S2 correction map',
     )
     
     se_gain_map = straxen.URLConfig(
+        default = 'itp_map://resource://simulation_config://'
+                  'SIMULATION_CONFIG_FILE.json?'
+                  '&key=se_gain_map'
+                  '&fmt=json',
         cache=True,
-        help='se_gain_map',
-    )
-    
-    s2_pattern_map = straxen.URLConfig(
-        cache=True,
-        help='s2_pattern_map',
+        help='Map of the single electron gain',
     )
 
     deterministic_seed = straxen.URLConfig(
@@ -107,9 +110,9 @@ class ElectronExtraction(strax.Plugin):
 
         if self.debug:
             log.setLevel('DEBUG')
-            log.debug("Running ElectronExtraction in debug mode")
+            log.debug(f"Running ElectronExtraction version {self.__version__} in debug mode")
         else: 
-            log.setLevel('WARNING')
+            log.setLevel('INFO')
         
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
@@ -120,31 +123,19 @@ class ElectronExtraction(strax.Plugin):
             self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")
 
-        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
-        
-        #Is this else case ever used? if no -> remove
-        #if self.s2_correction_map_file:
-        #    self.s2_correction_map = make_map(self.s2_correction_map_file, fmt = 'json')
-        #else:
-        #    s2cmap = deepcopy(self.s2_pattern_map)
-        #    # Lower the LCE by removing contribution from dead PMTs
-        #    # AT: masking is a bit redundant due to PMT mask application in make_patternmap
-        #    s2cmap.data['map'] = np.sum(s2cmap.data['map'][:][:], axis=2, keepdims=True, where=self.pmt_mask)
-        #    # Scale by median value
-        #    s2cmap.data['map'] = s2cmap.data['map'] / np.median(s2cmap.data['map'][s2cmap.data['map'] > 0])
-        #    s2cmap.__init__(s2cmap.data)
-        #    self.s2_correction_map = s2cmap
-    
     def compute(self, interactions_in_roi):
         
         #Just apply this to clusters with photons
         mask = interactions_in_roi["electrons"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
-            return np.zeros(0, self.dtype)
+            empty_result = np.zeros(len(interactions_in_roi), self.dtype)
+            empty_result["time"] = interactions_in_roi["time"]
+            empty_result["endtime"] = interactions_in_roi["endtime"]
+            return empty_result
 
-        x = interactions_in_roi[mask]["x"]
-        y = interactions_in_roi[mask]["y"]
+        x = interactions_in_roi[mask]["x_obs"]
+        y = interactions_in_roi[mask]["y_obs"]
         
         xy_int = np.array([x, y]).T # maps are in R_true, so orginal position should be here
 
@@ -159,7 +150,7 @@ class ElectronExtraction(strax.Plugin):
             else:
                 # is in get_s2_light_yield map is scaled according to relative s2 correction
                 # we also need to do it here to have consistent g2
-                se_gains=rel_s2_cor*self.s2_secondary_sc_gain
+                se_gains=rel_s2_cor*self.s2_secondary_sc_gain_mc
             cy = self.g2_mean*rel_s2_cor/se_gains
         else:
             cy = self.electron_extraction_yield
