@@ -14,12 +14,12 @@ log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 @export
 class SecondaryScintillation(strax.Plugin):
     
-    __version__ = "0.1.3"
+    __version__ = "0.1.4"
 
     result_name_photons = "s2_photons"
     result_name_photons_sum = "s2_photons_sum"
     
-    depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
+    depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time", "microphysics_summary")
     provides = (result_name_photons, result_name_photons_sum)
     data_kind = {result_name_photons: "individual_electrons",
                  result_name_photons_sum : "interactions_in_roi"
@@ -207,35 +207,35 @@ class SecondaryScintillation(strax.Plugin):
             return {self.result_name_photons : np.zeros(0, self.dtype[self.result_name_photons]),
                     self.result_name_photons_sum : empty_result}
         
-        positions = np.array([interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["y_obs"]]).T
+        positions = np.array([individual_electrons["x"], individual_electrons["y"]]).T
         
-        sc_gain = self.get_s2_light_yield(positions=positions)
-        
-        electron_gains = np.repeat(sc_gain, interactions_in_roi[mask]["n_electron_extracted"])
+        electron_gains = self.get_s2_light_yield(positions=positions)
         
         n_photons_per_ele = self.rng.poisson(electron_gains)
         
         if self.s2_gain_spread:
             n_photons_per_ele += self.rng.normal(0, self.s2_gain_spread, len(n_photons_per_ele)).astype(np.int64)
-        
-        sum_photons_per_interaction = [np.sum(x) for x in np.split(n_photons_per_ele, np.cumsum(interactions_in_roi[mask]["n_electron_extracted"]))[:-1]]
-        
         n_photons_per_ele[n_photons_per_ele < 0] = 0
-
-        reorder_electrons = np.argsort(individual_electrons, order = ["order_index", "time"])
         
         result_photons = np.zeros(len(n_photons_per_ele), dtype = self.dtype[self.result_name_photons])
         result_photons["n_s2_photons"] = n_photons_per_ele
-        result_photons["time"] = individual_electrons["time"][reorder_electrons]
-        result_photons["endtime"] = individual_electrons["endtime"][reorder_electrons]
-        result_photons = strax.sort_by_time(result_photons)
+        result_photons["time"] = individual_electrons["time"]
+        result_photons["endtime"] = individual_electrons["endtime"]
+        
+        #Calculate the sum of photons per interaction
+        grouped_result_photons, unique_cluster_id = group_result_photons_by_cluster_id(result_photons, individual_electrons["cluster_id"])
+        sum_photons_per_interaction = np.array([np.sum(element["n_s2_photons"]) for element in grouped_result_photons])
+        
+        #Bring sum_photons_per_interaction into the same cluster order as interactions_in_roi
+        #Maybe this line is too complicated...
+        sum_photons_per_interaction_reordered = [sum_photons_per_interaction[np.argwhere(unique_cluster_id == element)[0][0]] for element in interactions_in_roi["cluster_id"][mask]]
         
         result_sum_photons = np.zeros(len(interactions_in_roi), dtype = self.dtype[self.result_name_photons_sum])
         result_sum_photons["sum_s2_photons"][mask] = sum_photons_per_interaction
         result_sum_photons["time"] = interactions_in_roi["time"]
         result_sum_photons["endtime"]= interactions_in_roi["endtime"]
 
-        return {self.result_name_photons : result_photons,
+        return {self.result_name_photons : strax.sort_by_time(result_photons),
                 self.result_name_photons_sum : result_sum_photons}
         
         
@@ -266,3 +266,14 @@ class SecondaryScintillation(strax.Plugin):
         sc_gain[np.isnan(sc_gain)] = 0
         
         return sc_gain
+
+def group_result_photons_by_cluster_id(result, cluster_id):
+    """Function to group result_photons by cluster_id"""
+    
+    sort_index = np.argsort(cluster_id)
+    
+    cluster_id_sorted = cluster_id[sort_index]
+    result_sorted = result[sort_index]
+
+    unique_cluster_id, split_position = np.unique(cluster_id_sorted, return_index=True)
+    return np.split(result, split_position[1:]), unique_cluster_id
