@@ -13,9 +13,9 @@ log = logging.getLogger('fuse.detector_physics.electron_timing')
 @export
 class ElectronTiming(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
-    depends_on = ("drifted_electrons", "extracted_electrons")
+    depends_on = ("drifted_electrons", "extracted_electrons", "microphysics_summary")
     provides = "electron_time"
     data_kind = "individual_electrons"
     
@@ -30,7 +30,7 @@ class ElectronTiming(strax.Plugin):
     
     dtype = [('x', np.float32),
              ('y', np.float32),
-             ('order_index', np.int32),
+             ('cluster_id', np.int32),
             ]
     dtype = dtype + strax.time_fields
     
@@ -95,8 +95,8 @@ class ElectronTiming(strax.Plugin):
         result["x"] = x
         result["y"] = y
 
-        #result["order_index"] = np.arange(len(timing))
-        result["order_index"] = np.repeat(np.arange(len(interactions_in_roi[mask])), interactions_in_roi[mask]["n_electron_extracted"])
+        result["cluster_id"] = np.repeat(interactions_in_roi[mask]["cluster_id"], interactions_in_roi[mask]["n_electron_extracted"])
+        #result["order_index"] = np.repeat(np.arange(len(interactions_in_roi[mask])), interactions_in_roi[mask]["n_electron_extracted"])´
         result = strax.sort_by_time(result)
 
         return result
