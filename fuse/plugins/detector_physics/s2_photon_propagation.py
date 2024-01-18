@@ -20,9 +20,16 @@ conversion_to_bar = 1/constants.elementary_charge / 1e1
 @export
 class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     
-    __version__ = "0.1.4"
+    __version__ = "0.1.5"
     
-    depends_on = ("merged_electron_time" ,"merged_s2_photons", "merged_extracted_electrons", "merged_drifted_electrons", "merged_s2_photons_sum")
+    depends_on = ("merged_electron_time",
+                  "merged_s2_photons",
+                  "merged_extracted_electrons",
+                  "merged_drifted_electrons",
+                  "merged_s2_photons_sum",
+                  "microphysics_summary", #This needs to be merged! Only needed for cluster_ids
+                  )
+
     provides = "propagated_s2_photons"
     data_kind = "S2_photons"
 
@@ -378,8 +385,16 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         if n_chunks>1:
             #for electron_group, index_group in zip(electron_chunks[:-1], index_chunks[:-1]):
             for electron_group in electron_chunks[:-1]:
-                interactions_chunk = interactions_in_roi[mask][np.unique(electron_group["order_index"])]
-                #interactions_chunk = interactions_in_roi[mask][np.min(index_group):np.max(index_group)+1]
+                unique_clusters_in_group = np.unique(electron_group["cluster_id"])
+                interactions_chunk = interactions_in_roi[mask][np.isin(interactions_in_roi["cluster_id"][mask], unique_clusters_in_group)]
+                
+                #Sort both the interactions and the electrons by cluster_id
+                #We will later sort by time again when yielding the data. 
+                sort_index_ic = np.argsort(interactions_chunk["cluster_id"])
+                sort_index_eg = np.argsort(electron_group["cluster_id"])
+                interactions_chunk = interactions_chunk[sort_index_ic]
+                electron_group = electron_group[sort_index_eg]
+
                 positions = np.array([interactions_chunk["x_obs"], interactions_chunk["y_obs"]]).T
 
                 _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
@@ -394,7 +409,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                                                     _photon_channels,
                                                     )
         
-                #repeat for n photons per electron # Should this be before adding delays?
+                #repeat for n photons per electron
                 _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
                 
                 #Do i want to save both -> timings with and without pmt transition time spread?
@@ -428,8 +443,15 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                 yield chunk
     
         #And the last chunk
-        interactions_chunk = interactions_in_roi[mask][np.unique(electron_chunks[-1]["order_index"])]
-        #interactions_chunk = interactions_in_roi[mask][np.min(index_chunks[-1]):np.max(index_chunks[-1])+1]
+        electron_group = electron_chunks[-1]
+        unique_clusters_in_group = np.unique(electron_group["cluster_id"])
+        interactions_chunk = interactions_in_roi[mask][np.isin(interactions_in_roi["cluster_id"][mask], unique_clusters_in_group)]
+ 
+        sort_index_ic = np.argsort(interactions_chunk["cluster_id"])
+        sort_index_eg = np.argsort(electron_group["cluster_id"])
+        interactions_chunk = interactions_chunk[sort_index_ic]
+        electron_group = electron_group[sort_index_eg]
+
         positions = np.array([interactions_chunk["x_obs"], interactions_chunk["y_obs"]]).T
 
         _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
@@ -444,7 +466,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                                               _photon_channels,
                                               )
 
-        _photon_timings += np.repeat(electron_chunks[-1]["time"], electron_chunks[-1]["n_s2_photons"])
+        _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
 
         _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
                     _photon_timings=_photon_timings,
