@@ -19,9 +19,7 @@ class PhotoIonizationElectrons(strax.Plugin):
 
     #Try to build these ones from the SecondaryScintillation output first
     # We are now having the number of photons of an interaction as input
-    # In WFSim the number of photons in a potentially merged S2 is used... 
-    # The wfsim approach is more difficult to include in fuse at the moment...
-    # And this way we should get good results too 
+    # In WFSim the number of photons in a potentially merged S2 is used.
     depends_on = ("s2_photons_sum", "extracted_electrons", "s2_photons")
     provides = "photo_ionization_electrons"
     data_kind = "delayed_interactions_in_roi"
@@ -39,6 +37,7 @@ class PhotoIonizationElectrons(strax.Plugin):
              ('x_pri', np.float32),
              ('y_pri', np.float32),
              ('z_pri', np.float32),
+             ('cluster_id', np.int32),
              ('xe_density', np.float32),
              ('vol_id', np.int64),
              ('create_S2', np.bool8),
@@ -145,6 +144,7 @@ class PhotoIonizationElectrons(strax.Plugin):
             log.debug("No interactions with S2 photons found or delayed electrons are disabled")
             return np.zeros(0, self.dtype)
 
+        #This line needs to be fixed as the electrons don't need to be in the same order as interactions_in_roi!
         electrons_per_interaction = np.split(individual_electrons, np.cumsum(interactions_in_roi[mask]["n_electron_extracted"]))[:-1]
 
         #In WFSim the part is calculated separatley for each interaction

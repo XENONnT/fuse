@@ -16,7 +16,7 @@ class DelayedElectronsTiming(ElectronTiming):
     
     child_plugin = True
 
-    depends_on = ('drifted_delayed_electrons','extracted_delayed_electrons')
+    depends_on = ('drifted_delayed_electrons','extracted_delayed_electrons', 'photo_ionization_electrons')
     provides = "delayed_electrons_time"
     data_kind = "delayed_individual_electrons"
 
