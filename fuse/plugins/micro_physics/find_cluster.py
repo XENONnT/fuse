@@ -75,7 +75,7 @@ class FindCluster(strax.Plugin):
                                   self.micro_separation_time)
 
         numpy_data = np.zeros(len(geant4_interactions), dtype=self.dtype)
-        numpy_data["cluster_ids"] = cluster_ids
+        numpy_data["cluster_ids"] = cluster_ids + 1 #Avoid 0 as cluster ID 
 
         numpy_data["time"] = geant4_interactions["time"]
         numpy_data["endtime"] = geant4_interactions["endtime"]

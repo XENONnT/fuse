@@ -14,7 +14,7 @@ log = logging.getLogger('fuse.micro_physics.merge_cluster')
 @export
 class MergeCluster(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("geant4_interactions", "cluster_index")
     
@@ -39,6 +39,7 @@ class MergeCluster(strax.Plugin):
              ('x_pri', np.float32),
              ('y_pri', np.float32),
              ('z_pri', np.float32),
+             ('cluster_id', np.int32),
              ('xe_density', np.float32), #Will be set i a later plugin
              ('vol_id', np.int8), #Will be set i a later plugin
              ('create_S2', np.bool_), #Will be set i a later plugin
@@ -111,6 +112,9 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
         result[i]["y_pri"] = cluster["y_pri"][main_interaction_index]
         result[i]["z_pri"] = cluster["z_pri"][main_interaction_index]
         result[i]["evtid"] = cluster["evtid"][main_interaction_index]
+        
+        #Get cluster id from and save it!
+        result[i]["cluster_id"] = cluster["cluster_ids"][main_interaction_index]
 
     return result
 
