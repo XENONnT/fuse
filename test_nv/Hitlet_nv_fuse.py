@@ -26,7 +26,7 @@ import cutax
 #https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:xenonnt:layos:snhitlet_from_geant4_output
 #In the note mentioned above we test several approaches of charge sampling, for that we can use the function 'G4_to_Veto_hitlets_comparison'.
 
-#2.THE LAST UPDATE, leading to the actual structure of the code is here : , this one is ongoing and we expect to test with SR1 AmBe runs.
+#2.THE LAST UPDATE, leading to the actual structure of the code is here :https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:xenonnt:layos:vetohitlets_v2 , this one is ongoing and we expect to test with SR1 AmBe runs.
 #In the note mentioned above we test several approaches of charge sampling, for that we can use the function 'G4_to_Veto_hitlets_comparison'.
 
 
