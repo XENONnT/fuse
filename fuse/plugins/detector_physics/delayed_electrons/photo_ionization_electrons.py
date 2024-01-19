@@ -20,38 +20,9 @@ class PhotoIonizationElectrons(strax.Plugin):
     #Try to build these ones from the SecondaryScintillation output first
     # We are now having the number of photons of an interaction as input
     # In WFSim the number of photons in a potentially merged S2 is used.
-    depends_on = ("s2_photons_sum", "extracted_electrons", "s2_photons")
+    depends_on = ("s2_photons_sum", "extracted_electrons", "s2_photons", "electron_time", "microphysics_summary")
     provides = "photo_ionization_electrons"
     data_kind = "delayed_interactions_in_roi"
-
-    #dtype will be the same as the microphysics_summary
-    #We can probably import it from there
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('z', np.float32),
-             ('ed', np.float64),
-             ('nestid', np.int64),
-             ('A', np.int64),
-             ('Z', np.int64),
-             ('evtid', np.int64),
-             ('x_pri', np.float32),
-             ('y_pri', np.float32),
-             ('z_pri', np.float32),
-             ('cluster_id', np.int32),
-             ('xe_density', np.float32),
-             ('vol_id', np.int64),
-             ('create_S2', np.bool8),
-            ]
-    
-    dtype += [('e_field', np.int64),
-              ]
-    
-    dtype += [('photons', np.float64),
-              ('electrons', np.float64),
-              ('excitons', np.float64),
-             ]
-    
-    dtype = dtype + strax.time_fields
 
     #Forbid rechunking
     rechunk_on_save = False
@@ -135,6 +106,12 @@ class PhotoIonizationElectrons(strax.Plugin):
             self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")
 
+    def infer_dtype(self):
+        #Thake the same dtype as microphysics_summary
+        dtype = self.deps["s2_photons"].deps["microphysics_summary"].dtype
+
+        return dtype
+
     def compute(self, interactions_in_roi, individual_electrons):
 
         #Just apply this to clusters with S2 photons
@@ -144,8 +121,7 @@ class PhotoIonizationElectrons(strax.Plugin):
             log.debug("No interactions with S2 photons found or delayed electrons are disabled")
             return np.zeros(0, self.dtype)
 
-        #This line needs to be fixed as the electrons don't need to be in the same order as interactions_in_roi!
-        electrons_per_interaction = np.split(individual_electrons, np.cumsum(interactions_in_roi[mask]["n_electron_extracted"]))[:-1]
+        electrons_per_interaction, unique_cluster_id = group_electrons_by_cluster_id(individual_electrons)
 
         #In WFSim the part is calculated separatley for each interaction
         #We can do it vectorized!
@@ -161,14 +137,24 @@ class PhotoIonizationElectrons(strax.Plugin):
         #Randomly select the time of the extracted electrons as time zeros
         #This differs to the WFSim implementation but neglecting the photon 
         #propagation time should not do much i guess
-        t_zeros = [self.rng.choice(electrons["time"], size = len(delayed_electrons)) for electrons, delayed_electrons in zip(electrons_per_interaction, electron_delay)]
-        t_zeros = np.concatenate(t_zeros)
+        time_zero = []
+        delayed_electrons_per_interaction = []
+
+        for i in range(len(interactions_in_roi[mask])):
+            electrons_of_interaction = electrons_per_interaction[np.argwhere(interactions_in_roi[mask]["cluster_id"][i] == unique_cluster_id)[0][0]]
+            number_of_delayed_electrons = len(electron_delay[i])
+            
+            time_zero.append(self.rng.choice(electrons_of_interaction["time"], size = number_of_delayed_electrons))
+            delayed_electrons_per_interaction.append(number_of_delayed_electrons)
+
+        delayed_electrons_per_interaction = np.array(delayed_electrons_per_interaction)
+        time_zero = np.concatenate(time_zero)
         electron_delay = np.concatenate(electron_delay)
         n_instruction = len(electron_delay)
 
         result = np.zeros(n_instruction, dtype = self.dtype)
-        result["time"] = t_zeros #WFsim subtracts the drift time here, i guess we dont need it??
-        result["endtime"] = t_zeros
+        result["time"] = time_zero #WFsim subtracts the drift time here, i guess we dont need it??
+        result["endtime"] = time_zero
         result["x"], result["y"] = ramdom_xy_position(
             n_instruction,
             self.tpc_radius,
@@ -176,8 +162,10 @@ class PhotoIonizationElectrons(strax.Plugin):
             )
         result['z'] = - electron_delay * self.drift_velocity_liquid
         result['electrons'] = [1]*n_instruction
+        #result['cluster_id'] = np.repeat(interactions_in_roi[mask]["cluster_id"], delayed_electrons_per_interaction)
+        result['cluster_id'] = np.arange(len(result)) * -1 - 1 #Lets try to use negative cluster ids for delayed electrons...
         
-        return result
+        return strax.sort_by_time(result)
 
 
 def ramdom_xy_position(n, radius, rng):
@@ -194,3 +182,15 @@ def get_random(hist_object,rng ,size=10):
     """
     bin_i = rng.choice(np.arange(len(hist_object.bin_centers)), size=size, p=hist_object.normalized_histogram)
     return hist_object.bin_centers[bin_i] + rng.uniform(-0.5, 0.5, size=size) * hist_object.bin_volumes()[bin_i]
+
+#This sort of groupby function is used in several places in fuse
+#We should try to make it a general function in the future. 
+def group_electrons_by_cluster_id(electrons):
+    """Function to group electrons by cluster_id"""
+    
+    sort_index = np.argsort(electrons["cluster_id"])
+    
+    electrons_sorted = electrons[sort_index]
+
+    unique_cluster_id, split_position = np.unique(electrons_sorted["cluster_id"], return_index=True)
+    return np.split(electrons_sorted, split_position[1:]), unique_cluster_id

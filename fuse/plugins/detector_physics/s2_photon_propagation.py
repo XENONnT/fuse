@@ -27,7 +27,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "merged_extracted_electrons",
                   "merged_drifted_electrons",
                   "merged_s2_photons_sum",
-                  "microphysics_summary", #This needs to be merged! Only needed for cluster_ids
+                  "merged_microphysics_summary", #Only needed for cluster_ids -> Somehow take only this data?
                   )
 
     provides = "propagated_s2_photons"

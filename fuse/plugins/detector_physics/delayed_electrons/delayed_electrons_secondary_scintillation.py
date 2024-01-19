@@ -21,7 +21,7 @@ class DelayedElectronsSecondaryScintillation(SecondaryScintillation):
     result_name_photons = "delayed_electrons_s2_photons"
     result_name_photons_sum = "delayed_electrons_s2_photons_sum"
 
-    depends_on = ("drifted_delayed_electrons", "extracted_delayed_electrons", "delayed_electrons_time")
+    depends_on = ("drifted_delayed_electrons", "extracted_delayed_electrons", "delayed_electrons_time", "photo_ionization_electrons")
 
     provides = (result_name_photons, result_name_photons_sum)
     data_kind = {result_name_photons: "delayed_individual_electrons",

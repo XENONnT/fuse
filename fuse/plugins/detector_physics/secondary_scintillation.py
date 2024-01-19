@@ -276,4 +276,4 @@ def group_result_photons_by_cluster_id(result, cluster_id):
     result_sorted = result[sort_index]
 
     unique_cluster_id, split_position = np.unique(cluster_id_sorted, return_index=True)
-    return np.split(result, split_position[1:]), unique_cluster_id
+    return np.split(result_sorted, split_position[1:]), unique_cluster_id
