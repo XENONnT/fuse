@@ -68,13 +68,28 @@ class SecondaryScintillationPhotonSumMerger(VerticalMergerPlugin):
 @export
 class ElectronTimingMerger(VerticalMergerPlugin):
     """
-    Plugin which concatenates the output of the regular and delayed electron secondary scintillation plugins
+    Plugin which concatenates the output of the regular and delayed electron timing plugins
     """
     
     depends_on = ("electron_time", "delayed_electrons_time")
     
     provides = 'merged_electron_time'
     data_kind = 'individual_electrons'
+    __version__ = '0.0.1'
+
+    #Forbid rechunking
+    rechunk_on_save = False
+
+@export
+class MicrophysicsSummaryMerger(VerticalMergerPlugin):
+    """
+    Plugin which concatenates the output of the regular and delayed electron secondary scintillation plugins
+    """
+    
+    depends_on = ("microphysics_summary", "photo_ionization_electrons")
+    
+    provides = 'merged_microphysics_summary'
+    data_kind = 'interactions_in_roi'
     __version__ = '0.0.1'
 
     #Forbid rechunking
