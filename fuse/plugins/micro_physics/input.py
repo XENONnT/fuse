@@ -7,6 +7,7 @@ import logging
 import pandas as pd
 import numpy as np
 import awkward as ak
+from numba import njit
 
 export, __all__ = strax.exporter()
 

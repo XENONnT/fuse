@@ -42,7 +42,7 @@ def dynamic_chunking(data, scale, n_min):
 
 def full_array_to_numpy(array, dtype):
     
-    len_output = len(awkward_to_flat_numpy(array["x"]))
+    len_output = len(awkward_to_flat_numpy(array[array.fields[0]]))
 
     numpy_data = np.zeros(len_output, dtype=dtype)
 
