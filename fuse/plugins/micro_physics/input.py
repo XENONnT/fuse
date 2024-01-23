@@ -19,10 +19,10 @@ log = logging.getLogger('fuse.micro_physics.input')
 @export
 class ChunkInput(strax.Plugin):
     
-    __version__ = "0.1.2"
+    __version__ = "0.2.0"
     
     depends_on = tuple()
-    provides = "geant4_interactions"
+    provides = ("geant4_interactions", "nv_pmthits")
     
     #Forbid rechunking
     rechunk_on_save = False
@@ -31,7 +31,7 @@ class ChunkInput(strax.Plugin):
 
     input_timeout = FUSE_PLUGIN_TIMEOUT
     
-    dtype = [('x', np.float64),
+    dtype_tpc = [('x', np.float64),
              ('y', np.float64),
              ('z', np.float64),
              ('t', np.float64),
@@ -48,7 +48,24 @@ class ChunkInput(strax.Plugin):
              ('z_pri', np.float32),
             ]
     
-    dtype = dtype + strax.time_fields
+    dtype_tpc = dtype_tpc + strax.time_fields
+
+
+    dtype_nv = [('pmthitEnergy', np.float32),
+                ('pmthitTime', np.float32),
+                ('pmthitID', np.int16),
+                ('evtid', np.int32),
+                ]
+    dtype_nv = dtype_nv + strax.time_fields
+
+    dtype = dict()
+    dtype["geant4_interactions"] = dtype_tpc
+    dtype["nv_pmthits"] = dtype_nv
+
+    data_kind = {"geant4_interactions": "geant4_interactions",
+                 "nv_pmthits" : "nv_pmthits"
+                }
+
 
     save_when = strax.SaveWhen.TARGET
     
@@ -87,9 +104,9 @@ class ChunkInput(strax.Plugin):
         help='All interactions happening after this time (including the event time) will be cut.',
     )
 
-    n_interactions_per_chunk = straxen.URLConfig(
-        default=1e5, type=(int, float),
-        help='Minimum number of interaction per chunk',
+    file_size_limit = straxen.URLConfig(
+        default=500, type=(int, float),
+        help='Target file size limit in MB',
     )
 
     entry_start = straxen.URLConfig(
@@ -110,6 +127,11 @@ class ChunkInput(strax.Plugin):
     nr_only = straxen.URLConfig(
         default=False, type=bool,
         help='Filter only nuclear recoil events (maximum ER energy deposit 10 keV)',
+    )
+
+    nv_output = straxen.URLConfig(
+        default=True, type=bool,
+        help='Decide if you want to have NV output or not',
     )
 
     deterministic_seed = straxen.URLConfig(
@@ -140,29 +162,41 @@ class ChunkInput(strax.Plugin):
                                        separation_scale = self.separation_scale,
                                        event_rate = self.source_rate,
                                        cut_delayed = self.cut_delayed,
-                                       n_interactions_per_chunk = self.n_interactions_per_chunk,
+                                       file_size_limit = self.file_size_limit,
                                        arg_debug = self.debug,
                                        outer_cylinder=None, #This is not running 
                                        kwargs={'entry_start': self.entry_start,
                                                'entry_stop': self.entry_stop},
                                        cut_by_eventid=self.cut_by_eventid,
                                        cut_nr_only=self.nr_only,
+                                       neutron_veto_output=self.nv_output,
                                        )
         self.file_reader_iterator = self.file_reader.output_chunk()
         
     def compute(self):
         
         try: 
-            chunk_data, chunk_left, chunk_right, source_done = next(self.file_reader_iterator)
-            chunk_data["endtime"] = chunk_data["time"]
+            
+            if self.nv_output:
+                
+                chunk_data_tpc, chunk_left, chunk_right, source_done, chunk_data_nv = next(self.file_reader_iterator)
+                chunk_data_tpc["endtime"] = chunk_data_tpc["time"]
+                chunk_data_nv["endtime"] = chunk_data_nv["time"]
+
+            else:
+                chunk_data_tpc, chunk_left, chunk_right, source_done = next(self.file_reader_iterator)
+                chunk_data_tpc["endtime"] = chunk_data_tpc["time"]
+
+                chunk_data_nv = np.zeros(0, dtype=self.dtype["nv_pmthits"])
 
             self.source_done = source_done
 
-            return self.chunk(start=chunk_left,
-                              end=chunk_right,
-                              data=chunk_data,
-                              data_type='geant4_interactions'
-                              )
+            result = {"geant4_interactions" : self.chunk(start=chunk_left, end=chunk_right, data=chunk_data_tpc, data_type = "geant4_interactions"),
+                      "nv_pmthits" : self.chunk(start=chunk_left, end=chunk_right, data=chunk_data_nv, data_type = "nv_pmthits")
+                      }
+
+
+            return result
 
         except StopIteration:
             raise RuntimeError("Bug in chunk building!")
@@ -193,7 +227,7 @@ class file_loader():
                 random_number_generator,
                 separation_scale = 1e8,
                 event_rate = 1,
-                n_interactions_per_chunk = 500,
+                file_size_limit = 500,
                 cut_delayed = 4e12,
                 last_chunk_length = 1e8,
                 first_chunk_left = 1e6,
@@ -203,6 +237,7 @@ class file_loader():
                 kwargs={},
                 cut_by_eventid=False,
                 cut_nr_only=False,
+                neutron_veto_output=False,
                 ):
 
         self.directory = directory
@@ -210,7 +245,7 @@ class file_loader():
         self.rng = random_number_generator
         self.separation_scale = separation_scale
         self.event_rate = event_rate / 1e9 #Conversion to ns 
-        self.n_interactions_per_chunk = n_interactions_per_chunk
+        self.file_size_limit = file_size_limit
         self.cut_delayed = cut_delayed
         self.last_chunk_length = np.int64(last_chunk_length)
         self.first_chunk_left = np.int64(first_chunk_left)
@@ -220,6 +255,7 @@ class file_loader():
         self.kwargs = kwargs
         self.cut_by_eventid = cut_by_eventid
         self.cut_nr_only = cut_nr_only
+        self.neutron_veto_output = neutron_veto_output
         
         self.file = os.path.join(self.directory, self.file_name)
 
@@ -236,7 +272,6 @@ class file_loader():
         else:
             self.cut_string = None
     
-        
         
         self.dtype = [('x', np.float64),
                      ('y', np.float64),
@@ -256,6 +291,16 @@ class file_loader():
                     ]
     
         self.dtype = self.dtype + strax.time_fields
+
+        if self.neutron_veto_output:
+            self.nv_dtype = [('pmthitEnergy', np.float32),
+                             ('pmthitTime', np.float32),
+                             ('pmthitID', np.int16),
+                             ('evtid', np.int32),
+                            ]
+            self.nv_dtype = self.nv_dtype + strax.time_fields
+
+            self.neutron_veto_column_names = ['pmthitEnergy','pmthitTime','pmthitID']
         
     
     def output_chunk(self):
@@ -264,38 +309,62 @@ class file_loader():
         """
         
         if self.file.endswith(".root"):
-            interactions, n_simulated_events, start, stop = self._load_root_file()
+            if self.neutron_veto_output:
+                interactions, n_simulated_events, start, stop, nv_interactions = self._load_root_file()
+            else:
+                interactions, n_simulated_events, start, stop = self._load_root_file()
         elif self.file.endswith(".csv"):
             interactions, n_simulated_events, start, stop = self._load_csv_file()
         else:
             raise ValueError(f'Cannot load events from file "{self.file}": .root or .cvs file needed.')        
         
         # Removing all events with zero energy deposit
-        m = interactions['ed'] > 0
-        if self.cut_by_eventid:
+        #m = interactions['ed'] > 0
+        #if self.cut_by_eventid:
             # ufunc does not work here...
-            m2 = (interactions['evtid'] >= start) & (interactions['evtid'] < stop)
-            m = m & m2
-        interactions = interactions[m]
+        #    m2 = (interactions['evtid'] >= start) & (interactions['evtid'] < stop)
+        #    m = m & m2
 
-        if self.cut_nr_only:
-            log.info("'nr_only' set to True, keeping only the NR events")
-            m = ((interactions['type'] == "neutron")&(interactions['edproc'] == "hadElastic")) | (interactions['edproc'] == "ionIoni")
-            e_dep_er = ak.sum(interactions[~m]['ed'], axis=1)
-            e_dep_nr = ak.sum(interactions[m]['ed'], axis=1)
-            interactions = interactions[(e_dep_er<10) & (e_dep_nr>0)]
+        #if self.neutron_veto_output:
+        #    m_nv = nv_interactions['pmthitEnergy'] > 0
+            #if self.cut_by_eventid:
+            #    m_nv = m_nv & m2
+        #    nv_interactions = nv_interactions[m_nv]
+        
+        #interactions = interactions[m]
+
+        #if self.cut_nr_only:
+        #    log.info("'nr_only' set to True, keeping only the NR events")
+        #    m = ((interactions['type'] == "neutron")&(interactions['edproc'] == "hadElastic")) | (interactions['edproc'] == "ionIoni")
+        #    e_dep_er = ak.sum(interactions[~m]['ed'], axis=1)
+        #    e_dep_nr = ak.sum(interactions[m]['ed'], axis=1)
+        #    interactions = interactions[(e_dep_er<10) & (e_dep_nr>0)]
 
         # Removing all events with no interactions:
-        m = ak.num(interactions['ed']) > 0
-        interactions = interactions[m]
+        #m = ak.num(interactions['ed']) > 0
+        #interactions = interactions[m]
 
         #Sort interactions in events by time and subtract time of the first interaction
+        
+        min_time_TPC = ak.min(interactions['t'], axis=1)
+        if self.neutron_veto_output:
+            min_time_NV = ak.min(nv_interactions['pmthitTime'], axis=1)
+            global_min_time = ak.min([min_time_TPC, min_time_NV], axis=0)
+        else:
+            global_min_time = min_time_TPC
+
         interactions = interactions[ak.argsort(interactions['t'])]
-        interactions['t'] = interactions['t'] - interactions['t'][:, 0]
+        interactions['t'] = interactions['t'] - global_min_time
 
         inter_reshaped = full_array_to_numpy(interactions, self.dtype)
-        
-        #Need to check start and stop again....
+
+        if self.neutron_veto_output:
+            #m = ak.num(nv_interactions['pmthitEnergy']) > 0
+            #nv_interactions = nv_interactions[m]
+            nv_interactions = nv_interactions[ak.argsort(nv_interactions['pmthitTime'])]
+            nv_interactions['pmthitTime'] = nv_interactions['pmthitTime'] - global_min_time
+            nv_inter_reshaped = full_array_to_numpy(nv_interactions, self.nv_dtype)
+
         if self.event_rate > 0:
             event_times = self.rng.uniform(low = start/self.event_rate,
                                             high = stop/self.event_rate,
@@ -303,16 +372,24 @@ class file_loader():
                                             ).astype(np.int64)
             event_times = np.sort(event_times)
 
-            structure = np.unique(inter_reshaped["evtid"], return_counts = True)[1]
+            structure, counts = np.unique(inter_reshaped["evtid"], return_counts = True)
 
-            #Check again why [:len(structure)] is needed 
-            interaction_time = np.repeat(event_times[:len(structure)], structure)
+            interaction_time = np.repeat(event_times[structure], counts)
             inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
+
+            if self.neutron_veto_output:
+                structure_nv, counts_nv = np.unique(nv_inter_reshaped["evtid"], return_counts = True)
+                interaction_time_nv = np.repeat(event_times[structure_nv], counts_nv)
+                #Apply the same event times to the neutron veto output
+                nv_inter_reshaped["time"] = interaction_time_nv + nv_inter_reshaped["pmthitTime"]
+
         elif self.event_rate == 0:
             log.info("Using event times from provided input file.")
             if self.file.endswith(".root"):
                 log.warning("Using event times from root file is not recommended! Use a source_rate > 0 instead.")
             inter_reshaped["time"] = inter_reshaped["t"]
+            if self.neutron_veto_output:
+                nv_inter_reshaped["time"] = nv_inter_reshaped["pmthitTime"]
         else:
             raise ValueError("Source rate cannot be negative!")
         
@@ -320,17 +397,92 @@ class file_loader():
         delay_cut = inter_reshaped["t"] <= self.cut_delayed
         log.info(f"Removing {np.sum(~delay_cut)} ( {np.sum(~delay_cut)/len(delay_cut) *100:.4} %) interactions later than {self.cut_delayed:.2e} ns.")
         inter_reshaped = inter_reshaped[delay_cut]
+        if self.neutron_veto_output:
+            nv_delay_cut = nv_inter_reshaped["pmthitTime"] <= self.cut_delayed
+            log.info(f"Removing {np.sum(~nv_delay_cut)} ( {np.sum(~nv_delay_cut)/len(nv_delay_cut) *100:.4} %) NV interactions later than {self.cut_delayed:.2e} ns.")
+            nv_inter_reshaped = nv_inter_reshaped[nv_delay_cut]
  
         sort_idx = np.argsort(inter_reshaped["time"])
         inter_reshaped = inter_reshaped[sort_idx]
+        if self.neutron_veto_output:
+            nv_sort_idx = np.argsort(nv_inter_reshaped["time"])
+            nv_inter_reshaped = nv_inter_reshaped[nv_sort_idx]
 
         #Group into chunks
-        chunk_idx = dynamic_chunking(inter_reshaped["time"], scale = self.separation_scale, n_min =  self.n_interactions_per_chunk)
-        
-        #Calculate chunk start and end times
-        chunk_start = np.array([inter_reshaped[chunk_idx == i][0]["time"] for i in np.unique(chunk_idx)])
-        chunk_end = np.array([inter_reshaped[chunk_idx == i][-1]["time"] for i in np.unique(chunk_idx)])
-        
+
+        #Move this somewhere else?
+        n_bytes_per_interaction_TPC = 6*8 + 5*4 + 2*2 + 4*40
+        n_bytes_per_interaction_NV = 2*8 + 3*4 + 1*2
+
+        if self.neutron_veto_output:
+            #Assume that both sets are already sorted!
+            combined_times = np.append(inter_reshaped["time"], nv_inter_reshaped["time"])
+            combined_types = np.append(np.zeros(len(inter_reshaped)), np.ones(len(nv_inter_reshaped)))
+
+            sort_idx = np.argsort(combined_times)
+            combined_times = combined_times[sort_idx]
+            combined_types = combined_types[sort_idx]
+            combined_time_gaps = combined_times[1:] - combined_times[:-1]
+            combined_time_gaps = np.append(combined_time_gaps, 0) #Add last gap
+
+            tpc_split_index, nv_split_index = dynamic_chunking_two_outputs(combined_time_gaps,
+                                                                           combined_types,
+                                                                           self.file_size_limit,
+                                                                           self.separation_scale,
+                                                                           n_bytes_per_interaction_TPC,
+                                                                           n_bytes_per_interaction_NV,
+                                                                         )
+            inter_reshaped_chunks = np.array_split(inter_reshaped, tpc_split_index)
+            nv_inter_reshaped_chunks = np.array_split(nv_inter_reshaped, nv_split_index)
+
+            #Calculate chunk start and end times
+            chunk_start_tpc = []
+            chunk_end_tpc = []
+            chunk_start_nv = []
+            chunk_end_nv = []
+            for i in range(len(inter_reshaped_chunks)):
+            
+                if len(inter_reshaped_chunks[i]) == 0:
+                    chunk_start_tpc.append(np.inf)
+                    chunk_end_tpc.append(-np.inf)
+                else:
+                    chunk_start_tpc.append(inter_reshaped_chunks[i][0]["time"])
+                    chunk_end_tpc.append(inter_reshaped_chunks[i][-1]["time"])
+            
+                if len(nv_inter_reshaped_chunks[i]) == 0:
+                    chunk_start_nv.append(np.inf)
+                    chunk_end_nv.append(-np.inf)
+                else:
+                    chunk_start_nv.append(nv_inter_reshaped_chunks[i][0]["time"])
+                    chunk_end_nv.append(nv_inter_reshaped_chunks[i][-1]["time"])
+            chunk_start_tpc = np.array(chunk_start_tpc)
+            chunk_end_tpc = np.array(chunk_end_tpc)
+            chunk_start_nv = np.array(chunk_start_nv)
+            chunk_end_nv = np.array(chunk_end_nv)
+
+            chunk_start, chunk_end = combine_chunk_times(chunk_start_tpc, chunk_end_tpc, chunk_start_nv, chunk_end_nv)
+
+        else:
+            #The only TPC case:
+
+            time_gaps = inter_reshaped["time"][1:] - inter_reshaped["time"][:-1] 
+            time_gaps = np.append(time_gaps, 0) #Add last gap
+
+            split_index = dynamic_chunking(time_gaps,
+                                           self.file_size_limit,
+                                           self.separation_scale,
+                                           n_bytes_per_interaction_TPC,
+                                           )
+            inter_reshaped_chunks = np.array_split(inter_reshaped, split_index)
+
+            chunk_start_tpc = []
+            chunk_end_tpc = []
+            for i in range(len(inter_reshaped_chunks)):
+                chunk_start_tpc.append(inter_reshaped_chunks[i][0]["time"])
+                chunk_end_tpc.append(inter_reshaped_chunks[i][-1]["time"])
+            chunk_start = np.array(chunk_start_tpc)
+            chunk_end = np.array(chunk_end_tpc)
+
         if (len(chunk_start) > 1) & (len(chunk_end) > 1):
         
             gap_length = chunk_start[1:] - chunk_end[:-1]
@@ -342,17 +494,19 @@ class file_loader():
             log.warning("Only one Chunk created! Only a few events simulated? If no, your chunking parameters might not be optimal.")
             log.warning("Try to decrease the source_rate or decrease the n_interactions_per_chunk")
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
-        
+
         source_done = False
-        unique_chunk_index_values = np.unique(chunk_idx)
-        log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
-        for c_ix, chunk_left, chunk_right in zip(unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]):
-            
-            if c_ix == unique_chunk_index_values[-1]:
+        number_of_chunks = len(self.chunk_bounds)-1
+        log.info(f"Simulating data in {number_of_chunks} chunks.")
+        for c_ix, (chunk_left, chunk_right) in enumerate(zip(self.chunk_bounds[:-1], self.chunk_bounds[1:])):
+
+            if c_ix == number_of_chunks-1:
                 source_done = True
                 log.debug("Last chunk created!")
-
-            yield inter_reshaped[chunk_idx == c_ix], chunk_left, chunk_right, source_done
+            if self.neutron_veto_output:
+                yield inter_reshaped_chunks[c_ix], chunk_left, chunk_right, source_done, nv_inter_reshaped_chunks[c_ix]
+            else:
+                yield inter_reshaped_chunks[c_ix], chunk_left, chunk_right, source_done
     
     def last_chunk_bounds(self):
         return self.chunk_bounds[-1]
@@ -427,7 +581,25 @@ class file_loader():
         interactions['y_pri'] = ak.broadcast_arrays(xyz_pri['y_pri'], interactions['x'])[0]
         interactions['z_pri'] = ak.broadcast_arrays(xyz_pri['z_pri'], interactions['x'])[0]
 
-        return interactions, n_simulated_events, start, stop
+        #If we want to have NV output: 
+        if self.neutron_veto_output:
+            
+            #Do we need this?
+            #nv_alias = {'pmthitTime': 'pmthitTime*10**9'}
+
+            nv_interactions = ttree.arrays(self.neutron_veto_column_names,
+                                           #aliases=nv_alias,
+                                           **self.kwargs)
+            nv_interactions['pmthitTime'] = nv_interactions['pmthitTime']*10**9                              
+            nv_eventids = ttree.arrays('eventid', **self.kwargs)
+            nv_eventids = ak.broadcast_arrays(nv_eventids['eventid'], nv_interactions['pmthitTime'])[0]
+            nv_interactions['evtid'] = nv_eventids
+
+            return interactions, n_simulated_events, start, stop, nv_interactions
+
+        else:
+
+            return interactions, n_simulated_events, start, stop
         
 
     def _get_ttree(self):
@@ -534,3 +706,87 @@ class file_loader():
                     }
 
         return ak.Array(dictionary)
+
+
+@njit(cache=True)
+def dynamic_chunking(time_gaps,
+                     file_size_limit,
+                     min_gap_length,
+                     n_bytes_per_interaction,
+                     ):
+
+    data_size_mb = 0
+    split_index = []
+
+    running_index = 0
+
+    for g in time_gaps:
+        
+        data_size_mb += n_bytes_per_interaction / 1e6
+        running_index += 1
+
+        if data_size_mb < file_size_limit: 
+            continue
+
+        if g >= min_gap_length:
+            data_size_mb = 0
+            split_index.append(running_index)
+
+    return np.array(split_index)
+
+
+
+@njit(cache=True)
+def dynamic_chunking_two_outputs(combined_time_gaps,
+                                 combined_types,
+                                 file_size_limit,
+                                 min_gap_length,
+                                 n_bytes_per_interaction_TPC,
+                                 n_bytes_per_interaction_NV,
+                                 ):
+    """Function to split the TPC and NV data into chunks based on the time gaps between the interactions"""
+
+    data_size_mb_tpc = 0
+    data_size_mb_nv = 0
+    split_index_tpc = []
+    split_index_nv = []
+
+    running_index_tpc = 0
+    running_index_nv = 0
+
+    for i, (t, g) in enumerate(zip(combined_types, combined_time_gaps)):
+        
+        if t == 0:
+            data_size_mb_tpc += n_bytes_per_interaction_TPC / 1e6
+            running_index_tpc += 1
+        elif t == 1:
+            data_size_mb_nv += n_bytes_per_interaction_NV / 1e6
+            running_index_nv += 1
+
+        if (data_size_mb_tpc < file_size_limit) & (data_size_mb_nv < file_size_limit): 
+            continue
+
+        if g >= min_gap_length:
+            data_size_mb_tpc = data_size_mb_nv = 0
+            split_index_tpc.append(running_index_tpc)
+            split_index_nv.append(running_index_nv)
+
+    return np.array(split_index_tpc), np.array(split_index_nv)
+
+def combine_chunk_times(cs_tpc, ce_tpc, cs_nv, ce_nv):
+    """Function to combine TPC and NV chunk times"""
+    combined_cs = []
+
+    number_of_chunks = len(cs_tpc)
+
+    for i in range(number_of_chunks):
+        if cs_tpc[i] < cs_nv[i]:
+            combined_cs.append(cs_tpc[i])
+        else:
+            combined_cs.append(cs_nv[i])
+
+    combined_chunk_start = np.array(combined_cs)
+    combined_chunk_end = np.append(combined_chunk_start[1:], np.max([ce_tpc[-1], ce_nv[-1]]))
+    
+    
+    return combined_chunk_start.astype(np.int64), combined_chunk_end.astype(np.int64)
