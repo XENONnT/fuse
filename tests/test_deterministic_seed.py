@@ -39,8 +39,8 @@ class TestDeterministicSeed(unittest.TestCase):
         self.test_context_0.make(self.run_number_0, "microphysics_summary")
         self.test_context_1.make(self.run_number_1, "microphysics_summary")
 
-        output_0 = self.test_context_0.get_array(self.run_number_0, "microphysics_summary")
-        output_1 = self.test_context_1.get_array(self.run_number_0, "microphysics_summary")
+        output_0 = self.test_context_0.get_array(self.run_number_0, "microphysics_summary", progress_bar=False)
+        output_1 = self.test_context_1.get_array(self.run_number_0, "microphysics_summary", progress_bar=False)
 
         assert_array_equal(output_0, output_1)
 
@@ -50,8 +50,8 @@ class TestDeterministicSeed(unittest.TestCase):
         self.test_context_0.make(self.run_number_0, "microphysics_summary")
         self.test_context_1.make(self.run_number_1, "microphysics_summary")
 
-        output_0 = self.test_context_0.get_array(self.run_number_0, "microphysics_summary")
-        output_1 = self.test_context_1.get_array(self.run_number_1, "microphysics_summary")
+        output_0 = self.test_context_0.get_array(self.run_number_0, "microphysics_summary", progress_bar=False)
+        output_1 = self.test_context_1.get_array(self.run_number_1, "microphysics_summary", progress_bar=False)
 
         assert_raises(AssertionError, assert_array_equal, output_0, output_1)
 
@@ -61,8 +61,8 @@ class TestDeterministicSeed(unittest.TestCase):
         self.test_context_0.make(self.run_number_0, "raw_records")
         self.test_context_1.make(self.run_number_1, "raw_records")
 
-        output_0 = self.test_context_0.get_array(self.run_number_0, "raw_records")
-        output_1 = self.test_context_1.get_array(self.run_number_0, "raw_records")
+        output_0 = self.test_context_0.get_array(self.run_number_0, "raw_records", progress_bar=False)
+        output_1 = self.test_context_1.get_array(self.run_number_0, "raw_records", progress_bar=False)
 
         assert_array_equal(output_0, output_1)
 
@@ -72,8 +72,8 @@ class TestDeterministicSeed(unittest.TestCase):
         self.test_context_0.make(self.run_number_0, "raw_records")
         self.test_context_1.make(self.run_number_1, "raw_records")
 
-        output_0 = self.test_context_0.get_array(self.run_number_0, "raw_records")
-        output_1 = self.test_context_1.get_array(self.run_number_1, "raw_records")
+        output_0 = self.test_context_0.get_array(self.run_number_0, "raw_records", progress_bar=False)
+        output_1 = self.test_context_1.get_array(self.run_number_1, "raw_records", progress_bar=False)
 
         assert_raises(AssertionError, assert_array_equal, output_0, output_1)
 

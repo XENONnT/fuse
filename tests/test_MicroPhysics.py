@@ -1,3 +1,5 @@
+import os
+import shutil
 import unittest
 import fuse
 import tempfile
@@ -5,23 +7,29 @@ import tempfile
 class TestMicroPhysics(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
 
-        self.temp_dir = tempfile.TemporaryDirectory()
+        cls.temp_dir = tempfile.TemporaryDirectory()
 
-        self.test_context = fuse.context.microphysics_context(self.temp_dir.name)
+        cls.test_context = fuse.context.microphysics_context(cls.temp_dir.name)
 
-        self.test_context.set_config({"path": "/project2/lgrandi/xenonnt/simulations/testing",
+        cls.test_context.set_config({"path": "/project2/lgrandi/xenonnt/simulations/testing",
                                       "file_name": "pmt_neutrons_100.root",
                                       "entry_stop": 25,
                                       })
         
-        self.run_number = "TestRun_00000"
+        cls.run_number = "TestRun_00000"
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
 
-        self.temp_dir.cleanup()
+        cls.temp_dir.cleanup()
+
+    def tearDown(self):
+
+        # self.temp_dir.cleanup()
+        shutil.rmtree(self.temp_dir.name)
+        os.makedirs(self.temp_dir.name)
     
     def test_ChunkInput(self):
 
