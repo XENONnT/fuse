@@ -10,7 +10,8 @@ from scipy import constants
 export, __all__ = strax.exporter()
 
 from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
-from ...common import DummyMap, init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output
+from ...common import init_spe_scaling_factor_distributions, pmt_transit_time_spread, photon_gain_calculation 
+from ...common import build_photon_propagation_output
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
@@ -20,7 +21,7 @@ conversion_to_bar = 1/constants.elementary_charge / 1e1
 @export
 class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     
-    __version__ = "0.1.3"
+    __version__ = "0.1.4"
     
     depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
     provides = "propagated_s2_photons"
@@ -323,8 +324,8 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
-        
-        self.__uniform_to_pe_arr = init_spe_scaling_factor_distributions(self.photon_area_distribution)
+
+        self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
         #Move this part into a nice URLConfig protocol?
         # Field dependencies 
@@ -399,27 +400,27 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                 #repeat for n photons per electron # Should this be before adding delays?
                 _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
                 
-                #Do i want to save both -> timings with and without pmt transition time spread?
-                # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
-                # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-                _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
-                    _photon_timings=_photon_timings,
-                    _photon_channels=_photon_channels,
-                    pmt_transit_time_mean=self.pmt_transit_time_mean,
-                    pmt_transit_time_spread=self.pmt_transit_time_spread,
-                    p_double_pe_emision=self.p_double_pe_emision,
-                    gains=self.gains,
-                    __uniform_to_pe_arr=self.__uniform_to_pe_arr,
-                    rng=self.rng,
-                    )
+                #Do i want to save both -> timings with and without pmt transit time spread?
+                # Correct for PMT Transit Time Spread 
+                _photon_timings = pmt_transit_time_spread(_photon_timings=_photon_timings,
+                                                          pmt_transit_time_mean=self.pmt_transit_time_mean,
+                                                          pmt_transit_time_spread=self.pmt_transit_time_spread,
+                                                          rng=self.rng,
+                                                          )
 
-                result = build_photon_propagation_output(
-                    dtype=self.dtype,
-                    _photon_timings=_photon_timings,
-                    _photon_channels=_photon_channels,
-                    _photon_gains=_photon_gains,
-                    _photon_is_dpe=_photon_is_dpe,
-                    )
+                _photon_gains, _photon_is_dpe = photon_gain_calculation(_photon_channels=_photon_channels,
+                                                                        p_double_pe_emision=self.p_double_pe_emision,
+                                                                        gains=self.gains,
+                                                                        spe_scaling_factor_distributions=self.spe_scaling_factor_distributions,
+                                                                        rng=self.rng,
+                                                                        )
+
+                result = build_photon_propagation_output(dtype=self.dtype,
+                                                         _photon_timings=_photon_timings,
+                                                         _photon_channels=_photon_channels,
+                                                         _photon_gains=_photon_gains,
+                                                         _photon_is_dpe=_photon_is_dpe,
+                                                         )
 
                 result = strax.sort_by_time(result)
 
@@ -448,24 +449,25 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
 
         _photon_timings += np.repeat(electron_chunks[-1]["time"], electron_chunks[-1]["n_s2_photons"])
 
-        _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
-                    _photon_timings=_photon_timings,
-                    _photon_channels=_photon_channels,
-                    pmt_transit_time_mean=self.pmt_transit_time_mean,
-                    pmt_transit_time_spread=self.pmt_transit_time_spread,
-                    p_double_pe_emision=self.p_double_pe_emision,
-                    gains=self.gains,
-                    __uniform_to_pe_arr=self.__uniform_to_pe_arr,
-                    rng=self.rng,
-                    )
+        _photon_timings = pmt_transit_time_spread(_photon_timings=_photon_timings,
+                                                  pmt_transit_time_mean=self.pmt_transit_time_mean,
+                                                  pmt_transit_time_spread=self.pmt_transit_time_spread,
+                                                  rng=self.rng,
+                                                  )
 
-        result = build_photon_propagation_output(
-                    dtype=self.dtype,
-                    _photon_timings=_photon_timings,
-                    _photon_channels=_photon_channels,
-                    _photon_gains=_photon_gains,
-                    _photon_is_dpe=_photon_is_dpe,
-                    )
+        _photon_gains, _photon_is_dpe = photon_gain_calculation(_photon_channels=_photon_channels,
+                                                                p_double_pe_emision=self.p_double_pe_emision,
+                                                                gains=self.gains,
+                                                                spe_scaling_factor_distributions=self.spe_scaling_factor_distributions,
+                                                                rng=self.rng,
+                                                                )
+
+        result = build_photon_propagation_output(dtype=self.dtype,
+                                                 _photon_timings=_photon_timings,
+                                                 _photon_channels=_photon_channels,
+                                                 _photon_gains=_photon_gains,
+                                                 _photon_is_dpe=_photon_is_dpe,
+                                                 )
         
         result = strax.sort_by_time(result)
 
@@ -560,10 +562,8 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         # Should be done naturally with the s2 pattern map, however, there's some bug there, so we apply this hard cut
         mask = np.sum(xy_multi ** 2, axis=1) <= self.tpc_radius ** 2
 
-        if isinstance(self.s2_pattern_map, DummyMap):
-            output_dim = self.s2_pattern_map.shape[-1]
-        else:
-            output_dim = self.s2_pattern_map.data['map'].shape[-1]
+        output_dim = self.s2_pattern_map.data['map'].shape[-1]
+
         pattern = np.zeros((len(n_electron), output_dim))
         n0 = 0
         # Average over electrons for each s2
