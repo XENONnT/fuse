@@ -5,7 +5,8 @@ import nestpy
 import logging
 
 from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
-from ...common import init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output
+from ...common import init_spe_scaling_factor_distributions, pmt_transit_time_spread, photon_gain_calculation 
+from ...common import build_photon_propagation_output
 
 export, __all__ = strax.exporter()
 
@@ -19,7 +20,7 @@ nest_rng = nestpy.RandomGen.rndm()
 @export
 class S1PhotonPropagationBase(strax.Plugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("s1_photons", "microphysics_summary")
     provides = "propagated_s1_photons"
@@ -166,10 +167,8 @@ class S1PhotonPropagationBase(strax.Plugin):
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
         self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
-        
-        #I dont like this part -> clean up before merging the PR
-        self._cached_uniform_to_pe_arr = {}
-        self.__uniform_to_pe_arr = init_spe_scaling_factor_distributions(self.photon_area_distribution)
+
+        self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
     def compute(self, interactions_in_roi):
 
@@ -208,27 +207,28 @@ class S1PhotonPropagationBase(strax.Plugin):
         _photon_channels = _photon_channels[sortind]
         _photon_timings = _photon_timings[sortind]
 
-        #Do i want to save both -> timings with and without pmt transition time spread?
-        # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
-        # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-        _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
-            _photon_timings=_photon_timings,
-            _photon_channels=_photon_channels,
-            pmt_transit_time_mean=self.pmt_transit_time_mean,
-            pmt_transit_time_spread=self.pmt_transit_time_spread,
-            p_double_pe_emision=self.p_double_pe_emision,
-            gains=self.gains,
-            __uniform_to_pe_arr=self.__uniform_to_pe_arr,
-            rng=self.rng,
-            )
+        #Do i want to save both -> timings with and without pmt transit time spread?
+        # Correct for PMT transit Time Spread
+        
+        _photon_timings = pmt_transit_time_spread(_photon_timings=_photon_timings,
+                                                  pmt_transit_time_mean=self.pmt_transit_time_mean,
+                                                  pmt_transit_time_spread=self.pmt_transit_time_spread,
+                                                  rng=self.rng,
+                                                  )
 
-        result = build_photon_propagation_output(
-            dtype=self.dtype,
-            _photon_timings=_photon_timings,
-            _photon_channels=_photon_channels,
-            _photon_gains=_photon_gains,
-            _photon_is_dpe=_photon_is_dpe,
-            )
+        _photon_gains, _photon_is_dpe = photon_gain_calculation(_photon_channels=_photon_channels,
+                                                                p_double_pe_emision=self.p_double_pe_emision,
+                                                                gains=self.gains,
+                                                                spe_scaling_factor_distributions=self.spe_scaling_factor_distributions,
+                                                                rng=self.rng,
+                                                                )
+
+        result = build_photon_propagation_output(dtype=self.dtype,
+                                                 _photon_timings=_photon_timings,
+                                                 _photon_channels=_photon_channels,
+                                                 _photon_gains=_photon_gains,
+                                                 _photon_is_dpe=_photon_is_dpe,
+                                                 )
 
         result = strax.sort_by_time(result)
 
