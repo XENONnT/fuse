@@ -8,7 +8,7 @@ from .plugin import fuseBasePlugin
 class VerticalMergerPlugin(fuseBasePlugin):
     "Plugin that concatenates data from the dependencies along the fist axis"
 
-    save_when = strax.SaveWhen.NEVER
+    save_when = strax.SaveWhen.TARGET
 
     def setup(self):
         super().setup()

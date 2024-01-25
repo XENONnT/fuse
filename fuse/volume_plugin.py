@@ -9,7 +9,7 @@ class VolumePlugin(fuseBasePlugin):
     Plugin that evaluates if interactions are in a defined detector volume.
     """
 
-    save_when = strax.SaveWhen.NEVER
+    save_when = strax.SaveWhen.TARGET
 
     def setup(self):
         super().setup()
