@@ -165,7 +165,8 @@ class S1PhotonPropagationBase(strax.Plugin):
                                )
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
-        self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
+        # self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
+        self.turned_off_pmts = np.where(np.array(self.gains) == 0)[0]
         
         #I dont like this part -> clean up before merging the PR
         self._cached_uniform_to_pe_arr = {}

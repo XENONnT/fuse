@@ -116,7 +116,8 @@ def _find_cluster(x, cluster_size_space):
 
     #Conversion from numpy structured array to regular array with correct shape for 
     #sklearn somehow works fine via pandas... 
-    xprime = pd.DataFrame(x[['x', 'y', 'z']]).values
+    # xprime = pd.DataFrame(x[['x', 'y', 'z']]).values
+    xprime = np.stack((x['x'], x['y'], x['z']), axis=1)
 
     return db_cluster.fit_predict(xprime)
     
