@@ -5,7 +5,7 @@ import straxen
 import logging
 import pickle
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import fuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -17,7 +17,7 @@ log = logging.getLogger('fuse.micro_physics.yields')
 nest_rng = nestpy.RandomGen.rndm()
 
 @export
-class NestYields(strax.Plugin):
+class NestYields(fuseBasePlugin):
     
     __version__ = "0.1.1"
     
@@ -32,33 +32,13 @@ class NestYields(strax.Plugin):
     
     dtype = dtype + strax.time_fields
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
-    #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
     
     def setup(self):
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running NestYields version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
+        super().setup()
 
-        log.debug(f'Using nestpy version {nestpy.__version__}')
-
+        #How to do this part if i have a fuse base class?
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)

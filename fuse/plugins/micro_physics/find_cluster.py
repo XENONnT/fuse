@@ -9,13 +9,13 @@ from sklearn.cluster import DBSCAN
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import fuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.find_cluster')
 
 @export
-class FindCluster(strax.Plugin):
+class FindCluster(fuseBasePlugin):
     
     __version__ = "0.1.1"
     
@@ -27,19 +27,9 @@ class FindCluster(strax.Plugin):
             ]
     dtype = dtype + strax.time_fields
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     micro_separation_time = straxen.URLConfig(
         default=10, type=(int, float),
         help='Clustering time (ns)',
@@ -51,13 +41,8 @@ class FindCluster(strax.Plugin):
     )
 
     def setup(self):
+        super().setup()
         
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running FindCluster version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-    
     def compute(self, geant4_interactions):
         """
         Compute the cluster IDs for a set of GEANT4 interactions.
