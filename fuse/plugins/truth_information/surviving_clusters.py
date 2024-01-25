@@ -21,7 +21,7 @@ class SurvivingClusters(strax.Plugin):
     def compute(self, peaks, raw_records, interactions_in_roi):
 
         #Check if the cluster contributes to any cluster
-        cluster_in_any_record = np.isin(microphysics_summary["cluster_id"], np.unique(raw_records["contributing_clusters"]))
+        cluster_in_any_record = np.isin(interactions_in_roi["cluster_id"], np.unique(raw_records["contributing_clusters"]))
 
         contributing_clusters_per_peak = strax.split_touching_windows(raw_records, peaks)
 
@@ -31,11 +31,11 @@ class SurvivingClusters(strax.Plugin):
             clusters_in_peaks.append(unique_contributing_clusters)
         clusters_that_make_it_into_a_peak = np.unique(np.concatenate(clusters_in_peaks))
 
-        cluster_in_any_peak = np.isin(microphysics_summary["cluster_id"], clusters_that_make_it_into_a_peak)
+        cluster_in_any_peak = np.isin(interactions_in_roi["cluster_id"], clusters_that_make_it_into_a_peak)
 
-        result = np.zeros(len(microphysics_summary), dtype=self.dtype)
+        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         result['in_a_record'] = cluster_in_any_record
         result['in_a_peak'] = cluster_in_any_peak
-        result['time'] = microphysics_summary['time']
-        result['endtime'] = microphysics_summary['endtime']
+        result['time'] = interactions_in_roi['time']
+        result['endtime'] = interactions_in_roi['endtime']
         return result        
