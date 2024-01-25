@@ -6,13 +6,13 @@ import numba
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import fuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.photon_pulses')
 
 @export
-class PulseWindow(strax.Plugin):
+class PulseWindow(fuseBasePlugin):
 
     __version__ = "0.1.2"
 
@@ -30,19 +30,9 @@ class PulseWindow(strax.Plugin):
     dtype["pulse_windows"] = dtype_pulse_windows
     dtype["pulse_ids"] = dtype_pulse_ids
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
     save_when = strax.SaveWhen.TARGET
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     dt = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -94,12 +84,7 @@ class PulseWindow(strax.Plugin):
     )
 
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running PulseWindow version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
+        super().setup()
 
         #Lets double the samples_to_store_x values to avoid overlapping records when triggering on noise.. 
         self.pulse_left_extenstion = np.int64(2*self.samples_to_store_before) + self.samples_before_pulse_center
