@@ -50,7 +50,7 @@ class PhotoIonizationElectrons(strax.Plugin):
     #Move the filename to the config file
     delaytime_pmf_hist = straxen.URLConfig(
         help='delaytime_pmf_hist',
-        default = 'simple_load://resource://format://xnt_se_afterpulse_delaytime.pkl.gz?&fmt=pkl.gz',
+        default = 'simple_load://resource://format://XENONnT_SR1_photoionization_model.dill?&fmt=dill',
     )
 
     photoionization_modifier = straxen.URLConfig(
@@ -127,7 +127,6 @@ class PhotoIonizationElectrons(strax.Plugin):
         #We can do it vectorized!
         n_delayed_electrons = self.rng.poisson(
             interactions_in_roi[mask]["sum_s2_photons"]
-            * self.delaytime_pmf_hist.n
             * self.photoionization_modifier
             )
 
