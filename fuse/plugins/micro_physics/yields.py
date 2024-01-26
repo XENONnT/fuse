@@ -19,7 +19,7 @@ nest_rng = nestpy.RandomGen.rndm()
 @export
 class NestYields(fuseBasePlugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
@@ -34,19 +34,17 @@ class NestYields(fuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
 
-    
     def setup(self):
         super().setup()
 
-        #How to do this part if i have a fuse base class?
+        #Clean this up when we confirmed that the nestpy seed is set correctly
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
             #Dont know but nestpy seems to have a problem with large seeds
             self.short_seed = int(repr(seed)[-8:])
-            nest_rng.set_seed(self.short_seed)
 
-            log.debug(f"Generating random numbers from seed {self.short_seed}")
+            log.debug(f"Generating nest random numbers starting with seed {self.short_seed}")
         else: 
             log.debug(f"Generating random numbers with seed pulled from OS")
 
@@ -62,6 +60,11 @@ class NestYields(fuseBasePlugin):
         Returns:
             numpy.ndarray: An array of quanta, with fields for time, endtime, photons, electrons, and excitons.
         """
+        #set the global nest random generator with self.short_seed
+        nest_rng.set_seed(self.short_seed)
+        #increment the seed. Next chunk we will use the modified seed to generate random numbers
+        self.short_seed += 1
+        
         if len(interactions_in_roi) == 0:
             return np.zeros(0, dtype=self.dtype)
         

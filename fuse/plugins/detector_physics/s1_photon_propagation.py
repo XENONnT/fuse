@@ -20,7 +20,7 @@ nest_rng = nestpy.RandomGen.rndm()
 @export
 class S1PhotonPropagationBase(fuseBasePlugin):
     
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
     
     depends_on = ("s1_photons", "microphysics_summary")
     provides = "propagated_s1_photons"
@@ -127,15 +127,13 @@ class S1PhotonPropagationBase(fuseBasePlugin):
     def setup(self):
         super().setup()
 
-        #How to do it with nest and the base class
+        #Clean this up when we confirmed that the nestpy seed is set correctly
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             seed = int(hash_string.encode().hex(), 16)
             #Dont know but nestpy seems to have a problem with large seeds
             self.short_seed = int(repr(seed)[-8:])
-            nest_rng.set_seed(self.short_seed)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
+
             log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
         else: 
             log.debug(f"Generating random numbers with seed pulled from OS")
@@ -152,6 +150,11 @@ class S1PhotonPropagationBase(fuseBasePlugin):
         self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
     def compute(self, interactions_in_roi):
+
+        #set the global nest random generator with self.short_seed
+        nest_rng.set_seed(self.short_seed)
+        #increment the seed. Next chunk we will use the modified seed to generate random numbers
+        self.short_seed += 1
 
         #Just apply this to clusters with photons hitting a PMT
         instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
