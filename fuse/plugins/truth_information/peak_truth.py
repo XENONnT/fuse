@@ -8,7 +8,7 @@ class PeakTruth(strax.Plugin):
 
     __version__ = "0.0.1"
 
-    depends_on = ("peak_basics", "contributing_clusters", "microphysics_summary", "s1_photons", "s2_photons_sum")
+    depends_on = ("peak_basics", "contributing_clusters", "microphysics_summary", "s1_photons", "s2_photons_sum", "drifted_electrons")
     provides = "peak_truth"
 
     dtype = [('s1_photon_number_truth', np.int32),
@@ -20,6 +20,9 @@ class PeakTruth(strax.Plugin):
              ('average_x_of_contributing_clusters', np.float32),
              ('average_y_of_contributing_clusters', np.float32),
              ('average_z_of_contributing_clusters', np.float32),
+             ('average_x_obs_of_contributing_clusters', np.float32),
+             ('average_y_obs_of_contributing_clusters', np.float32),
+             ('average_z_obs_of_contributing_clusters', np.float32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -43,7 +46,6 @@ class PeakTruth(strax.Plugin):
 
             result['number_of_contributing_clusters'][i] = np.sum(unique_contributing_clusters > 0)
 
-
             s1_photons_from_cluster = []
             s2_photons_from_cluster = []
             #contributing_cluster_informations = []
@@ -61,8 +63,6 @@ class PeakTruth(strax.Plugin):
             sort_index = np.argsort(contributing_cluster_informations["cluster_id"])
             contributing_cluster_informations = contributing_cluster_informations[sort_index]
             
-
-            
             if len(contributing_cluster_informations)>0:
 
                 s1_cluster_weights = np.nan_to_num(s1_photons_from_cluster/contributing_cluster_informations["n_s1_photon_hits"])
@@ -76,6 +76,9 @@ class PeakTruth(strax.Plugin):
                     result['average_x_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["x"] * s1_photons_from_cluster + contributing_cluster_informations["x"] * s2_photons_from_cluster) / physical_photons_in_peak
                     result['average_y_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["y"] * s1_photons_from_cluster + contributing_cluster_informations["y"] * s2_photons_from_cluster) / physical_photons_in_peak
                     result['average_z_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["z"] * s1_photons_from_cluster + contributing_cluster_informations["z"] * s2_photons_from_cluster) / physical_photons_in_peak
+                    result['average_x_obs_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["x_obs"] * s1_photons_from_cluster + contributing_cluster_informations["x_obs"] * s2_photons_from_cluster) / physical_photons_in_peak
+                    result['average_y_obs_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["y_obs"] * s1_photons_from_cluster + contributing_cluster_informations["y_obs"] * s2_photons_from_cluster) / physical_photons_in_peak
+                    result['average_z_obs_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["z_obs"] * s1_photons_from_cluster + contributing_cluster_informations["z_obs"] * s2_photons_from_cluster) / physical_photons_in_peak
             
 
         return result
