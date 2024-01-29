@@ -1,6 +1,9 @@
 import unittest
 import fuse
 import tempfile
+import timeout_decorator
+
+TIMEOUT = 60
 
 class TestMicroPhysics(unittest.TestCase):
 
@@ -23,30 +26,37 @@ class TestMicroPhysics(unittest.TestCase):
 
         self.temp_dir.cleanup()
     
+    @timeout_decorator.timeout(TIMEOUT, exception_message='ChunkInput timed out')
     def test_ChunkInput(self):
 
         self.test_context.make(self.run_number, "geant4_interactions")
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message='FindCluster timed out')
     def test_FindCluster(self):
 
         self.test_context.make(self.run_number, "cluster_index")
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message='MergeCluster timed out')
     def test_MergeCluster(self):
 
         self.test_context.make(self.run_number, "clustered_interactions")
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message='VolumesMerger timed out')
     def test_VolumesMerger(self):
 
         self.test_context.make(self.run_number, "interactions_in_roi")
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message='ElectricField timed out')
     def test_ElectricField(self):
 
         self.test_context.make(self.run_number, "electric_field_values")
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message='NestYields timed out')
     def test_NestYields(self):
 
         self.test_context.make(self.run_number, "quanta")
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message='MicroPhysicsSummary timed out')
     def test_MicroPhysicsSummary(self):
 
         self.test_context.make(self.run_number, "microphysics_summary")

@@ -2,6 +2,9 @@ import unittest
 import fuse
 import tempfile
 import numpy as np
+import timeout_decorator
+
+TIMEOUT = 120 #Use a longer timeout for these tests.
 
 class TestDeterministicSeed(unittest.TestCase):
 
@@ -32,6 +35,7 @@ class TestDeterministicSeed(unittest.TestCase):
         self.temp_dir_0.cleanup()
         self.temp_dir_1.cleanup()
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message='MicroPhysics_SameSeed timed out')
     def test_MicroPhysics_SameSeed(self):
         """Test that the same run_number and lineage produce the same random seed and thus the same output"""
 
@@ -43,6 +47,7 @@ class TestDeterministicSeed(unittest.TestCase):
 
         self.assertTrue(np.all(output_0 == output_1))
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message='MicroPhysics_DifferentSeed timed out')
     def test_MicroPhysics_DifferentSeed(self):
         """Test that a different run_number produce a different random seed and thus different output"""
 
@@ -54,6 +59,7 @@ class TestDeterministicSeed(unittest.TestCase):
 
         self.assertFalse(np.all(output_0 == output_1))
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message='FullChain_SameSeed timed out')
     def test_FullChain_SameSeed(self):
         """Test that the same run_number and lineage produce the same random seed and thus the same output"""
 
@@ -65,6 +71,7 @@ class TestDeterministicSeed(unittest.TestCase):
 
         self.assertTrue(np.all(output_0 == output_1))
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message='FullChain_DifferentSeed timed out')
     def test_FullChain_DifferentSeed(self):
         """Test that a different run_number produce a different random seed and thus different output"""
 
