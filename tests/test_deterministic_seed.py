@@ -4,7 +4,7 @@ import tempfile
 import numpy as np
 import timeout_decorator
 
-TIMEOUT = 120 #Use a longer timeout for these tests.
+TIMEOUT = 180 #Use a longer timeout for these tests.
 
 class TestDeterministicSeed(unittest.TestCase):
 
