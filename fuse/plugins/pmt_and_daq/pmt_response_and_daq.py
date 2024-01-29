@@ -669,10 +669,13 @@ def convert_pulse_to_fragments(
 
             gain_sum_for_record = np.sum(photon_gains[photon_mask])
 
-            cluster_ids[i, :len(unique_clusters_in_record)] = unique_clusters_in_record[:max_clusters_per_record]
-            cluster_photons_s1[i, :len(unique_clusters_in_record)] = s1_photons_per_cluster[:max_clusters_per_record]
-            cluster_photons_s2[i, :len(unique_clusters_in_record)] = s2_photons_per_cluster[:max_clusters_per_record]
-            cluster_photons_ap[i, :len(unique_clusters_in_record)] = ap_photons_per_cluster[:max_clusters_per_record]
+            total_photons = s1_photons_per_cluster + s2_photons_per_cluster + ap_photons_per_cluster
+            sort_index = np.argsort(total_photons)[::-1] #Sort in descending order
+
+            cluster_ids[i, :len(unique_clusters_in_record)] = unique_clusters_in_record[sort_index][:max_clusters_per_record]
+            cluster_photons_s1[i, :len(unique_clusters_in_record)] = s1_photons_per_cluster[sort_index][:max_clusters_per_record]
+            cluster_photons_s2[i, :len(unique_clusters_in_record)] = s2_photons_per_cluster[sort_index][:max_clusters_per_record]
+            cluster_photons_ap[i, :len(unique_clusters_in_record)] = ap_photons_per_cluster[sort_index][:max_clusters_per_record]
             record_raw_area[i] = gain_sum_for_record/gains[pulse_channel]
             
         cluster_id_buffer['contributing_clusters'][s] = cluster_ids
