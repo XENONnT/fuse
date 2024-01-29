@@ -52,58 +52,30 @@ def full_array_to_numpy(array, dtype):
     return numpy_data
 
 
-#This is a modified version of the corresponding WFsim code....
 @numba.njit()
-def uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
+def _sample_from_distribution(p, channel, spe_scaling_factor_distributions):
+    
+    """
+    Function to sample from a SPE scaling factor distribution for a given channel.
+    """
+    
     indices = np.int64(p * 2000) + 1
-    return __uniform_to_pe_arr[channel, indices]
+    return spe_scaling_factor_distributions[channel, indices]
 
-#In WFSim uniform_to_pe_arr is called inside a loop over the channels
-#I needed to change the code to run on all channels at once
+
 @numba.njit()
-def loop_uniform_to_pe_arr(p, channel, __uniform_to_pe_arr):
+def sample_spe_scaling_factors(p, channel, spe_scaling_factor_distributions):
+
+    """
+    Function to sample the spe scaling factors for multiple photons. 
+    """
+
     result = []
     for i in range(len(p)):
-        result.append(uniform_to_pe_arr(p[i],
-                                        channel=channel[i],
-                                        __uniform_to_pe_arr=__uniform_to_pe_arr) )
+        result.append(_sample_from_distribution(p[i],
+                                                channel=channel[i],
+                                                spe_scaling_factor_distributions=spe_scaling_factor_distributions))
     return np.array(result)
-
-
-#WFSim functions
-def parse_extension(name):
-    """Get the extention from a file name. If zipped or tarred, can contain a dot"""
-    split_name = name.split('.')
-    if len(split_name) == 2:
-        fmt = split_name[-1]
-    elif len(split_name) > 2 and 'gz' in name:
-        fmt = '.'.join(split_name[-2:])
-    else:
-        fmt = split_name[-1]
-    #log.warning(f'Using {fmt} for unspecified {name}')
-    return fmt
-
-class DummyMap:
-    """Return constant results
-        the length match the length of input
-        but from the second dimensions the shape is user defined input
-    """
-    def __init__(self, const, shape=()):
-        self.const = const
-        self.shape = shape
-
-    def __call__(self, x, **kwargs):
-        shape = [len(x)] + list(self.shape)
-        return np.ones(shape) * self.const
-
-    def reduce_last_dim(self):
-        assert len(self.shape) >= 1, 'Need at least 1 dim to reduce further'
-        const = self.const * self.shape[-1]
-        shape = list(self.shape)
-        shape[-1] = 1
-
-        return DummyMap(const, shape)
-    
 
 
 # Epix functions
@@ -251,49 +223,62 @@ def init_spe_scaling_factor_distributions(spe_shapes):
 
         uniform_to_pe_arr.append(grid_scale)
 
-    __uniform_to_pe_arr = np.stack(uniform_to_pe_arr)
-    return __uniform_to_pe_arr
-
-def pmt_transition_time_spread(
-    _photon_timings,
-    _photon_channels,
-    pmt_transit_time_mean,
-    pmt_transit_time_spread,
-    p_double_pe_emision,
-    gains,
-    __uniform_to_pe_arr,
-    rng,
-    ):
-
-        _photon_timings += rng.normal(pmt_transit_time_mean,
-                                            pmt_transit_time_spread / 2.35482,
-                                            len(_photon_timings)).astype(np.int64)
-        
-        #Why is this done here and additionally in the get_n_photons function of S1PhotonHits??
-        _photon_is_dpe = rng.binomial(n=1,
-                                            p=p_double_pe_emision,
-                                            size=len(_photon_timings)).astype(np.bool_)
+    spe_scaling_factor_distributions = np.stack(uniform_to_pe_arr)
+    return spe_scaling_factor_distributions
 
 
-        _photon_gains = gains[_photon_channels] \
-            * loop_uniform_to_pe_arr(rng.random(len(_photon_channels)), _photon_channels, __uniform_to_pe_arr)
+def pmt_transit_time_spread(_photon_timings,
+                            pmt_transit_time_mean,
+                            pmt_transit_time_spread,
+                            rng,
+                            ):
 
-        # Add some double photoelectron emission by adding another sampled gain
-        n_double_pe = _photon_is_dpe.sum()
-        _photon_gains[_photon_is_dpe] += gains[_photon_channels[_photon_is_dpe]] \
-            * loop_uniform_to_pe_arr(rng.random(n_double_pe), _photon_channels[_photon_is_dpe], __uniform_to_pe_arr) 
+    """
+    Function to add the PMT transit time spread to the photon timings. 
+    This function is used in the S1 and S2 photon propagation plugins. 
+    """
+    # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
+    _photon_timings += rng.normal(pmt_transit_time_mean,
+                                  pmt_transit_time_spread / 2.35482,
+                                  len(_photon_timings)).astype(np.int64)
+    
+    return _photon_timings
 
-        return _photon_timings, _photon_gains, _photon_is_dpe
+def photon_gain_calculation(_photon_channels,
+                            p_double_pe_emision,
+                            gains,
+                            spe_scaling_factor_distributions,
+                            rng,
+                            ):
+    """
+    Function to calculate the PMT gain a photon will be amplified with in the waveform simulation.
+    """
 
-def build_photon_propagation_output(
-    dtype,
-    _photon_timings,
-    _photon_channels,
-    _photon_gains,
-    _photon_is_dpe,
-    _cluster_id,
-    photon_type,
-    ):
+    #Sample if the photon is a double PE emission
+    _photon_is_dpe = rng.binomial(n=1,
+                                  p=p_double_pe_emision,
+                                  size=len(_photon_channels)).astype(np.bool_)
+
+    #rename this function...
+    spe_scaling_factors = sample_spe_scaling_factors(rng.random(len(_photon_channels)), _photon_channels, spe_scaling_factor_distributions)
+    _photon_gains = gains[_photon_channels] * spe_scaling_factors
+
+    # Add some double photoelectron emission by adding another sampled gain
+    n_double_pe = _photon_is_dpe.sum()
+    spe_scaling_factors_dpe = sample_spe_scaling_factors(rng.random(n_double_pe), _photon_channels[_photon_is_dpe], spe_scaling_factor_distributions) 
+    _photon_gains[_photon_is_dpe] += gains[_photon_channels[_photon_is_dpe]] * spe_scaling_factors_dpe
+
+    return _photon_gains, _photon_is_dpe
+    
+
+def build_photon_propagation_output(dtype,
+                                    _photon_timings,
+                                    _photon_channels,
+                                    _photon_gains,
+                                    _photon_is_dpe,
+                                    _cluster_id,
+                                    photon_type,
+                                    ):
 
     result = np.zeros(_photon_channels.shape[0], dtype = dtype)
     result["time"] = _photon_timings
@@ -303,6 +288,9 @@ def build_photon_propagation_output(
     result["dpe"] = _photon_is_dpe
     result["cluster_id"] = _cluster_id
     result["photon_type"] = photon_type
+
+    #Remove photons with photon_gain <= 0
+    result = result[result["photon_gain"] > 0]
 
     return result
         
