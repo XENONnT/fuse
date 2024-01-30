@@ -231,7 +231,7 @@ class SecondaryScintillation(strax.Plugin):
         sum_photons_per_interaction_reordered = [sum_photons_per_interaction[np.argwhere(unique_cluster_id == element)[0][0]] for element in interactions_in_roi["cluster_id"][mask]]
         
         result_sum_photons = np.zeros(len(interactions_in_roi), dtype = self.dtype[self.result_name_photons_sum])
-        result_sum_photons["sum_s2_photons"][mask] = sum_photons_per_interaction
+        result_sum_photons["sum_s2_photons"][mask] = sum_photons_per_interaction_reordered
         result_sum_photons["time"] = interactions_in_roi["time"]
         result_sum_photons["endtime"]= interactions_in_roi["endtime"]
 

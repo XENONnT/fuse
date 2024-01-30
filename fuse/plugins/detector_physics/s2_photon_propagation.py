@@ -362,10 +362,6 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         electron_time_gaps = individual_electrons["time"][1:] - individual_electrons["time"][:-1] 
         electron_time_gaps = np.append(electron_time_gaps, 0) #Add last gap
 
-        #Index to match the electrons to the corresponding interaction_in_roi (and vice versa)
-        #electron_index = build_electron_index(individual_electrons, interactions_in_roi[mask])
-        #electron_index = individual_electrons["order_index"]
-
         split_index = find_electron_split_index(
             individual_electrons,
             electron_time_gaps,
@@ -375,7 +371,6 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
             )
 
         electron_chunks = np.array_split(individual_electrons, split_index)
-        #index_chunks = np.array_split(electron_index, split_index)
 
         n_chunks = len(electron_chunks)
         if n_chunks > 1:
@@ -1039,17 +1034,3 @@ def find_electron_split_index(electrons, gaps, file_size_limit, min_gap_length, 
             split_index.append(i)
 
     return np.array(split_index)+1
-
-def build_electron_index(individual_electrons, interactions_in_roi):
-    "Function to match the electrons to the correct interaction_in_roi"
-
-    electrons_split = np.split(individual_electrons, np.cumsum(interactions_in_roi["n_electron_extracted"]))[:-1]
-
-    index = []
-    k = 0
-    for element in electrons_split:
-        index.append(np.repeat(k, len(element)))
-        k+=1
-    index = np.concatenate(index)
-
-    return index
