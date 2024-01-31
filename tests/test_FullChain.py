@@ -17,6 +17,8 @@ class TestFullChain(unittest.TestCase):
         downloader = straxen.MongoDownloader(store_files_at=(cls.temp_dir.name,))
         downloader.download_single(test_root_file_name, human_readable_file_name=True)
 
+        assert os.path.exists(os.path.join(cls.temp_dir.name, test_root_file_name))
+
         cls.test_context = fuse.context.full_chain_context(output_folder = cls.temp_dir.name)
         
         cls.test_context.set_config({"path": cls.temp_dir.name,
