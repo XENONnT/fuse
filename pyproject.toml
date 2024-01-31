@@ -18,15 +18,17 @@ classifiers = [
 ]
 dependencies = [
     "numpy",
-    "strax",
     "pandas",
     "scipy",
+    "scikit-learn",
     "immutabledict",
     "timeout_decorator",
-    "nestpy >= 2.0.0",
+    "nestpy >= 2.0.2",
     "numba >= 0.57.0",
     "awkward >= 2.2.1",
     "uproot >= 5.0.7",
+    "strax >= 1.6.0",
+    "straxen >= 2.2.0",
 ]
 
 [project.urls]

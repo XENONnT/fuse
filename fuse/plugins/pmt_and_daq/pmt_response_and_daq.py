@@ -224,8 +224,10 @@ class PMTResponseAndDAQ(fuseBaseDownChunkingPlugin):
         
         n_chunks = len(pulse_window_chunks)
         if n_chunks > 1:
-            log.info("Chunk size exceeding file size target.")
-            log.info("Downchunking to %d chunks" % n_chunks)
+            log.info(
+                "Chunk size exceeding file size target. "
+                f"Downchunking to {n_chunks} chunks"
+            )
 
         last_start = start
 
