@@ -1,8 +1,11 @@
 import os
 import shutil
 import unittest
-import fuse
 import tempfile
+import fuse
+import straxen
+from _utils import test_root_file_name
+
 
 class TestMicroPhysics(unittest.TestCase):
 
@@ -11,10 +14,13 @@ class TestMicroPhysics(unittest.TestCase):
 
         cls.temp_dir = tempfile.TemporaryDirectory()
 
+        downloader = straxen.MongoDownloader(store_files_at=(cls.temp_dir.name,))
+        downloader.download_single(test_root_file_name, human_readable_file_name=True)
+
         cls.test_context = fuse.context.microphysics_context(cls.temp_dir.name)
 
-        cls.test_context.set_config({"path": "/project2/lgrandi/xenonnt/simulations/testing",
-                                      "file_name": "pmt_neutrons_100.root",
+        cls.test_context.set_config({"path": cls.temp_dir.name,
+                                      "file_name": test_root_file_name,
                                       "entry_stop": 25,
                                       })
         

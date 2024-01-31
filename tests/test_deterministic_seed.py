@@ -1,8 +1,11 @@
 import unittest
-import fuse
 import tempfile
 import numpy as np
+import fuse
+import straxen
 from numpy.testing import assert_array_equal, assert_raises
+from _utils import test_root_file_name
+
 
 class TestDeterministicSeed(unittest.TestCase):
 
@@ -11,17 +14,20 @@ class TestDeterministicSeed(unittest.TestCase):
         self.temp_dir_0 = tempfile.TemporaryDirectory()
         self.temp_dir_1 = tempfile.TemporaryDirectory()
 
+        downloader = straxen.MongoDownloader(store_files_at=(self.temp_dir_0.name,))
+        downloader.download_single(test_root_file_name, human_readable_file_name=True)
+
         self.test_context_0 = fuse.context.full_chain_context(output_folder = self.temp_dir_0.name)
 
-        self.test_context_0.set_config({"path": "/project2/lgrandi/xenonnt/simulations/testing",
-                                      "file_name": "pmt_neutrons_100.root",
+        self.test_context_0.set_config({"path": self.temp_dir_0.name,
+                                      "file_name": test_root_file_name,
                                       "entry_stop": 5,
                                       })
 
         self.test_context_1 = fuse.context.full_chain_context(output_folder = self.temp_dir_1.name)
 
-        self.test_context_1.set_config({"path": "/project2/lgrandi/xenonnt/simulations/testing",
-                                      "file_name": "pmt_neutrons_100.root",
+        self.test_context_1.set_config({"path": self.temp_dir_1.name,
+                                      "file_name": test_root_file_name,
                                       "entry_stop": 5,
                                       })
         
