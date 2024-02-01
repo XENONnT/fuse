@@ -47,9 +47,6 @@ class XENONnT_TPC(VolumePlugin):
     data_kind = "tpc_interactions"
     __version__ = "0.1.1"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     #Can we import this from MergeCluster and just add the needed fields?
     dtype = [('x', np.float32),
              ('y', np.float32),
@@ -71,10 +68,6 @@ class XENONnT_TPC(VolumePlugin):
     dtype = dtype + strax.time_fields
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,
-        help='Show debug informations',
-    )
     #Define the TPC volume
     xenonnt_z_cathode = straxen.URLConfig(
         default = -148.6515,  # cm ... top of the cathode electrode
@@ -104,14 +97,6 @@ class XENONnT_TPC(VolumePlugin):
         default=True, type=bool,
         help='Create S2s in the XENONnT TPC',
     )
-
-    def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running XENONnT_TPC version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
 
     def compute(self, clustered_interactions):
         
@@ -144,9 +129,6 @@ class XENONnT_BelowCathode(VolumePlugin):
     data_kind = "below_cathode_interactions"
     __version__ = "0.1.1"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     #Can we import this from MergeCluster and just add the needed fields?
     dtype = [('x', np.float32),
              ('y', np.float32),
@@ -168,10 +150,6 @@ class XENONnT_BelowCathode(VolumePlugin):
     dtype = dtype + strax.time_fields
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,
-        help='Show debug informations',
-    )
     #Define the volume
     xenonnt_z_cathode = straxen.URLConfig(
         default = -148.6515,  # cm ... top of the cathode electrode
@@ -201,14 +179,6 @@ class XENONnT_BelowCathode(VolumePlugin):
         default=False, type=bool,
         help='No S2s from below the cathode',
     )
-
-    def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running XENONnT_BelowCathode version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
 
     def compute(self, clustered_interactions):
         
@@ -241,9 +211,6 @@ class XENONnT_GasPhase(VolumePlugin):
     data_kind = "gas_phase_interactions"
     __version__ = "0.1.0"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     #Can we import this from MergeCluster and just add the needed fields?
     dtype = [('x', np.float32),
              ('y', np.float32),
@@ -265,10 +232,6 @@ class XENONnT_GasPhase(VolumePlugin):
     dtype = dtype + strax.time_fields
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,
-        help='Show debug informations',
-    )
     #Define the volume
     xenonnt_z_top_pmts = straxen.URLConfig(
         default = 7.3936,  # cm
@@ -298,14 +261,6 @@ class XENONnT_GasPhase(VolumePlugin):
         default=False, type=bool,
         help='No S2s in gas',
     )
-
-    def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug("Running XENONnT_GasPhase in debug mode")
-        else: 
-            log.setLevel('INFO')
 
     def compute(self, clustered_interactions):
         

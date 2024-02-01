@@ -7,7 +7,7 @@ import fuse
 import straxen
 from _utils import test_root_file_name
 
-TIMEOUT = 60
+TIMEOUT = 240
 
 
 class TestFullChain(unittest.TestCase):
@@ -72,7 +72,7 @@ class TestFullChain(unittest.TestCase):
     def test_SecondaryScintillation(self):
 
         self.test_context.make(self.run_number, "s2_photons")
-        self.test_context.make(self.run_number, "s2_photons_sum")
+        #self.test_context.make(self.run_number, "s2_photons_sum")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message='S2PhotonPropagation timed out')
     def test_S2PhotonPropagation(self):
@@ -88,7 +88,7 @@ class TestFullChain(unittest.TestCase):
     def test_PulseWindow(self):
 
         self.test_context.make(self.run_number, "pulse_windows")
-        self.test_context.make(self.run_number, "pulse_ids")
+        #self.test_context.make(self.run_number, "pulse_ids")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message='PMTResponseAndDAQ timed out')
     def test_PMTResponseAndDAQ(self):

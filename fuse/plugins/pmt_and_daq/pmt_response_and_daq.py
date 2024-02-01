@@ -72,22 +72,7 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
 
     save_when = strax.SaveWhen.ALWAYS
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
-    #Forbid automatic rechunking by strax as we will do it manually
-    rechunk_on_save = False
-
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-
     dt = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -285,21 +270,7 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
     )
 
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running PMTResponseAndDAQ version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
 
         self.current_2_adc = self.pmt_circuit_load_resistor \
                 * self.external_amplification \
