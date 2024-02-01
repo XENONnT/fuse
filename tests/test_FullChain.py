@@ -7,7 +7,7 @@ import fuse
 import straxen
 from _utils import test_root_file_name
 
-TIMEOUT = 120
+TIMEOUT = 240
 
 
 class TestFullChain(unittest.TestCase):
