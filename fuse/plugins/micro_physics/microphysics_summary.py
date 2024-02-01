@@ -2,8 +2,6 @@ import strax
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
-
 @export
 class MicroPhysicsSummary(strax.MergeOnlyPlugin):
     """

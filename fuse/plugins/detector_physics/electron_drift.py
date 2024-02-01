@@ -3,7 +3,7 @@ import numpy as np
 import straxen
 import logging
 
-from ...plugin import fuseBasePlugin
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -11,7 +11,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_drift')
 
 @export
-class ElectronDrift(fuseBasePlugin):
+class ElectronDrift(FuseBasePlugin):
     
     __version__ = "0.1.4"
     

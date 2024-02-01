@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 from ...common import dynamic_chunking
-from ...plugin import fuseBasePlugin
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -14,7 +14,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.csv_input')
 
 @export
-class ChunkCsvInput(fuseBasePlugin):
+class ChunkCsvInput(FuseBasePlugin):
     """
     Plugin which reads a CSV file containing instructions for the detector physics simulation
     and returns the data in chunks

@@ -3,9 +3,9 @@ import strax
 import numpy as np
 from itertools import groupby
 
-from .plugin import fuseBasePlugin
+from .plugin import FuseBasePlugin
 
-class VerticalMergerPlugin(fuseBasePlugin):
+class VerticalMergerPlugin(FuseBasePlugin):
     "Plugin that concatenates data from the dependencies along the fist axis"
 
     save_when = strax.SaveWhen.TARGET

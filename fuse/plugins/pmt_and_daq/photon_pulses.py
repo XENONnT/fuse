@@ -6,13 +6,13 @@ import numba
 
 export, __all__ = strax.exporter()
 
-from ...plugin import fuseBasePlugin
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.photon_pulses')
 
 @export
-class PulseWindow(fuseBasePlugin):
+class PulseWindow(FuseBasePlugin):
 
     __version__ = "0.1.2"
 

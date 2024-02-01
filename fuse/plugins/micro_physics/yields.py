@@ -5,7 +5,7 @@ import straxen
 import logging
 import pickle
 
-from ...plugin import fuseBasePlugin
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -17,7 +17,7 @@ log = logging.getLogger('fuse.micro_physics.yields')
 nest_rng = nestpy.RandomGen.rndm()
 
 @export
-class NestYields(fuseBasePlugin):
+class NestYields(FuseBasePlugin):
     
     __version__ = "0.1.2"
     
@@ -291,7 +291,7 @@ class BetaYields(strax.Plugin):
 
 
 
-class BBFYields(strax.Plugin):
+class BBFYields(FuseBasePlugin):
     
     __version__ = "0.1.1"
     
@@ -305,33 +305,9 @@ class BBFYields(strax.Plugin):
     
     dtype = dtype + strax.time_fields
 
-    #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,
-        help='Show debug informations',
-    )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-
     def setup(self):
 
-        if self.debug:
-            log.setLevel("DEBUG")
-            log.debug(f"Running BBFYields version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('WARNING')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
 
         self.bbfyields = BBF_quanta_generator(self.rng)
 

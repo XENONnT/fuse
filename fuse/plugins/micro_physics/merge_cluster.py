@@ -6,13 +6,13 @@ import logging
 
 export, __all__ = strax.exporter()
 
-from ...plugin import fuseBasePlugin
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.merge_cluster')
 
 @export
-class MergeCluster(fuseBasePlugin):
+class MergeCluster(FuseBasePlugin):
     
     __version__ = "0.1.1"
     

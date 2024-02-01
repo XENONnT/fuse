@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import straxen
 
-from ...plugin import fuseBasePlugin
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -11,7 +11,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.electric_field')
 
 @export
-class ElectricField(fuseBasePlugin):
+class ElectricField(FuseBasePlugin):
     """
     Plugin that calculates the electric field values for the cluster position.
     """

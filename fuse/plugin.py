@@ -5,7 +5,7 @@ import logging
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 
-class fuseBasePlugin(strax.Plugin):
+class FuseBasePlugin(strax.Plugin):
 
     """Base plugin for fuse plugins"""
 
@@ -27,6 +27,7 @@ class fuseBasePlugin(strax.Plugin):
     )
 
     def setup(self):
+        super().setup()
 
         log = logging.getLogger(f"{self.__class__.__name__}")
 
@@ -45,7 +46,7 @@ class fuseBasePlugin(strax.Plugin):
             self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")
 
-class fuseBaseDownChunkingPlugin(strax.DownChunkingPlugin):
+class FuseBaseDownChunkingPlugin(strax.DownChunkingPlugin):
 
     """Base plugin for fuse DownChunkingPlugins"""
 

@@ -4,7 +4,7 @@ import numpy as np
 import os
 import logging
 
-from ...plugin import fuseBasePlugin
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -12,7 +12,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_extraction')
 
 @export
-class ElectronExtraction(fuseBasePlugin):
+class ElectronExtraction(FuseBasePlugin):
     
     __version__ = "0.1.3"
     

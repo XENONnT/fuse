@@ -11,14 +11,14 @@ import awkward as ak
 export, __all__ = strax.exporter()
 
 from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
-from ...plugin import fuseBasePlugin
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.input')
 
 #Remove the path and file name option from the config and do this with the run_number??
 @export
-class ChunkInput(fuseBasePlugin):
+class ChunkInput(FuseBasePlugin):
     
     __version__ = "0.1.2"
     

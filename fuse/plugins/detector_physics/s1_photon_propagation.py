@@ -6,7 +6,7 @@ import logging
 
 from ...common import pmt_gains, build_photon_propagation_output
 from ...common import init_spe_scaling_factor_distributions, pmt_transit_time_spread, photon_gain_calculation 
-from ...plugin import fuseBasePlugin
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -18,7 +18,7 @@ log = logging.getLogger('fuse.detector_physics.s1_photon_propagation')
 nest_rng = nestpy.RandomGen.rndm()
 
 @export
-class S1PhotonPropagationBase(fuseBasePlugin):
+class S1PhotonPropagationBase(FuseBasePlugin):
     
     __version__ = "0.1.3"
     

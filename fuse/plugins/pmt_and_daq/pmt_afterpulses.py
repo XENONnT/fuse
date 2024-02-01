@@ -4,7 +4,7 @@ import straxen
 import logging
 
 from ...common import pmt_gains
-from ...plugin import fuseBasePlugin
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -12,7 +12,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
 
 @export
-class PMTAfterPulses(fuseBasePlugin):
+class PMTAfterPulses(FuseBasePlugin):
     
     __version__ = "0.1.2"
     

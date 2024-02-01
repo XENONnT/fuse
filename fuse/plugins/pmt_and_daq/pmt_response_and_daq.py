@@ -9,13 +9,13 @@ from scipy.interpolate import interp1d
 
 export, __all__ = strax.exporter()
 
-from ...plugin import fuseBaseDownChunkingPlugin
+from ...plugin import FuseBaseDownChunkingPlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
 
 @export
-class PMTResponseAndDAQ(fuseBaseDownChunkingPlugin):
+class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
     
     __version__ = "0.1.3"
 

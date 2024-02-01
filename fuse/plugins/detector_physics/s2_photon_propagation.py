@@ -11,7 +11,7 @@ export, __all__ = strax.exporter()
 
 from ...common import pmt_gains, build_photon_propagation_output
 from ...common import init_spe_scaling_factor_distributions, pmt_transit_time_spread, photon_gain_calculation 
-from ...plugin import fuseBaseDownChunkingPlugin
+from ...plugin import FuseBaseDownChunkingPlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
@@ -19,7 +19,7 @@ log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
 conversion_to_bar = 1/constants.elementary_charge / 1e1
 
 @export
-class S2PhotonPropagationBase(fuseBaseDownChunkingPlugin):
+class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     
     __version__ = "0.1.4"
     

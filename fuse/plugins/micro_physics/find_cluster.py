@@ -9,13 +9,13 @@ from sklearn.cluster import DBSCAN
 
 export, __all__ = strax.exporter()
 
-from ...plugin import fuseBasePlugin
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.find_cluster')
 
 @export
-class FindCluster(fuseBasePlugin):
+class FindCluster(FuseBasePlugin):
     
     __version__ = "0.1.1"
     
