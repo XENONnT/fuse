@@ -14,7 +14,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s1_photon_propagation')
 
 #Initialize the nestpy random generator
-#The seed will be set in the setup function
+#The seed will be set in the compute method
 nest_rng = nestpy.RandomGen.rndm()
 
 @export
@@ -153,6 +153,8 @@ class S1PhotonPropagationBase(FuseBasePlugin):
 
         #set the global nest random generator with self.short_seed
         nest_rng.set_seed(self.short_seed)
+        #Now lock the seed during the computation
+        nest_rng.lock_seed()
         #increment the seed. Next chunk we will use the modified seed to generate random numbers
         self.short_seed += 1
 
@@ -215,6 +217,9 @@ class S1PhotonPropagationBase(FuseBasePlugin):
                                                  )
 
         result = strax.sort_by_time(result)
+
+        #Unlock the nest random generator seed again
+        nest_rng.unlock_seed()
 
         return result
     

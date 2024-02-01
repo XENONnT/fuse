@@ -13,7 +13,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.yields')
 
 #Initialize the nestpy random generator
-#The seed will be set in the setup function
+#The seed will be set in the compute method
 nest_rng = nestpy.RandomGen.rndm()
 
 @export
@@ -62,6 +62,8 @@ class NestYields(FuseBasePlugin):
         """
         #set the global nest random generator with self.short_seed
         nest_rng.set_seed(self.short_seed)
+        #Now lock the seed during the computation
+        nest_rng.lock_seed()
         #increment the seed. Next chunk we will use the modified seed to generate random numbers
         self.short_seed += 1
         
@@ -90,6 +92,10 @@ class NestYields(FuseBasePlugin):
             result['photons'] = np.empty(0)
             result['electrons'] = np.empty(0)
             result['excitons'] = np.empty(0)
+
+        #Unlock the nest random generator seed again
+        nest_rng.unlock_seed()
+        
         return result
     
     @staticmethod
