@@ -2,9 +2,9 @@ import strax
 import numba
 import numpy as np
 
-from .plugin import fuseBasePlugin
+from .plugin import FuseBasePlugin
 
-class VolumePlugin(fuseBasePlugin):
+class VolumePlugin(FuseBasePlugin):
     """
     Plugin that evaluates if interactions are in a defined detector volume.
     """
