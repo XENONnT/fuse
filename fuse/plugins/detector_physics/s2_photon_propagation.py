@@ -374,8 +374,10 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
 
         n_chunks = len(electron_chunks)
         if n_chunks > 1:
-            log.info("Chunk size exceeding file size target.")
-            log.info("Downchunking to %d chunks" % n_chunks)
+            log.info(
+                "Chunk size exceeding file size target. "
+                f"Downchunking to {n_chunks} chunks"
+            )
         
         last_start = start
         if n_chunks>1:
