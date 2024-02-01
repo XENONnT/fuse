@@ -6,13 +6,13 @@ import logging
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.merge_cluster')
 
 @export
-class MergeCluster(strax.Plugin):
+class MergeCluster(FuseBasePlugin):
     
     __version__ = "0.1.1"
     
@@ -21,12 +21,7 @@ class MergeCluster(strax.Plugin):
     provides = "clustered_interactions"
     data_kind = "clustered_interactions"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = [('x', np.float32),
              ('y', np.float32),
@@ -47,25 +42,12 @@ class MergeCluster(strax.Plugin):
     dtype = dtype + strax.time_fields
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     tag_cluster_by = straxen.URLConfig(
         default="energy",
         help='decide if you tag the cluster (particle type, energy depositing process)\
               according to first interaction in it (time) or most energetic (energy))',
     )
-    
-    def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running MergeCluster version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
+        
     def compute(self, geant4_interactions):
 
         if len(geant4_interactions) == 0:

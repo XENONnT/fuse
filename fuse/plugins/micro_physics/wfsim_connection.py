@@ -9,13 +9,14 @@ import logging
 
 export, __all__ = strax.exporter()
 
-from ...common import offset_range, reshape_awkward, FUSE_PLUGIN_TIMEOUT
+from ...common import offset_range, reshape_awkward
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.output')
 
 @export
-class output_plugin(strax.Plugin):
+class output_plugin(FuseBasePlugin):
     
     __version__ = "0.1.0"
     
@@ -24,12 +25,7 @@ class output_plugin(strax.Plugin):
     provides = "wfsim_instructions"
     data_kind = 'wfsim_instructions'
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = [(('Waveform simulator event number.', 'event_number'), np.int32),
              (('Quanta type (S1 photons or S2 electrons)', 'type'), np.int8),
@@ -49,20 +45,6 @@ class output_plugin(strax.Plugin):
              (('Y position of the primary particle [cm]', 'y_pri'), np.float32),
              (('Z position of the primary particle [cm]', 'z_pri'), np.float32),
             ]
-    
-    #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
-    def setup(self):
-        
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running output_plugin version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
 
     def compute(self, interactions_in_roi):
 
