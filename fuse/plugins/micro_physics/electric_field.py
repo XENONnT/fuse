@@ -40,9 +40,6 @@ class ElectricField(FuseBasePlugin):
         help='electric field map',
     )
 
-    def setup(self):
-        super().setup()
-
     def compute(self, interactions_in_roi):
         """
         Calculate the electric field values for the given clustered interactions.

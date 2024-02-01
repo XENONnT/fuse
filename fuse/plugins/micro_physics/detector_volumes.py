@@ -97,9 +97,6 @@ class XENONnT_TPC(VolumePlugin):
         help='Create S2s in the XENONnT TPC',
     )
 
-    def setup(self):
-        super().setup()
-
     def compute(self, clustered_interactions):
         
         #Call the ROI function:
@@ -181,9 +178,6 @@ class XENONnT_BelowCathode(VolumePlugin):
         help='No S2s from below the cathode',
     )
 
-    def setup(self):
-        super().setup()
-
     def compute(self, clustered_interactions):
         
         #Call the ROI function:
@@ -264,9 +258,6 @@ class XENONnT_GasPhase(VolumePlugin):
         default=False, type=bool,
         help='No S2s in gas',
     )
-
-    def setup(self):
-        super().setup()
 
     def compute(self, clustered_interactions):
         

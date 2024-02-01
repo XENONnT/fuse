@@ -39,9 +39,6 @@ class FindCluster(FuseBasePlugin):
         default=0.005, type=(int, float),
         help='DBSCAN clustering distance (mm)',
     )
-
-    def setup(self):
-        super().setup()
         
     def compute(self, geant4_interactions):
         """

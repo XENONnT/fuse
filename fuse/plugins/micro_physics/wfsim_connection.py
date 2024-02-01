@@ -45,9 +45,6 @@ class output_plugin(FuseBasePlugin):
              (('Y position of the primary particle [cm]', 'y_pri'), np.float32),
              (('Z position of the primary particle [cm]', 'z_pri'), np.float32),
             ]
-    
-    def setup(self):
-        super().setup()
 
     def compute(self, interactions_in_roi):
 

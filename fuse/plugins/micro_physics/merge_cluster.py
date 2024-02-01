@@ -47,9 +47,6 @@ class MergeCluster(FuseBasePlugin):
         help='decide if you tag the cluster (particle type, energy depositing process)\
               according to first interaction in it (time) or most energetic (energy))',
     )
-    
-    def setup(self):
-        super().setup()
         
     def compute(self, geant4_interactions):
 

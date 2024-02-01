@@ -90,9 +90,6 @@ class ElectronExtraction(FuseBasePlugin):
         cache=True,
         help='Map of the single electron gain',
     )
-    
-    def setup(self):
-        super().setup()
 
     def compute(self, interactions_in_roi):
         

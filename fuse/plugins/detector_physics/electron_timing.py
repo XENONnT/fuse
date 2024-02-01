@@ -38,9 +38,6 @@ class ElectronTiming(FuseBasePlugin):
         cache=True,
         help='Time scale electrons are trapped at the liquid gas interface',
     )
-    
-    def setup(self):
-        super().setup()
 
     def compute(self, interactions_in_roi):
 
