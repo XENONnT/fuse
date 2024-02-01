@@ -39,9 +39,9 @@ class FuseBasePlugin(strax.Plugin):
 
         if self.deterministic_seed:
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
+            self.seed = int(hash_string.encode().hex(), 16)
+            self.rng = np.random.default_rng(seed = self.seed)
+            log.debug(f"Generating random numbers from seed {self.seed}")
         else: 
             self.rng = np.random.default_rng()
             log.debug(f"Generating random numbers with seed pulled from OS")

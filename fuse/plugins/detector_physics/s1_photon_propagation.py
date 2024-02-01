@@ -127,13 +127,9 @@ class S1PhotonPropagationBase(FuseBasePlugin):
     def setup(self):
         super().setup()
 
-        #Clean this up when we confirmed that the nestpy seed is set correctly
         if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
             #Dont know but nestpy seems to have a problem with large seeds
-            self.short_seed = int(repr(seed)[-8:])
-
+            self.short_seed = int(repr(self.seed)[-8:])
             log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
         else: 
             log.debug(f"Generating random numbers with seed pulled from OS")
