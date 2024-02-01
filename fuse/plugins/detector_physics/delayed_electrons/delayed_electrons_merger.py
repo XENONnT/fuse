@@ -16,9 +16,6 @@ class DriftedElectronsMerger(VerticalMergerPlugin):
     data_kind = 'interactions_in_roi'
     __version__ = '0.0.1'
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
 
 @export
 class ExtractedElectronsMerger(VerticalMergerPlugin):
@@ -32,9 +29,6 @@ class ExtractedElectronsMerger(VerticalMergerPlugin):
     data_kind = 'interactions_in_roi'
     __version__ = '0.0.1'
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
 @export
 class SecondaryScintillationPhotonsMerger(VerticalMergerPlugin):
     """
@@ -46,9 +40,6 @@ class SecondaryScintillationPhotonsMerger(VerticalMergerPlugin):
     provides = 'merged_s2_photons'
     data_kind = 'individual_electrons'
     __version__ = '0.0.1'
-
-    #Forbid rechunking
-    rechunk_on_save = False
 
 @export
 class SecondaryScintillationPhotonSumMerger(VerticalMergerPlugin):
@@ -62,9 +53,6 @@ class SecondaryScintillationPhotonSumMerger(VerticalMergerPlugin):
     data_kind = 'interactions_in_roi'
     __version__ = '0.0.1'
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
 @export
 class ElectronTimingMerger(VerticalMergerPlugin):
     """
@@ -77,9 +65,6 @@ class ElectronTimingMerger(VerticalMergerPlugin):
     data_kind = 'individual_electrons'
     __version__ = '0.0.1'
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
 @export
 class MicrophysicsSummaryMerger(VerticalMergerPlugin):
     """
@@ -91,6 +76,3 @@ class MicrophysicsSummaryMerger(VerticalMergerPlugin):
     provides = 'merged_microphysics_summary'
     data_kind = 'interactions_in_roi'
     __version__ = '0.0.1'
-
-    #Forbid rechunking
-    rechunk_on_save = False

@@ -5,7 +5,7 @@ import straxen
 import numpy as np
 import logging
 
-from ....common import FUSE_PLUGIN_TIMEOUT
+from ....plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -13,7 +13,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.delayed_electrons.photo_ionization_electrons')
 
 @export
-class PhotoIonizationElectrons(strax.Plugin):
+class PhotoIonizationElectrons(FuseBasePlugin):
 
     __version__ = "0.0.1"
 
@@ -24,27 +24,13 @@ class PhotoIonizationElectrons(strax.Plugin):
     provides = "photo_ionization_electrons"
     data_kind = "delayed_interactions_in_roi"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.ALWAYS
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
 
     enable_delayed_electrons = straxen.URLConfig(
         default=False, type=bool, track=True,
         help='Decide if you want to to enable delayed electrons from photoionization',
-    )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
 
     #Move the filename to the config file
@@ -88,23 +74,6 @@ class PhotoIonizationElectrons(strax.Plugin):
         cache=True,
         help='Radius of the XENONnT TPC ',
     )
-
-    def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug("Running PhotoIonizationElectrons in debug mode")
-        else: 
-            log.setLevel('WARNING')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
 
     def infer_dtype(self):
         #Thake the same dtype as microphysics_summary
