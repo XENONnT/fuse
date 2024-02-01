@@ -130,11 +130,11 @@ class S1PhotonHits(strax.Plugin):
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
 
         #Build LCE map from s1 pattern map
-        lymap = deepcopy(self.s1_pattern_map)
+        lcemap = deepcopy(self.s1_pattern_map)
         # AT: this scaling with mast is redundant to `make_patternmap`, but keep it in for now
-        lymap.data['map'] = np.sum(lymap.data['map'][:][:][:], axis=3, keepdims=True, where=self.pmt_mask)
-        lymap.__init__(lymap.data)
-        self.s1_lce_correction_map = lymap
+        lcemap.data['map'] = np.sum(lcemap.data['map'][:][:][:], axis=3, keepdims=True, where=self.pmt_mask)
+        lcemap.__init__(lcemap.data)
+        self.s1_lce_correction_map = lcemap
 
     def compute(self, interactions_in_roi):
 

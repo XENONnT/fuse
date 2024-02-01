@@ -17,7 +17,7 @@ log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
 @export
 class PMTResponseAndDAQ(strax.DownChunkingPlugin):
     
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
 
     depends_on = ("photon_summary", "pulse_ids", "pulse_windows")
 
@@ -238,9 +238,6 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
 
             yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
         
-        propagated_photons = propagated_photons[propagated_photons["pulse_id"].argsort()]
-        index_values = np.unique(propagated_photons["pulse_id"], return_index=True)[1]
-
         #Split into "sub-chunks"
         pulse_gaps = pulse_windows["time"][1:] - strax.endtime(pulse_windows)[:-1] 
         pulse_gaps = np.append(pulse_gaps, 0) #Add 0 for last pulse gap
@@ -254,22 +251,19 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
         
         pulse_window_chunks = np.array_split(pulse_windows, split_index)
         
-        index_chunks = np.array_split(index_values, split_index)
-        n_chunks = len(index_chunks)
-        for i in range(n_chunks):
-            if i < n_chunks-1:
-                index_chunks[i] = np.append(index_chunks[i], index_chunks[i+1][0])
-            else:
-                index_chunks[i] = np.append(index_chunks[i], len(propagated_photons))
-
+        n_chunks = len(pulse_window_chunks)
         if n_chunks > 1:
-            log.info("Chunk size exceeding file size target.")
-            log.info("Downchunking to %d chunks" % n_chunks)
+            log.info(
+                "Chunk size exceeding file size target. "
+                f"Downchunking to {n_chunks} chunks"
+            )
 
         last_start = start
 
+        photons, unique_photon_pulse_ids = split_photons(propagated_photons)
+
         if n_chunks>1:
-            for pulse_group, index_group in zip(pulse_window_chunks[:-1], index_chunks[:-1]):
+            for pulse_group in pulse_window_chunks[:-1]:
 
                 #use an upper limit for the waveform buffer
                 length_waveform_buffer = np.int32(np.sum(np.ceil(pulse_group["length"]/strax.DEFAULT_RECORD_LENGTH)))
@@ -277,8 +271,8 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
 
                 buffer_level = build_waveform(
                     pulse_group,
-                    propagated_photons,
-                    index_group,
+                    photons,
+                    unique_photon_pulse_ids,
                     waveform_buffer,
                     self.dt,
                     self._pmt_current_templates,
@@ -308,8 +302,8 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
         
         buffer_level = build_waveform(
             pulse_window_chunks[-1],
-            propagated_photons,
-            index_chunks[-1],
+            photons,
+            unique_photon_pulse_ids,
             waveform_buffer,
             self.dt,
             self._pmt_current_templates,
@@ -370,7 +364,7 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
         return _pmt_current_templates, _template_length
 
 
-@njit()
+@njit(cache=True)
 def find_split_index(pulses, gaps, file_size_limit, min_gap_length):
     
     data_size_mb = 0
@@ -390,11 +384,11 @@ def find_split_index(pulses, gaps, file_size_limit, min_gap_length):
     return np.array(split_index)+1
 
 
-@njit()
+@njit(cache=True)
 def build_waveform(
     photon_pulses,
     photons,
-    index_values,
+    unique_photon_pulse_ids,
     waveform_buffer,
     dt, 
     pmt_current_templates,
@@ -406,17 +400,18 @@ def build_waveform(
     ):
     
     buffer_level = 0
-    start = index_values[0:-1]
-    stop = index_values[1:]
     
     #Iterate over all pulses
-    for i, pulse in enumerate(photon_pulses):
+    for pulse in photon_pulses:
 
         pulse_length = pulse["length"]
         pulse_waveform_buffer = np.zeros(pulse_length)
 
-        photons_to_put_into_pulse = photons[start[i]:stop[i]]
-            
+        #Select the photons that belong to the pulse
+        #The following line is slow, so we have to to it a little different. The result should be the same. 
+        #photons_to_put_into_pulse = photons[photons["pulse_id"] == pulse["pulse_id"]]
+        photons_to_put_into_pulse = photons[np.argwhere(unique_photon_pulse_ids == pulse["pulse_id"])[0][0]]
+
         add_current(photons_to_put_into_pulse['time'],
                     photons_to_put_into_pulse['photon_gain'],
                     pulse["time"]//dt,
@@ -444,7 +439,7 @@ def build_waveform(
 
     return buffer_level
 
-@njit()
+@njit(cache=True)
 def add_noise(array, time, noise_in_channel):
 
     time = np.int64(time/10)
@@ -456,7 +451,7 @@ def add_noise(array, time, noise_in_channel):
     
     return array + noise_in_channel[index]
 
-@njit()
+@njit(cache=True)
 def convert_pulse_to_fragments(
     single_waveform,
     waveform_buffer,
@@ -507,11 +502,11 @@ def convert_pulse_to_fragments(
         
     return buffer_level
 
-@njit
+@njit(cache=True)
 def add_baseline(data, baseline):
     data += baseline
 
-@njit()
+@njit(cache=True)
 def split_data(data, samples_per_record):
     """
     Split data into arrays of length samples_per_record and pad with zeros if necessary
@@ -523,7 +518,7 @@ def split_data(data, samples_per_record):
     sliced_data = pad_array.reshape((-1, samples_per_record))
     return sliced_data, arrays_needed
 
-@njit
+@njit(cache=True)
 def add_current(photon_timings,
                 photon_gains,
                 pulse_left,
@@ -567,7 +562,7 @@ def add_current(photon_timings,
         pmt_current_templates[reminder] * gain_total
 
 
-@njit()
+@njit(cache=True)
 def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
     """Fills result_buffer with l, r bounds of intervals in w < threshold.
     :param w: Waveform to do hitfinding in
@@ -611,3 +606,12 @@ def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
 
     n_intervals = current_interval  # No +1, as current_interval was incremented also when the last interval closed
     return n_intervals
+
+def split_photons(propagated_photons):
+    
+    sort_index = np.argsort(propagated_photons["pulse_id"])
+    
+    propagated_photons_sorted = propagated_photons[sort_index]
+
+    unique_photon_pulse_ids, split_position = np.unique(propagated_photons_sorted["pulse_id"], return_index=True)
+    return np.split(propagated_photons_sorted, split_position[1:]), unique_photon_pulse_ids

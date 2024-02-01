@@ -343,8 +343,10 @@ class file_loader():
             self.chunk_bounds = np.append(chunk_start[0]-self.first_chunk_left, chunk_bounds)
             
         else: 
-            log.warning("Only one Chunk created! Only a few events simulated? If no, your chunking parameters might not be optimal.")
-            log.warning("Try to decrease the source_rate or decrease the n_interactions_per_chunk")
+            log.warning(
+                "Only one Chunk created! Only a few events simulated? If no, your chunking parameters might not be optimal. "
+                "Try to decrease the source_rate or decrease the n_interactions_per_chunk."
+            )
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
         
         source_done = False
