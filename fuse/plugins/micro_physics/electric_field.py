@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import straxen
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -11,7 +11,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.electric_field')
 
 @export
-class ElectricField(strax.Plugin):
+class ElectricField(FuseBasePlugin):
     """
     Plugin that calculates the electric field values for the cluster position.
     """
@@ -22,12 +22,7 @@ class ElectricField(strax.Plugin):
     provides = "electric_field_values"
     data_kind = "interactions_in_roi"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [
         ('e_field', np.int64),
@@ -35,11 +30,6 @@ class ElectricField(strax.Plugin):
     ]
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     #Field map not yet in simulation config file!
     efield_map = straxen.URLConfig(
         default = 'itp_map://resource://'
@@ -49,14 +39,6 @@ class ElectricField(strax.Plugin):
         cache=True,
         help='electric field map',
     )
-
-    def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running ElectricField version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
 
     def compute(self, interactions_in_roi):
         """

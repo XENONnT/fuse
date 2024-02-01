@@ -4,7 +4,8 @@ import straxen
 import logging
 from immutabledict import immutabledict
 
-from ...common import pmt_gains, FUSE_PLUGIN_TIMEOUT
+from ...common import pmt_gains
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -12,7 +13,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 
 @export
-class SecondaryScintillation(strax.Plugin):
+class SecondaryScintillation(FuseBasePlugin):
     
     __version__ = "0.1.4"
 
@@ -32,22 +33,13 @@ class SecondaryScintillation(strax.Plugin):
     dtype[result_name_photons] = dtype_photons
     dtype[result_name_photons_sum] = dtype_sum_photons
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = immutabledict({result_name_photons:strax.SaveWhen.TARGET,
                                result_name_photons_sum:strax.SaveWhen.ALWAYS
                               })
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
 
-    #Move this into the config
+    #Move this into the config!
     s2_gain_spread = straxen.URLConfig(
         default = 0,
         type=(int, float),
@@ -164,27 +156,8 @@ class SecondaryScintillation(strax.Plugin):
         help='S2 pattern map',
     )
 
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-
     def setup(self):
-        
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running SecondaryScintillation version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
         
         self.gains = pmt_gains(self.gain_model_mc,
                                digitizer_voltage_range=self.digitizer_voltage_range,

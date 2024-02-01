@@ -9,9 +9,9 @@ from scipy import constants
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
+from ...common import pmt_gains, build_photon_propagation_output
 from ...common import init_spe_scaling_factor_distributions, pmt_transit_time_spread, photon_gain_calculation 
-from ...common import build_photon_propagation_output
+from ...plugin import FuseBaseDownChunkingPlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
@@ -19,7 +19,7 @@ log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
 conversion_to_bar = 1/constants.elementary_charge / 1e1
 
 @export
-class S2PhotonPropagationBase(strax.DownChunkingPlugin):
+class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     
     __version__ = "0.1.5"
     
@@ -34,12 +34,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     provides = "propagated_s2_photons"
     data_kind = "S2_photons"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [('channel', np.int16),
              ('dpe', np.bool_),
@@ -48,11 +43,6 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     dtype = dtype + strax.time_fields
 
     #Config options shared by S1 and S2 simulation 
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     p_double_pe_emision = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -298,27 +288,8 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         help='chunk can not be split if gap between photons is smaller than this value given in ns',
     )
 
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running S2PhotonPropagation version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
 
         #Set the random generator for scipy
         skewnorm.random_state=self.rng
