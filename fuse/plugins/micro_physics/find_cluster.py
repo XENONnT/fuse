@@ -29,6 +29,9 @@ class FindCluster(FuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
 
+    #Not start at 0. 0 are set per default for contributing clusters so we want to avoid that
+    clusters_seen = 1 
+
     #Config options
     micro_separation_time = straxen.URLConfig(
         default=10, type=(int, float),
@@ -57,10 +60,12 @@ class FindCluster(FuseBasePlugin):
                                   self.micro_separation_time)
 
         numpy_data = np.zeros(len(geant4_interactions), dtype=self.dtype)
-        numpy_data["cluster_ids"] = cluster_ids + 1 #Avoid 0 as cluster ID 
+        numpy_data["cluster_ids"] = cluster_ids + self.clusters_seen
 
         numpy_data["time"] = geant4_interactions["time"]
         numpy_data["endtime"] = geant4_interactions["endtime"]
+
+        self.clusters_seen = np.max(numpy_data["cluster_ids"]) + 1 
 
         return numpy_data
     
