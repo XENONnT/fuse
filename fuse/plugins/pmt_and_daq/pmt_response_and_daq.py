@@ -2,6 +2,7 @@ from immutabledict import immutabledict
 import straxen 
 import strax
 from numba import njit
+from numba.typed import List
 import numpy as np
 import logging
 
@@ -233,6 +234,10 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
         photons, unique_photon_pulse_ids = split_photons(propagated_photons)
 
+        # convert photons to numba list for njit
+        _photons = List()
+        [_photons.append(x) for x in photons]
+
         if n_chunks>1:
             for pulse_group in pulse_window_chunks[:-1]:
 
@@ -242,7 +247,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
                 buffer_level = build_waveform(
                     pulse_group,
-                    photons,
+                    _photons,
                     unique_photon_pulse_ids,
                     waveform_buffer,
                     self.dt,
@@ -273,7 +278,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         
         buffer_level = build_waveform(
             pulse_window_chunks[-1],
-            photons,
+            _photons,
             unique_photon_pulse_ids,
             waveform_buffer,
             self.dt,
