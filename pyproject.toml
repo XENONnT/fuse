@@ -36,4 +36,4 @@ dependencies = [
 "Bug Tracker" = "https://github.com/XENONnT/fuse/issues"
 
 [tool.setuptools.packages.find]
-exclude = ["/plugins"]
+include = ["fuse*"]
