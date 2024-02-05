@@ -274,7 +274,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     )
 
     propagated_s2_photons_file_size_target = straxen.URLConfig(
-        type=(int, float), default = 500, track=False,
+        type=(int, float), default = 200, track=False,
         help='target for the propagated_s2_photons file size in MB',
     )
 
