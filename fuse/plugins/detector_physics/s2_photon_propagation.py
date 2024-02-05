@@ -950,35 +950,35 @@ def _luminescence_timings_simple(
 @njit()
 def simulate_horizontal_shift(n_electron, drift_time_mean,xy, diffusion_constant_radial, diffusion_constant_azimuthal,result, rng):
 
-     hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
-     hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
-     hdiff_radial = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron)
-     hdiff_azimuthal = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron)
-     hdiff = np.column_stack((hdiff_radial, hdiff_azimuthal))
-     theta = np.arctan2(xy[:,1], xy[:,0])
+    hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
+    hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
+    hdiff_radial = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron)
+    hdiff_azimuthal = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron)
+    hdiff = np.column_stack((hdiff_radial, hdiff_azimuthal))
+    theta = np.arctan2(xy[:,1], xy[:,0])
 
-     sin_theta = np.sin(theta)
-     cos_theta = np.cos(theta)
-     matrix = build_rotation_matrix(sin_theta, cos_theta)
+    sin_theta = np.sin(theta)
+    cos_theta = np.cos(theta)
+    matrix = build_rotation_matrix(sin_theta, cos_theta)
 
-     split_hdiff = np.split(hdiff, np.cumsum(n_electron))[:-1]
+    split_hdiff = np.split(hdiff, np.cumsum(n_electron))[:-1]
 
-     start_idx = np.append([0], np.cumsum(n_electron)[:-1])
-     stop_idx = np.cumsum(n_electron)
+    start_idx = np.append([0], np.cumsum(n_electron)[:-1])
+    stop_idx = np.cumsum(n_electron)
 
-     for i in range(len(matrix)):
-          result[start_idx[i]: stop_idx[i]] = (matrix[i] @ split_hdiff[i].T).T 
+    for i in range(len(matrix)):
+        result[start_idx[i]: stop_idx[i]] = np.ascontiguousarray(split_hdiff[i]) @ matrix[i]
 
-     return result
+    return result
 
 @njit()
 def build_rotation_matrix(sin_theta, cos_theta):
-    matrix = np.zeros((2, 2, len(sin_theta)))
-    matrix[0, 0] = cos_theta
-    matrix[0, 1] = sin_theta
-    matrix[1, 0] = -sin_theta
-    matrix[1, 1] = cos_theta
-    return matrix.T
+    matrix = np.zeros((len(sin_theta), 2, 2))
+    matrix[:, 0, 0] = cos_theta
+    matrix[:, 0, 1] = sin_theta
+    matrix[:, 1, 0] = -sin_theta
+    matrix[:, 1, 1] = cos_theta
+    return matrix
 
 @njit()
 def find_electron_split_index(electrons, gaps, file_size_limit, min_gap_length, mean_n_photons_per_electron):

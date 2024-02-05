@@ -2,6 +2,7 @@ from immutabledict import immutabledict
 import straxen 
 import strax
 from numba import njit
+from numba.typed import List
 import numpy as np
 import logging
 
@@ -247,33 +248,6 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
         help='PMT gain model',
     )
 
-    pmt_circuit_load_resistor = straxen.URLConfig(
-        default = "take://resource://"
-                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                  "&take=pmt_circuit_load_resistor",
-        type=(int, float),
-        cache=True,
-        help='PMT circuit load resistor',
-    )
-
-    digitizer_bits = straxen.URLConfig(
-        default = "take://resource://"
-                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                  "&take=digitizer_bits",
-        type=(int, float),
-        cache=True,
-        help='Number of bits of the digitizer boards',
-    )
-
-    digitizer_voltage_range = straxen.URLConfig(
-        default = "take://resource://"
-                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                  "&take=digitizer_voltage_range",
-        type=(int, float),
-        cache=True,
-        help='Voltage range of the digitizer boards',
-    )
-
     def setup(self):
         super().setup()
 
@@ -349,6 +323,10 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
 
         photons, unique_photon_pulse_ids = split_photons(propagated_photons)
 
+        # convert photons to numba list for njit
+        _photons = List()
+        [_photons.append(x) for x in photons]
+
         if n_chunks>1:
             for pulse_group in pulse_window_chunks[:-1]:
 
@@ -359,7 +337,7 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
 
                 buffer_level = build_waveform(
                     pulse_group,
-                    photons,
+                    _photons,
                     unique_photon_pulse_ids,
                     waveform_buffer,
                     self.dt,
@@ -398,7 +376,7 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
         
         buffer_level = build_waveform(
             pulse_window_chunks[-1],
-            photons,
+            _photons,
             unique_photon_pulse_ids,
             waveform_buffer,
             self.dt,
