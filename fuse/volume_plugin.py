@@ -1,20 +1,18 @@
-from strax import Plugin, SaveWhen
-
 import strax
-
 import numba
 import numpy as np
 
-from .common import FUSE_PLUGIN_TIMEOUT
+from .plugin import FuseBasePlugin
 
-class VolumePlugin(Plugin):
+class VolumePlugin(FuseBasePlugin):
     """
     Plugin that evaluates if interactions are in a defined detector volume.
     """
 
-    save_when = SaveWhen.NEVER
+    save_when = strax.SaveWhen.TARGET
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
+    def setup(self):
+        super().setup()
 
     #Forbid rechunking
     rechunk_on_save = False

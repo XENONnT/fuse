@@ -9,9 +9,9 @@ from scipy import constants
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
+from ...common import pmt_gains, build_photon_propagation_output
 from ...common import init_spe_scaling_factor_distributions, pmt_transit_time_spread, photon_gain_calculation 
-from ...common import build_photon_propagation_output
+from ...plugin import FuseBaseDownChunkingPlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
@@ -19,7 +19,7 @@ log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
 conversion_to_bar = 1/constants.elementary_charge / 1e1
 
 @export
-class S2PhotonPropagationBase(strax.DownChunkingPlugin):
+class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     
     __version__ = "0.1.4"
     
@@ -27,12 +27,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     provides = "propagated_s2_photons"
     data_kind = "S2_photons"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [('channel', np.int16),
              ('dpe', np.bool_),
@@ -41,11 +36,6 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
     dtype = dtype + strax.time_fields
 
     #Config options shared by S1 and S2 simulation 
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     p_double_pe_emision = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -291,27 +281,8 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         help='chunk can not be split if gap between photons is smaller than this value given in ns',
     )
 
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running S2PhotonPropagation version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
 
         #Set the random generator for scipy
         skewnorm.random_state=self.rng
@@ -969,35 +940,35 @@ def _luminescence_timings_simple(
 @njit()
 def simulate_horizontal_shift(n_electron, drift_time_mean,xy, diffusion_constant_radial, diffusion_constant_azimuthal,result, rng):
 
-     hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
-     hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
-     hdiff_radial = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron)
-     hdiff_azimuthal = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron)
-     hdiff = np.column_stack((hdiff_radial, hdiff_azimuthal))
-     theta = np.arctan2(xy[:,1], xy[:,0])
+    hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
+    hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
+    hdiff_radial = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron)
+    hdiff_azimuthal = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron)
+    hdiff = np.column_stack((hdiff_radial, hdiff_azimuthal))
+    theta = np.arctan2(xy[:,1], xy[:,0])
 
-     sin_theta = np.sin(theta)
-     cos_theta = np.cos(theta)
-     matrix = build_rotation_matrix(sin_theta, cos_theta)
+    sin_theta = np.sin(theta)
+    cos_theta = np.cos(theta)
+    matrix = build_rotation_matrix(sin_theta, cos_theta)
 
-     split_hdiff = np.split(hdiff, np.cumsum(n_electron))[:-1]
+    split_hdiff = np.split(hdiff, np.cumsum(n_electron))[:-1]
 
-     start_idx = np.append([0], np.cumsum(n_electron)[:-1])
-     stop_idx = np.cumsum(n_electron)
+    start_idx = np.append([0], np.cumsum(n_electron)[:-1])
+    stop_idx = np.cumsum(n_electron)
 
-     for i in range(len(matrix)):
-          result[start_idx[i]: stop_idx[i]] = (matrix[i] @ split_hdiff[i].T).T 
+    for i in range(len(matrix)):
+        result[start_idx[i]: stop_idx[i]] = np.ascontiguousarray(split_hdiff[i]) @ matrix[i]
 
-     return result
+    return result
 
 @njit()
 def build_rotation_matrix(sin_theta, cos_theta):
-    matrix = np.zeros((2, 2, len(sin_theta)))
-    matrix[0, 0] = cos_theta
-    matrix[0, 1] = sin_theta
-    matrix[1, 0] = -sin_theta
-    matrix[1, 1] = cos_theta
-    return matrix.T
+    matrix = np.zeros((len(sin_theta), 2, 2))
+    matrix[:, 0, 0] = cos_theta
+    matrix[:, 0, 1] = sin_theta
+    matrix[:, 1, 0] = -sin_theta
+    matrix[:, 1, 1] = cos_theta
+    return matrix
 
 @njit()
 def find_electron_split_index(electrons, gaps, file_size_limit, min_gap_length, mean_n_photons_per_electron):
