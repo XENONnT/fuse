@@ -1,7 +1,5 @@
 import numpy as np
-import numba
 import strax
-import awkward as ak
 import logging
 import straxen
 
@@ -10,13 +8,13 @@ import periodictable as pt
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.lineage_cluster')
 
 @export
-class LineageClustering(strax.Plugin):
+class LineageClustering(FuseBasePlugin):
     
     __version__ = "0.0.1"
     
@@ -34,19 +32,9 @@ class LineageClustering(strax.Plugin):
             ]
     dtype = dtype + strax.time_fields
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     gamma_distance_threshold = straxen.URLConfig(
         default=0.9, type=(int, float),
         help='Distance threshold to break lineage for gamma rays [cm]. Default taken from NEST code',
@@ -57,14 +45,6 @@ class LineageClustering(strax.Plugin):
         help='Time threshold to break the lineage [ns]',
     )
 
-    def setup(self):
-        
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running LineageClustering version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-    
     def compute(self, geant4_interactions):
         """
         Args:
