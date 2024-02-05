@@ -242,33 +242,6 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
         help='PMT gain model',
     )
 
-    pmt_circuit_load_resistor = straxen.URLConfig(
-        default = "take://resource://"
-                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                  "&take=pmt_circuit_load_resistor",
-        type=(int, float),
-        cache=True,
-        help='PMT circuit load resistor',
-    )
-
-    digitizer_bits = straxen.URLConfig(
-        default = "take://resource://"
-                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                  "&take=digitizer_bits",
-        type=(int, float),
-        cache=True,
-        help='Number of bits of the digitizer boards',
-    )
-
-    digitizer_voltage_range = straxen.URLConfig(
-        default = "take://resource://"
-                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                  "&take=digitizer_voltage_range",
-        type=(int, float),
-        cache=True,
-        help='Voltage range of the digitizer boards',
-    )
-
     def setup(self):
         super().setup()
 
