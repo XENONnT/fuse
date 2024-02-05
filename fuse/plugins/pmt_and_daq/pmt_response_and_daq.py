@@ -72,6 +72,11 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
 
     save_when = strax.SaveWhen.ALWAYS
 
+    rechunk_on_save = False
+
+    #Lets wait 10 minutes for the plugin to finish
+    input_timeout = 600
+
     #Config options
     dt = straxen.URLConfig(
         default = "take://resource://"
