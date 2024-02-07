@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import numba
 import strax
 import awkward as ak
@@ -17,7 +16,7 @@ log = logging.getLogger('fuse.micro_physics.find_cluster')
 @export
 class FindCluster(FuseBasePlugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ("geant4_interactions")
     
@@ -96,9 +95,8 @@ def _find_cluster(x, cluster_size_space):
     """
     db_cluster = DBSCAN(eps=cluster_size_space, min_samples=1)
 
-    #Conversion from numpy structured array to regular array with correct shape for 
-    #sklearn somehow works fine via pandas... 
-    xprime = pd.DataFrame(x[['x', 'y', 'z']]).values
+    #Conversion from numpy structured array to regular array 
+    xprime = np.array(x[['x', 'y', 'z']].tolist())
 
     return db_cluster.fit_predict(xprime)
     
