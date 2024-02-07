@@ -11,7 +11,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 homepage = "https://github.com/XENONnT/fuse"
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.9",
