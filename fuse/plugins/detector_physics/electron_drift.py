@@ -186,7 +186,7 @@ class ElectronDrift(FuseBasePlugin):
         interaction_in_civ = self.in_charge_sensitive_volume(xy_int = np.array([x, y]).T, # maps are in R_true, so orginal position should be here
                                                              z_int = z, # maps are in Z_true, so orginal position should be here
                                                              )
-        n_electron = n_electron*interaction_in_civ
+        n_electron = self.rng.binomial(n=n_electron, p=interaction_in_civ)
         
         #Absorb electrons during the drift
         #Average drift time of the electrons
@@ -258,9 +258,7 @@ class ElectronDrift(FuseBasePlugin):
 
         if self.enable_field_dependencies['survival_probability_map']:
             p_surv = self.field_dependencies_map(z_int, xy_int, map_name='survival_probability_map')
-            if np.any(p_surv<0) or np.any(p_surv>1):
-                # FIXME: this is necessary due to map artefacts, such as negative or values >1
-                p_surv=np.clip(p_surv, a_min = 0, a_max = 1)
+            p_surv=np.clip(p_surv, a_min = 0, a_max = 1)
             
         else:
             p_surv = np.ones(len(xy_int))
