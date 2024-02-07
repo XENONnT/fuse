@@ -13,7 +13,7 @@ log = logging.getLogger('fuse.detector_physics.electron_drift')
 @export
 class ElectronDrift(FuseBasePlugin):
     
-    __version__ = "0.1.4"
+    __version__ = "0.1.5"
     
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
