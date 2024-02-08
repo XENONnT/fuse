@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
-name = "fuse"
-version = "0.3.0"
+name = "xenon-fuse"
+version = "1.0.0"
 description = "XENON Framework for Unified Simulations of Events"
 authors = [
   "Henning Schulze Eißing, <h_schu55@uni-muenster.de>",
@@ -11,7 +11,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 homepage = "https://github.com/XENONnT/fuse"
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.9",
