@@ -15,3 +15,6 @@ class MicroPhysicsSummary(strax.MergeOnlyPlugin):
     save_when = strax.SaveWhen.ALWAYS
     provides = 'microphysics_summary'
     __version__ = '0.1.0'
+
+    #Forbid rechunking
+    rechunk_on_save = False

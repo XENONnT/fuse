@@ -66,6 +66,15 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         help='Drift velocity of electrons in the liquid xenon',
     )
 
+    drift_time_gate = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=drift_time_gate",
+        type=(int, float),
+        cache=True,
+        help='Electron drift time from the gate in ns',
+    )
+
     tpc_radius = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -75,11 +84,44 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         help='Radius of the XENONnT TPC ',
     )
 
+    s2_secondary_sc_gain_mc = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=s2_secondary_sc_gain",
+        type=(int, float),
+        cache=True,
+        help='Secondary scintillation gain',
+    )
+
+    # Is this the correct value?
+    p_double_pe_emision = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=p_double_pe_emision",
+        type=(int, float),
+        cache=True,
+        help='Probability of double photo-electron emission',
+    )
+
+    electron_extraction_yield = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=electron_extraction_yield",
+        type=(int, float),
+        cache=True,
+        help='Electron extraction yield',
+    )
+
     def infer_dtype(self):
         #Thake the same dtype as microphysics_summary
         dtype = self.deps["s2_photons"].deps["microphysics_summary"].dtype
 
         return dtype
+
+    def setup(self):
+        super().setup()
+
+        self.photoionization_scaling = (self.s2_secondary_sc_gain_mc*self.electron_extraction_yield)/(1+self.p_double_pe_emision)
 
     def compute(self, interactions_in_roi, individual_electrons):
 
@@ -96,7 +138,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         #We can do it vectorized!
         n_delayed_electrons = self.rng.poisson(
             interactions_in_roi[mask]["sum_s2_photons"]
-            * self.photoionization_modifier
+            * self.photoionization_modifier/self.photoionization_scaling
             )
 
         electron_delay = get_random(self.delaytime_pmf_hist, self.rng, np.sum(n_delayed_electrons))
