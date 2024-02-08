@@ -1,3 +1,3 @@
-History File
-==================
-  * Start tracking the changes here as soon as we have our first release with verions 1.0.0
+1.1.0 / 2024-02-08
+-------------------
+* First stable release
