@@ -15,10 +15,11 @@ With all requirements fulfilled (e.g., on top of the [XENONnT montecarlo_environ
 python -m pip install xenon-fuse
 ```
 or install from source:
-
-1. `clone https://github.com/XENONnT/fuse`
-2. `cd fuse`
-3. `python -m pip install . --user`
+```
+git clone git@github.com:XENONnT/fuse
+cd fuse
+python -m pip install . --user
+```
 
 ## Plugin Structure
 
