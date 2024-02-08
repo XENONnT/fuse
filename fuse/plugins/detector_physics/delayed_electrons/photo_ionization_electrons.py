@@ -133,6 +133,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
             return np.zeros(0, self.dtype)
 
         electrons_per_interaction, unique_cluster_id = group_electrons_by_cluster_id(individual_electrons)
+        matching_index = np.searchsorted(unique_cluster_id, interactions_in_roi[mask]["cluster_id"])
 
         #In WFSim the part is calculated separatley for each interaction
         #We can do it vectorized!
@@ -151,7 +152,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         delayed_electrons_per_interaction = []
 
         for i in range(len(interactions_in_roi[mask])):
-            electrons_of_interaction = electrons_per_interaction[np.argwhere(interactions_in_roi[mask]["cluster_id"][i] == unique_cluster_id)[0][0]]
+            electrons_of_interaction = electrons_per_interaction[matching_index[i]]
             number_of_delayed_electrons = len(electron_delay[i])
             
             time_zero.append(self.rng.choice(electrons_of_interaction["time"], size = number_of_delayed_electrons))
