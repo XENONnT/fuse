@@ -75,7 +75,7 @@ Provided Columns
      - int8
      - ID of the volume in which the cluster occured. Will be set later.
    * - create_S2
-     - bool8
+     - bool
      - Flag indicating if a cluster can create a S2 signal. Will be set later.
 
 
