@@ -85,7 +85,7 @@ jobs:
         env:
           TEST_MONGO_URI: 'mongodb://localhost:27017/'
         run: |
-          coverage run --source=fuse -m pytest --durations 0
+          coverage run --source=fuse -m pytest --durations 0 -v
           coverage report
 
       - name: Coveralls
@@ -95,7 +95,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: matrix.test == 'coveralls' && env.HAVE_ACCESS_TO_SECRETS != null
         run: |
-          coverage run --source=fuse -m pytest -v
           coveralls --service=github
 
       - name: goodbye
