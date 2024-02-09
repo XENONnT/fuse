@@ -27,7 +27,7 @@ jobs:
       matrix:
         os: [ "ubuntu-latest" ]
         python-version: [ "3.9", "3.10" ]
-        test: [ 'coveralls', 'pytest' ]
+        test: [ 'coveralls' ]
 
     steps:
       # Setup and installation
@@ -80,22 +80,16 @@ jobs:
         run: |
           pip install .
 
-      - name: Test package
+      - name: Test package and report to coveralls
         # This is running a normal test
         env:
           TEST_MONGO_URI: 'mongodb://localhost:27017/'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: env.HAVE_ACCESS_TO_SECRETS != null
         run: |
           coverage run --source=fuse -m pytest --durations 0 -v
-          coverage report
-
-      - name: Coveralls
-        # Make the coverage report and upload
-        env:
-          TEST_MONGO_URI: 'mongodb://localhost:27017/'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: matrix.test == 'coveralls' && env.HAVE_ACCESS_TO_SECRETS != null
-        run: |
           coveralls --service=github
+          coverage report
 
       - name: goodbye
         run: echo "tests done, bye bye"
