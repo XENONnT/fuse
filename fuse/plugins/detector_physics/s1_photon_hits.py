@@ -15,6 +15,8 @@ log = logging.getLogger('fuse.detector_physics.s1_photon_hits')
 
 @export
 class S1PhotonHits(FuseBasePlugin):
+    """Plugin to simulate the number of detected S1 photons using
+    a S1 light collection efficiency map."""
 
     __version__ = '0.1.3'
 
@@ -24,7 +26,7 @@ class S1PhotonHits(FuseBasePlugin):
 
     save_when = strax.SaveWhen.ALWAYS
 
-    dtype = [('n_s1_photon_hits', np.int32),
+    dtype = [(("Number detected S1 photons", "n_s1_photon_hits"), np.int32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -35,7 +37,7 @@ class S1PhotonHits(FuseBasePlugin):
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='PMT circuit load resistor',
+        help='PMT circuit load resistor [Unit!]',
     )
 
     digitizer_bits = straxen.URLConfig(
@@ -53,7 +55,7 @@ class S1PhotonHits(FuseBasePlugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards',
+        help='Voltage range of the digitizer boards [Unit!]',
     )
 
     gain_model_mc = straxen.URLConfig(
