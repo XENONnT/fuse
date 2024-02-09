@@ -7,8 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'XENON fuse'
-copyright = '2023, Henning Schulze Eißing'
-author = 'Henning Schulze Eißing'
+copyright = '2024, fuse contributors, the XENON collaboration'
 release = '0.0.0'
 
 # -- General configuration ---------------------------------------------------
