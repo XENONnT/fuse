@@ -5,9 +5,8 @@ PMTAfterPulses
 Plugin Description
 ==================
 Plugin to simulate PMT afterpulses using a precomputed afterpulse cumulative distribution function.
-In XENON simulations (WFSim and now fuse) afterpulses will be saved as a list of "pseudo" photons.
-These "photons" can then be combined with real photons from S1 and S2 signals to create 
-detectable signals.
+In the simulation afterpulses will be saved as a list of "pseudo" photons.
+These "photons" can then be combined with real photons from S1 and S2 signals to create a waveform.
 
 Technical Details
 -----------------
@@ -30,19 +29,19 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - time of individual s1 photons
+     - Time of afterpulse [ns]
    * - endtime
      - int64
-     - endtime of individual s1 photons (will be the same as time)
+     - Endtime of the afterpulse [ns] (same as time)
    * - channel
      - int16
-     - PMT channel of the detected photon
+     - PMT channel of the afterpulse
    * - dpe
      - bool
-     - Boolean indicating weather the photon will create a double photoelectron emisison or not
+     - Afterpulse creates a double photo-electron emission (always False)
    * - photon_gain
      - int32
-     - Gain of the PMT channel
+     - Sampled PMT gain for the afterpulse
 
 Config Options
 ==============
@@ -55,10 +54,6 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
    * - pmt_ap_t_modifier
      - 
      - True
@@ -87,7 +82,3 @@ Config Options
      - 
      - True
      - Afterpuse cumulative distribution functions
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).

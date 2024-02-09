@@ -7,7 +7,7 @@ export, __all__ = strax.exporter()
 @export
 class PhotonSummary(VerticalMergerPlugin):
     """
-    Plugin which concatenates the output of the S1, S2 and AP plugins
+    Plugin that concatenates propagated photons for S1, S2 and PMT afterpulses
     """
     
     depends_on = ("propagated_s2_photons", "propagated_s1_photons", "pmt_afterpulses")
