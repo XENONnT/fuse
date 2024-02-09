@@ -15,3 +15,4 @@ Technical Details
 
    depends_on = ("interactions_in_roi", "quanta", "electric_field_values")
    provides = "microphysics_summary"
+   __version__ = "0.1.0"

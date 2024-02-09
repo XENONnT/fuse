@@ -17,6 +17,7 @@ Technical Details
    depends_on = ("microphysics_summary", "drifted_electrons")
    provides = "extracted_electrons"
    data_kind = "interactions_in_roi"
+   __version__ = "0.1.3"
 
 Provided Columns
 ================

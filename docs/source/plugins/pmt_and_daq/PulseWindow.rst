@@ -20,6 +20,7 @@ Technical Details
    data_kind = {"pulse_windows": "pulse_windows",
                 "pulse_ids" : "propagated_photons"
                 }
+   __version__ = "0.1.2"
 
 Provided Columns
 ================

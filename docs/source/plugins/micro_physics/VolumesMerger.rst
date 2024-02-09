@@ -16,3 +16,4 @@ Technical Details
    depends_on = ("tpc_interactions", "below_cathode_interactions")
    provides = "interactions_in_roi"
    data_kind = "interactions_in_roi"
+   __version__ = "0.1.0"

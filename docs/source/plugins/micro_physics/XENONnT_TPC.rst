@@ -19,6 +19,7 @@ Technical Details
    depends_on = ("clustered_interactions")
    provides = "tpc_interactions"
    data_kind = "tpc_interactions"
+   __version__ = "0.1.1"
 
 Provided Columns
 ================

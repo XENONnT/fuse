@@ -20,6 +20,7 @@ Technical Details
    depends_on = ("photon_summary", "pulse_ids", "pulse_windows")
    provides = "raw_records"
    data_kind = "raw_records"
+   __version__ = "0.1.3"
 
 Provided Columns
 ================

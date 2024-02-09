@@ -19,6 +19,7 @@ Technical Details
    depends_on = ("clustered_interactions")
    provides = "below_cathode_interactions"
    data_kind = "below_cathode_interactions"
+   __version__ = "0.1.1"
 
 Provided Columns
 ================

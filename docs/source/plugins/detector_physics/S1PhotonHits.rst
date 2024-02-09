@@ -16,6 +16,7 @@ Technical Details
    depends_on = ("microphysics_summary")
    provides = "s1_photons"
    data_kind = "interactions_in_roi"
+   __version__ = "0.1.3"
 
 Provided Columns
 ================
