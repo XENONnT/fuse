@@ -6,9 +6,13 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import fuse
+
 project = 'XENON fuse'
 copyright = '2024, fuse contributors, the XENON collaboration'
-release = '0.0.0'
+
+release = fuse.__version__
+version = fuse.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
