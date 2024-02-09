@@ -30,10 +30,10 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - Time of the cluster
+     - Time of the cluster [ns]
    * - endtime
      - int64
-     - Endtime of the cluster (same as time)
+     - Endtime of the cluster [ns] (same as time)
    * - x
      - float32
      - x position of the cluster [cm]
