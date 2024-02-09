@@ -29,10 +29,10 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - time of the energy deposit
+     - Time of the energy deposit
    * - endtime
      - int64
-     - endtime of the energy deposit (will be the same as time)
+     - Endtime of the energy deposit (will be the same as time)
    * - x
      - float64
      - x position of the energy deposit [cm]
