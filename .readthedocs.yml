@@ -11,6 +11,10 @@ build:
   tools:
     python: "3.10"
 
+python:
+  install:
+    - requirements: docs/doc_requirements.txt
+
 formats:
   - htmlzip
   - epub
