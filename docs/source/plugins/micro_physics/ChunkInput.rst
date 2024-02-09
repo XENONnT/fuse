@@ -35,16 +35,16 @@ Provided Columns
      - endtime of the energy deposit (will be the same as time)
    * - x
      - float64
-     - x position of the energy deposit
+     - x position of the energy deposit [cm]
    * - y
      - float64
-     - y position of the energy deposit
+     - y position of the energy deposit [cm]
    * - z
      - float64
-     - z position of the energy deposit
+     - z position of the energy deposit [cm]
    * - t
      - float64
-     - time of the energy deposit with respect to the start of the event
+     - Time with respect to the start of the event [ns]
    * - ed
      - float32
      - Energy deposit in keV
@@ -59,7 +59,7 @@ Provided Columns
      - Particle type of the parent particle
    * - parentid
      - int16
-     - trackid of the parent particle
+     - Trackid of the parent particle
    * - creaproc
      - <U10
      - Geant4 process creating the particle
@@ -90,28 +90,24 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
    * - path
      - 
      - False
-     - Path to the file to simulate from excluding the file name
+     - Path to the input file
    * - file_name
      - 
      - False
-     - Name of the file to simulate from
+     - Name of the input file
    * - separation_scale
      - 1e8
      - True
-     - Separation scale for the dynamic chunking in ns
+     - Separation scale for the dynamic chunking in [ns]
    * - source_rate
      - 1
      - True
      - Source rate used to generate event times. Use a value >0 to generate event times in fuse. Use source_rate = 0 to use event times from the input file (only for csv input)
    * - cut_delayed
-     - 4e14
+     - 9e18
      - True
      - All interactions happening after this time (including the event time) will be cut.
    * - n_interactions_per_chunk
@@ -134,7 +130,3 @@ Config Options
      - False
      - True
      - Filter only nuclear recoil events (maximum ER energy deposit 10 keV)
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).
