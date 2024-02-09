@@ -31,7 +31,7 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - Time of the individual electron reaching the gas phase
+     - Start time since unix epoch [ns]
    * - length
      - int32
      - Length of the interval in samples
@@ -65,14 +65,6 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).
    * - dt
      - 
      - True
@@ -80,7 +72,7 @@ Config Options
    * - pmt_circuit_load_resistor
      - 
      - True
-     - PMT circuit load resistor
+     - PMT circuit load resistor [Unit!]
    * - external_amplification
      - 
      - True
@@ -92,7 +84,7 @@ Config Options
    * - digitizer_voltage_range
      - 
      - True
-     - Voltage range of the digitizer boards
+     - Voltage range of the digitizer boards  [Unit!]
    * - noise_data
      - 
      - True
@@ -144,7 +136,7 @@ Config Options
    * - raw_records_file_size_target
      - 200
      - True
-     - Target for the raw records file size in MB
+     - Target for the raw records file size [MB]
    * - min_records_gap_length_for_splitting
      - 1e5
      - True
