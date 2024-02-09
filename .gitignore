@@ -9,3 +9,4 @@ resource_cache
 .hypothesis
 .DS_Store
 dist/*
+docs/source/release_notes.rst

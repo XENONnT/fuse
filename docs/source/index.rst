@@ -35,6 +35,12 @@ simulation chain.
    tech_features/DeterministicSeed
    tech_features/DynamicChunking
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Release notes
+
+   release_notes
+
 .. Indices and tables
 .. ==================
 

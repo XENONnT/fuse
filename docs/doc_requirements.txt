@@ -2,3 +2,4 @@ nbsphinx
 ipython
 sphinx
 sphinx_rtd_theme
+m2r==0.2.1

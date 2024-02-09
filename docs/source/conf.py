@@ -38,3 +38,16 @@ html_theme = "sphinx_rtd_theme"
 #Lets disable notebook execution for now
 nbsphinx_allow_errors = True
 nbsphinx_execute = 'never'
+
+def setup(app):
+    # app.add_css_file('css/custom.css')
+    # Hack to import something from this dir. Apparently we're in a weird
+    # situation where you get a __name__  is not in globals KeyError
+    # if you just try to do a relative import...
+    import os
+    import sys
+
+    sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+    from build_release_notes import convert_release_notes
+
+    convert_release_notes()
