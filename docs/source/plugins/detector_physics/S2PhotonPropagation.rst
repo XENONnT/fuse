@@ -36,19 +36,19 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - time of individual s1 photons
+     - Time of individual S2 photon [ns]
    * - endtime
      - int64
-     - endtime of individual s1 photons (will be the same as time)
+     - Endtime of individual S2 photon [ns] (same as time)
    * - channel
      - int16
-     - PMT channel of the detected photon
+     - PMT channel of the S2 photon
    * - dpe
      - bool
-     - Boolean indicating weather the photon will create a double photoelectron emisison or not
+     - Photon creates a double photo-electron emission
    * - photon_gain
      - int32
-     - Gain of the PMT channel
+     - Sampled PMT gain for the photon
 
 Config Options
 ==============
@@ -64,10 +64,6 @@ S2PhotonPropagationBase plugin
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
    * - p_double_pe_emision
      - 
      - True
@@ -75,15 +71,15 @@ S2PhotonPropagationBase plugin
    * - pmt_transit_time_spread
      - 
      - True
-     - Spread of the PMT transit times
+     - Spread of the PMT transit times [Unit!]
    * - pmt_transit_time_mean
      - 
      - True
-     - Mean of the PMT transit times
+     - Mean of the PMT transit times [Unit!]
    * - pmt_circuit_load_resistor
      - 
      - True
-     - PMT circuit load resistor
+     - PMT circuit load resistor [Unit!]
    * - digitizer_bits
      - 
      - True
@@ -91,7 +87,7 @@ S2PhotonPropagationBase plugin
    * - digitizer_voltage_range
      - 
      - True
-     - Voltage range of the digitizer boards
+     - Voltage range of the digitizer boards [Unit!]
    * - n_top_pmts
      - 
      - True
@@ -115,19 +111,19 @@ S2PhotonPropagationBase plugin
    * - drift_velocity_liquid
      - 
      - True
-     - Drift velocity of electrons in the liquid xenon
+     - Drift velocity of electrons in the liquid xenon [Unit!]
    * - tpc_length
      - 
      - True
-     - Length of the XENONnT TPC
+     - Length of the XENONnT TPC [cm]
    * - tpc_radius
      - 
      - True
-     - Radius of the XENONnT TPC
+     - Radius of the XENONnT TPC [cm]
    * - diffusion_constant_transverse
      - 
      - True
-     - Transverse diffusion constant
+     - Transverse diffusion constant [Unit!]
    * - s2_aft_skewness
      - 
      - True
@@ -159,35 +155,31 @@ S2PhotonPropagationBase plugin
    * - triplet_lifetime_gas
      - 
      - True
-     - Liftetime of triplet states in GXe
+     - Liftetime of triplet states in GXe [Unit!]
    * - singlet_lifetime_gas
      - 
      - True
-     - Liftetime of singlet states in GXe
+     - Liftetime of singlet states in GXe [Unit!]
    * - triplet_lifetime_liquid
      - 
      - True
-     - Liftetime of triplet states in LXe
+     - Liftetime of triplet states in LXe [Unit!]
    * - singlet_lifetime_liquid
      - 
      - True
-     - Liftetime of singlet states in LXe
+     - Liftetime of singlet states in LXe [Unit!]
    * - s2_secondary_sc_gain_mc
      - 
      - True
-     - Secondary scintillation gain
+     - Secondary scintillation gain [Unit!]
    * - propagated_s2_photons_file_size_target
      - 300
      - False
-     - target for the propagated_s2_photons file size in MB
+     - Target for the propagated_s2_photons file size [MB]
    * - min_electron_gap_length_for_splitting
      - 1e5
      - False
-     - chunk can not be split if gap between photons is smaller than this value given in ns
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).
+     - Chunk can not be split if gap between photons is smaller than this value given in ns
 
 S2PhotonPropagation plugin
 --------------------------

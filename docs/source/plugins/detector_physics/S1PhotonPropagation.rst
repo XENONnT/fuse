@@ -35,10 +35,10 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - Time of individual s1 photon [ns]
+     - Time of individual S1 photon [ns]
    * - endtime
      - int64
-     - Endtime of individual s1 photon [ns] (same as time)
+     - Endtime of individual S1 photon [ns] (same as time)
    * - channel
      - int16
      - PMT channel of the S1 photon
