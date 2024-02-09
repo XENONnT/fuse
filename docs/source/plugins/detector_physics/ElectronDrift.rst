@@ -2,6 +2,8 @@
 ElectronDrift
 =============
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/detector_physics/electron_drift.py>`_.
+
 Plugin Description
 ==================
 

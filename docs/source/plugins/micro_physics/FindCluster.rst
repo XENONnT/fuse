@@ -2,6 +2,8 @@
 FindCluster
 ===========
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/micro_physics/find_cluster.py>`_.
+
 Plugin Description
 ==================
 Plugin to find clusters of energy deposits. This plugin is performing the first half 

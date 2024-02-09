@@ -2,6 +2,8 @@
 PhotonSummary
 =============
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/pmt_and_daq/photon_summary.py>`_.
+
 Plugin Description
 ==================
 fuse VerticalMergerPlugin that concatenates propagated photons for S1s, S2s and PMT afterpulses

@@ -2,6 +2,8 @@
 NestYields
 ==========
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/micro_physics/yields.py>`_.
+
 Plugin Description
 ==================
 Plugin that calculates the number of photons, electrons and excitons produced by

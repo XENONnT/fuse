@@ -2,6 +2,8 @@
 PMTResponseAndDAQ
 =================
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/pmt_and_daq/pmt_response_and_daq.py>`_.
+
 Plugin Description
 ==================
 Plugin to simulate the PMT response and DAQ effects. First the single PMT waveform

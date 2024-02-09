@@ -2,6 +2,8 @@
 PulseWindow
 ===========
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/pmt_and_daq/photon_pulses.py>`_.
+
 Plugin Description
 ==================
 Plugin to compute time intervals (called `pulse_windows`) in which the 

@@ -2,6 +2,8 @@
 MergeCluster
 ============
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/micro_physics/find_cluster.py>`_.
+
 Plugin Description
 ==================
 Plugin that merges energy deposits with the same cluster index into a single interaction. 

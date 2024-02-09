@@ -2,6 +2,8 @@
 VolumesMerger
 =============
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/micro_physics/detector_volumes.py>`_.
+
 Plugin Description
 ==================
 Plugin that concatenates the clusters that are in the XENONnT TPC or the volume below the cathode.

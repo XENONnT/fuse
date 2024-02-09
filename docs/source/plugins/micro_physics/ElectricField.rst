@@ -2,6 +2,8 @@
 ElectricField
 =============
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/micro_physics/electric_field.py>`_.
+
 Plugin Description
 ==================
 Plugin that calculates the electric field values for the cluster position. 

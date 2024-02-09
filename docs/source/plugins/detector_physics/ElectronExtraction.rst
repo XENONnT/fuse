@@ -2,6 +2,8 @@
 ElectronExtraction
 ==================
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/detector_physics/electron_extraction.py>`_.
+
 Plugin Description
 ==================
 Plugin to simulate the loss of electrons during the extraction of drifted 

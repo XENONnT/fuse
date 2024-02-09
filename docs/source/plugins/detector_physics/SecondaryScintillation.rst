@@ -2,6 +2,8 @@
 SecondaryScintillation
 ======================
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/detector_physics/secondary_scintillation.py>`_.
+
 Plugin Description
 ==================
 Plugin to simulate the secondary scintillation process in the gas phase.

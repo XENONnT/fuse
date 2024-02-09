@@ -2,6 +2,8 @@
 ChunkInput
 ==========
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/micro_physics/input.py>`_.
+
 Plugin Description
 ==================
 Plugin to read XENONnT Geant4 root or csv files. The plugin can distribute the events

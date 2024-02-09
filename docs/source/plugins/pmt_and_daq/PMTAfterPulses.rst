@@ -2,6 +2,8 @@
 PMTAfterPulses
 ==============
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/pmt_and_daq/pmt_afterpulses.py>`_.
+
 Plugin Description
 ==================
 Plugin to simulate PMT afterpulses using a precomputed afterpulse cumulative distribution function.

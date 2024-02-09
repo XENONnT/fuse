@@ -2,6 +2,8 @@
 ElectronTiming
 ==============
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/detector_physics/electron_timing.py>`_.
+
 Plugin Description
 ==================
 Plugin to simulate the arrival times and positions of electrons extracted from the liquid phase. It includes both the 

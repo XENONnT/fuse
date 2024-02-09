@@ -2,6 +2,8 @@
 S1PhotonHits
 ============
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/detector_physics/s1_photon_hits.py>`_.
+
 Plugin Description
 ==================
 Plugin to simulate the number of detected S1 photons using a S1 light collection efficiency map.

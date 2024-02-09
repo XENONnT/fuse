@@ -2,6 +2,8 @@
 S2PhotonPropagation
 ===================
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/detector_physics/s2_photon_propagation.py>`_.
+
 Plugin Description
 ==================
 Plugin to simulate the propagation of S2 photons in the detector. Photons are 
