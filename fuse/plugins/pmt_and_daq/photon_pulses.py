@@ -13,6 +13,9 @@ log = logging.getLogger('fuse.pmt_and_daq.photon_pulses')
 
 @export
 class PulseWindow(FuseBasePlugin):
+    """Plugin to compute time intervals (called `pulse_windows`) in which the 
+    PMT response of photons can overlap. Additionally a `pulse_id` is computed 
+    for each propagated photon to identify the pulse window it belongs to."""
 
     __version__ = "0.1.2"
 
@@ -23,8 +26,8 @@ class PulseWindow(FuseBasePlugin):
                  "pulse_ids" : "propagated_photons"
                 }
 
-    dtype_pulse_windows = strax.interval_dtype + [(('pulse_id'), np.int64)]
-    dtype_pulse_ids =  [('pulse_id', np.int64),] + strax.time_fields
+    dtype_pulse_windows = strax.interval_dtype + [((("ID of the pulse window", "pulse_id")), np.int64)]
+    dtype_pulse_ids = strax.time_fields + [(("Pulse id to map the photon to the pulse window", "pulse_id"), np.int64)]
 
     dtype = dict()
     dtype["pulse_windows"] = dtype_pulse_windows
