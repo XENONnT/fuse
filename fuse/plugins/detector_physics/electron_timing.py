@@ -12,6 +12,8 @@ log = logging.getLogger('fuse.detector_physics.electron_timing')
 
 @export
 class ElectronTiming(FuseBasePlugin):
+    """Plugin to simulate the arrival times of electrons extracted from the liquid phase. It includes both the 
+    drift time and the time needed for the extraction."""
     
     __version__ = "0.1.1"
     
@@ -23,9 +25,9 @@ class ElectronTiming(FuseBasePlugin):
     
     data_kind = "individual_electrons"
     
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('order_index', np.int32),
+    dtype = [(("x position of the electron [cm]", "x"), np.float32),
+             (("y position of the electron [cm]", "y"), np.float32),
+             (("Index to order electrons", "order_index"), np.int32),
             ]
     dtype = dtype + strax.time_fields
     

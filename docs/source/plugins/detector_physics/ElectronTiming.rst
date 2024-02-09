@@ -4,8 +4,8 @@ ElectronTiming
 
 Plugin Description
 ==================
-Plugin to simulate the arrival times of electrons extracted from the liquid phase. It includes both the 
-drift time and the time needed for the extraction. 
+Plugin to simulate the arrival times and positions of electrons extracted from the liquid phase. It includes both the 
+drift time and the time needed for the extraction.
 
 Technical Details
 -----------------
@@ -28,19 +28,19 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - Time of the individual electron reaching the gas phase
+     - Time of the individual electron reaching the gas phase [ns]
    * - endtime
      - int64
-     - Endtime of the electron reaching the gas phase (same values as time)
+     - Endtime of the electron reaching the gas phase [ns] (same values as time)
    * - x
      - float32
-     - x position of the electron
+     - x position of the electron [cm]
    * - y
      - float32
-     - y position of the electron
+     - y position of the electron [cm]
    * - order_index
      - int32
-     - index to order the electrons like they were initially produced. This way they can be easier mapped to the corresponding interactions_in_roi.
+     - Index to order the electrons like they were initially produced. This way they can be easier mapped to the corresponding interactions_in_roi.
 
 Config Options
 ==============
@@ -53,15 +53,7 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
    * - electron_trapping_time
      - 
      - True
      - Time scale electrons are trapped at the liquid gas interface
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).
