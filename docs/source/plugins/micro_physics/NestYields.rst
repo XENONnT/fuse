@@ -4,8 +4,8 @@ NestYields
 
 Plugin Description
 ==================
-Plugin that calculates the number of photons and electrons produced by
-energy deposit using nestpy. 
+Plugin that calculates the number of photons, electrons and excitons produced by
+energy deposit using nestpy.
 
 
 Technical Details
@@ -30,19 +30,19 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - time of the energy deposit
+     - Time of the cluster [ns]
    * - endtime
      - int64
-     - endtime of the energy deposit (will be the same as time)
+     - Endtime of the cluster [ns] (same as time)
    * - photons
      - int32
-     - Number of photons at interaction position. 
+     - Number of photons at interaction position.
    * - electrons
      - int32
      - Number of electrons at interaction position.
    * - excitons
      - int32
-     - Number of excitons at interaction position. 
+     - Number of excitons at interaction position.
 
 
 Config Options
@@ -56,11 +56,3 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).
