@@ -35,7 +35,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
     save_when = strax.SaveWhen.TARGET
 
-    dtype = [(("PMT channel of the S1 photon", "channel"), np.int16),
+    dtype = [(("PMT channel of the photon", "channel"), np.int16),
              (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
              (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
             ]

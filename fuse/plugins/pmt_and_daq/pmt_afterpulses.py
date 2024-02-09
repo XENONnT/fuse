@@ -25,9 +25,9 @@ class PMTAfterPulses(FuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
     
-    dtype = [(("PMT channel of the afterpulse", "channel"), np.int16),
-             (("Afterpulse creates a double photo-electron emission (always False)", "dpe"), np.bool_),
-             (("Sampled PMT gain for the afterpulse", "photon_gain"), np.int32),
+    dtype = [(("PMT channel of the photon", "channel"), np.int16),
+             (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
+             (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
             ]
     dtype = dtype + strax.time_fields
 
