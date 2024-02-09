@@ -16,6 +16,10 @@ python:
     - requirements: docs/doc_requirements.txt
     - method: pip
       path: .
+      extra_requirements:
+        - docs
+    - method: setuptools
+      path: .
 
 formats:
   - htmlzip
