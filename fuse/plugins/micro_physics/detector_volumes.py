@@ -5,8 +5,6 @@ import logging
 from ...volume_plugin import *
 from ...vertical_merger_plugin import *
 
-from ...common import FUSE_PLUGIN_TIMEOUT
-
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.detector_volumes')
 
@@ -22,11 +20,6 @@ class VolumesMerger(VerticalMergerPlugin):
     data_kind = "interactions_in_roi"
     __version__ = "0.1.0"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
     def compute(self, **kwargs):
         return super().compute(**kwargs)
 
@@ -36,9 +29,10 @@ class VolumesMerger(VerticalMergerPlugin):
     
 class XENONnT_TPC(VolumePlugin):
     """
-    Plugin that evaluates if interactions are in the XENONnT TPC.
-    Only these interactions are returned. The output of this plugin is 
-    meant to go into a vertical merger plugin.
+    Plugin to select only clusters in the XENONnT TPC. The TPC volume
+    is defined by the z position of the cathode and gate mesh and by the radius 
+    of the detector. For all clusters passing the volume selection `create_S2` is set
+    to `True`. 
     """
 
     depends_on = ("clustered_interactions")
@@ -48,20 +42,20 @@ class XENONnT_TPC(VolumePlugin):
     __version__ = "0.1.1"
 
     #Can we import this from MergeCluster and just add the needed fields?
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('z', np.float32),
-             ('ed', np.float32),
-             ('nestid', np.int8),
-             ('A', np.int8),
-             ('Z', np.int8),
-             ('evtid', np.int32),
-             ('x_pri', np.float32),
-             ('y_pri', np.float32),
-             ('z_pri', np.float32),
-             ('xe_density', np.float32),
-             ('vol_id', np.int8), 
-             ('create_S2', np.bool_), 
+    dtype = [(("x position of the cluster [cm]", "x"), np.float32),
+             (("y position of the cluster [cm]", "y"), np.float32),
+             (("z position of the cluster [cm]", "z"), np.float32),
+             (("Energy of the cluster [keV]", "ed"), np.float32),
+             (("NEST interaction type", "nestid"), np.int8),
+             (("Mass number of the interacting particle", "A"), np.int8),
+             (("Charge number of the interacting particle", "Z"), np.int8),
+             (("Geant4 event ID", "evtid"), np.int32),
+             (("x position of the primary particle [cm]", "x_pri"), np.float32),
+             (("y position of the primary particle [cm]", "y_pri"), np.float32),
+             (("z position of the primary particle [cm]", "z_pri"), np.float32),
+             (("Xenon density at the cluster position. Will be set later.", "xe_density"), np.float32), 
+             (("ID of the volume in which the cluster occured. Will be set later.", "vol_id"), np.int8),
+             (("Flag indicating if a cluster can create a S2 signal. Will be set later.", "create_S2"), np.bool_),
             ]
     
     dtype = dtype + strax.time_fields
@@ -69,27 +63,27 @@ class XENONnT_TPC(VolumePlugin):
     #Config options
     #Define the TPC volume
     xenonnt_z_cathode = straxen.URLConfig(
-        default = -148.6515,  # cm ... top of the cathode electrode
+        default = -148.6515, #Top of the cathode electrode
         type=(int, float),
-        help='z position of the XENONnT cathode',
+        help='z position of the XENONnT cathode [cm]',
     )
 
     xenonnt_z_gate_mesh = straxen.URLConfig(
         default = 0.,  # bottom of the gate electrode
         type=(int, float),
-        help='z position of the XENONnT gate mesh',
+        help='z position of the XENONnT gate mesh [cm]',
     )
 
     xenonnt_sensitive_volume_radius = straxen.URLConfig(
-        default = 66.4,  # cm
+        default = 66.4,
         type=(int, float),
-        help='Radius of the XENONnT TPC',
+        help='Radius of the XENONnT TPC [cm]',
     )
 
     xenon_density_tpc = straxen.URLConfig(
         default = 2.862,
         type=(int, float),
-        help='Density of xenon in the TPC volume in g/cm3',
+        help='Density of xenon in the TPC volume [g/cm3]',
     )
 
     create_S2_xenonnt_TPC = straxen.URLConfig(
@@ -117,9 +111,10 @@ class XENONnT_TPC(VolumePlugin):
 
 class XENONnT_BelowCathode(VolumePlugin):
     """
-    Plugin that evaluates if interactions are below the Cathode of XENONnT.
-    Only these interactions are returned. The output of this plugin is 
-    meant to go into a vertical merger plugin.
+    Plugin to select only clusters  below the XENONnT cathode. The volume
+    is defined by the z position of the cathode and bottom PMTs and by the radius 
+    of the detector. For all clusters passing the volume selection `create_S2` is set
+    to `False`.
     """
 
     depends_on = ("clustered_interactions")
@@ -129,20 +124,20 @@ class XENONnT_BelowCathode(VolumePlugin):
     __version__ = "0.1.1"
 
     #Can we import this from MergeCluster and just add the needed fields?
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('z', np.float32),
-             ('ed', np.float32),
-             ('nestid', np.int8),
-             ('A', np.int8),
-             ('Z', np.int8),
-             ('evtid', np.int32),
-             ('x_pri', np.float32),
-             ('y_pri', np.float32),
-             ('z_pri', np.float32),
-             ('xe_density', np.float32),
-             ('vol_id', np.int8), 
-             ('create_S2', np.bool_), 
+    dtype = [(("x position of the cluster [cm]", "x"), np.float32),
+             (("y position of the cluster [cm]", "y"), np.float32),
+             (("z position of the cluster [cm]", "z"), np.float32),
+             (("Energy of the cluster [keV]", "ed"), np.float32),
+             (("NEST interaction type", "nestid"), np.int8),
+             (("Mass number of the interacting particle", "A"), np.int8),
+             (("Charge number of the interacting particle", "Z"), np.int8),
+             (("Geant4 event ID", "evtid"), np.int32),
+             (("x position of the primary particle [cm]", "x_pri"), np.float32),
+             (("y position of the primary particle [cm]", "y_pri"), np.float32),
+             (("z position of the primary particle [cm]", "z_pri"), np.float32),
+             (("Xenon density at the cluster position. Will be set later.", "xe_density"), np.float32), 
+             (("ID of the volume in which the cluster occured. Will be set later.", "vol_id"), np.int8),
+             (("Flag indicating if a cluster can create a S2 signal. Will be set later.", "create_S2"), np.bool_),
             ]
     
     dtype = dtype + strax.time_fields
@@ -150,27 +145,27 @@ class XENONnT_BelowCathode(VolumePlugin):
     #Config options
     #Define the volume
     xenonnt_z_cathode = straxen.URLConfig(
-        default = -148.6515,  # cm ... top of the cathode electrode
+        default = -148.6515, #Top of the cathode electrode
         type=(int, float),
-        help='xenonnt_z_cathode',
+        help='z position of the XENONnT cathode [cm]',
     )
 
     xenonnt_z_bottom_pmts = straxen.URLConfig(
-        default = -154.6555,  # cm ... top surface of the bottom PMT window
+        default = -154.6555, #Top surface of the bottom PMT window
         type=(int, float),
-        help='z position of the XENONnT bottom PMT array',
+        help='z position of the XENONnT bottom PMT array [cm]',
     )
 
     xenonnt_sensitive_volume_radius = straxen.URLConfig(
-        default = 66.4,  # cm
+        default = 66.4, 
         type=(int, float),
-        help='xenonnt_sensitive_volume_radius',
+        help='Radius of the XENONnT TPC [cm]',
     )
 
     xenon_density_below_cathode = straxen.URLConfig(
         default = 2.862,
         type=(int, float),
-        help='Density of xenon in the below-cathode-volume in g/cm3',
+        help='Density of xenon in the below-cathode-volume [g/cm3]',
     )
 
     create_S2_xenonnt_below_cathode = straxen.URLConfig(

@@ -4,7 +4,7 @@ VolumesMerger
 
 Plugin Description
 ==================
-fuse VerticalMergerPlugin that concatenates the clusters that are in the XENONnT TPC or the volume below the cathode.
+Plugin that concatenates the clusters that are in the XENONnT TPC or the volume below the cathode.
 
 Technical Details
 -----------------
