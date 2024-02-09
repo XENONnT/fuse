@@ -48,11 +48,4 @@ Provided Columns
 Config Options
 ==============
 
-.. list-table::
-   :widths: 25 25 10 40
-   :header-rows: 1
-
-   * - Option
-     - default
-     - track
-     - comment
+No configuration options are available for this plugin.
