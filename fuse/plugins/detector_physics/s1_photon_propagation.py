@@ -141,7 +141,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
                                )
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
-        self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
+        self.turned_off_pmts = np.nonzero(np.array(self.gains) == 0)[0]
 
         self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
@@ -307,7 +307,6 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         :param local_field: local field in the point of the deposit, 1d array of floats
         returns photon timing array"""
         _photon_timings = np.repeat(t, n_photon_hits)
-        _n_hits_total = len(_photon_timings)
 
         z_positions = np.repeat(positions[:, 2], n_photon_hits)
         
