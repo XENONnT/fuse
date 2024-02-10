@@ -5,7 +5,7 @@ import straxen
 import logging
 import pickle
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -13,13 +13,13 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.yields')
 
 #Initialize the nestpy random generator
-#The seed will be set in the setup function
+#The seed will be set in the compute method
 nest_rng = nestpy.RandomGen.rndm()
 
 @export
-class NestYields(strax.Plugin):
+class NestYields(FuseBasePlugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
@@ -32,41 +32,15 @@ class NestYields(strax.Plugin):
     
     dtype = dtype + strax.time_fields
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
-    #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-    
     def setup(self):
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running NestYields version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        log.debug(f'Using nestpy version {nestpy.__version__}')
+        super().setup()
 
         if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
             #Dont know but nestpy seems to have a problem with large seeds
-            self.short_seed = int(repr(seed)[-8:])
-            nest_rng.set_seed(self.short_seed)
-
-            log.debug(f"Generating random numbers from seed {self.short_seed}")
+            self.short_seed = int(repr(self.seed)[-8:])
+            log.debug(f"Generating nest random numbers starting with seed {self.short_seed}")
         else: 
             log.debug(f"Generating random numbers with seed pulled from OS")
 
@@ -82,6 +56,13 @@ class NestYields(strax.Plugin):
         Returns:
             numpy.ndarray: An array of quanta, with fields for time, endtime, photons, electrons, and excitons.
         """
+        #set the global nest random generator with self.short_seed
+        nest_rng.set_seed(self.short_seed)
+        #Now lock the seed during the computation
+        nest_rng.lock_seed()
+        #increment the seed. Next chunk we will use the modified seed to generate random numbers
+        self.short_seed += 1
+        
         if len(interactions_in_roi) == 0:
             return np.zeros(0, dtype=self.dtype)
         
@@ -107,6 +88,10 @@ class NestYields(strax.Plugin):
             result['photons'] = np.empty(0)
             result['electrons'] = np.empty(0)
             result['excitons'] = np.empty(0)
+
+        #Unlock the nest random generator seed again
+        nest_rng.unlock_seed()
+        
         return result
     
     @staticmethod
@@ -308,7 +293,7 @@ class BetaYields(strax.Plugin):
 
 
 
-class BBFYields(strax.Plugin):
+class BBFYields(FuseBasePlugin):
     
     __version__ = "0.1.1"
     
@@ -322,33 +307,9 @@ class BBFYields(strax.Plugin):
     
     dtype = dtype + strax.time_fields
 
-    #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,
-        help='Show debug informations',
-    )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-
     def setup(self):
 
-        if self.debug:
-            log.setLevel("DEBUG")
-            log.debug(f"Running BBFYields version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('WARNING')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
 
         self.bbfyields = BBF_quanta_generator(self.rng)
 

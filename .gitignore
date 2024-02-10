@@ -1,9 +1,11 @@
-
-fuse/__pycache__/*
+__pycache__
 fuse.egg-info/*
 .eggs/*
 build/*
-.DS_Store
 .vscode/*
 docs/build/*
-tests/resource_cache/*
+resource_cache
+.coverage
+.hypothesis
+.DS_Store
+dist/*

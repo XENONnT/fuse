@@ -3,7 +3,7 @@ import numpy as np
 import straxen
 import logging
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -11,9 +11,9 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_drift')
 
 @export
-class ElectronDrift(strax.Plugin):
+class ElectronDrift(FuseBasePlugin):
     
-    __version__ = "0.1.4"
+    __version__ = "0.1.5"
     
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
@@ -27,20 +27,11 @@ class ElectronDrift(strax.Plugin):
              ('z_obs', np.float32),
             ]
     dtype = dtype + strax.time_fields
-    
-    #Forbid rechunking
-    rechunk_on_save = False
 
     save_when = strax.SaveWhen.ALWAYS
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-    
+
     drift_velocity_liquid = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -131,28 +122,9 @@ class ElectronDrift(strax.Plugin):
         cache=True,
         help='fdc_map',
     )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
     
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running ElectronDrift version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
         
         #Can i do this scaling in the url config?
         if self.field_distortion_model == "inverse_fdc":
@@ -214,7 +186,7 @@ class ElectronDrift(strax.Plugin):
         interaction_in_civ = self.in_charge_sensitive_volume(xy_int = np.array([x, y]).T, # maps are in R_true, so orginal position should be here
                                                              z_int = z, # maps are in Z_true, so orginal position should be here
                                                              )
-        n_electron = n_electron*interaction_in_civ
+        n_electron = self.rng.binomial(n=n_electron, p=interaction_in_civ)
         
         #Absorb electrons during the drift
         #Average drift time of the electrons
@@ -286,9 +258,7 @@ class ElectronDrift(strax.Plugin):
 
         if self.enable_field_dependencies['survival_probability_map']:
             p_surv = self.field_dependencies_map(z_int, xy_int, map_name='survival_probability_map')
-            if np.any(p_surv<0) or np.any(p_surv>1):
-                # FIXME: this is necessary due to map artefacts, such as negative or values >1
-                p_surv=np.clip(p_surv, a_min = 0, a_max = 1)
+            p_surv=np.clip(p_surv, a_min = 0, a_max = 1)
             
         else:
             p_surv = np.ones(len(xy_int))

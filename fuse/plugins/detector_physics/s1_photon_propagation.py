@@ -4,8 +4,9 @@ import straxen
 import nestpy
 import logging
 
-from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
-from ...common import init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output
+from ...common import pmt_gains, build_photon_propagation_output
+from ...common import init_spe_scaling_factor_distributions, pmt_transit_time_spread, photon_gain_calculation 
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -13,24 +14,19 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s1_photon_propagation')
 
 #Initialize the nestpy random generator
-#The seed will be set in the setup function
+#The seed will be set in the compute method
 nest_rng = nestpy.RandomGen.rndm()
 
 @export
-class S1PhotonPropagationBase(strax.Plugin):
+class S1PhotonPropagationBase(FuseBasePlugin):
     
-    __version__ = "0.1.1"
+    __version__ = "0.1.3"
     
     depends_on = ("s1_photons", "microphysics_summary")
     provides = "propagated_s1_photons"
     data_kind = "S1_photons"
-    
-    #Forbid rechunking
-    rechunk_on_save = False
 
     save_when = strax.SaveWhen.TARGET
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     dtype = [('channel', np.int16),
              ('dpe', np.bool_),
@@ -38,12 +34,7 @@ class S1PhotonPropagationBase(strax.Plugin):
             ]
     dtype = dtype + strax.time_fields
 
-    #Config options shared by S1 and S2 simulation 
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug information during simulation',
-    )
-
+    #Config options shared by S1 and S2 simulation
     p_double_pe_emision = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -132,28 +123,13 @@ class S1PhotonPropagationBase(strax.Plugin):
         cache=True,
         help='S1 pattern map',
     )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
     
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running S1PhotonPropagation version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
+        super().setup()
 
         if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
             #Dont know but nestpy seems to have a problem with large seeds
-            self.short_seed = int(repr(seed)[-8:])
-            nest_rng.set_seed(self.short_seed)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
+            self.short_seed = int(repr(self.seed)[-8:])
             log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
         else: 
             log.debug(f"Generating random numbers with seed pulled from OS")
@@ -165,14 +141,18 @@ class S1PhotonPropagationBase(strax.Plugin):
                                )
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
-        # self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
-        self.turned_off_pmts = np.where(np.array(self.gains) == 0)[0]
-        
-        #I dont like this part -> clean up before merging the PR
-        self._cached_uniform_to_pe_arr = {}
-        self.__uniform_to_pe_arr = init_spe_scaling_factor_distributions(self.photon_area_distribution)
+        self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
+
+        self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
     def compute(self, interactions_in_roi):
+
+        #set the global nest random generator with self.short_seed
+        nest_rng.set_seed(self.short_seed)
+        #Now lock the seed during the computation
+        nest_rng.lock_seed()
+        #increment the seed. Next chunk we will use the modified seed to generate random numbers
+        self.short_seed += 1
 
         #Just apply this to clusters with photons hitting a PMT
         instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
@@ -209,29 +189,33 @@ class S1PhotonPropagationBase(strax.Plugin):
         _photon_channels = _photon_channels[sortind]
         _photon_timings = _photon_timings[sortind]
 
-        #Do i want to save both -> timings with and without pmt transition time spread?
-        # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
-        # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-        _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
-            _photon_timings=_photon_timings,
-            _photon_channels=_photon_channels,
-            pmt_transit_time_mean=self.pmt_transit_time_mean,
-            pmt_transit_time_spread=self.pmt_transit_time_spread,
-            p_double_pe_emision=self.p_double_pe_emision,
-            gains=self.gains,
-            __uniform_to_pe_arr=self.__uniform_to_pe_arr,
-            rng=self.rng,
-            )
+        #Do i want to save both -> timings with and without pmt transit time spread?
+        # Correct for PMT transit Time Spread
+        
+        _photon_timings = pmt_transit_time_spread(_photon_timings=_photon_timings,
+                                                  pmt_transit_time_mean=self.pmt_transit_time_mean,
+                                                  pmt_transit_time_spread=self.pmt_transit_time_spread,
+                                                  rng=self.rng,
+                                                  )
 
-        result = build_photon_propagation_output(
-            dtype=self.dtype,
-            _photon_timings=_photon_timings,
-            _photon_channels=_photon_channels,
-            _photon_gains=_photon_gains,
-            _photon_is_dpe=_photon_is_dpe,
-            )
+        _photon_gains, _photon_is_dpe = photon_gain_calculation(_photon_channels=_photon_channels,
+                                                                p_double_pe_emision=self.p_double_pe_emision,
+                                                                gains=self.gains,
+                                                                spe_scaling_factor_distributions=self.spe_scaling_factor_distributions,
+                                                                rng=self.rng,
+                                                                )
+
+        result = build_photon_propagation_output(dtype=self.dtype,
+                                                 _photon_timings=_photon_timings,
+                                                 _photon_channels=_photon_channels,
+                                                 _photon_gains=_photon_gains,
+                                                 _photon_is_dpe=_photon_is_dpe,
+                                                 )
 
         result = strax.sort_by_time(result)
+
+        #Unlock the nest random generator seed again
+        nest_rng.unlock_seed()
 
         return result
     
