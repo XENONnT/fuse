@@ -62,7 +62,7 @@ class TestPluginVersionsInDocumentation(unittest.TestCase):
         test_context = fuse.context.full_chain_context(output_folder = cls.temp_dir.name)
         cls.plugin_registry = test_context._plugin_class_registry
 
-        cls.this_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        cls.this_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
     @timeout_decorator.timeout(TIMEOUT, exception_message='Microphysics version tests timed out')
     def test_microphysics_versions(self):
