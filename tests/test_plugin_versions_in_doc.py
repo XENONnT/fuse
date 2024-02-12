@@ -62,15 +62,13 @@ class TestPluginVersionsInDocumentation(unittest.TestCase):
         test_context = fuse.context.full_chain_context(output_folder = cls.temp_dir.name)
         cls.plugin_registry = test_context._plugin_class_registry
 
-        cls.this_dir = os.path.dirname(os.path.realpath(__file__))
+        cls.this_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
     @timeout_decorator.timeout(TIMEOUT, exception_message='Microphysics version tests timed out')
     def test_microphysics_versions(self):
         for plugin_name, plugin_provides in microphysics_name_dict.items():
             
             plugin_version = self.plugin_registry[plugin_provides].__version__
-
-            print(self.this_dir)
             
             path_to_micrphysics_doc = os.path.join(self.this_dir, "docs", "source", "plugins", "micro_physics")
             doc_version = read_version_from_documentation(plugin_name, path_to_micrphysics_doc)
@@ -85,7 +83,7 @@ class TestPluginVersionsInDocumentation(unittest.TestCase):
             
             plugin_version = self.plugin_registry[plugin_provides].__version__
             
-            path_to_detector_physics_doc = os.path.join(self.this_dir, "..", "docs", "source", "plugins", "detector_physics")
+            path_to_detector_physics_doc = os.path.join(self.this_dir, "docs", "source", "plugins", "detector_physics")
             doc_version = read_version_from_documentation(plugin_name, path_to_detector_physics_doc)
             
             self.assertEqual(plugin_version, doc_version, 
@@ -98,7 +96,7 @@ class TestPluginVersionsInDocumentation(unittest.TestCase):
             
             plugin_version = self.plugin_registry[plugin_provides].__version__
             
-            path_to_pmt_response_doc = os.path.join(self.this_dir, "..", "docs", "source", "plugins", "pmt_and_daq")
+            path_to_pmt_response_doc = os.path.join(self.this_dir, "docs", "source", "plugins", "pmt_and_daq")
             doc_version = read_version_from_documentation(plugin_name, path_to_pmt_response_doc)
             
             self.assertEqual(plugin_version, doc_version, 
