@@ -160,7 +160,3 @@ class S1PhotonHits(FuseBasePlugin):
         n_photon_hits = self.rng.binomial(n=n_photons, p=ly)
 
         return n_photon_hits
-
-# For here:
-# 1. get_n_photons is run multiple times, so the np.squeeze should be done when initializing the correction maps.
-# 2. s1 pattern map?
