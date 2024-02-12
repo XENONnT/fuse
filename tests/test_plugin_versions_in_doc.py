@@ -69,8 +69,10 @@ class TestPluginVersionsInDocumentation(unittest.TestCase):
         for plugin_name, plugin_provides in microphysics_name_dict.items():
             
             plugin_version = self.plugin_registry[plugin_provides].__version__
+
+            print(self.this_dir)
             
-            path_to_micrphysics_doc = os.path.join(self.this_dir, "..", "docs", "source", "plugins", "micro_physics")
+            path_to_micrphysics_doc = os.path.join(self.this_dir, "docs", "source", "plugins", "micro_physics")
             doc_version = read_version_from_documentation(plugin_name, path_to_micrphysics_doc)
             
             self.assertEqual(plugin_version, doc_version, 
