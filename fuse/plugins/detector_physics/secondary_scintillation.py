@@ -188,7 +188,7 @@ class SecondaryScintillation(FuseBasePlugin):
         
         if self.s2_gain_spread:
             n_photons_per_ele += self.rng.normal(0, self.s2_gain_spread, len(n_photons_per_ele)).astype(np.int64)
-        n_photons_per_ele[n_photons_per_ele < 0] = 0
+        n_photons_per_ele = np.clip(n_photons_per_ele, 0, None)
         
         result_photons = np.zeros(len(n_photons_per_ele), dtype = self.dtype[self.result_name_photons])
         result_photons["n_s2_photons"] = n_photons_per_ele
