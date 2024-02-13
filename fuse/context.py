@@ -37,7 +37,8 @@ pmt_and_daq_plugins = [fuse.pmt_and_daq.PMTAfterPulses,
                        ]
 
 #Plugins to get truth information
-truth_information_plugins = [fuse.truth_information.PeakTruth,
+truth_information_plugins = [fuse.truth_information.RecordsTruth,
+                             fuse.truth_information.PeakTruth,
                              fuse.truth_information.EventTruth,
                              fuse.truth_information.SurvivingClusters,
                              fuse.truth_information.ClusterTagging,

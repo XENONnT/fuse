@@ -1,6 +1,7 @@
 import strax
 import straxen
 import numpy as np
+import numba
 
 from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
 
