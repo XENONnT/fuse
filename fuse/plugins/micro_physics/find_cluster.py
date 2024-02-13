@@ -16,7 +16,7 @@ log = logging.getLogger('fuse.micro_physics.find_cluster')
 @export
 class FindCluster(FuseBasePlugin):
     
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
     
     depends_on = ("geant4_interactions")
     
