@@ -300,7 +300,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                                )
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
-        self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
+        self.turned_off_pmts = np.nonzero(np.array(self.gains) == 0)[0]
 
         self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
@@ -456,8 +456,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         
         channels = np.arange(self.n_tpc_pmts).astype(np.int64)
         top_index = np.arange(self.n_top_pmts)
-        channels_bottom = np.arange(self.n_top_pmts, self.n_tpc_pmts)
-        bottom_index = np.array(channels_bottom)
+        bottom_index = np.arange(self.n_top_pmts, self.n_tpc_pmts)
         
         if self.diffusion_constant_transverse > 0:
             pattern = self.s2_pattern_map_diffuse(n_electron, z_obs, positions, drift_time_mean)  # [position, pmt]

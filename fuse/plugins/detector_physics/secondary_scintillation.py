@@ -16,7 +16,7 @@ log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 class SecondaryScintillation(FuseBasePlugin):
     """Plugin to simulate the secondary scintillation process in the gas phase."""
     
-    __version__ = "0.1.3"
+    __version__ = "0.1.4"
     
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
     provides = ("s2_photons", "s2_photons_sum")
@@ -189,9 +189,10 @@ class SecondaryScintillation(FuseBasePlugin):
         if self.s2_gain_spread:
             n_photons_per_ele += self.rng.normal(0, self.s2_gain_spread, len(n_photons_per_ele)).astype(np.int64)
         
-        sum_photons_per_interaction = [np.sum(x) for x in np.split(n_photons_per_ele, np.cumsum(interactions_in_roi[mask]["n_electron_extracted"]))[:-1]]
+        electron_indices = np.cumsum(interactions_in_roi[mask]["n_electron_extracted"])
+        sum_photons_per_interaction = np.add.reduceat(n_photons_per_ele, np.r_[0, electron_indices[:-1]])
         
-        n_photons_per_ele[n_photons_per_ele < 0] = 0
+        n_photons_per_ele = np.clip(n_photons_per_ele, 0, None)
 
         reorder_electrons = np.argsort(individual_electrons, order = ["order_index", "time"])
         

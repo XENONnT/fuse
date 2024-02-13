@@ -20,7 +20,7 @@ class FindCluster(FuseBasePlugin):
     their proximity to each other in 3D space and time. The clustering is performed using
     a 1D temporal clustering algorithm followed by 3D DBSCAN spacial clustering."""
     
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
     
     depends_on = ("geant4_interactions")
     
@@ -76,13 +76,13 @@ class FindCluster(FuseBasePlugin):
         time_cluster = simple_1d_clustering(interactions["time"], cluster_size_time)
 
         # Splitting into time cluster and apply space clustering space:
-        cluster_id = np.zeros(len(interactions), dtype=np.int32)
         spacial_cluster = np.zeros(len(interactions), dtype=np.int32)
 
         _t_clusters = np.unique(time_cluster)
         for _t in _t_clusters:
-            _cl = _find_cluster(interactions[time_cluster == _t], cluster_size_space=cluster_size_space)
-            spacial_cluster[time_cluster == _t] = _cl
+            time_cluster_mask = time_cluster == _t
+            _cl = _find_cluster(interactions[time_cluster_mask], cluster_size_space=cluster_size_space)
+            spacial_cluster[time_cluster_mask] = _cl
         _, cluster_id = np.unique((time_cluster, spacial_cluster), axis=1, return_inverse=True)
         
         return cluster_id
@@ -99,8 +99,8 @@ def _find_cluster(x, cluster_size_space):
     """
     db_cluster = DBSCAN(eps=cluster_size_space, min_samples=1)
 
-    #Conversion from numpy structured array to regular array 
-    xprime = np.array(x[['x', 'y', 'z']].tolist())
+    # Conversion from numpy structured array to regular array
+    xprime = np.stack((x['x'], x['y'], x['z']), axis=1)
 
     return db_cluster.fit_predict(xprime)
     
