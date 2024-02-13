@@ -10,73 +10,24 @@ from scipy.interpolate import interp1d
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
-
-
-########
-#Move this into strax!
-########
-import strax
-
-export, __all__ = strax.exporter()
-
-@export
-class DownChunkingPlugin(strax.Plugin):
-    """Plugin that merges data from its dependencies."""
-
-    parallel = False
-
-    def __init__(self):
-        super().__init__()
-
-        if self.parallel:
-            raise NotImplementedError(
-                f'Plugin "{self.__class__.__name__}" is a DownChunkingPlugin which '
-                "currently does not support parallel processing. "
-            )
-
-        #if self.multi_output:
-        #    raise NotImplementedError(
-        #        f'Plugin "{self.__class__.__name__}" is a DownChunkingPlugin which '
-        #        "currently does not support multiple outputs. Please only provide "
-        #        "a single data-type. LALALALALALALA"
-        #    )
-
-    def iter(self, iters, executor=None):
-        return super().iter(iters, executor)
-
-    def _iter_compute(self, chunk_i, **inputs_merged):
-        return self.do_compute(chunk_i=chunk_i, **inputs_merged)
-
-    def _fix_output(self, result, start, end, _dtype=None):
-        """Wrapper around _fix_output to support the return of iterators."""
-        return result
-#############
-
+from ...plugin import FuseBaseDownChunkingPlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
 
-
 @export
-class PMTResponseAndDAQ(DownChunkingPlugin):
+class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
     
-    __version__ = "0.2.0"
+    __version__ = "0.1.3"
 
     depends_on = ("photon_summary", "pulse_ids", "pulse_windows")
 
-    provides = ("raw_records", "contributing_clusters")
-    
-    data_kind = {"raw_records": "raw_records",
-                 "contributing_clusters" : "raw_records"
-                }
+    provides = 'raw_records'
+    data_kind = 'raw_records'
+
+    dtype = strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)
 
     save_when = strax.SaveWhen.ALWAYS
-
-    rechunk_on_save = False
-
-    #Lets wait 10 minutes for the plugin to finish
-    input_timeout = 600
 
     #Config options
     dt = straxen.URLConfig(
@@ -235,19 +186,6 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
         help='chunk can not be split if gap between pulses is smaller than this value given in ns',
     )
 
-    max_contributing_channels_in_truth = straxen.URLConfig(
-        type=(int), default = 5, 
-        help='Maximum number of contributing channels in truth. This is used to set the dtype of the contributing_channels field in the truth.',
-    )
-
-    #I'm not really a fan of having the gains here just for the truth information.
-    #But I don't know if there is a better method...
-    gain_model_mc = straxen.URLConfig(
-        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
-        infer_type=False,
-        help='PMT gain model',
-    )
-
     def setup(self):
         super().setup()
 
@@ -265,39 +203,12 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
 
         self.pulse_left_extension = + int(self.samples_to_store_before)+ self.samples_before_pulse_center
 
-        self.gains = pmt_gains(self.gain_model_mc,
-                               digitizer_voltage_range=self.digitizer_voltage_range,
-                               digitizer_bits=self.digitizer_bits,
-                               pmt_circuit_load_resistor=self.pmt_circuit_load_resistor
-                               )
-
-
-    def infer_dtype(self):
-
-        dtype = dict()
-        dtype["raw_records"] = strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)
-
-        contributing_clusters_dtype = [(("Clusters contributing to the record", "contributing_clusters"), np.int16, self.max_contributing_channels_in_truth),
-                                       (("S1 Photons in record per contributing cluster", "s1_photons_per_cluster"), np.int32, self.max_contributing_channels_in_truth),
-                                       (("S2 Photons in record per contributing cluster", "s2_photons_per_cluster"), np.int32, self.max_contributing_channels_in_truth),
-                                       (("AP Photons in record per contributing cluster", "ap_photons_per_cluster"), np.int32, self.max_contributing_channels_in_truth),
-                                       (("Sum of the photon gains", "raw_area"), np.float32),
-                                      ]
-
-        dtype["contributing_clusters"] = strax.interval_dtype + contributing_clusters_dtype
-
-        return dtype
-
     def compute(self, propagated_photons, pulse_windows, start, end):
 
         if len(propagated_photons) == 0 or len(pulse_windows) == 0:
             log.debug("No photons or pulse windows found for chunk!")
 
-            return_chunk = {"raw_records" : self.chunk(start=last_start, end=end, data=np.zeros(0, self.dtype["raw_records"]), data_type = "raw_records"),
-                            "contributing_clusters" : self.chunk(start=last_start, end=end, data=np.zeros(0, self.dtype["contributing_clusters"]), data_type = "contributing_clusters")
-                                }
-
-            yield return_chunk
+            yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
         
         #Split into "sub-chunks"
         pulse_gaps = pulse_windows["time"][1:] - strax.endtime(pulse_windows)[:-1] 
@@ -332,8 +243,7 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
 
                 #use an upper limit for the waveform buffer
                 length_waveform_buffer = np.int32(np.sum(np.ceil(pulse_group["length"]/strax.DEFAULT_RECORD_LENGTH)))
-                waveform_buffer = np.zeros(length_waveform_buffer, dtype = self.dtype["raw_records"])
-                cluster_id_buffer = np.zeros(length_waveform_buffer, dtype = self.dtype["contributing_clusters"])
+                waveform_buffer = np.zeros(length_waveform_buffer, dtype = self.dtype)
 
                 buffer_level = build_waveform(
                     pulse_group,
@@ -346,33 +256,25 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
                     self.noise_data['arr_0'],
                     self.digitizer_reference_baseline,
                     self.thresholds,
-                    self.trigger_window,
-                    cluster_id_buffer,
-                    self.gains,
+                    self.trigger_window
                     )
 
-                records = waveform_buffer[:buffer_level]
-                contributing_clusters = cluster_id_buffer[:buffer_level]
+                records = waveform_buffer[:buffer_level] 
 
                 #Digitzier saturation
                 #Clip negative values to 0
                 records['data'][records['data']<0] = 0   
 
                 records = strax.sort_by_time(records)
-                contributing_clusters = strax.sort_by_time(contributing_clusters)
                     
                 chunk_end = np.max(strax.endtime(records))
-                return_chunk = {"raw_records" : self.chunk(start=last_start, end=chunk_end, data=records, data_type = "raw_records"),
-                                "contributing_clusters" : self.chunk(start=last_start, end=chunk_end, data=contributing_clusters, data_type = "contributing_clusters")
-                                }
+                chunk = self.chunk(start=last_start, end=chunk_end, data=records)
                 last_start = chunk_end
-
-                yield return_chunk
+                yield chunk
 
         #And the last chunk
         length_waveform_buffer = np.int32(np.sum(np.ceil(pulse_window_chunks[-1]["length"]/strax.DEFAULT_RECORD_LENGTH)))
-        waveform_buffer = np.zeros(length_waveform_buffer, dtype = self.dtype["raw_records"])
-        cluster_id_buffer = np.zeros(length_waveform_buffer, dtype = self.dtype["contributing_clusters"])
+        waveform_buffer = np.zeros(length_waveform_buffer, dtype = self.dtype)
         
         buffer_level = build_waveform(
             pulse_window_chunks[-1],
@@ -385,25 +287,19 @@ class PMTResponseAndDAQ(DownChunkingPlugin):
             self.noise_data['arr_0'],
             self.digitizer_reference_baseline,
             self.thresholds,
-            self.trigger_window,
-            cluster_id_buffer,
-            self.gains,
+            self.trigger_window
             )
 
         records = waveform_buffer[:buffer_level] 
-        contributing_clusters = cluster_id_buffer[:buffer_level]
 
         #Digitzier saturation
         #Clip negative values to 0
         records['data'][records['data']<0] = 0   
 
         records = strax.sort_by_time(records)
-        contributing_clusters = strax.sort_by_time(contributing_clusters)
 
-        return_chunk = {"raw_records" : self.chunk(start=last_start, end=end, data=records, data_type = "raw_records"),
-                        "contributing_clusters" : self.chunk(start=last_start, end=end, data=contributing_clusters, data_type = "contributing_clusters")
-                        }
-        yield return_chunk
+        chunk = self.chunk(start=last_start, end=end, data=records)
+        yield chunk
 
 
     def init_pmt_current_templates(self):
@@ -477,8 +373,6 @@ def build_waveform(
     digitizer_reference_baseline,
     thresholds,
     trigger_window,
-    cluster_id_buffer,
-    gains,
     ):
     
     buffer_level = 0
@@ -517,12 +411,6 @@ def build_waveform(
             pulse["channel"],
             pulse["time"],
             dt,
-            cluster_id_buffer,
-            photons_to_put_into_pulse['time'],
-            photons_to_put_into_pulse['photon_gain'],
-            photons_to_put_into_pulse['cluster_id'],
-            photons_to_put_into_pulse['photon_type'],
-            gains,
             )
 
     return buffer_level
@@ -548,13 +436,7 @@ def convert_pulse_to_fragments(
     trigger_window,
     pulse_channel,
     pulse_time,
-    dt,
-    cluster_id_buffer,
-    photon_times,
-    photon_gains,
-    photon_cluster_ids,
-    photon_type,
-    gains,
+    dt
     ): 
 
     zle_intervals_buffer = -1 * np.ones((np.int64(len(single_waveform)/2), 2), dtype=np.int64)
@@ -593,53 +475,7 @@ def convert_pulse_to_fragments(
                                             - strax.DEFAULT_RECORD_LENGTH * i for i in range(records_needed)]
 
         buffer_level += records_needed
-
-        cluster_id_buffer['channel'][s] = waveform_buffer['channel'][s]
-        cluster_id_buffer['time'][s] = waveform_buffer['time'][s]
-        cluster_id_buffer['dt'][s] = waveform_buffer['dt'][s]
-        cluster_id_buffer['length'][s] = waveform_buffer['length'][s]
-
-
-        starttime = waveform_buffer['time'][s]
-        endtime = waveform_buffer['length'][s]*dt + starttime
-
-        max_clusters_per_record = cluster_id_buffer['contributing_clusters'].shape[1]
-
-        cluster_ids = np.zeros((records_needed, max_clusters_per_record), dtype=np.int16)
-        cluster_photons_s1 = np.zeros((records_needed, max_clusters_per_record), dtype=np.int16)
-        cluster_photons_s2 = np.zeros((records_needed, max_clusters_per_record), dtype=np.int16)
-        cluster_photons_ap = np.zeros((records_needed, max_clusters_per_record), dtype=np.int16)
-        record_raw_area = np.zeros((records_needed), dtype=np.float32)
-        for i in range(records_needed):
-
-            photon_mask = (photon_times >= starttime[i]) & (photon_times < endtime[i])
-            s1_photon_mask = (photon_mask) & (photon_type == 1)
-            s2_photon_mask = (photon_mask) & (photon_type == 2)
-            ap_photon_mask = (photon_mask) & (photon_type == 0)
-            
-            #Return counts is not working inside a numba function. Have to calculate photons_per_cluster manually
-            unique_clusters_in_record = np.unique(photon_cluster_ids[photon_mask])
-            s1_photons_per_cluster = np.array([len(photon_cluster_ids[(photon_cluster_ids == cluster_id) & s1_photon_mask]) for cluster_id in unique_clusters_in_record])
-            s2_photons_per_cluster = np.array([len(photon_cluster_ids[(photon_cluster_ids == cluster_id) & s2_photon_mask]) for cluster_id in unique_clusters_in_record])
-            ap_photons_per_cluster = np.array([len(photon_cluster_ids[(photon_cluster_ids == cluster_id) & ap_photon_mask]) for cluster_id in unique_clusters_in_record])
-
-            gain_sum_for_record = np.sum(photon_gains[photon_mask])
-
-            total_photons = s1_photons_per_cluster + s2_photons_per_cluster + ap_photons_per_cluster
-            sort_index = np.argsort(total_photons)[::-1] #Sort in descending order
-
-            cluster_ids[i, :len(unique_clusters_in_record)] = unique_clusters_in_record[sort_index][:max_clusters_per_record]
-            cluster_photons_s1[i, :len(unique_clusters_in_record)] = s1_photons_per_cluster[sort_index][:max_clusters_per_record]
-            cluster_photons_s2[i, :len(unique_clusters_in_record)] = s2_photons_per_cluster[sort_index][:max_clusters_per_record]
-            cluster_photons_ap[i, :len(unique_clusters_in_record)] = ap_photons_per_cluster[sort_index][:max_clusters_per_record]
-            record_raw_area[i] = gain_sum_for_record/gains[pulse_channel]
-            
-        cluster_id_buffer['contributing_clusters'][s] = cluster_ids
-        cluster_id_buffer['s1_photons_per_cluster'][s] = cluster_photons_s1
-        cluster_id_buffer['s2_photons_per_cluster'][s] = cluster_photons_s2
-        cluster_id_buffer['ap_photons_per_cluster'][s] = cluster_photons_ap
-        cluster_id_buffer['raw_area'][s] = record_raw_area
-
+        
     return buffer_level
 
 @njit(cache=True)
