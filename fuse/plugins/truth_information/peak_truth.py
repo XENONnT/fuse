@@ -1,22 +1,27 @@
 import strax
+import straxen
 import numpy as np
 
 export, __all__ = strax.exporter()
 
+from fuse.common import FUSE_PLUGIN_TIMEOUT, pmt_gains
+
 @export
-class PeakTruth(strax.Plugin):
+class PeakTruth(strax.OverlapWindowPlugin):
 
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
-    depends_on = ("peak_basics", "contributing_clusters", "microphysics_summary", "s1_photons", "s2_photons_sum", "drifted_electrons")
+    depends_on = ("photon_summary", "peak_basics", "microphysics_summary", "s1_photons", "s2_photons_sum", "drifted_electrons")
     provides = "peak_truth"
+    data_kind = "peaks"
 
-    dtype = [('s1_photon_number_truth', np.int32),
-             ('s2_photon_number_truth', np.int32),
-             ('ap_photon_number_truth', np.int32),
+    dtype = [('s1_photons_in_peak', np.int32),
+             ('s2_photons_in_peak', np.int32),
+             ('ap_photons_in_peak', np.int32),
              ('raw_area_truth', np.float32),
              ('observable_energy_truth', np.float32),
-             ('number_of_contributing_clusters', np.int16),
+             ('number_of_contributing_clusters_s1', np.int16),
+             ('number_of_contributing_clusters_s2', np.int16),
              ('average_x_of_contributing_clusters', np.float32),
              ('average_y_of_contributing_clusters', np.float32),
              ('average_z_of_contributing_clusters', np.float32),
@@ -26,9 +31,70 @@ class PeakTruth(strax.Plugin):
             ]
     dtype = dtype + strax.time_fields
 
-    def compute(self, peaks, raw_records, interactions_in_roi):
+    gain_model_mc = straxen.URLConfig(
+        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        infer_type=False,
+        help='PMT gain model',
+    )
 
-        contributing_clusters_per_peak = strax.split_touching_windows(raw_records, peaks)
+    pmt_circuit_load_resistor = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=pmt_circuit_load_resistor",
+        type=(int, float),
+        cache=True,
+        help='PMT circuit load resistor', 
+    )
+
+    digitizer_bits = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_bits",
+        type=(int, float),
+        cache=True,
+        help='Number of bits of the digitizer boards',
+    )
+
+    digitizer_voltage_range = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=digitizer_voltage_range",
+        type=(int, float),
+        cache=True,
+        help='Voltage range of the digitizer boards',
+    )
+
+    max_drift_length = straxen.URLConfig(
+        default=straxen.tpc_z,
+        type=(int, float),
+        help="Total length of the TPC from the bottom of gate to the top of cathode wires [cm]",
+    )
+
+    drift_velocity_liquid = straxen.URLConfig(
+        default = "take://resource://"
+                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
+                  "&take=drift_velocity_liquid",
+        type=(int, float),
+        cache=True,
+        help='Drift velocity of electrons in the liquid xenon',
+    )
+
+    def setup(self):
+        super().setup()
+
+        self.gains = pmt_gains(self.gain_model_mc,
+                               digitizer_voltage_range=self.digitizer_voltage_range,
+                               digitizer_bits=self.digitizer_bits,
+                               pmt_circuit_load_resistor=self.pmt_circuit_load_resistor
+                               )
+
+    def get_window_size(self):
+
+        drift_time_max = int(self.max_drift_length / self.drift_velocity_liquid)
+        
+        return drift_time_max * 20
+
+    def compute(self,interactions_in_roi, propagated_photons, peaks):
 
         n_peaks = len(peaks)
 
@@ -36,49 +102,59 @@ class PeakTruth(strax.Plugin):
         result['time'] = peaks['time']
         result['endtime'] = peaks['endtime']
 
+        photons_in_peaks = strax.split_by_containment(propagated_photons, peaks)
+
         for i in range(n_peaks):
-            result['s1_photon_number_truth'][i] = contributing_clusters_per_peak[i]["s1_photons_per_cluster"].sum()
-            result['s2_photon_number_truth'][i] = contributing_clusters_per_peak[i]["s2_photons_per_cluster"].sum()
-            result['ap_photon_number_truth'][i] = contributing_clusters_per_peak[i]["ap_photons_per_cluster"].sum()
-            result['raw_area_truth'][i] = contributing_clusters_per_peak[i]["raw_area"].sum()
 
-            unique_contributing_clusters = np.unique(contributing_clusters_per_peak[i]["contributing_clusters"])
+            s1_photon_cut = photons_in_peaks[i]["photon_type"] == 1
+            s2_photon_cut = photons_in_peaks[i]["photon_type"] == 2
+            ap_photon_cut = photons_in_peaks[i]["photon_type"] == 0
 
-            result['number_of_contributing_clusters'][i] = np.sum(unique_contributing_clusters > 0)
+            result['s1_photons_in_peak'][i] = np.sum(s1_photon_cut)
+            result['s2_photons_in_peak'][i] = np.sum(s2_photon_cut)
+            result['ap_photons_in_peak'][i] = np.sum(ap_photon_cut)
 
-            s1_photons_from_cluster = []
-            s2_photons_from_cluster = []
-            #contributing_cluster_informations = []
-            for cluster_index in unique_contributing_clusters:
-                if cluster_index <=0: #Skip for afterpulses and no clusters
-                    continue
+            unique_contributing_clusters, photons_per_cluster = np.unique(photons_in_peaks[i]["cluster_id"], return_counts=True) 
+            unique_contributing_clusters_s1, photons_per_cluster_s1 = np.unique(photons_in_peaks[i][s1_photon_cut]["cluster_id"], return_counts=True) 
+            unique_contributing_clusters_s2, photons_per_cluster_s2 = np.unique(photons_in_peaks[i][s2_photon_cut]["cluster_id"], return_counts=True) 
+            unique_contributing_clusters_ap, photons_per_cluster_ap = np.unique(photons_in_peaks[i][ap_photon_cut]["cluster_id"], return_counts=True) 
 
-                s1_photons_from_cluster_tmp = np.sum(contributing_clusters_per_peak[i]["s1_photons_per_cluster"][contributing_clusters_per_peak[i]["contributing_clusters"] == cluster_index])
-                s2_photons_from_cluster_tmp = np.sum(contributing_clusters_per_peak[i]["s2_photons_per_cluster"][contributing_clusters_per_peak[i]["contributing_clusters"] == cluster_index])
+            result['number_of_contributing_clusters_s1'][i] = np.sum(unique_contributing_clusters_s1 > 0)
+            result['number_of_contributing_clusters_s2'][i] = np.sum(unique_contributing_clusters_s2 > 0)
+
+            contributing_clusters_s1 = get_cluster_information(interactions_in_roi, unique_contributing_clusters_s1)
+            contributing_clusters_s2 = get_cluster_information(interactions_in_roi, unique_contributing_clusters_s2)
+
+            if (result['s1_photons_in_peak'][i] + result['s2_photons_in_peak'][i]) > 0:
                 
-                s1_photons_from_cluster.append(s1_photons_from_cluster_tmp)
-                s2_photons_from_cluster.append(s2_photons_from_cluster_tmp)
+                positions_to_evaluate = ["x", "y", "z", "x_obs", "y_obs", "z_obs"]
 
-            contributing_cluster_informations = interactions_in_roi[np.isin(interactions_in_roi["cluster_id"], contributing_clusters_per_peak[i]["contributing_clusters"])]
-            sort_index = np.argsort(contributing_cluster_informations["cluster_id"])
-            contributing_cluster_informations = contributing_cluster_informations[sort_index]
+                for position in positions_to_evaluate:
+                    result_name = "average_" + position + "_of_contributing_clusters"
+
+                    result[result_name][i] = weighted_position_average(position,
+                        contributing_clusters_s1,
+                        contributing_clusters_s2,
+                        photons_per_cluster_s1,
+                        photons_per_cluster_s2,
+                        )
             
-            if len(contributing_cluster_informations)>0:
+                #Assume that we calibrate or detector so that sum_s2_photons would give us the observed energy
+                energy_of_s2_photons_in_peak = photons_per_cluster_s2/contributing_clusters_s2["sum_s2_photons"] * contributing_clusters_s2["ed"]
+                #Same for S1 but with n_s1_photon_hits
+                energy_of_s1_photons_in_peak = photons_per_cluster_s1/contributing_clusters_s1["n_s1_photon_hits"] * contributing_clusters_s1["ed"]
+                #Sum up up the two: 
+                result['observable_energy_truth'][i] = np.sum(energy_of_s1_photons_in_peak) + np.sum(energy_of_s2_photons_in_peak)
 
-                s1_cluster_weights = np.nan_to_num(s1_photons_from_cluster/contributing_cluster_informations["n_s1_photon_hits"])
-                s2_cluster_weights = np.nan_to_num(s2_photons_from_cluster/contributing_cluster_informations["sum_s2_photons"])
-
-                result['observable_energy_truth'][i] = np.sum(contributing_cluster_informations["ed"] * s1_cluster_weights + contributing_cluster_informations["ed"] * s2_cluster_weights)
-            
-
-                physical_photons_in_peak = result['s1_photon_number_truth'][i] + result['s2_photon_number_truth'][i]
-                if physical_photons_in_peak > 0:
-                    result['average_x_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["x"] * s1_photons_from_cluster + contributing_cluster_informations["x"] * s2_photons_from_cluster) / physical_photons_in_peak
-                    result['average_y_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["y"] * s1_photons_from_cluster + contributing_cluster_informations["y"] * s2_photons_from_cluster) / physical_photons_in_peak
-                    result['average_z_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["z"] * s1_photons_from_cluster + contributing_cluster_informations["z"] * s2_photons_from_cluster) / physical_photons_in_peak
-                    result['average_x_obs_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["x_obs"] * s1_photons_from_cluster + contributing_cluster_informations["x_obs"] * s2_photons_from_cluster) / physical_photons_in_peak
-                    result['average_y_obs_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["y_obs"] * s1_photons_from_cluster + contributing_cluster_informations["y_obs"] * s2_photons_from_cluster) / physical_photons_in_peak
-                    result['average_z_obs_of_contributing_clusters'][i] = np.sum(contributing_cluster_informations["z_obs"] * s1_photons_from_cluster + contributing_cluster_informations["z_obs"] * s2_photons_from_cluster) / physical_photons_in_peak
-            
+                result['raw_area_truth'][i] = np.sum(photons_in_peaks[i]["photon_gain"] / self.gains[photons_in_peaks[i]["channel"]])
 
         return result
+
+        
+def get_cluster_information(interactions_in_roi, unique_contributing_clusters): 
+    contributing_cluster_informations = interactions_in_roi[np.isin(interactions_in_roi["cluster_id"], unique_contributing_clusters)]
+    sort_index = np.argsort(contributing_cluster_informations["cluster_id"])
+    return contributing_cluster_informations[sort_index]
+
+def weighted_position_average(coord, contr_s1_cl, contr_s2_cl, ph_per_cl_s1, ph_per_cl_s2):
+    return np.sum(np.concatenate([contr_s1_cl[coord] * ph_per_cl_s1, contr_s2_cl[coord] * ph_per_cl_s2])) / np.sum(np.concatenate([ph_per_cl_s1, ph_per_cl_s2]))
