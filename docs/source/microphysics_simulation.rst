@@ -1,10 +1,7 @@
 Microphysics Simulation
 =======================
 
-
-.. image:: figures/MicrophysicsSimulationStructure.pdf
-    :width: 400
-
+The microphysics simulation is performed in 9 plugins. These are listed below. 
 
 .. toctree::
    :maxdepth: 1
@@ -19,3 +16,6 @@ Microphysics Simulation
    plugins/micro_physics/ElectricField
    plugins/micro_physics/NestYields
    plugins/micro_physics/MicrophysicsSummary
+
+.. image:: figures/MicrophysicsSimulationStructure.pdf
+    :width: 400

@@ -15,14 +15,18 @@ log = logging.getLogger('fuse.micro_physics.find_cluster')
 
 @export
 class FindCluster(FuseBasePlugin):
+    """Plugin to find clusters of energy deposits. This plugin is performing the first half 
+    of the microclustering process. Energy deposits are grouped into clusters based on
+    their proximity to each other in 3D space and time. The clustering is performed using
+    a 1D temporal clustering algorithm followed by 3D DBSCAN spacial clustering."""
     
-    __version__ = "0.1.3"
+    __version__ = "0.2.0"
     
     depends_on = ("geant4_interactions")
     
     provides = "cluster_index"
     
-    dtype = [('cluster_ids', np.int32),
+    dtype = [(("Cluster index of the energy deposit", "cluster_ids"), np.int32),
             ]
     dtype = dtype + strax.time_fields
 

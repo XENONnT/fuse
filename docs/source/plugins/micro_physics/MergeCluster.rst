@@ -2,9 +2,11 @@
 MergeCluster
 ============
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/micro_physics/find_cluster.py>`_.
+
 Plugin Description
 ==================
-This plugin merges energy deposits with the same cluster ID into a single interaction. 
+Plugin that merges energy deposits with the same cluster index into a single interaction. 
 The 3D postiion is calculated as the energy weighted average of the 3D positions of the energy deposits.
 The time of the merged cluster is calculated as the energy weighted average of the times of the energy deposits.
 The energy of the merged cluster is the sum of the individual energy depositions. The cluster is then 
@@ -18,6 +20,7 @@ Technical Details
    depends_on = ("geant4_interactions", "cluster_index")
    provides = "clustered_interactions"
    data_kind = "clustered_interactions"
+   __version__ = "0.2.0"
 
 Provided Columns
 ================
@@ -31,25 +34,25 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - time of cluster
+     - Time of the cluster
    * - endtime
      - int64
-     - endtime of the cluster (will be the same as time)
+     - Endtime of the cluster (same as time)
    * - x
      - float32
-     - x position of the cluster
+     - x position of the cluster [cm]
    * - y
      - float32
-     - y position of the cluster
+     - y position of the cluster [cm]
    * - z
      - float32
-     - z position of the cluster
+     - z position of the cluster [cm]
    * - ed
      - float32
-     - Energy of the cluster in keV
+     - Energy of the cluster [keV]
    * - nestid
      - int8
-     - NEST interaction type 
+     - NEST interaction type
    * - A
      - int8
      - Mass number of the interacting particle
@@ -61,22 +64,22 @@ Provided Columns
      - Geant4 event ID
    * - x_pri
      - float32
-     - x position of the primary particle
+     - x position of the primary particle [cm]
    * - y_pri
      - float32
-     - y position of the primary particle
+     - y position of the primary particle [cm]
    * - z_pri
      - float32
-     - z position of the primary particle
+     - z position of the primary particle [cm]
    * - xe_density
      - float32
-     - Xenon density at cluster position. Will be set in a later plugin. 
+     - Xenon density at the cluster position. Will be set later.
    * - vol_id
      - int8
-     - ID of the volume in which the cluster occured. Will be set in a later plugin.
+     - ID of the volume in which the cluster occured. Will be set later.
    * - create_S2
-     - bool8
-     - Flag indicating if a cluster can create a S2 signal (True) or not (False)
+     - bool
+     - Flag indicating if a cluster can create a S2 signal. Will be set later.
 
 
 Config Options
@@ -90,11 +93,7 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
    * - tag_cluster_by
      - "energy"
      - True
-     - Decide if you tag the cluster (particle type, energy depositing process) according to first interaction in it (time) or most energetic (energy))
+     - Decide if you tag the cluster according to first interaction (time) or most energetic (energy) one.)

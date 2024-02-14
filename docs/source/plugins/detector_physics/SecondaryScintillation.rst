@@ -2,9 +2,11 @@
 SecondaryScintillation
 ======================
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/detector_physics/secondary_scintillation.py>`_.
+
 Plugin Description
 ==================
-Plugin to simulate the secondary scintillation process in the gas phase. 
+Plugin to simulate the secondary scintillation process in the gas phase.
 
 Technical Details
 -----------------
@@ -16,6 +18,7 @@ Technical Details
    data_kind = {"s2_photons": "individual_electrons",
                 "s2_photons_sum" : "interactions_in_roi"
                 }
+   __version__ = "0.2.0"
 
 
 Provided Columns
@@ -33,13 +36,13 @@ s2_photons
      - Comment
    * - time
      - int64
-     - Time of the individual electron reaching the gas phase
+     - Time of the individual electron reaching the gas phase [ns]
    * - endtime
      - int64
-     - Endtime of the electron reaching the gas phase (same values as time)
+     - Endtime of the electron reaching the gas phase [ns] (same values as time)
    * - n_s2_photons
      - int32
-     - number of photons produced by the extracted electron
+     - Number of photons produced by the extracted electron
 
 
 s2_photons_sum
@@ -54,13 +57,13 @@ s2_photons_sum
      - Comment
    * - time
      - int64
-     - time of the energy deposit
+     - Time of the cluster [ns]
    * - endtime
      - int64
-     - endtime of the energy deposit (will be the same as time)
+     - Endtime of the cluster [ns] (same as time)
    * - sum_s2_photons
      - int32
-     - sum of all photons produced by electrons originating from the same cluster
+     - Sum of all photons produced by electrons originating from the same cluster
 
 
 Config Options
@@ -74,26 +77,14 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
-   * - electron_trapping_time
-     - 
-     - True
-     - Time scale electrons are trapped at the liquid gas interface
-   * - s2_gain_spread
-     - 
-     - True
-     - Spread of the S2 gain
    * - s2_secondary_sc_gain_mc
      - 
      - True
-     - Secondary scintillation gain
+     - Secondary scintillation gain [PE/e-]
    * - pmt_circuit_load_resistor
      - 
      - True
-     - PMT circuit load resistor
+     - PMT circuit load resistor [kg m^2/(s^3 A)] (PMT circuit resistance * electron charge * amplification factor * sampling frequency)
    * - digitizer_bits
      - 
      - True
@@ -138,7 +129,3 @@ Config Options
      - 
      - True
      - S2 pattern map
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).

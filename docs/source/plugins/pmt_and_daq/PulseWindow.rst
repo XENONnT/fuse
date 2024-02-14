@@ -2,9 +2,11 @@
 PulseWindow
 ===========
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/pmt_and_daq/photon_pulses.py>`_.
+
 Plugin Description
 ==================
-Plugin to compute time intervals (called `pulse_windows``) in which the 
+Plugin to compute time intervals (called `pulse_windows`) in which the 
 PMT response of photons can overlap. Additionally a `pulse_id` is computed 
 for each propagated photon to identify the pulse window it belongs to.
 
@@ -18,6 +20,7 @@ Technical Details
    data_kind = {"pulse_windows": "pulse_windows",
                 "pulse_ids" : "propagated_photons"
                 }
+   __version__ = "0.2.0"
 
 Provided Columns
 ================
@@ -34,7 +37,7 @@ pulse_windows
      - Comment
    * - time
      - int64
-     - Time of the individual electron reaching the gas phase
+     - Time of the individual electron reaching the gas phase [ns]
    * - length
      - int32
      - Length of the interval in samples
@@ -61,13 +64,13 @@ pulse_ids
      - Comment
    * - time
      - int64
-     - time of individual s1 photons
+     - Time of individual S1, S2 or AP photon [ns]
    * - endtime
      - int64
-     - endtime of individual s1 photons (will be the same as time)
+     - Endtime of individual S1, S2 or AP photon [ns] (same as time)
    * - pulse_id
      - int64
-     - pulse id to map the photon to the pulse window it belongs to
+     - Pulse id to map the photon to the pulse window
 
 Config Options
 ==============
@@ -80,10 +83,6 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
    * - dt
      - 
      - True

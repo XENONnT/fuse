@@ -2,10 +2,12 @@
 ElectronExtraction
 ==================
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/detector_physics/electron_extraction.py>`_.
+
 Plugin Description
 ==================
 Plugin to simulate the loss of electrons during the extraction of drifted 
-electrons from the liquid into the gas phase. 
+electrons from the liquid into the gas phase.
 
 Technical Details
 -----------------
@@ -15,6 +17,7 @@ Technical Details
    depends_on = ("microphysics_summary", "drifted_electrons")
    provides = "extracted_electrons"
    data_kind = "interactions_in_roi"
+   __version__ = "0.2.0"
 
 Provided Columns
 ================
@@ -28,10 +31,10 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - time of the energy deposit
+     - Time of the cluster [ns]
    * - endtime
      - int64
-     - endtime of the energy deposit (will be the same as time)
+     - Endtime of the cluster [ns] (same as time)
    * - n_electron_extracted
      - int32
      - Number of electrons extracted into the gas phase
@@ -48,34 +51,18 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
-   * - digitizer_voltage_range
-     - 
-     - True
-     - Voltage range of the digitizer boards
-   * - digitizer_bits
-     - 
-     - True
-     - Number of bits of the digitizer boards
-   * - pmt_circuit_load_resistor
-     - 
-     - True
-     - PMT circuit load resistor 
    * - s2_secondary_sc_gain_mc
      - 
      - True
-     - Secondary scintillation gain
+     - Secondary scintillation gain [PE/e-]
    * - g2_mean
      - 
      - True
-     - mean value of the g2 gain. 
+     - Mean value of the g2 gain [PE/e-]
    * - electron_extraction_yield
      - 
      - True
-     - Electron extraction yield
+     - Electron extraction yield [electron_extracted/electron]
    * - ext_eff_from_map
      - 
      - True
@@ -84,10 +71,6 @@ Config Options
      - 
      - True
      - Boolean indication if the secondary scintillation gain is taken from a map
-   * - gain_model_mc
-     - 
-     - True
-     - PMT gain model
    * - s2_correction_map
      - 
      - True
@@ -104,15 +87,3 @@ Config Options
      - 
      - True
      - Number of PMTs in the TPC
-   * - s2_mean_area_fraction_top
-     - 
-     - True
-     - Mean S2 area fraction top
-   * - s2_pattern_map
-     - 
-     - True
-     - S2 pattern map 
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).
