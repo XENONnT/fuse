@@ -17,7 +17,7 @@ Technical Details
    depends_on = ("drifted_electrons", "extracted_electrons")
    provides = "electron_time"
    data_kind = "individual_electrons"
-   __version__ = "0.1.1"
+   __version__ = "0.2.0"
 
 Provided Columns
 ================

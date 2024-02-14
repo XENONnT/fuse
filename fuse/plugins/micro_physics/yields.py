@@ -21,7 +21,7 @@ class NestYields(FuseBasePlugin):
     """Plugin that calculates the number of photons, electrons and excitons produced by
     energy deposit using nestpy."""
     
-    __version__ = "0.1.2"
+    __version__ = "0.2.0"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"

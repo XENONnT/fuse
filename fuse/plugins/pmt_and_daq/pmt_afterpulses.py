@@ -17,7 +17,7 @@ class PMTAfterPulses(FuseBasePlugin):
     In the simulation afterpulses will be saved as a list of "pseudo" photons.
     These "photons" can then be combined with real photons from S1 and S2 signals to create a waveform."""
     
-    __version__ = "0.1.2"
+    __version__ = "0.2.0"
     
     depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"

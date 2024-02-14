@@ -17,7 +17,7 @@ class PulseWindow(FuseBasePlugin):
     PMT response of photons can overlap. Additionally a `pulse_id` is computed 
     for each propagated photon to identify the pulse window it belongs to."""
 
-    __version__ = "0.1.2"
+    __version__ = "0.2.0"
 
     depends_on = ("photon_summary")
 

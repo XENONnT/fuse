@@ -39,7 +39,7 @@ class XENONnT_TPC(VolumePlugin):
 
     provides = "tpc_interactions"
     data_kind = "tpc_interactions"
-    __version__ = "0.1.1"
+    __version__ = "0.2.0"
 
     #Can we import this from MergeCluster and just add the needed fields?
     dtype = [(("x position of the cluster [cm]", "x"), np.float32),
@@ -121,7 +121,7 @@ class XENONnT_BelowCathode(VolumePlugin):
 
     provides = "below_cathode_interactions"
     data_kind = "below_cathode_interactions"
-    __version__ = "0.1.1"
+    __version__ = "0.2.0"
 
     #Can we import this from MergeCluster and just add the needed fields?
     dtype = [(("x position of the cluster [cm]", "x"), np.float32),
@@ -135,9 +135,9 @@ class XENONnT_BelowCathode(VolumePlugin):
              (("x position of the primary particle [cm]", "x_pri"), np.float32),
              (("y position of the primary particle [cm]", "y_pri"), np.float32),
              (("z position of the primary particle [cm]", "z_pri"), np.float32),
-             (("Xenon density at the cluster position. Will be set later.", "xe_density"), np.float32), 
-             (("ID of the volume in which the cluster occured. Will be set later.", "vol_id"), np.int8),
-             (("Flag indicating if a cluster can create a S2 signal. Will be set later.", "create_S2"), np.bool_),
+             (("Xenon density at the cluster position.", "xe_density"), np.float32), 
+             (("ID of the volume in which the cluster occured.", "vol_id"), np.int8),
+             (("Flag indicating if a cluster can create a S2 signal.", "create_S2"), np.bool_),
             ]
     
     dtype = dtype + strax.time_fields
@@ -202,23 +202,23 @@ class XENONnT_GasPhase(VolumePlugin):
 
     provides = "gas_phase_interactions"
     data_kind = "gas_phase_interactions"
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
     #Can we import this from MergeCluster and just add the needed fields?
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('z', np.float32),
-             ('ed', np.float64),
-             ('nestid', np.int64),
-             ('A', np.int64),
-             ('Z', np.int64),
-             ('evtid', np.int64),
-             ('x_pri', np.float32),
-             ('y_pri', np.float32),
-             ('z_pri', np.float32),
-             ('xe_density', np.float32),
-             ('vol_id', np.int64),
-             ('create_S2', np.bool_),
+    dtype = [(("x position of the cluster [cm]", "x"), np.float32),
+             (("y position of the cluster [cm]", "y"), np.float32),
+             (("z position of the cluster [cm]", "z"), np.float32),
+             (("Energy of the cluster [keV]", "ed"), np.float32),
+             (("NEST interaction type", "nestid"), np.int8),
+             (("Mass number of the interacting particle", "A"), np.int8),
+             (("Charge number of the interacting particle", "Z"), np.int8),
+             (("Geant4 event ID", "evtid"), np.int32),
+             (("x position of the primary particle [cm]", "x_pri"), np.float32),
+             (("y position of the primary particle [cm]", "y_pri"), np.float32),
+             (("z position of the primary particle [cm]", "z_pri"), np.float32),
+             (("Xenon density at the cluster position.", "xe_density"), np.float32), 
+             (("ID of the volume in which the cluster occured.", "vol_id"), np.int8),
+             (("Flag indicating if a cluster can create a S2 signal.", "create_S2"), np.bool_),
             ]
     
     dtype = dtype + strax.time_fields

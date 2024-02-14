@@ -16,7 +16,7 @@ log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 class SecondaryScintillation(FuseBasePlugin):
     """Plugin to simulate the secondary scintillation process in the gas phase."""
     
-    __version__ = "0.1.4"
+    __version__ = "0.2.0"
     
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
     provides = ("s2_photons", "s2_photons_sum")

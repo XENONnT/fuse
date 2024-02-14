@@ -18,7 +18,7 @@ Technical Details
    data_kind = {"s2_photons": "individual_electrons",
                 "s2_photons_sum" : "interactions_in_roi"
                 }
-   __version__ = "0.1.3"
+   __version__ = "0.2.0"
 
 
 Provided Columns

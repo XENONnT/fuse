@@ -16,7 +16,7 @@ class ElectricField(FuseBasePlugin):
     Plugin that calculates the electric field values for the cluster position.
     """
 
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
     depends_on = ("interactions_in_roi",)
     provides = "electric_field_values"

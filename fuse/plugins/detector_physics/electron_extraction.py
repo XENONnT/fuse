@@ -16,7 +16,7 @@ class ElectronExtraction(FuseBasePlugin):
     """Plugin to simulate the loss of electrons during the extraction of drifted 
     electrons from the liquid into the gas phase."""
     
-    __version__ = "0.1.3"
+    __version__ = "0.2.0"
     
     depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"

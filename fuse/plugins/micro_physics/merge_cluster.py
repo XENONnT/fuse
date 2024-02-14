@@ -19,7 +19,7 @@ class MergeCluster(FuseBasePlugin):
     The energy of the merged cluster is the sum of the individual energy depositions. The cluster is then 
     classified based on either the first interaction in the cluster or the most energetic interaction."""
     
-    __version__ = "0.1.1"
+    __version__ = "0.2.0"
     
     depends_on = ("geant4_interactions", "cluster_index")
     

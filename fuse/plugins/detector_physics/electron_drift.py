@@ -17,7 +17,7 @@ class ElectronDrift(FuseBasePlugin):
     effect of a charge insensitive volume and the loss of electrons due to 
     impurities. Additionally, the drift time and observed position is calculated."""
     
-    __version__ = "0.1.5"
+    __version__ = "0.2.0"
     
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"

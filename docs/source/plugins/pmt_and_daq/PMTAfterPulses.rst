@@ -18,7 +18,7 @@ Technical Details
    depends_on = ("propagated_s2_photons", "propagated_s1_photons")
    provides = "pmt_afterpulses"
    data_kind = "AP_photons"
-   __version__ = "0.1.2"
+   __version__ = "0.2.0"
 
 Provided Columns
 ================

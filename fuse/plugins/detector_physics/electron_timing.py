@@ -15,7 +15,7 @@ class ElectronTiming(FuseBasePlugin):
     """Plugin to simulate the arrival times of electrons extracted from the liquid phase. It includes both the 
     drift time and the time needed for the extraction."""
     
-    __version__ = "0.1.1"
+    __version__ = "0.2.0"
     
     depends_on = ("drifted_electrons", "extracted_electrons")
     provides = "electron_time"

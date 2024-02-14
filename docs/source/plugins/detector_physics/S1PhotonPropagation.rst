@@ -24,7 +24,7 @@ Technical Details
    depends_on = ("s1_photons", "microphysics_summary")
    provides = "propagated_s1_photons"
    data_kind = "S1_photons"
-   __version__ = "0.1.0"
+   __version__ = "0.2.0"
 
 Provided Columns
 ================

@@ -22,7 +22,7 @@ class ChunkInput(FuseBasePlugin):
     """Plugin to read XENONnT Geant4 root or csv files. The plugin can distribute the events
     in time based on a source rate and will create multiple chunks of data if needed."""
     
-    __version__ = "0.1.2"
+    __version__ = "0.2.0"
     
     depends_on = tuple()
     provides = "geant4_interactions"
