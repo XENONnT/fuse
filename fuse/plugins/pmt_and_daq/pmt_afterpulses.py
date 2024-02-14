@@ -13,8 +13,11 @@ log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
 
 @export
 class PMTAfterPulses(FuseBasePlugin):
+    """Plugin to simulate PMT afterpulses using a precomputed afterpulse cumulative distribution function.
+    In the simulation afterpulses will be saved as a list of "pseudo" photons.
+    These "photons" can then be combined with real photons from S1 and S2 signals to create a waveform."""
     
-    __version__ = "0.1.3"
+    __version__ = "0.2.0"
     
     depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"
@@ -22,11 +25,11 @@ class PMTAfterPulses(FuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
     
-    dtype = [('channel', np.int16),
-             ('dpe', np.bool_),
-             ('photon_gain', np.int32),
-             ('cluster_id', np.int32),
-             ('photon_type', np.int8),
+    dtype = [(("PMT channel of the photon", "channel"), np.int16),
+             (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
+             (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
+             (("ID of the cluster creating the photon", "cluster_id"), np.int32),
+             (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)","photon_type"), np.int8),
             ]
     dtype = dtype + strax.time_fields
 

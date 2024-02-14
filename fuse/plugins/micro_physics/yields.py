@@ -18,16 +18,18 @@ nest_rng = nestpy.RandomGen.rndm()
 
 @export
 class NestYields(FuseBasePlugin):
+    """Plugin that calculates the number of photons, electrons and excitons produced by
+    energy deposit using nestpy."""
     
-    __version__ = "0.1.2"
+    __version__ = "0.2.0"
     
     depends_on = ["interactions_in_roi", "electric_field_values"]
     provides = "quanta"
     data_kind = "interactions_in_roi"
     
-    dtype = [('photons', np.int32),
-             ('electrons', np.int32),
-             ('excitons', np.int32),
+    dtype = [(("Number of photons at interaction position.", "photons"), np.int32),
+             (("Number of electrons at interaction position.", "electrons"), np.int32),
+             (("Number of excitons at interaction position.", "excitons"), np.int32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -47,15 +49,7 @@ class NestYields(FuseBasePlugin):
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
     
     def compute(self, interactions_in_roi):
-        """
-        Computes the charge and light quanta for a list of clustered interactions.
 
-        Args:
-            interactions_in_roi (numpy.ndarray): An array of clustered interactions.
-
-        Returns:
-            numpy.ndarray: An array of quanta, with fields for time, endtime, photons, electrons, and excitons.
-        """
         #set the global nest random generator with self.short_seed
         nest_rng.set_seed(self.short_seed)
         #Now lock the seed during the computation

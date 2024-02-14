@@ -12,19 +12,23 @@ log = logging.getLogger('fuse.detector_physics.electron_drift')
 
 @export
 class ElectronDrift(FuseBasePlugin):
+    """Plugin to simulate the drift of electrons from the 
+    interaction site to the liquid gas interface. The plugin simulates the 
+    effect of a charge insensitive volume and the loss of electrons due to 
+    impurities. Additionally, the drift time and observed position is calculated."""
     
-    __version__ = "0.1.5"
+    __version__ = "0.2.0"
     
     depends_on = ("microphysics_summary")
     provides = "drifted_electrons"
     data_kind = 'interactions_in_roi'
     
-    dtype = [('n_electron_interface', np.int32),
-             ('drift_time_mean', np.int32),
-             ('drift_time_spread', np.int32),
-             ('x_obs', np.float32),
-             ('y_obs', np.float32),
-             ('z_obs', np.float32),
+    dtype = [(("Number of electrons reaching the liquid gas interface", "n_electron_interface"), np.int32),
+             (("Mean drift time of the electrons in the cluster [ns]", "drift_time_mean"), np.int32),
+             (("Spread of the drift time of the electrons in the cluster [ns]", "drift_time_spread"), np.int32),
+             (("Observed x position of the cluster at liquid-gas interface [cm]", "x_obs"), np.float32),
+             (("Observed y position of the cluster at liquid-gas interface [cm]", "y_obs"), np.float32),
+             (("Observed z position of the cluster after field distortion correction [cm]", "z_obs"), np.float32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -38,7 +42,7 @@ class ElectronDrift(FuseBasePlugin):
                   "&take=drift_velocity_liquid",
         type=(int, float),
         cache=True,
-        help='Drift velocity of electrons in the liquid xenon',
+        help='Drift velocity of electrons in the liquid xenon [cm/ns]',
     )
     
     drift_time_gate = straxen.URLConfig(
@@ -47,7 +51,7 @@ class ElectronDrift(FuseBasePlugin):
                   "&take=drift_time_gate",
         type=(int, float),
         cache=True,
-        help='Electron drift time from the gate in ns',
+        help='Electron drift time from the gate [ns]',
     )
     
     diffusion_constant_longitudinal = straxen.URLConfig(
@@ -56,7 +60,7 @@ class ElectronDrift(FuseBasePlugin):
                   "&take=diffusion_constant_longitudinal",
         type=(int, float),
         cache=True,
-        help='Longitudinal electron drift diffusion constant',
+        help='Longitudinal electron drift diffusion constant [cm^2/ns]',
     )
     
     electron_lifetime_liquid = straxen.URLConfig(
@@ -65,7 +69,7 @@ class ElectronDrift(FuseBasePlugin):
                   "&take=electron_lifetime_liquid",
         type=(int, float),
         cache=True,
-        help='Electron lifetime in liquid xenon',
+        help='Electron lifetime in liquid xenon [ns]',
     )
     
     enable_field_dependencies = straxen.URLConfig(
@@ -82,7 +86,7 @@ class ElectronDrift(FuseBasePlugin):
                   "&take=tpc_length",
         type=(int, float),
         cache=True,
-        help='Length of the XENONnT TPC',
+        help='Length of the XENONnT TPC [cm]',
     )
         
     field_distortion_model = straxen.URLConfig(
@@ -120,7 +124,7 @@ class ElectronDrift(FuseBasePlugin):
                   '&fmt=json.gz'
                   '&method=RectBivariateSpline',
         cache=True,
-        help='fdc_map',
+        help='Field distortion map used in fuse (Check if we can remove _fuse from the name)',
     )
     
     def setup(self):

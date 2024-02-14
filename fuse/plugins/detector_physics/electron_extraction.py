@@ -13,8 +13,10 @@ log = logging.getLogger('fuse.detector_physics.electron_extraction')
 
 @export
 class ElectronExtraction(FuseBasePlugin):
+    """Plugin to simulate the loss of electrons during the extraction of drifted 
+    electrons from the liquid into the gas phase."""
     
-    __version__ = "0.1.3"
+    __version__ = "0.2.0"
     
     depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
@@ -22,7 +24,7 @@ class ElectronExtraction(FuseBasePlugin):
     
     save_when = strax.SaveWhen.ALWAYS
 
-    dtype = [('n_electron_extracted', np.int32),
+    dtype = [(("Number of electrons extracted into the gas phase", "n_electron_extracted"), np.int32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -34,7 +36,7 @@ class ElectronExtraction(FuseBasePlugin):
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
-        help='Secondary scintillation gain',
+        help='Secondary scintillation gain [PE/e-]',
     )
     #Rename? -> g2_value in beta_yields model 
     g2_mean = straxen.URLConfig(
@@ -43,7 +45,7 @@ class ElectronExtraction(FuseBasePlugin):
                   "&take=g2_mean",
         type=(int, float),
         cache=True,
-        help='mean value of the g2 gain. ',
+        help='Mean value of the g2 gain [PE/e-]',
     )
 
     electron_extraction_yield = straxen.URLConfig(
@@ -52,7 +54,7 @@ class ElectronExtraction(FuseBasePlugin):
                   "&take=electron_extraction_yield",
         type=(int, float),
         cache=True,
-        help='Electron extraction yield',
+        help='Electron extraction yield [electron_extracted/electron]',
     )
 
     ext_eff_from_map = straxen.URLConfig(

@@ -18,7 +18,7 @@ log = logging.getLogger('fuse.micro_physics.output')
 @export
 class output_plugin(FuseBasePlugin):
     
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
     
     depends_on = ["interactions_in_roi", "quanta", "electric_field_values"] #Add times later
     
