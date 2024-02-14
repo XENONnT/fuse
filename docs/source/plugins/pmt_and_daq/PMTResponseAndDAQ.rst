@@ -87,7 +87,7 @@ Config Options
    * - digitizer_voltage_range
      - 
      - True
-     - Voltage range of the digitizer boards  [Unit!]
+     - Voltage range of the digitizer boards  [V]
    * - noise_data
      - 
      - True

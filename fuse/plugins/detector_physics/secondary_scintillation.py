@@ -36,21 +36,13 @@ class SecondaryScintillation(FuseBasePlugin):
                               )
     
     #Config options
-
-    #Move this into the config!
-    s2_gain_spread = straxen.URLConfig(
-        default = 0,
-        type=(int, float),
-        help='Spread of the S2 gain [Unit!]',
-    )
-
     s2_secondary_sc_gain_mc = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
-        help='Secondary scintillation gain [Unit!]',
+        help='Secondary scintillation gain [PE/e-]',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -77,7 +69,7 @@ class SecondaryScintillation(FuseBasePlugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards [Unit!]',
+        help='Voltage range of the digitizer boards [V]',
     )
 
     se_gain_from_map = straxen.URLConfig(
@@ -185,9 +177,6 @@ class SecondaryScintillation(FuseBasePlugin):
         electron_gains = np.repeat(sc_gain, interactions_in_roi[mask]["n_electron_extracted"])
         
         n_photons_per_ele = self.rng.poisson(electron_gains)
-        
-        if self.s2_gain_spread:
-            n_photons_per_ele += self.rng.normal(0, self.s2_gain_spread, len(n_photons_per_ele)).astype(np.int64)
         
         electron_indices = np.cumsum(interactions_in_roi[mask]["n_electron_extracted"])
         sum_photons_per_interaction = np.add.reduceat(n_photons_per_ele, np.r_[0, electron_indices[:-1]])

@@ -36,7 +36,7 @@ class ElectronExtraction(FuseBasePlugin):
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
-        help='Secondary scintillation gain [Unit!]',
+        help='Secondary scintillation gain [PE/e-]',
     )
     #Rename? -> g2_value in beta_yields model 
     g2_mean = straxen.URLConfig(
@@ -45,7 +45,7 @@ class ElectronExtraction(FuseBasePlugin):
                   "&take=g2_mean",
         type=(int, float),
         cache=True,
-        help='Mean value of the g2 gain [Unit!]',
+        help='Mean value of the g2 gain [PE/e-]',
     )
 
     electron_extraction_yield = straxen.URLConfig(
@@ -54,7 +54,7 @@ class ElectronExtraction(FuseBasePlugin):
                   "&take=electron_extraction_yield",
         type=(int, float),
         cache=True,
-        help='Electron extraction yield [Unit!]',
+        help='Electron extraction yield [electron_extracted/electron]',
     )
 
     ext_eff_from_map = straxen.URLConfig(

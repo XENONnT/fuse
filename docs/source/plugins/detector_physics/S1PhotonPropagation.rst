@@ -73,11 +73,11 @@ S1PhotonPropagationBase plugin
    * - pmt_transit_time_spread
      - 
      - True
-     - Spread of the PMT transit times [Unit!]
+     - Spread of the PMT transit times [ns]
    * - pmt_transit_time_mean
      - 
      - True
-     - Mean of the PMT transit times [Unit!]
+     - Mean of the PMT transit times [ns]
    * - pmt_circuit_load_resistor
      - 
      - True
@@ -89,7 +89,7 @@ S1PhotonPropagationBase plugin
    * - digitizer_voltage_range
      - 
      - True
-     - Voltage range of the digitizer boards [Unit!]
+     - Voltage range of the digitizer boards [V]
    * - n_top_pmts
      - 
      - True
@@ -125,7 +125,7 @@ S1PhotonPropagation plugin
    * - maximum_recombination_time
      - 
      - False
-     - Maximum recombination time [Unit!]
+     - Maximum recombination time [ns]
    * - s1_optical_propagation_spline
      - 
      - False

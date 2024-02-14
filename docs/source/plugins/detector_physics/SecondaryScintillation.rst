@@ -77,14 +77,10 @@ Config Options
      - default
      - track
      - comment
-   * - s2_gain_spread
-     - 0
-     - True
-     - Spread of the S2 gain [Unit!]
    * - s2_secondary_sc_gain_mc
      - 
      - True
-     - Secondary scintillation gain [Unit!]
+     - Secondary scintillation gain [PE/e-]
    * - pmt_circuit_load_resistor
      - 
      - True

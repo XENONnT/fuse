@@ -42,7 +42,7 @@ class ElectronDrift(FuseBasePlugin):
                   "&take=drift_velocity_liquid",
         type=(int, float),
         cache=True,
-        help='Drift velocity of electrons in the liquid xenon [unit!]',
+        help='Drift velocity of electrons in the liquid xenon [cm/ns]',
     )
     
     drift_time_gate = straxen.URLConfig(
@@ -60,7 +60,7 @@ class ElectronDrift(FuseBasePlugin):
                   "&take=diffusion_constant_longitudinal",
         type=(int, float),
         cache=True,
-        help='Longitudinal electron drift diffusion constant [unit!]',
+        help='Longitudinal electron drift diffusion constant [cm^2/ns]',
     )
     
     electron_lifetime_liquid = straxen.URLConfig(
@@ -69,7 +69,7 @@ class ElectronDrift(FuseBasePlugin):
                   "&take=electron_lifetime_liquid",
         type=(int, float),
         cache=True,
-        help='Electron lifetime in liquid xenon [unit!]',
+        help='Electron lifetime in liquid xenon [ns]',
     )
     
     enable_field_dependencies = straxen.URLConfig(

@@ -54,15 +54,15 @@ Config Options
    * - s2_secondary_sc_gain_mc
      - 
      - True
-     - Secondary scintillation gain [Unit!]
+     - Secondary scintillation gain [PE/e-]
    * - g2_mean
      - 
      - True
-     - Mean value of the g2 gain [Unit!]
+     - Mean value of the g2 gain [PE/e-]
    * - electron_extraction_yield
      - 
      - True
-     - Electron extraction yield [Unit!]
+     - Electron extraction yield [electron_extracted/electron]
    * - ext_eff_from_map
      - 
      - True

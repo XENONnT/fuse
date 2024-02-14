@@ -56,7 +56,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
                   "&take=pmt_transit_time_spread",
         type=(int, float),
         cache=True,
-        help='Spread of the PMT transit times [Unit!]',
+        help='Spread of the PMT transit times [ns]',
     )
 
     pmt_transit_time_mean = straxen.URLConfig(
@@ -65,7 +65,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
                   "&take=pmt_transit_time_mean",
         type=(int, float),
         cache=True,
-        help='Mean of the PMT transit times [Unit!]',
+        help='Mean of the PMT transit times [ns]',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -92,7 +92,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards [Unit!]',
+        help='Voltage range of the digitizer boards [V]',
     )
 
     n_top_pmts = straxen.URLConfig(
@@ -269,7 +269,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                   "&take=maximum_recombination_time",
         type=(int, float),
         cache=True,
-        help='Maximum recombination time [Unit!]',
+        help='Maximum recombination time [ns]',
     )
 
     s1_optical_propagation_spline = straxen.URLConfig(

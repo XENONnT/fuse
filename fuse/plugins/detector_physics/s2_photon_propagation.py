@@ -57,7 +57,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=pmt_transit_time_spread",
         type=(int, float),
         cache=True,
-        help='Spread of the PMT transit times [Unit!]',
+        help='Spread of the PMT transit times [ns]',
     )
 
     pmt_transit_time_mean = straxen.URLConfig(
@@ -66,7 +66,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=pmt_transit_time_mean",
         type=(int, float),
         cache=True,
-        help='Mean of the PMT transit times [Unit!]',
+        help='Mean of the PMT transit times [ns]',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -93,7 +93,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards [Unit!]',
+        help='Voltage range of the digitizer boards [V]',
     )
 
     n_top_pmts = straxen.URLConfig(
@@ -133,7 +133,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=drift_velocity_liquid",
         type=(int, float),
         cache=True,
-        help='Drift velocity of electrons in the liquid xenon [Unit!]',
+        help='Drift velocity of electrons in the liquid xenon [cm/ns]',
     )
 
     tpc_length = straxen.URLConfig(
@@ -160,7 +160,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=diffusion_constant_transverse",
         type=(int, float),
         cache=True,
-        help='Transverse diffusion constant [Unit!]',
+        help='Transverse diffusion constant [cm^2/ns]',
     )
 
     s2_aft_skewness = straxen.URLConfig(
@@ -238,7 +238,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=triplet_lifetime_gas",
         type=(int, float),
         cache=True,
-        help='Liftetime of triplet states in GXe [Unit!]',
+        help='Liftetime of triplet states in GXe [ns]',
     )
 
     singlet_lifetime_gas = straxen.URLConfig(
@@ -247,7 +247,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=singlet_lifetime_gas",
         type=(int, float),
         cache=True,
-        help='Liftetime of singlet states in GXe [Unit!]',
+        help='Liftetime of singlet states in GXe [ns]',
     )
 
     triplet_lifetime_liquid = straxen.URLConfig(
@@ -256,7 +256,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=triplet_lifetime_liquid",
         type=(int, float),
         cache=True,
-        help='Liftetime of triplet states in LXe [Unit!]',
+        help='Liftetime of triplet states in LXe [ns]',
     )
 
     singlet_lifetime_liquid = straxen.URLConfig(
@@ -265,7 +265,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=singlet_lifetime_liquid",
         type=(int, float),
         cache=True,
-        help='Liftetime of singlet states in LXe [Unit!]',
+        help='Liftetime of singlet states in LXe [ns]',
     )
 
     s2_secondary_sc_gain_mc = straxen.URLConfig(
@@ -274,7 +274,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
-        help='Secondary scintillation gain [Unit!]',
+        help='Secondary scintillation gain [PE/e-]',
     )
 
     propagated_s2_photons_file_size_target = straxen.URLConfig(

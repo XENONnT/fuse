@@ -74,11 +74,11 @@ S2PhotonPropagationBase plugin
    * - pmt_transit_time_spread
      - 
      - True
-     - Spread of the PMT transit times [Unit!]
+     - Spread of the PMT transit times [ns]
    * - pmt_transit_time_mean
      - 
      - True
-     - Mean of the PMT transit times [Unit!]
+     - Mean of the PMT transit times [ns]
    * - pmt_circuit_load_resistor
      - 
      - True
@@ -90,7 +90,7 @@ S2PhotonPropagationBase plugin
    * - digitizer_voltage_range
      - 
      - True
-     - Voltage range of the digitizer boards [Unit!]
+     - Voltage range of the digitizer boards [V]
    * - n_top_pmts
      - 
      - True
@@ -114,7 +114,7 @@ S2PhotonPropagationBase plugin
    * - drift_velocity_liquid
      - 
      - True
-     - Drift velocity of electrons in the liquid xenon [Unit!]
+     - Drift velocity of electrons in the liquid xenon [cm/ns]
    * - tpc_length
      - 
      - True
@@ -126,7 +126,7 @@ S2PhotonPropagationBase plugin
    * - diffusion_constant_transverse
      - 
      - True
-     - Transverse diffusion constant [Unit!]
+     - Transverse diffusion constant [cm^2/ns]
    * - s2_aft_skewness
      - 
      - True
@@ -158,23 +158,23 @@ S2PhotonPropagationBase plugin
    * - triplet_lifetime_gas
      - 
      - True
-     - Liftetime of triplet states in GXe [Unit!]
+     - Liftetime of triplet states in GXe [ns]
    * - singlet_lifetime_gas
      - 
      - True
-     - Liftetime of singlet states in GXe [Unit!]
+     - Liftetime of singlet states in GXe [ns]
    * - triplet_lifetime_liquid
      - 
      - True
-     - Liftetime of triplet states in LXe [Unit!]
+     - Liftetime of triplet states in LXe [ns]
    * - singlet_lifetime_liquid
      - 
      - True
-     - Liftetime of singlet states in LXe [Unit!]
+     - Liftetime of singlet states in LXe [ns]
    * - s2_secondary_sc_gain_mc
      - 
      - True
-     - Secondary scintillation gain [Unit!]
+     - Secondary scintillation gain [PE/e-]
    * - propagated_s2_photons_file_size_target
      - 300
      - False

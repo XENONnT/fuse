@@ -55,7 +55,7 @@ class S1PhotonHits(FuseBasePlugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards [Unit!]',
+        help='Voltage range of the digitizer boards [V]',
     )
 
     gain_model_mc = straxen.URLConfig(

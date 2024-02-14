@@ -72,7 +72,7 @@ Config Options
    * - drift_velocity_liquid
      - 
      - True
-     - Drift velocity of electrons in the liquid xenon [unit!]
+     - Drift velocity of electrons in the liquid xenon [cm/ns]
    * - drift_time_gate
      - 
      - True
@@ -80,11 +80,11 @@ Config Options
    * - diffusion_constant_longitudinal
      - 
      - True
-     - Longitudinal electron drift diffusion constant [unit!]
+     - Longitudinal electron drift diffusion constant [cm^2/ns]
    * - electron_lifetime_liquid
      - 
      - True
-     - Electron lifetime in liquid xenon [unit!]
+     - Electron lifetime in liquid xenon [ns]
    * - enable_field_dependencies
      - 
      - True
