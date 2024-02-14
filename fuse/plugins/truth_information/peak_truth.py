@@ -122,8 +122,8 @@ class PeakTruth(strax.OverlapWindowPlugin):
             result['number_of_contributing_clusters_s1'][i] = np.sum(unique_contributing_clusters_s1 > 0)
             result['number_of_contributing_clusters_s2'][i] = np.sum(unique_contributing_clusters_s2 > 0)
 
-            contributing_clusters_s1 = get_cluster_information(interactions_in_roi, unique_contributing_clusters_s1)
-            contributing_clusters_s2 = get_cluster_information(interactions_in_roi, unique_contributing_clusters_s2)
+            contributing_clusters_s1 = _get_cluster_information(interactions_in_roi, unique_contributing_clusters_s1)
+            contributing_clusters_s2 = _get_cluster_information(interactions_in_roi, unique_contributing_clusters_s2)
 
             if (result['s1_photons_in_peak'][i] + result['s2_photons_in_peak'][i]) > 0:
                 
@@ -151,7 +151,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         return result
 
         
-def get_cluster_information(interactions_in_roi, unique_contributing_clusters): 
+def _get_cluster_information(interactions_in_roi, unique_contributing_clusters): 
     contributing_cluster_informations = interactions_in_roi[np.isin(interactions_in_roi["cluster_id"], unique_contributing_clusters)]
     sort_index = np.argsort(contributing_cluster_informations["cluster_id"])
     return contributing_cluster_informations[sort_index]
