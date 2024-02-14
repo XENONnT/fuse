@@ -15,7 +15,7 @@ The microphysics simulation is performed in 9 plugins. These are listed below.
    plugins/micro_physics/VolumesMerger
    plugins/micro_physics/ElectricField
    plugins/micro_physics/NestYields
-   plugins/micro_physics/MicrophysicsSummary
+   plugins/micro_physics/MicroPhysicsSummary
 
 .. image:: figures/MicrophysicsSimulationStructure.pdf
     :width: 400
