@@ -1,8 +1,6 @@
 fuse
 ====
 
-Github page: 
-
 `fuse <https://github.com/XENONnT/fuse>`_ is the next generation XENONnT simulation software. The goal of this project is
 to unify `epix <https://github.com/XENONnT/epix>`_ and `WFSim <https://github.com/XENONnT/WFSim>`_ into a
 single program. fuse is based on the `strax <https://github.com/AxFoundation/strax>`_ framework, so that the simulation
