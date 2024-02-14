@@ -259,7 +259,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     optical propagation and luminescence timing from nestpy
     """
 
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
     child_plugin = True
 
