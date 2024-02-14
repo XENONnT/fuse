@@ -19,8 +19,14 @@ nest_rng = nestpy.RandomGen.rndm()
 
 @export
 class S1PhotonPropagationBase(FuseBasePlugin):
+    """Base plugin to simulate the propagation of S1 photons in the detector. Photons are 
+    randomly assigned to PMT channels based on their starting position and 
+    the timing of the photons is calculated.
     
-    __version__ = "0.1.3"
+    Note: The timing calculation is defined in the child plugin.
+    """
+    
+    __version__ = "0.2.0"
     
     depends_on = ("s1_photons", "microphysics_summary")
     provides = "propagated_s1_photons"
@@ -28,9 +34,9 @@ class S1PhotonPropagationBase(FuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
 
-    dtype = [('channel', np.int16),
-             ('dpe', np.bool_),
-             ('photon_gain', np.int32),
+    dtype = [(("PMT channel of the photon", "channel"), np.int16),
+             (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
+             (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -50,7 +56,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
                   "&take=pmt_transit_time_spread",
         type=(int, float),
         cache=True,
-        help='Spread of the PMT transit times',
+        help='Spread of the PMT transit times [ns]',
     )
 
     pmt_transit_time_mean = straxen.URLConfig(
@@ -59,7 +65,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
                   "&take=pmt_transit_time_mean",
         type=(int, float),
         cache=True,
-        help='Mean of the PMT transit times',
+        help='Mean of the PMT transit times [ns]',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -68,7 +74,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='PMT circuit load resistor',
+        help='PMT circuit load resistor [kg m^2/(s^3 A)]',
     )
 
     digitizer_bits = straxen.URLConfig(
@@ -86,7 +92,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards',
+        help='Voltage range of the digitizer boards [V]',
     )
 
     n_top_pmts = straxen.URLConfig(
@@ -249,11 +255,11 @@ class S1PhotonPropagationBase(FuseBasePlugin):
 @export
 class S1PhotonPropagation(S1PhotonPropagationBase):
     """
-    This class is used to simulate the propagation of photons from an S1 signal using
+    Child plugin to simulate the propagation of S1 photons using
     optical propagation and luminescence timing from nestpy
     """
 
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
     child_plugin = True
 
@@ -263,7 +269,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                   "&take=maximum_recombination_time",
         type=(int, float),
         cache=True,
-        help='Maximum recombination time',
+        help='Maximum recombination time [ns]',
     )
 
     s1_optical_propagation_spline = straxen.URLConfig(

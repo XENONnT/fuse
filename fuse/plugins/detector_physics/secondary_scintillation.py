@@ -14,8 +14,9 @@ log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 
 @export
 class SecondaryScintillation(FuseBasePlugin):
+    """Plugin to simulate the secondary scintillation process in the gas phase."""
     
-    __version__ = "0.1.4"
+    __version__ = "0.2.0"
 
     result_name_photons = "s2_photons"
     result_name_photons_sum = "s2_photons_sum"
@@ -26,8 +27,8 @@ class SecondaryScintillation(FuseBasePlugin):
                  result_name_photons_sum : "interactions_in_roi"
                 }
     
-    dtype_photons = [('n_s2_photons', np.int32),] + strax.time_fields
-    dtype_sum_photons = [('sum_s2_photons', np.int32),] + strax.time_fields
+    dtype_photons = [(("Number of photons produced by the extracted electron","n_s2_photons"), np.int32),] + strax.time_fields
+    dtype_sum_photons = [(("Sum of all photons produced by electrons originating from the same cluster", "sum_s2_photons"), np.int32),] + strax.time_fields
     
     dtype = dict()
     dtype[result_name_photons] = dtype_photons
@@ -38,21 +39,13 @@ class SecondaryScintillation(FuseBasePlugin):
                               })
     
     #Config options
-
-    #Move this into the config!
-    s2_gain_spread = straxen.URLConfig(
-        default = 0,
-        type=(int, float),
-        help='Spread of the S2 gain',
-    )
-
     s2_secondary_sc_gain_mc = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
-        help='Secondary scintillation gain',
+        help='Secondary scintillation gain [PE/e-]',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -61,7 +54,7 @@ class SecondaryScintillation(FuseBasePlugin):
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='PMT circuit load resistor',
+        help='PMT circuit load resistor [kg m^2/(s^3 A)]',
     )
 
     digitizer_bits = straxen.URLConfig(
@@ -79,7 +72,7 @@ class SecondaryScintillation(FuseBasePlugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards',
+        help='Voltage range of the digitizer boards [V]',
     )
 
     se_gain_from_map = straxen.URLConfig(
@@ -185,10 +178,6 @@ class SecondaryScintillation(FuseBasePlugin):
         electron_gains = self.get_s2_light_yield(positions=positions)
         
         n_photons_per_ele = self.rng.poisson(electron_gains)
-        
-        if self.s2_gain_spread:
-            n_photons_per_ele += self.rng.normal(0, self.s2_gain_spread, len(n_photons_per_ele)).astype(np.int64)
-        n_photons_per_ele = np.clip(n_photons_per_ele, 0, None)
         
         result_photons = np.zeros(len(n_photons_per_ele), dtype = self.dtype[self.result_name_photons])
         result_photons["n_s2_photons"] = n_photons_per_ele
