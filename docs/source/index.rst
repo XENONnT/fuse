@@ -1,5 +1,5 @@
-Welcome to the documentation of XENON fuse!
-===========================================
+fuse
+====
 
 **fuse** is the next generation XENONnT simulation software. The goal of this project is
 to unify `epix <https://github.com/XENONnT/epix>`_ and `WFSim <https://github.com/XENONnT/WFSim>`_ into a
