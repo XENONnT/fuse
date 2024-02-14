@@ -580,9 +580,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 class S2PhotonPropagation(S2PhotonPropagationBase):
     """
     This class is used to simulate the propagation of S2 photons using 
-    luminescence timing from garfield gasgap, singlet and tripled delays and optical propagation
+    luminescence timing from garfield gas gap, singlet and tripled delays and optical propagation
     """
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
     
     child_plugin = True
 
