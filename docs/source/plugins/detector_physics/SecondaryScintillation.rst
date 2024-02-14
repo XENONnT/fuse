@@ -84,7 +84,7 @@ Config Options
    * - pmt_circuit_load_resistor
      - 
      - True
-     - PMT circuit load resistor [Unit!]
+     - PMT circuit load resistor [kg m^2/(s^3 A)] (PMT circuit resistance * electron charge * amplification factor * sampling frequency)
    * - digitizer_bits
      - 
      - True

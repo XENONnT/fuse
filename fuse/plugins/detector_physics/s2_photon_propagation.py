@@ -75,7 +75,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='PMT circuit load resistor [Unit!]',
+        help='PMT circuit load resistor [kg m^2/(s^3 A)]',
     )
 
     digitizer_bits = straxen.URLConfig(
