@@ -28,8 +28,8 @@ class DelayedElectronsSecondaryScintillation(SecondaryScintillation):
                  result_name_photons_sum : "delayed_interactions_in_roi"
                 }
     
-    dtype_photons = [('n_s2_photons', np.int32),] + strax.time_fields
-    dtype_sum_photons = [('sum_s2_photons', np.int32),] + strax.time_fields
+    dtype_photons = [(("Number of photons produced by the extracted electron","n_s2_photons"), np.int32),] + strax.time_fields
+    dtype_sum_photons = [(("Sum of all photons produced by electrons originating from the same cluster", "sum_s2_photons"), np.int32),] + strax.time_fields
     
     dtype = dict()
     dtype[result_name_photons] = dtype_photons
