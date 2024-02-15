@@ -24,7 +24,7 @@ Technical Details
    depends_on = ("s1_photons", "microphysics_summary")
    provides = "propagated_s1_photons"
    data_kind = "S1_photons"
-   __version__ = "0.2.0"
+   __version__ = "0.3.0"
 
 Provided Columns
 ================
@@ -51,6 +51,12 @@ Provided Columns
    * - photon_gain
      - int32
      - Sampled PMT gain for the photon
+   * - cluster_id
+     - int32
+     - ID of the cluster creating the photon
+   * - photon_type
+     - int8
+     - Type of the photon. S1 (1), S2 (2) or PMT AP (0)
 
 Config Options
 ==============

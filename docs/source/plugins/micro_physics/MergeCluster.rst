@@ -20,7 +20,7 @@ Technical Details
    depends_on = ("geant4_interactions", "cluster_index")
    provides = "clustered_interactions"
    data_kind = "clustered_interactions"
-   __version__ = "0.2.0"
+   __version__ = "0.3.0"
 
 Provided Columns
 ================
@@ -71,6 +71,9 @@ Provided Columns
    * - z_pri
      - float32
      - z position of the primary particle [cm]
+   * - cluster_id
+     - int32
+     - ID of the cluster
    * - xe_density
      - float32
      - Xenon density at the cluster position. Will be set later.

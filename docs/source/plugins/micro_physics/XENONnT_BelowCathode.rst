@@ -19,7 +19,7 @@ Technical Details
    depends_on = ("clustered_interactions")
    provides = "below_cathode_interactions"
    data_kind = "below_cathode_interactions"
-   __version__ = "0.2.0"
+   __version__ = "0.3.0"
 
 Provided Columns
 ================
@@ -70,6 +70,9 @@ Provided Columns
    * - z_pri
      - float32
      - z position of the primary particle [cm]
+   * - cluster_id
+     - int32
+     - ID of the cluster
    * - xe_density
      - float32
      - Xenon density at the cluster position.

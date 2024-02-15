@@ -20,7 +20,7 @@ class FindCluster(FuseBasePlugin):
     their proximity to each other in 3D space and time. The clustering is performed using
     a 1D temporal clustering algorithm followed by 3D DBSCAN spacial clustering."""
     
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
     
     depends_on = ("geant4_interactions")
     
