@@ -4,12 +4,12 @@ import numpy as np
 
 export, __all__ = strax.exporter()
 
-from fuse.common import FUSE_PLUGIN_TIMEOUT, pmt_gains
+from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
 
 @export
 class PeakTruth(strax.OverlapWindowPlugin):
 
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     depends_on = ("photon_summary", "peak_basics", "microphysics_summary", "s1_photons", "s2_photons_sum", "drifted_electrons")
     provides = "peak_truth"
@@ -104,26 +104,33 @@ class PeakTruth(strax.OverlapWindowPlugin):
 
         photons_in_peaks = strax.split_by_containment(propagated_photons, peaks)
 
+        photon_type_dict = {"s1": 1,
+                            "s2": 2,
+                            "ap": 0,
+                            }
+
         for i in range(n_peaks):
 
-            s1_photon_cut = photons_in_peaks[i]["photon_type"] == 1
-            s2_photon_cut = photons_in_peaks[i]["photon_type"] == 2
-            ap_photon_cut = photons_in_peaks[i]["photon_type"] == 0
+            contributing_clusters_s1 = np.zeros(0, dtype=interactions_in_roi.dtype)
+            contributing_clusters_s2 = np.zeros(0, dtype=interactions_in_roi.dtype)
+            photons_per_cluster_s1 = np.zeros(0, dtype=int)
+            photons_per_cluster_s2 = np.zeros(0, dtype=int)
 
-            result['s1_photons_in_peak'][i] = np.sum(s1_photon_cut)
-            result['s2_photons_in_peak'][i] = np.sum(s2_photon_cut)
-            result['ap_photons_in_peak'][i] = np.sum(ap_photon_cut)
+            for photon_type in photon_type_dict.keys():
+                photon_cut = photons_in_peaks[i]["photon_type"] == photon_type_dict[photon_type]
 
-            unique_contributing_clusters, photons_per_cluster = np.unique(photons_in_peaks[i]["cluster_id"], return_counts=True) 
-            unique_contributing_clusters_s1, photons_per_cluster_s1 = np.unique(photons_in_peaks[i][s1_photon_cut]["cluster_id"], return_counts=True) 
-            unique_contributing_clusters_s2, photons_per_cluster_s2 = np.unique(photons_in_peaks[i][s2_photon_cut]["cluster_id"], return_counts=True) 
-            unique_contributing_clusters_ap, photons_per_cluster_ap = np.unique(photons_in_peaks[i][ap_photon_cut]["cluster_id"], return_counts=True) 
+                result[photon_type + "_photons_in_peak"][i] = np.sum(photon_cut)
 
-            result['number_of_contributing_clusters_s1'][i] = np.sum(unique_contributing_clusters_s1 > 0)
-            result['number_of_contributing_clusters_s2'][i] = np.sum(unique_contributing_clusters_s2 > 0)
+                unique_contributing_clusters, photons_per_cluster = np.unique(photons_in_peaks[i][photon_cut]["cluster_id"], return_counts=True)
 
-            contributing_clusters_s1 = _get_cluster_information(interactions_in_roi, unique_contributing_clusters_s1)
-            contributing_clusters_s2 = _get_cluster_information(interactions_in_roi, unique_contributing_clusters_s2)
+                if photon_type == "s1": 
+                    result['number_of_contributing_clusters_s1'][i] = np.sum(unique_contributing_clusters > 0)
+                    contributing_clusters_s1 = _get_cluster_information(interactions_in_roi, unique_contributing_clusters)
+                    photons_per_cluster_s1 = photons_per_cluster
+                elif photon_type == "s2":
+                    result['number_of_contributing_clusters_s2'][i] = np.sum(unique_contributing_clusters > 0)
+                    contributing_clusters_s2 = _get_cluster_information(interactions_in_roi, unique_contributing_clusters)
+                    photons_per_cluster_s2 = photons_per_cluster
 
             if (result['s1_photons_in_peak'][i] + result['s2_photons_in_peak'][i]) > 0:
                 
