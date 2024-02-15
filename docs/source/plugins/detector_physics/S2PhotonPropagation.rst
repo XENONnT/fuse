@@ -25,7 +25,7 @@ Technical Details
    depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum", "microphysics_summary")
    provides = "propagated_s2_photons"
    data_kind = "S2_photons"
-   __version__ = "0.3.0"
+   __version__ = "0.2.0"
 
 Provided Columns
 ================
