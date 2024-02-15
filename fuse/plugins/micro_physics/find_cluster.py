@@ -23,7 +23,7 @@ class FindCluster(strax.Plugin):
     
     provides = "cluster_index"
     
-    dtype = [('cluster_ids', np.int32),
+    dtype = [(("Cluster index of the energy deposit", "cluster_ids"), np.int32),
             ]
     dtype = dtype + strax.time_fields
 
