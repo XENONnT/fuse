@@ -33,12 +33,12 @@ class MergeCluster(FuseBasePlugin):
              (("z position of the cluster [cm]", "z"), np.float32),
              (("Energy of the cluster [keV]", "ed"), np.float32),
              (("NEST interaction type", "nestid"), np.int8),
-             (("Mass number of the interacting particle", "A"), np.int8),
-             (("Charge number of the interacting particle", "Z"), np.int8),
+             (("Mass number of the interacting particle", "A"), np.int16),
+             (("Charge number of the interacting particle", "Z"), np.int16),
              (("Geant4 event ID", "evtid"), np.int32),
-             (("x position of the primary particle [cm]", "x_pri"), np.float32),
-             (("y position of the primary particle [cm]", "y_pri"), np.float32),
-             (("z position of the primary particle [cm]", "z_pri"), np.float32),
+             #(("x position of the primary particle [cm]", "x_pri"), np.float32),
+             #(("y position of the primary particle [cm]", "y_pri"), np.float32),
+             #(("z position of the primary particle [cm]", "z_pri"), np.float32),
              (("Xenon density at the cluster position. Will be set later.", "xe_density"), np.float32), 
              (("ID of the volume in which the cluster occured. Will be set later.", "vol_id"), np.int8),
              (("Flag indicating if a cluster can create a S2 signal. Will be set later.", "create_S2"), np.bool_),
@@ -54,6 +54,9 @@ class MergeCluster(FuseBasePlugin):
     )
         
     def compute(self, geant4_interactions):
+
+        #Remove interactions with no energy deposition
+        geant4_interactions = geant4_interactions[geant4_interactions["ed"] > 0]
 
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
