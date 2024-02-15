@@ -20,8 +20,14 @@ conversion_to_bar = 1/constants.elementary_charge / 1e1
 
 @export
 class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
+    """Base plugin to simulate the propagation of S2 photons in the detector. Photons are 
+    randomly assigned to PMT channels based on their starting position and 
+    the timing of the photons is calculated.
     
-    __version__ = "0.1.4"
+    Note: The timing calculation is defined in the child plugin.
+    """
+    
+    __version__ = "0.2.0"
     
     depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
     provides = "propagated_s2_photons"
@@ -29,9 +35,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
     save_when = strax.SaveWhen.TARGET
 
-    dtype = [('channel', np.int16),
-             ('dpe', np.bool_),
-             ('photon_gain', np.int32),
+    dtype = [(("PMT channel of the photon", "channel"), np.int16),
+             (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
+             (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
             ]
     dtype = dtype + strax.time_fields
 
@@ -42,7 +48,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=p_double_pe_emision",
         type=(int, float),
         cache=True,
-        help='p_double_pe_emision',
+        help='Probability of double photo-electron emission',
     )
 
     pmt_transit_time_spread = straxen.URLConfig(
@@ -51,7 +57,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=pmt_transit_time_spread",
         type=(int, float),
         cache=True,
-        help='pmt_transit_time_spread',
+        help='Spread of the PMT transit times [ns]',
     )
 
     pmt_transit_time_mean = straxen.URLConfig(
@@ -60,7 +66,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=pmt_transit_time_mean",
         type=(int, float),
         cache=True,
-        help='pmt_transit_time_mean',
+        help='Mean of the PMT transit times [ns]',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -69,7 +75,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='pmt_circuit_load_resistor',
+        help='PMT circuit load resistor [kg m^2/(s^3 A)]',
     )
 
     digitizer_bits = straxen.URLConfig(
@@ -78,7 +84,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=digitizer_bits",
         type=(int, float),
         cache=True,
-        help='digitizer_bits',
+        help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
@@ -87,7 +93,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='digitizer_voltage_range',
+        help='Voltage range of the digitizer boards [V]',
     )
 
     n_top_pmts = straxen.URLConfig(
@@ -112,13 +118,13 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   '&key=photon_area_distribution'
                   '&fmt=csv',
         cache=True,
-        help='photon_area_distribution',
+        help='Photon area distribution',
     )
 
     #Config options specific to S2 simulation
     phase_s2 = straxen.URLConfig(
         default="gas",
-        help='phase of the s2 producing region',
+        help='Phase of the S2 producing region',
     )
 
     drift_velocity_liquid = straxen.URLConfig(
@@ -127,7 +133,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=drift_velocity_liquid",
         type=(int, float),
         cache=True,
-        help='Drift velocity of electrons in the liquid xenon',
+        help='Drift velocity of electrons in the liquid xenon [cm/ns]',
     )
 
     tpc_length = straxen.URLConfig(
@@ -136,7 +142,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=tpc_length",
         type=(int, float),
         cache=True,
-        help='Length of the XENONnT TPC',
+        help='Length of the XENONnT TPC [cm]',
     )
 
     tpc_radius = straxen.URLConfig(
@@ -145,7 +151,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=tpc_radius",
         type=(int, float),
         cache=True,
-        help='Radius of the XENONnT TPC ',
+        help='Radius of the XENONnT TPC [cm]',
     )
 
     diffusion_constant_transverse = straxen.URLConfig(
@@ -154,7 +160,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=diffusion_constant_transverse",
         type=(int, float),
         cache=True,
-        help='Transverse diffusion constant',
+        help='Transverse diffusion constant [cm^2/ns]',
     )
 
     s2_aft_skewness = straxen.URLConfig(
@@ -180,7 +186,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=enable_field_dependencies",
         cache=True,
-        help='enable_field_dependencies',
+        help='Field dependencies during electron drift',
     )
 
     s2_mean_area_fraction_top = straxen.URLConfig(
@@ -232,7 +238,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=triplet_lifetime_gas",
         type=(int, float),
         cache=True,
-        help='Liftetime of triplet states in GXe',
+        help='Liftetime of triplet states in GXe [ns]',
     )
 
     singlet_lifetime_gas = straxen.URLConfig(
@@ -241,7 +247,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=singlet_lifetime_gas",
         type=(int, float),
         cache=True,
-        help='Liftetime of singlet states in GXe',
+        help='Liftetime of singlet states in GXe [ns]',
     )
 
     triplet_lifetime_liquid = straxen.URLConfig(
@@ -250,7 +256,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=triplet_lifetime_liquid",
         type=(int, float),
         cache=True,
-        help='Liftetime of triplet states in LXe',
+        help='Liftetime of triplet states in LXe [ns]',
     )
 
     singlet_lifetime_liquid = straxen.URLConfig(
@@ -259,7 +265,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=singlet_lifetime_liquid",
         type=(int, float),
         cache=True,
-        help='Liftetime of singlet states in LXe',
+        help='Liftetime of singlet states in LXe [ns]',
     )
 
     s2_secondary_sc_gain_mc = straxen.URLConfig(
@@ -268,17 +274,17 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
-        help='Secondary scintillation gain',
+        help='Secondary scintillation gain [PE/e-]',
     )
 
     propagated_s2_photons_file_size_target = straxen.URLConfig(
-        type=(int, float), default = 500, track=False,
-        help='target for the propagated_s2_photons file size in MB',
+        type=(int, float), default = 300, track=False,
+        help='Target for the propagated_s2_photons file size [MB]',
     )
 
     min_electron_gap_length_for_splitting = straxen.URLConfig(
         type=(int, float), default = 1e5, track=False,
-        help='chunk can not be split if gap between photons is smaller than this value given in ns',
+        help='Chunk can not be split if gap between photons is smaller than this value given in ns',
     )
 
     def setup(self):
@@ -573,10 +579,10 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 @export
 class S2PhotonPropagation(S2PhotonPropagationBase):
     """
-    This class is used to simulate the propagation of photons from an S2 signal using 
-    luminescence timing from garfield gasgap, singlet and tripled delays and optical propagation
+    This class is used to simulate the propagation of S2 photons using 
+    luminescence timing from garfield gas gap, singlet and tripled delays and optical propagation
     """
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
     
     child_plugin = True
 
@@ -666,7 +672,7 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 @export
 class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     """
-    This class is used to simulate the propagation of photons from an S2 signal using 
+    This class is used to simulate the propagation of S2 photons using 
     the simple liminescence model, singlet and tripled delays and optical propagation
     """
     __version__ = "0.1.0"

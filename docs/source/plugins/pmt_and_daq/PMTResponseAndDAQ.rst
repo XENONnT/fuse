@@ -2,6 +2,8 @@
 PMTResponseAndDAQ
 =================
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/pmt_and_daq/pmt_response_and_daq.py>`_.
+
 Plugin Description
 ==================
 Plugin to simulate the PMT response and DAQ effects. First the single PMT waveform
@@ -18,6 +20,7 @@ Technical Details
    depends_on = ("photon_summary", "pulse_ids", "pulse_windows")
    provides = "raw_records"
    data_kind = "raw_records"
+   __version__ = "0.1.3"
 
 Provided Columns
 ================
@@ -31,7 +34,7 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - Time of the individual electron reaching the gas phase
+     - Start time since unix epoch [ns]
    * - length
      - int32
      - Length of the interval in samples
@@ -65,14 +68,6 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).
    * - dt
      - 
      - True
@@ -80,7 +75,7 @@ Config Options
    * - pmt_circuit_load_resistor
      - 
      - True
-     - PMT circuit load resistor
+     - PMT circuit load resistor [kg m^2/(s^3 A)] (PMT circuit resistance * electron charge * amplification factor * sampling frequency)
    * - external_amplification
      - 
      - True
@@ -92,7 +87,7 @@ Config Options
    * - digitizer_voltage_range
      - 
      - True
-     - Voltage range of the digitizer boards
+     - Voltage range of the digitizer boards  [V]
    * - noise_data
      - 
      - True
@@ -144,7 +139,7 @@ Config Options
    * - raw_records_file_size_target
      - 200
      - True
-     - Target for the raw records file size in MB
+     - Target for the raw records file size [MB]
    * - min_records_gap_length_for_splitting
      - 1e5
      - True

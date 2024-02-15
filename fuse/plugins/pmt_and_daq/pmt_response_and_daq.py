@@ -17,6 +17,11 @@ log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
 
 @export
 class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
+    """Plugin to simulate the PMT response and DAQ effects. First the single PMT waveform
+    is simulated based on the photon timing and gain information. Next the waveform
+    is converted to ADC counts, noise and a baseline are added. Then hitfinding is performed
+    and the found intervals are split into multiple fragments of fixed length (if needed).
+    Finally the data is saved as raw_records."""
     
     __version__ = "0.1.3"
 
@@ -36,7 +41,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
                   "&take=sample_duration",
         type=(int),
         cache=True,
-        help='sample_duration',
+        help='Width of one sample [ns]',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -45,7 +50,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='PMT circuit load resistor', 
+        help='PMT circuit load resistor [kg m^2/(s^3 A)]', 
     )
 
     external_amplification = straxen.URLConfig(
@@ -72,7 +77,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards',
+        help='Voltage range of the digitizer boards  [V]',
     )
 
     noise_data = straxen.URLConfig(
@@ -178,7 +183,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
     raw_records_file_size_target = straxen.URLConfig(
         type=(int, float), default = 200, track=False,
-        help='Target for the raw records file size in MB',
+        help='Target for the raw records file size [MB]',
     )
 
     min_records_gap_length_for_splitting = straxen.URLConfig(
