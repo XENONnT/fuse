@@ -2,13 +2,15 @@
 ElectronDrift
 =============
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/detector_physics/electron_drift.py>`_.
+
 Plugin Description
 ==================
 
-Plugin to simulate the loss of electrons during the drift from the 
+Plugin to simulate the drift of electrons from the 
 interaction site to the liquid gas interface. The plugin simulates the 
 effect of a charge insensitive volume and the loss of electrons due to 
-impurities. 
+impurities. Additionally, the drift time and observed position is calculated.
 
 Technical Details
 -----------------
@@ -18,6 +20,7 @@ Technical Details
    depends_on = ("microphysics_summary")
    provides = "drifted_electrons"
    data_kind = "interactions_in_roi"
+   __version__ = "0.2.0"
 
 Provided Columns
 ================
@@ -31,28 +34,28 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - time of the energy deposit
+     - Time of the cluster [ns]
    * - endtime
      - int64
-     - endtime of the energy deposit (will be the same as time)
+     - Endtime of the cluster [ns] (same as time)
    * - n_electron_interface
      - int32
      - Number of electrons reaching the liquid gas interface
    * - drift_time_mean
      - int32
-     - Mean drift time of the electrons in the cluster
+     - Mean drift time of the electrons in the cluster [ns]
    * - drift_time_spread
      - int32
-     - Spread of the drift time of the electrons in the cluster
+     - Spread of the drift time of the electrons in the cluster [ns]
    * - x_obs
      - float32
-     - observed x position of the cluster at liquid-gas interface
+     - Observed x position of the cluster at liquid-gas interface [cm]
    * - y_obs
      - float32
-     - observed y position of the cluster at liquid-gas interface
+     - Observed y position of the cluster at liquid-gas interface [cm]
    * - z_obs
      - float32
-     - observed z position of the cluster after field distortion correction. 
+     - Observed z position of the cluster after field distortion correction [cm]
 
 
 Config Options
@@ -66,34 +69,30 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
    * - drift_velocity_liquid
      - 
      - True
-     - Drift velocity of electrons in the liquid xenon
+     - Drift velocity of electrons in the liquid xenon [cm/ns]
    * - drift_time_gate
      - 
      - True
-     - Electron drift time from the gate in ns
+     - Electron drift time from the gate [ns]
    * - diffusion_constant_longitudinal
      - 
      - True
-     - Longitudinal electron drift diffusion constant
+     - Longitudinal electron drift diffusion constant [cm^2/ns]
    * - electron_lifetime_liquid
      - 
      - True
-     - Electron lifetime in liquid xenon
+     - Electron lifetime in liquid xenon [ns]
    * - enable_field_dependencies
      - 
      - True
-     - Field dependencies during electron drift
+     - Field dependencies during electron drift 
    * - tpc_length
      - 
      - True
-     - Length of the XENONnT TPC
+     - Length of the XENONnT TPC [cm]
    * - field_distortion_model
      - 
      - True
@@ -110,7 +109,3 @@ Config Options
      - 
      - True
      - Field distortion map used in fuse (Check if we can remove _fuse from the name)
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).

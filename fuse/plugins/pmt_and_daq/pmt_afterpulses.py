@@ -3,7 +3,8 @@ import numpy as np
 import straxen
 import logging
 
-from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
+from ...common import pmt_gains
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -11,33 +12,26 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_afterpulses')
 
 @export
-class PMTAfterPulses(strax.Plugin):
+class PMTAfterPulses(FuseBasePlugin):
+    """Plugin to simulate PMT afterpulses using a precomputed afterpulse cumulative distribution function.
+    In the simulation afterpulses will be saved as a list of "pseudo" photons.
+    These "photons" can then be combined with real photons from S1 and S2 signals to create a waveform."""
     
-    __version__ = "0.1.2"
+    __version__ = "0.2.0"
     
     depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"
     data_kind = "AP_photons"
-    
-    #Forbid rechunking
-    rechunk_on_save = False
 
     save_when = strax.SaveWhen.TARGET
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
     
-    dtype = [('channel', np.int16),
-             ('dpe', np.bool_),
-             ('photon_gain', np.int32),
+    dtype = [(("PMT channel of the photon", "channel"), np.int16),
+             (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
+             (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
             ]
     dtype = dtype + strax.time_fields
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     pmt_ap_t_modifier = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -98,27 +92,8 @@ class PMTAfterPulses(strax.Plugin):
         help='Afterpuse cumulative distribution functions',
     )
 
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
- 
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running PMTAfterPulses version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
         
         self.gains = pmt_gains(self.gain_model_mc,
                                digitizer_voltage_range=self.digitizer_voltage_range,

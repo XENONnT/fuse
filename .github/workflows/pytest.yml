@@ -1,0 +1,95 @@
+# copied from https://github.com/XENONnT/straxen/blob/master/.github/workflows/pytest.yml
+# Test fuse on each PR.
+# We run three types of tests:
+#  - Pytest -> these are the "normal" tests and should be run for all
+#    python versions
+#  - Coveralls -> this is to see if we are covering all our lines of
+#    code with our tests. The results get uploaded to
+#    coveralls.io/github/XENONnT/fuse
+
+name: Test package
+
+# Trigger this code when a new release is published
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      HAVE_ACCESS_TO_SECRETS: ${{ secrets.RUNDB_API_URL }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "ubuntu-latest" ]
+        python-version: [ "3.9", "3.10" ]
+        test: [ 'coveralls' ]
+
+    steps:
+      # Setup and installation
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        # following https://github.com/NESTCollaboration/nestpy/blob/master/README.md
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest coverage coveralls
+          git clone https://github.com/NESTCollaboration/nestpy.git
+          cd nestpy
+          git submodule update --init --recursive
+          pip install .
+          cd ..
+          rm -rf nestpy
+
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.10.0
+        with:
+          mongodb-version: 4.4.1
+
+      - name: patch utilix file
+        # Secrets and required files
+        # Patch this file if we want to have access to the database
+        run: bash .github/scripts/create_readonly_utilix_config.sh
+        env:
+          # RunDB
+          RUNDB_API_URL: ${{ secrets.RUNDB_API_URL }}
+          RUNDB_API_USER_READONLY: ${{ secrets.RUNDB_API_USER_READONLY }}
+          RUNDB_API_PASSWORD_READONLY: ${{ secrets.RUNDB_API_PASSWORD_READONLY}}
+          PYMONGO_URL: ${{ secrets.PYMONGO_URL }}
+          PYMONGO_USER: ${{ secrets.PYMONGO_USER }}
+          PYMONGO_PASSWORD: ${{ secrets.PYMONGO_PASSWORD }}
+          PYMONGO_DATABASE: ${{ secrets.PYMONGO_DATABASE }}
+          # SCADA
+          SCADA_URL: ${{ secrets.SCADA_URL }}
+          SCADA_VALUE_URL: ${{ secrets.SCADA_VALUE_URL }}
+          SCADA_USER: ${{ secrets.SCADA_USER }}
+          SCADA_LOGIN_URL: ${{ secrets.SCADA_LOGIN_URL }}
+          SCADA_PWD: ${{ secrets.SCADA_PWD }}
+
+      - name: Install fuse
+        run: |
+          pip install .
+
+      - name: Test package and report to coveralls
+        # This is running a normal test
+        env:
+          TEST_MONGO_URI: 'mongodb://localhost:27017/'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: env.HAVE_ACCESS_TO_SECRETS != null
+        run: |
+          coverage run --source=fuse -m pytest --durations 0 -v
+          coveralls --service=github
+          coverage report
+
+      - name: goodbye
+        run: echo "tests done, bye bye"

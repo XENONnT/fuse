@@ -5,7 +5,8 @@ import logging
 import pandas as pd
 import numpy as np
 
-from ...common import dynamic_chunking, FUSE_PLUGIN_TIMEOUT
+from ...common import dynamic_chunking
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -13,7 +14,7 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.csv_input')
 
 @export
-class ChunkCsvInput(strax.Plugin):
+class ChunkCsvInput(FuseBasePlugin):
     """
     Plugin which reads a CSV file containing instructions for the detector physics simulation
     and returns the data in chunks
@@ -24,12 +25,7 @@ class ChunkCsvInput(strax.Plugin):
     provides = "microphysics_summary"
     data_kind = "interactions_in_roi"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
 
     source_done = False
 
@@ -48,11 +44,6 @@ class ChunkCsvInput(strax.Plugin):
     dtype = dtype + strax.time_fields
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool, track=False,
-        help='Show debug informations',
-    )
-
     input_file = straxen.URLConfig(
         track=False,
         infer_type=False,
@@ -76,27 +67,8 @@ class ChunkCsvInput(strax.Plugin):
         help='n_interactions_per_chunk',
     )
 
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running ChunkCsvInput version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
 
         self.file_reader = csv_file_loader(
             input_file = self.input_file,

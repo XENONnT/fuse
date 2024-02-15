@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import numba
 import strax
 import awkward as ak
@@ -9,15 +8,19 @@ from sklearn.cluster import DBSCAN
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.find_cluster')
 
 @export
-class FindCluster(strax.Plugin):
+class FindCluster(FuseBasePlugin):
+    """Plugin to find clusters of energy deposits. This plugin is performing the first half 
+    of the microclustering process. Energy deposits are grouped into clusters based on
+    their proximity to each other in 3D space and time. The clustering is performed using
+    a 1D temporal clustering algorithm followed by 3D DBSCAN spacial clustering."""
     
-    __version__ = "0.1.1"
+    __version__ = "0.2.0"
     
     depends_on = ("geant4_interactions")
     
@@ -27,19 +30,9 @@ class FindCluster(strax.Plugin):
             ]
     dtype = dtype + strax.time_fields
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     micro_separation_time = straxen.URLConfig(
         default=10, type=(int, float),
         help='Clustering time (ns)',
@@ -49,15 +42,7 @@ class FindCluster(strax.Plugin):
         default=0.005, type=(int, float),
         help='DBSCAN clustering distance (mm)',
     )
-
-    def setup(self):
         
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running FindCluster version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-    
     def compute(self, geant4_interactions):
         """
         Compute the cluster IDs for a set of GEANT4 interactions.
@@ -91,13 +76,13 @@ class FindCluster(strax.Plugin):
         time_cluster = simple_1d_clustering(interactions["time"], cluster_size_time)
 
         # Splitting into time cluster and apply space clustering space:
-        cluster_id = np.zeros(len(interactions), dtype=np.int32)
         spacial_cluster = np.zeros(len(interactions), dtype=np.int32)
 
         _t_clusters = np.unique(time_cluster)
         for _t in _t_clusters:
-            _cl = _find_cluster(interactions[time_cluster == _t], cluster_size_space=cluster_size_space)
-            spacial_cluster[time_cluster == _t] = _cl
+            time_cluster_mask = time_cluster == _t
+            _cl = _find_cluster(interactions[time_cluster_mask], cluster_size_space=cluster_size_space)
+            spacial_cluster[time_cluster_mask] = _cl
         _, cluster_id = np.unique((time_cluster, spacial_cluster), axis=1, return_inverse=True)
         
         return cluster_id
@@ -114,9 +99,8 @@ def _find_cluster(x, cluster_size_space):
     """
     db_cluster = DBSCAN(eps=cluster_size_space, min_samples=1)
 
-    #Conversion from numpy structured array to regular array with correct shape for 
-    #sklearn somehow works fine via pandas... 
-    xprime = pd.DataFrame(x[['x', 'y', 'z']]).values
+    # Conversion from numpy structured array to regular array
+    xprime = np.stack((x['x'], x['y'], x['z']), axis=1)
 
     return db_cluster.fit_predict(xprime)
     

@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import straxen
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -11,35 +11,25 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.electric_field')
 
 @export
-class ElectricField(strax.Plugin):
+class ElectricField(FuseBasePlugin):
     """
     Plugin that calculates the electric field values for the cluster position.
     """
 
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
     depends_on = ("interactions_in_roi",)
     provides = "electric_field_values"
     data_kind = "interactions_in_roi"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
     dtype = [
-        ('e_field', np.int64),
+        (("Electric field value at the cluster position [V/cm]", "e_field"), np.int64),
         *strax.time_fields
     ]
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     #Field map not yet in simulation config file!
     efield_map = straxen.URLConfig(
         default = 'itp_map://resource://'
@@ -47,27 +37,11 @@ class ElectricField(strax.Plugin):
                   '&fmt=json.gz'
                   '&method=RegularGridInterpolator',
         cache=True,
-        help='electric field map',
+        help='Map of the electric field in the detector',
     )
 
-    def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running ElectricField version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
     def compute(self, interactions_in_roi):
-        """
-        Calculate the electric field values for the given clustered interactions.
-
-        Args:
-            interactions_in_roi (numpy.ndarray): array of clustered interactions.
-
-        Returns:
-            numpy.ndarray: array of electric field values.
-        """
+        
         if len(interactions_in_roi) == 0:
             return np.zeros(0, dtype=self.dtype)
 

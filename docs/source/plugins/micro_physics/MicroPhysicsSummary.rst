@@ -1,6 +1,8 @@
 ===================
-MicrophysicsSummary
+MicroPhysicsSummary
 ===================
+
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/micro_physics/microphysics_summary.py>`_.
 
 Plugin Description
 ==================
@@ -13,3 +15,4 @@ Technical Details
 
    depends_on = ("interactions_in_roi", "quanta", "electric_field_values")
    provides = "microphysics_summary"
+   __version__ = "0.1.0"

@@ -10,42 +10,40 @@ import awkward as ak
 
 export, __all__ = strax.exporter()
 
-from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, FUSE_PLUGIN_TIMEOUT
+from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.input')
 
 #Remove the path and file name option from the config and do this with the run_number??
 @export
-class ChunkInput(strax.Plugin):
+class ChunkInput(FuseBasePlugin):
+    """Plugin to read XENONnT Geant4 root or csv files. The plugin can distribute the events
+    in time based on a source rate and will create multiple chunks of data if needed."""
     
-    __version__ = "0.1.3"
+    __version__ = "0.2.0"
     
     depends_on = tuple()
     provides = "geant4_interactions"
-    
-    #Forbid rechunking
-    rechunk_on_save = False
 
     source_done = False
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
     
-    dtype = [('x', np.float64),
-             ('y', np.float64),
-             ('z', np.float64),
-             ('t', np.float64),
-             ('ed', np.float32),
-             ('type', "<U10"),
-             ('trackid', np.int16),
-             ('parenttype', "<U10"),
-             ('parentid', np.int16),
-             ('creaproc', "<U10"),
-             ('edproc', "<U10"),
-             ('evtid', np.int32),
-             ('x_pri', np.float32),
-             ('y_pri', np.float32),
-             ('z_pri', np.float32),
+    dtype = [(("x position of the energy deposit [cm]", "x"), np.float64),
+             (("y position of the energy deposit [cm]", "y"), np.float64),
+             (("z position of the energy deposit [cm]", "z"), np.float64),
+             (("Time with respect to the start of the event [ns]", "t"), np.float64),
+             (("Energy deposit in keV", "ed"), np.float32),
+             (("Particle type","type"), "<U10"),
+             (("Geant4 track ID", "trackid"), np.int16),
+             (("Particle type of the parent particle", "parenttype"), "<U10"),
+             (("Trackid of the parent particle", "parentid"), np.int16),
+             (("Geant4 process creating the particle", "creaproc"), "<U10"),
+             (("Geant4 process destroying the particle", 'edproc'), "<U10"),
+             (("Geant4 event ID", "evtid"), np.int32),
+             (("x position of the primary particle", "x_pri"), np.float32),
+             (("y position of the primary particle", "y_pri"), np.float32),
+             (("z position of the primary particle", "z_pri"), np.float32),
             ]
     
     dtype = dtype + strax.time_fields
@@ -55,24 +53,19 @@ class ChunkInput(strax.Plugin):
     source_done = False
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug information during simulation',
-    )
-
     path = straxen.URLConfig(
         track=False,
-        help='Path to the file to simulate from excluding the file name',
+        help='Path to the input file',
     )
 
     file_name = straxen.URLConfig(
         track=False,
-        help='Name of the file to simulate from',
+        help='Name of the input file',
     )
 
     separation_scale = straxen.URLConfig(
         default=1e8, type=(int, float),
-        help='Separation scale for the dynamic chunking in ns',
+        help='Separation scale for the dynamic chunking in [ns]',
     )
 
     source_rate = straxen.URLConfig(
@@ -112,28 +105,9 @@ class ChunkInput(strax.Plugin):
         help='Filter only nuclear recoil events (maximum ER energy deposit 10 keV)',
     )
 
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running ChunkInput version {self.__version__} in debug mode")
-        else:
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
-
+        super().setup()
+       
         self.file_reader = file_loader(self.path,
                                        self.file_name,
                                        self.rng,
@@ -238,21 +212,21 @@ class file_loader():
     
         
         
-        self.dtype = [('x', np.float64),
-                     ('y', np.float64),
-                     ('z', np.float64),
-                     ('t', np.float64),
-                     ('ed', np.float32),
-                     ('type', "<U10"),
-                     ('trackid', np.int16),
-                     ('parenttype', "<U10"),
-                     ('parentid', np.int16),
-                     ('creaproc', "<U10"),
-                     ('edproc', "<U10"),
-                     ('evtid', np.int32),
-                     ('x_pri', np.float32),
-                     ('y_pri', np.float32),
-                     ('z_pri', np.float32),
+        self.dtype = [(("x position of the energy deposit [cm]", "x"), np.float64),
+                      (("y position of the energy deposit [cm]", "y"), np.float64),
+                      (("z position of the energy deposit [cm]", "z"), np.float64),
+                      (("Time with respect to the start of the event [ns]", "t"), np.float64),
+                      (("Energy deposit in keV", "ed"), np.float32),
+                      (("Particle type","type"), "<U10"),
+                      (("Geant4 track ID", "trackid"), np.int16),
+                      (("Particle type of the parent particle", "parenttype"), "<U10"),
+                      (("Trackid of the parent particle", "parentid"), np.int16),
+                      (("Geant4 process creating the particle", "creaproc"), "<U10"),
+                      (("Geant4 process destroying the particle", 'edproc'), "<U10"),
+                      (("Geant4 event ID", "evtid"), np.int32),
+                      (("x position of the primary particle", "x_pri"), np.float32),
+                      (("y position of the primary particle", "y_pri"), np.float32),
+                      (("z position of the primary particle", "z_pri"), np.float32),
                     ]
     
         self.dtype = self.dtype + strax.time_fields
@@ -343,8 +317,10 @@ class file_loader():
             self.chunk_bounds = np.append(chunk_start[0]-self.first_chunk_left, chunk_bounds)
             
         else: 
-            log.warning("Only one Chunk created! Only a few events simulated? If no, your chunking parameters might not be optimal.")
-            log.warning("Try to decrease the source_rate or decrease the n_interactions_per_chunk")
+            log.warning(
+                "Only one Chunk created! Only a few events simulated? If no, your chunking parameters might not be optimal. "
+                "Try to decrease the source_rate or decrease the n_interactions_per_chunk."
+            )
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
         
         source_done = False

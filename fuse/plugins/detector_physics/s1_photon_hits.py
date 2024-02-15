@@ -5,7 +5,8 @@ import logging
 import numpy as np
 from copy import deepcopy
 
-from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
+from ...common import pmt_gains
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -13,38 +14,30 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s1_photon_hits')
 
 @export
-class S1PhotonHits(strax.Plugin):
+class S1PhotonHits(FuseBasePlugin):
+    """Plugin to simulate the number of detected S1 photons using
+    a S1 light collection efficiency map."""
 
-    __version__ = '0.1.3'
+    __version__ = "0.2.0"
 
     depends_on = ("microphysics_summary")
     provides = "s1_photons"
     data_kind = "interactions_in_roi"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.ALWAYS
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
-    dtype = [('n_s1_photon_hits', np.int32),
+    dtype = [(("Number detected S1 photons", "n_s1_photon_hits"), np.int32),
             ]
     dtype = dtype + strax.time_fields
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-    
     pmt_circuit_load_resistor = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='PMT circuit load resistor',
+        help='PMT circuit load resistor [kg m^2/(s^3 A)]',
     )
 
     digitizer_bits = straxen.URLConfig(
@@ -62,7 +55,7 @@ class S1PhotonHits(strax.Plugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards',
+        help='Voltage range of the digitizer boards [V]',
     )
 
     gain_model_mc = straxen.URLConfig(
@@ -98,28 +91,9 @@ class S1PhotonHits(strax.Plugin):
         cache=True,
         help='S1 detection efficiency',
     )
-    
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
 
     def setup(self):
-        
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running S1PhotonHits version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-        
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
 
         self.gains = pmt_gains(self.gain_model_mc,
                                digitizer_voltage_range=self.digitizer_voltage_range,
@@ -130,11 +104,11 @@ class S1PhotonHits(strax.Plugin):
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
 
         #Build LCE map from s1 pattern map
-        lymap = deepcopy(self.s1_pattern_map)
+        lcemap = deepcopy(self.s1_pattern_map)
         # AT: this scaling with mast is redundant to `make_patternmap`, but keep it in for now
-        lymap.data['map'] = np.sum(lymap.data['map'][:][:][:], axis=3, keepdims=True, where=self.pmt_mask)
-        lymap.__init__(lymap.data)
-        self.s1_lce_correction_map = lymap
+        lcemap.data['map'] = np.sum(lcemap.data['map'][:][:][:], axis=3, keepdims=True, where=self.pmt_mask)
+        lcemap.__init__(lcemap.data)
+        self.s1_lce_correction_map = lcemap
 
     def compute(self, interactions_in_roi):
 

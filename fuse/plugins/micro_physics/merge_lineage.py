@@ -1,12 +1,10 @@
 import strax
-import straxen
 import numpy as np
-import numba
 import logging
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.merge_lineage')
@@ -21,12 +19,7 @@ class MergeLineage(strax.Plugin):
     provides = "clustered_interactions"
     data_kind = "clustered_interactions"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = [(("x position of the cluster [cm]", "x"), np.float32),
              (("y position of the cluster [cm]", "y"), np.float32),
@@ -45,20 +38,6 @@ class MergeLineage(strax.Plugin):
             ]
     
     dtype = dtype + strax.time_fields
-
-    #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-    
-    def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running MergeLineage version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
 
     def compute(self, geant4_interactions):
 

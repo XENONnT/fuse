@@ -4,9 +4,9 @@ import straxen
 import nestpy
 import logging
 
-from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
+from ...common import pmt_gains, build_photon_propagation_output
 from ...common import init_spe_scaling_factor_distributions, pmt_transit_time_spread, photon_gain_calculation 
-from ...common import build_photon_propagation_output
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -14,37 +14,33 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s1_photon_propagation')
 
 #Initialize the nestpy random generator
-#The seed will be set in the setup function
+#The seed will be set in the compute method
 nest_rng = nestpy.RandomGen.rndm()
 
 @export
-class S1PhotonPropagationBase(strax.Plugin):
+class S1PhotonPropagationBase(FuseBasePlugin):
+    """Base plugin to simulate the propagation of S1 photons in the detector. Photons are 
+    randomly assigned to PMT channels based on their starting position and 
+    the timing of the photons is calculated.
     
-    __version__ = "0.1.2"
+    Note: The timing calculation is defined in the child plugin.
+    """
+    
+    __version__ = "0.2.0"
     
     depends_on = ("s1_photons", "microphysics_summary")
     provides = "propagated_s1_photons"
     data_kind = "S1_photons"
-    
-    #Forbid rechunking
-    rechunk_on_save = False
 
     save_when = strax.SaveWhen.TARGET
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
-    dtype = [('channel', np.int16),
-             ('dpe', np.bool_),
-             ('photon_gain', np.int32),
+    dtype = [(("PMT channel of the photon", "channel"), np.int16),
+             (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
+             (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
             ]
     dtype = dtype + strax.time_fields
 
-    #Config options shared by S1 and S2 simulation 
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug information during simulation',
-    )
-
+    #Config options shared by S1 and S2 simulation
     p_double_pe_emision = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -60,7 +56,7 @@ class S1PhotonPropagationBase(strax.Plugin):
                   "&take=pmt_transit_time_spread",
         type=(int, float),
         cache=True,
-        help='Spread of the PMT transit times',
+        help='Spread of the PMT transit times [ns]',
     )
 
     pmt_transit_time_mean = straxen.URLConfig(
@@ -69,7 +65,7 @@ class S1PhotonPropagationBase(strax.Plugin):
                   "&take=pmt_transit_time_mean",
         type=(int, float),
         cache=True,
-        help='Mean of the PMT transit times',
+        help='Mean of the PMT transit times [ns]',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -78,7 +74,7 @@ class S1PhotonPropagationBase(strax.Plugin):
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='PMT circuit load resistor',
+        help='PMT circuit load resistor [kg m^2/(s^3 A)]',
     )
 
     digitizer_bits = straxen.URLConfig(
@@ -96,7 +92,7 @@ class S1PhotonPropagationBase(strax.Plugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards',
+        help='Voltage range of the digitizer boards [V]',
     )
 
     n_top_pmts = straxen.URLConfig(
@@ -133,28 +129,13 @@ class S1PhotonPropagationBase(strax.Plugin):
         cache=True,
         help='S1 pattern map',
     )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
     
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running S1PhotonPropagation version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
+        super().setup()
 
         if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
             #Dont know but nestpy seems to have a problem with large seeds
-            self.short_seed = int(repr(seed)[-8:])
-            nest_rng.set_seed(self.short_seed)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
+            self.short_seed = int(repr(self.seed)[-8:])
             log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
         else: 
             log.debug(f"Generating random numbers with seed pulled from OS")
@@ -166,11 +147,18 @@ class S1PhotonPropagationBase(strax.Plugin):
                                )
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
-        self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
+        self.turned_off_pmts = np.nonzero(np.array(self.gains) == 0)[0]
 
         self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
     def compute(self, interactions_in_roi):
+
+        #set the global nest random generator with self.short_seed
+        nest_rng.set_seed(self.short_seed)
+        #Now lock the seed during the computation
+        nest_rng.lock_seed()
+        #increment the seed. Next chunk we will use the modified seed to generate random numbers
+        self.short_seed += 1
 
         #Just apply this to clusters with photons hitting a PMT
         instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
@@ -232,6 +220,9 @@ class S1PhotonPropagationBase(strax.Plugin):
 
         result = strax.sort_by_time(result)
 
+        #Unlock the nest random generator seed again
+        nest_rng.unlock_seed()
+
         return result
     
     def photon_channels(self, positions, n_photon_hits):
@@ -264,11 +255,11 @@ class S1PhotonPropagationBase(strax.Plugin):
 @export
 class S1PhotonPropagation(S1PhotonPropagationBase):
     """
-    This class is used to simulate the propagation of photons from an S1 signal using
+    Child plugin to simulate the propagation of S1 photons using
     optical propagation and luminescence timing from nestpy
     """
 
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
     child_plugin = True
 
@@ -278,7 +269,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                   "&take=maximum_recombination_time",
         type=(int, float),
         cache=True,
-        help='Maximum recombination time',
+        help='Maximum recombination time [ns]',
     )
 
     s1_optical_propagation_spline = straxen.URLConfig(
@@ -322,7 +313,6 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         :param local_field: local field in the point of the deposit, 1d array of floats
         returns photon timing array"""
         _photon_timings = np.repeat(t, n_photon_hits)
-        _n_hits_total = len(_photon_timings)
 
         z_positions = np.repeat(positions[:, 2], n_photon_hits)
         

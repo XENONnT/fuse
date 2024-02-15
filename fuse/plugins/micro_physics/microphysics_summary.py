@@ -2,8 +2,6 @@ import strax
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
-
 @export
 class MicroPhysicsSummary(strax.MergeOnlyPlugin):
     """
@@ -16,9 +14,4 @@ class MicroPhysicsSummary(strax.MergeOnlyPlugin):
                   ]
     save_when = strax.SaveWhen.ALWAYS
     provides = 'microphysics_summary'
-    __version__ = '0.1.0'
-
-    #Forbid rechunking
-    rechunk_on_save = False
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
+    __version__ = "0.1.0"

@@ -6,8 +6,6 @@ from straxen import URLConfig
 from copy import deepcopy
 
 #Plugins to simulate microphysics
-
-
 microphysics_plugins_dbscan_clustering = [fuse.micro_physics.ChunkInput,
                                           fuse.micro_physics.FindCluster,
                                           fuse.micro_physics.MergeCluster]

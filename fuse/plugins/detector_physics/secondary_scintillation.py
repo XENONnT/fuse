@@ -4,7 +4,8 @@ import straxen
 import logging
 from immutabledict import immutabledict
 
-from ...common import pmt_gains, FUSE_PLUGIN_TIMEOUT
+from ...common import pmt_gains
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -12,9 +13,10 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.secondary_scintillation')
 
 @export
-class SecondaryScintillation(strax.Plugin):
+class SecondaryScintillation(FuseBasePlugin):
+    """Plugin to simulate the secondary scintillation process in the gas phase."""
     
-    __version__ = "0.1.3"
+    __version__ = "0.2.0"
     
     depends_on = ("drifted_electrons","extracted_electrons" ,"electron_time")
     provides = ("s2_photons", "s2_photons_sum")
@@ -22,42 +24,25 @@ class SecondaryScintillation(strax.Plugin):
                  "s2_photons_sum" : "interactions_in_roi"
                 }
     
-    dtype_photons = [('n_s2_photons', np.int32),] + strax.time_fields
-    dtype_sum_photons = [('sum_s2_photons', np.int32),] + strax.time_fields
+    dtype_photons = [(("Number of photons produced by the extracted electron","n_s2_photons"), np.int32),] + strax.time_fields
+    dtype_sum_photons = [(("Sum of all photons produced by electrons originating from the same cluster", "sum_s2_photons"), np.int32),] + strax.time_fields
     
     dtype = dict()
     dtype["s2_photons"] = dtype_photons
     dtype["s2_photons_sum"] = dtype_sum_photons
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = immutabledict(s2_photons=strax.SaveWhen.TARGET,
                               s2_photons_sum=strax.SaveWhen.ALWAYS
                               )
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
-    #Move this into the config
-    s2_gain_spread = straxen.URLConfig(
-        default = 0,
-        type=(int, float),
-        help='Spread of the S2 gain',
-    )
-
     s2_secondary_sc_gain_mc = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
-        help='Secondary scintillation gain',
+        help='Secondary scintillation gain [PE/e-]',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -66,7 +51,7 @@ class SecondaryScintillation(strax.Plugin):
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='PMT circuit load resistor',
+        help='PMT circuit load resistor [kg m^2/(s^3 A)]',
     )
 
     digitizer_bits = straxen.URLConfig(
@@ -84,7 +69,7 @@ class SecondaryScintillation(strax.Plugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards',
+        help='Voltage range of the digitizer boards [V]',
     )
 
     se_gain_from_map = straxen.URLConfig(
@@ -161,27 +146,8 @@ class SecondaryScintillation(strax.Plugin):
         help='S2 pattern map',
     )
 
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-
     def setup(self):
-        
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running SecondaryScintillation version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
         
         self.gains = pmt_gains(self.gain_model_mc,
                                digitizer_voltage_range=self.digitizer_voltage_range,
@@ -212,12 +178,10 @@ class SecondaryScintillation(strax.Plugin):
         
         n_photons_per_ele = self.rng.poisson(electron_gains)
         
-        if self.s2_gain_spread:
-            n_photons_per_ele += self.rng.normal(0, self.s2_gain_spread, len(n_photons_per_ele)).astype(np.int64)
+        electron_indices = np.cumsum(interactions_in_roi[mask]["n_electron_extracted"])
+        sum_photons_per_interaction = np.add.reduceat(n_photons_per_ele, np.r_[0, electron_indices[:-1]])
         
-        sum_photons_per_interaction = [np.sum(x) for x in np.split(n_photons_per_ele, np.cumsum(interactions_in_roi[mask]["n_electron_extracted"]))[:-1]]
-        
-        n_photons_per_ele[n_photons_per_ele < 0] = 0
+        n_photons_per_ele = np.clip(n_photons_per_ele, 0, None)
 
         reorder_electrons = np.argsort(individual_electrons, order = ["order_index", "time"])
         

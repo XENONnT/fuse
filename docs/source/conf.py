@@ -6,10 +6,13 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import fuse
+
 project = 'XENON fuse'
-copyright = '2023, Henning Schulze Eißing'
-author = 'Henning Schulze Eißing'
-release = '0.0.0'
+copyright = '2024, fuse contributors, the XENON collaboration'
+
+release = fuse.__version__
+version = fuse.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -27,9 +30,24 @@ exclude_patterns = []
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
-html_static_path = ['_static']
+# -- Options for HTML output
+
+html_theme = "sphinx_rtd_theme"
+#html_static_path = ['_static']
 
 #Lets disable notebook execution for now
 nbsphinx_allow_errors = True
 nbsphinx_execute = 'never'
+
+def setup(app):
+    # app.add_css_file('css/custom.css')
+    # Hack to import something from this dir. Apparently we're in a weird
+    # situation where you get a __name__  is not in globals KeyError
+    # if you just try to do a relative import...
+    import os
+    import sys
+
+    sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+    from build_release_notes import convert_release_notes
+
+    convert_release_notes()

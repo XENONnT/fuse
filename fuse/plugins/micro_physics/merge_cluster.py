@@ -6,27 +6,27 @@ import logging
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.merge_cluster')
 
 @export
-class MergeCluster(strax.Plugin):
+class MergeCluster(FuseBasePlugin):
+    """Plugin that merges energy deposits with the same cluster index into a single interaction. 
+    The 3D postiion is calculated as the energy weighted average of the 3D positions of the energy deposits.
+    The time of the merged cluster is calculated as the energy weighted average of the times of the energy deposits.
+    The energy of the merged cluster is the sum of the individual energy depositions. The cluster is then 
+    classified based on either the first interaction in the cluster or the most energetic interaction."""
     
-    __version__ = "0.1.1"
+    __version__ = "0.2.0"
     
     depends_on = ("geant4_interactions", "cluster_index")
     
     provides = "clustered_interactions"
     data_kind = "clustered_interactions"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     dtype = [(("x position of the cluster [cm]", "x"), np.float32),
              (("y position of the cluster [cm]", "y"), np.float32),
@@ -47,25 +47,12 @@ class MergeCluster(strax.Plugin):
     dtype = dtype + strax.time_fields
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     tag_cluster_by = straxen.URLConfig(
         default="energy",
-        help='decide if you tag the cluster (particle type, energy depositing process)\
-              according to first interaction in it (time) or most energetic (energy))',
+        help='Decide if you tag the cluster\
+              according to first interaction (time) or most energetic (energy) one.)',
     )
-    
-    def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running MergeCluster version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
+        
     def compute(self, geant4_interactions):
 
         if len(geant4_interactions) == 0:
