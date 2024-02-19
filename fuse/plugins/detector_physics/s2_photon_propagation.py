@@ -569,8 +569,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         :param n_electron: a 1d int array
         :param z: a 1d float array
         :param xy: a 2d float array of shape [n interaction, 2]
-        :param config: dict of the wfsim config
-        :param resource: instance of the resource class
+        :param drift_time_mean: mean of the drift time
         """
         assert all(z < 0), "All S2 in liquid should have z < 0"
 
@@ -763,7 +762,7 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     """
     This class is used to simulate the propagation of S2 photons using
-    the simple liminescence model, singlet and tripled delays and optical propagation
+    the simple luminescence model, singlet and tripled delays and optical propagation
     """
 
     __version__ = "0.1.0"
@@ -904,8 +903,6 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         Luminescence time distribution computation according to simple s2 model (many many many single electrons)
         :param xy: 1d array with positions
         :param n_photons: 1d array with ints for number of xy positions
-        :param config: dict wfsim config
-        :param resource: instance of wfsim resource
         returns _luminescence_timings_simple
         """
         assert len(n_photons) == len(
@@ -1123,7 +1120,7 @@ def find_electron_split_index(
 
 
 def build_electron_index(individual_electrons, interactions_in_roi):
-    "Function to match the electrons to the correct interaction_in_roi"
+    """Function to match the electrons to the correct interaction_in_roi"""
 
     electrons_split = np.split(
         individual_electrons, np.cumsum(interactions_in_roi["n_electron_extracted"])

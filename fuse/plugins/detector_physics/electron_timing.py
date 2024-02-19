@@ -24,8 +24,6 @@ class ElectronTiming(FuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
 
-    data_kind = "individual_electrons"
-
     dtype = [
         (("x position of the electron [cm]", "x"), np.float32),
         (("y position of the electron [cm]", "y"), np.float32),

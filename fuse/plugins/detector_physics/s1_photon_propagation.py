@@ -368,7 +368,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         return _photon_timings
 
     def optical_propagation(self, channels, z_positions):
-        """Function gettting times from s1 timing splines:
+        """Function getting times from s1 timing splines:
         :param channels: The channels of all s1 photon
         :param z_positions: The Z positions of all s1 photon
         """

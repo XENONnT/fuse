@@ -153,9 +153,6 @@ class S1PhotonHits(FuseBasePlugin):
         """Calculates number of detected photons based on number of photons in total and the positions
         :param n_photons: 1d array of ints with number of emitted S1 photons:
         :param positions: 2d array with xyz positions of interactions
-        :param s1_lce_correction_map: interpolator instance of s1 light yield map
-        :param config: dict wfsim config
-
         return array with number photons"""
         ly = self.s1_lce_correction_map(positions)
         # depending on if you use the data driven or mc pattern map for light yield

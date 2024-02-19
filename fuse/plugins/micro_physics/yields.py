@@ -98,12 +98,12 @@ class NestYields(FuseBasePlugin):
         Function which uses NEST to yield photons and electrons
         for a given set of parameters.
         Note:
-            In case the energy deposit is outside of the range of NEST a -1
+            In case the energy deposit is outside the range of NEST a -1
             is returned.
         Args:
             en (numpy.array): Energy deposit of the interaction [keV]
-            model (numpy.array): Nest Id for qunata generation (integers)
-            e_field (numpy.array): Field value in the interaction site [V/cm]
+            model (numpy.array): Nest Id for quanta generation (integers)
+            e_field (numpy.array): Field values in the interaction site [V/cm]
             A (numpy.array): Atomic mass number
             Z (numpy.array): Atomic number
             create_s2 (bool): Specifies if S2 can be produced by interaction,

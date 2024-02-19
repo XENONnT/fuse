@@ -15,7 +15,7 @@ log = logging.getLogger("fuse.micro_physics.merge_cluster")
 @export
 class MergeCluster(FuseBasePlugin):
     """Plugin that merges energy deposits with the same cluster index into a single interaction.
-    The 3D postiion is calculated as the energy weighted average of the 3D positions of the energy deposits.
+    The 3D position is calculated as the energy weighted average of the 3D positions of the energy deposits.
     The time of the merged cluster is calculated as the energy weighted average of the times of the energy deposits.
     The energy of the merged cluster is the sum of the individual energy depositions. The cluster is then
     classified based on either the first interaction in the cluster or the most energetic interaction.
@@ -130,7 +130,7 @@ infinity = np.iinfo(np.int8).max
 
 
 def classify(types, parenttype, creaproc, edproc):
-    "Function to classify a cluster according to its main interaction"
+    """Function to classify a cluster according to its main interaction"""
 
     if (edproc == "ionIoni") & (types != "alpha"):
         return 0, 0, 0

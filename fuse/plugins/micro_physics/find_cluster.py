@@ -99,7 +99,7 @@ class FindCluster(FuseBasePlugin):
 
 def _find_cluster(x, cluster_size_space):
     """
-    Function to cluster three dimensional data (x, y, z).
+    Function to cluster three-dimensional data (x, y, z).
     Args:
         x (np.ndarray): structured numpy array with x, y, z coordinates to be clustered
         cluster_size_space (float): Clustering distance for DBSCAN
@@ -119,7 +119,7 @@ def simple_1d_clustering(data, scale):
     """
     Function to cluster one dimensional data.
     Args:
-        data (numpy.array): one dimensional array to be clusterd
+        data (numpy.array): one dimensional array to be clustered
         scale (float): Max distance between two points to
             be inside a cluster.
     Returns:

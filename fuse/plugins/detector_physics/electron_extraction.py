@@ -117,7 +117,7 @@ class ElectronExtraction(FuseBasePlugin):
 
         xy_int = np.array(
             [x, y]
-        ).T  # maps are in R_true, so orginal position should be here
+        ).T  # maps are in R_true, so original position should be here
 
         if self.ext_eff_from_map:
             # Extraction efficiency is g2(x,y)/SE_gain(x,y)
