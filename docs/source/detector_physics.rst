@@ -19,11 +19,11 @@ The detectorphysics simulation is performed in 8 plugins. These are listed below
 .. image:: figures/DetectorPhysicsStructure.pdf
     :width: 600
 
-Alternatively the microphysics simulation can be skipped and only the detectorphysic simulation can be performed.
-For this, the `ChunkCsvInput` plugin needs to be registered. 
-
 .. toctree::
    :maxdepth: 1
-   :caption: Detector Physics Plugins
+   :caption: Alternative Plugins
    
    plugins/detector_physics/ChunkCsvInput
+
+Alternatively the microphysics simulation can be skipped and only the detectorphysic simulation can be performed.
+For this, the `ChunkCsvInput` plugin needs to be registered. 
