@@ -16,7 +16,7 @@ class ElectricField(FuseBasePlugin):
     Plugin that calculates the electric field values for the cluster position.
     """
 
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     depends_on = ("interactions_in_roi",)
     provides = "electric_field_values"
@@ -25,7 +25,7 @@ class ElectricField(FuseBasePlugin):
     save_when = strax.SaveWhen.TARGET
 
     dtype = [
-        (("Electric field value at the cluster position [V/cm]", "e_field"), np.int64),
+        (("Electric field value at the cluster position [V/cm]", "e_field"), np.float16),
         *strax.time_fields
     ]
 
