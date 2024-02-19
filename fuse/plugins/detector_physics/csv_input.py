@@ -227,3 +227,4 @@ class csv_file_loader():
             instructions[column] = df[column]
 
         return instructions, n_simulated_events
+
