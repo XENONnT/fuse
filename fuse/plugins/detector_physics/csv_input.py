@@ -19,7 +19,7 @@ class ChunkCsvInput(FuseBasePlugin):
     Plugin which reads a CSV file containing instructions for the detector physics simulation
     and returns the data in chunks
     """
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
     depends_on = tuple()
     provides = "microphysics_summary"
@@ -29,17 +29,17 @@ class ChunkCsvInput(FuseBasePlugin):
 
     source_done = False
 
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('z', np.float32),
-             ('photons', np.int32),
-             ('electrons', np.int32),
-             ('excitons', np.int32),
-             ('e_field', np.float32),
-             ('ed', np.float32),
-             ('nestid', np.int32),
-             ('t', np.int64), #Remove them later as they are not in the usual micropyhsics summary
-             ('eventid', np.int32),#Remove them later as they are not in the usual micropyhsics summary
+    dtype = [(("x position of the cluster [cm]", "x"), np.float32),
+             (("y position of the cluster [cm]", "y"), np.float32),
+             (("z position of the cluster [cm]", "z"), np.float32),
+             (("Number of photons at interaction position.", "photons"), np.int32),
+             (("Number of electrons at interaction position.", "electrons"), np.int32),
+             (("Number of excitons at interaction position.", "excitons"), np.int32),
+             (("Electric field value at the cluster position [V/cm]", "e_field"), np.float16),
+             (("Energy of the cluster [keV]", "ed"), np.float32),
+             (("NEST interaction type", "nestid"), np.int8),
+             (("Time of the interaction [ns]", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
+             (("Geant4 event ID", "eventid"), np.int32),#Remove them later as they are not in the usual micropyhsics summary
             ]
     dtype = dtype + strax.time_fields
 
@@ -137,17 +137,17 @@ class csv_file_loader():
         self.first_chunk_left = np.int64(first_chunk_left)
         self.debug = debug
 
-        self.dtype = [('x', np.float32),
-                      ('y', np.float32),
-                      ('z', np.float32),
-                      ('photons', np.int32),
-                      ('electrons', np.int32),
-                      ('excitons', np.int32),
-                      ('e_field', np.float32),
-                      ('ed', np.float32),
-                      ('nestid', np.int32),
-                      ('t', np.int64), #Remove them later as they are not in the usual micropyhsics summary
-                      ('eventid', np.int32),#Remove them later as they are not in the usual micropyhsics summary
+        self.dtype = [(("x position of the cluster [cm]", "x"), np.float32),
+                      (("y position of the cluster [cm]", "y"), np.float32),
+                      (("z position of the cluster [cm]", "z"), np.float32),
+                      (("Number of photons at interaction position.", "photons"), np.int32),
+                      (("Number of electrons at interaction position.", "electrons"), np.int32),
+                      (("Number of excitons at interaction position.", "excitons"), np.int32),
+                      (("Electric field value at the cluster position [V/cm]", "e_field"), np.float16),
+                      (("Energy of the cluster [keV]", "ed"), np.float32),
+                      (("NEST interaction type", "nestid"), np.int8),
+                      (("Time of the interaction", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
+                      (("Geant4 event ID", "eventid"), np.int32),#Remove them later as they are not in the usual micropyhsics summary
                       ]
         self.dtype = self.dtype + strax.time_fields
 
@@ -196,7 +196,7 @@ class csv_file_loader():
             chunk_bounds = chunk_end + np.int64(self.chunk_delay_fraction*gap_length)
             self.chunk_bounds = np.append(chunk_start[0]-self.first_chunk_left, chunk_bounds)
         else: 
-            log.warn("Only one Chunk! Rate to high?")
+            log.warning("Only one Chunk! Rate to high?")
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
         
         source_done = False
@@ -218,7 +218,7 @@ class csv_file_loader():
 
         #Check if all needed columns are in place:
         if not set(self.columns).issubset(df.columns):
-            log.warn("Not all needed columns provided!")
+            log.warning("Not all needed columns provided!")
 
         n_simulated_events = len(np.unique(df.eventid))
 
@@ -227,3 +227,4 @@ class csv_file_loader():
             instructions[column] = df[column]
 
         return instructions, n_simulated_events
+
