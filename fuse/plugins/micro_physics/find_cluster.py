@@ -20,7 +20,7 @@ class FindCluster(FuseBasePlugin):
     their proximity to each other in 3D space and time. The clustering is performed using
     a 1D temporal clustering algorithm followed by 3D DBSCAN spacial clustering."""
     
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
     
     depends_on = ("geant4_interactions")
     
@@ -31,6 +31,9 @@ class FindCluster(FuseBasePlugin):
     dtype = dtype + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
+
+    #Not start at 0. 0 are set per default for contributing clusters so we want to avoid that
+    clusters_seen = 1 
 
     #Config options
     micro_separation_time = straxen.URLConfig(
@@ -60,10 +63,12 @@ class FindCluster(FuseBasePlugin):
                                   self.micro_separation_time)
 
         numpy_data = np.zeros(len(geant4_interactions), dtype=self.dtype)
-        numpy_data["cluster_ids"] = cluster_ids + 1 #Avoid 0 as cluster ID 
+        numpy_data["cluster_ids"] = cluster_ids + self.clusters_seen
 
         numpy_data["time"] = geant4_interactions["time"]
         numpy_data["endtime"] = geant4_interactions["endtime"]
+
+        self.clusters_seen = np.max(numpy_data["cluster_ids"]) + 1 
 
         return numpy_data
     
