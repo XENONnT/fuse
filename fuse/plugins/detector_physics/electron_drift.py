@@ -231,8 +231,8 @@ class ElectronDrift(FuseBasePlugin):
         interaction_in_civ = self.in_charge_sensitive_volume(
             xy_int=np.array(
                 [x, y]
-            ).T,  # maps are in R_true, so orginal position should be here
-            z_int=z,  # maps are in Z_true, so orginal position should be here
+            ).T,  # maps are in R_true, so original position should be here
+            z_int=z,  # maps are in Z_true, so original position should be here
         )
         n_electron = self.rng.binomial(n=n_electron, p=interaction_in_civ)
 
@@ -264,13 +264,12 @@ class ElectronDrift(FuseBasePlugin):
         return result
 
     def inverse_field_distortion_correction(self, x, y, z):
-        """For 1T the pattern map is a data driven one so we need to reverse engineer field distortion correction
+        """For 1T the pattern map is a data driven one, so we need to reverse engineer field distortion correction
         into the simulated positions
         :param x: 1d array of float
         :param y: 1d array of float
         :param z: 1d array of float
-        :param resource: instance of resource class
-        returns z: 1d array, postions 2d array
+        returns z: 1d array, positions 2d array
         """
         positions = np.array([x, y, z]).T
         for i_iter in range(6):  # 6 iterations seems to work
@@ -293,8 +292,7 @@ class ElectronDrift(FuseBasePlugin):
         :param x: 1d array of float
         :param y: 1d array of float
         :param z: 1d array of float
-        :param resource: instance of resource class
-        returns z: 1d array, postions 2d array
+        returns z: 1d array, positions 2d array
         """
         positions = np.array([np.sqrt(x**2 + y**2), z]).T
         theta = np.arctan2(y, x)
