@@ -38,7 +38,7 @@ class ChunkCsvInput(FuseBasePlugin):
              (("Electric field value at the cluster position [V/cm]", "e_field"), np.int64),
              (("Energy of the cluster [keV]", "ed"), np.float32),
              (("NEST interaction type", "nestid"), np.int8),
-             (("Time of the interaction", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
+             (("Time of the interaction [ns]", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
              (("Geant4 event ID", "evtid"), np.int32),#Remove them later as they are not in the usual micropyhsics summary
             ]
     dtype = dtype + strax.time_fields
