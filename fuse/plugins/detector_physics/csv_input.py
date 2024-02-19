@@ -196,7 +196,7 @@ class csv_file_loader():
             chunk_bounds = chunk_end + np.int64(self.chunk_delay_fraction*gap_length)
             self.chunk_bounds = np.append(chunk_start[0]-self.first_chunk_left, chunk_bounds)
         else: 
-            log.warn("Only one Chunk! Rate to high?")
+            log.warning("Only one Chunk! Rate to high?")
             self.chunk_bounds = [chunk_start[0] - self.first_chunk_left, chunk_end[0]+self.last_chunk_length]
         
         source_done = False
@@ -218,7 +218,7 @@ class csv_file_loader():
 
         #Check if all needed columns are in place:
         if not set(self.columns).issubset(df.columns):
-            log.warn("Not all needed columns provided!")
+            log.warning("Not all needed columns provided!")
 
         n_simulated_events = len(np.unique(df.eventid))
 
