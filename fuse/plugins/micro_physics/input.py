@@ -52,8 +52,6 @@ class ChunkInput(FuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
 
-    source_done = False
-
     # Config options
     path = straxen.URLConfig(
         track=False,
