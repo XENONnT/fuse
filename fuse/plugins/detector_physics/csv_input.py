@@ -19,7 +19,7 @@ class ChunkCsvInput(FuseBasePlugin):
     Plugin which reads a CSV file containing instructions for the detector physics simulation
     and returns the data in chunks
     """
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     depends_on = tuple()
     provides = "microphysics_summary"
@@ -39,7 +39,6 @@ class ChunkCsvInput(FuseBasePlugin):
              (("Energy of the cluster [keV]", "ed"), np.float32),
              (("NEST interaction type", "nestid"), np.int8),
              (("ID of the cluster", "cluster_id"), np.int32),
-             (("Time of the interaction [ns]", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
              (("Geant4 event ID", "eventid"), np.int32),#Remove them later as they are not in the usual micropyhsics summary
             ]
     dtype = dtype + strax.time_fields
@@ -148,7 +147,6 @@ class csv_file_loader():
                       (("Energy of the cluster [keV]", "ed"), np.float32),
                       (("NEST interaction type", "nestid"), np.int8),
                       (("ID of the cluster", "cluster_id"), np.int32),
-                      (("Time of the interaction", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
                       (("Geant4 event ID", "eventid"), np.int32),#Remove them later as they are not in the usual micropyhsics summary
                       ]
         self.dtype = self.dtype + strax.time_fields
@@ -156,7 +154,7 @@ class csv_file_loader():
         #the csv file needs to have these columns:
         self.columns = ["x", "y", "z",
                         "photons", "electrons", "excitons",
-                        "e_field", "ed", "nestid", "t", "eventid", "cluster_id"]
+                        "e_field", "ed", "nestid", "time", "eventid", "cluster_id"]
 
 
     def output_chunk(self):
@@ -173,9 +171,9 @@ class csv_file_loader():
 
             structure = np.unique(instructions["eventid"], return_counts = True)[1]
             interaction_time = np.repeat(event_times[:len(structure)], structure)
-            instructions["time"] = interaction_time + instructions["t"]
+            instructions["time"] = interaction_time + instructions["time"]
         elif self.event_rate == 0:
-            instructions["time"] = instructions["t"]
+            instructions["time"] = instructions["time"]
             log.debug("Using event times from provided input file.")
         else:
             raise ValueError("Source rate cannot be negative!")
@@ -229,4 +227,3 @@ class csv_file_loader():
             instructions[column] = df[column]
 
         return instructions, n_simulated_events
-

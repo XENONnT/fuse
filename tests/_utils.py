@@ -23,7 +23,7 @@ def build_random_instructions(n):
 
     #just set the time with respect to the start of the event
     #The events will be distributed in time by fuse
-    df["t"] = np.zeros(n)
+    df["time"] = np.zeros(n)
 
     df["eventid"] = np.arange(n)
     df["cluster_id"] = np.arange(n)
