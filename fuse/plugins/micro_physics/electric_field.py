@@ -25,7 +25,7 @@ class ElectricField(FuseBasePlugin):
     save_when = strax.SaveWhen.TARGET
 
     dtype = [
-        (("Electric field value at the cluster position [V/cm]", "e_field"), np.float16),
+        (("Electric field value at the cluster position [V/cm]", "e_field"), np.float32),
         *strax.time_fields
     ]
 
