@@ -35,7 +35,7 @@ class ChunkCsvInput(FuseBasePlugin):
              (("Number of photons at interaction position.", "photons"), np.int32),
              (("Number of electrons at interaction position.", "electrons"), np.int32),
              (("Number of excitons at interaction position.", "excitons"), np.int32),
-             (("Electric field value at the cluster position [V/cm]", "e_field"), np.float16),
+             (("Electric field value at the cluster position [V/cm]", "e_field"), np.float32),
              (("Energy of the cluster [keV]", "ed"), np.float32),
              (("NEST interaction type", "nestid"), np.int8),
              (("Time of the interaction [ns]", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
