@@ -37,7 +37,7 @@ Provided Columns
      - int64
      - Endtime of the cluster [ns] (same as time)
    * - e_field
-     - float16
+     - float32
      - Electric field value at the cluster position [V/cm]
 
 Config Options
