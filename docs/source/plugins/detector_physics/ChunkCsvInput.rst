@@ -54,7 +54,7 @@ Provided Columns
      - int32
      - Number of excitons at interaction position.
    * - e_field
-     - float16
+     - float32
      - Electric field value at the cluster position [V/cm]
    * - ed
      - float32
