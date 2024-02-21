@@ -439,7 +439,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                                               _photon_channels,
                                               )
 
-        _photon_timings += np.repeat(electron_chunks[-1]["time"], electron_chunks[-1]["n_s2_photons"])
+        _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
         
         _cluster_id = np.repeat(interactions_chunk['cluster_id'], interactions_chunk["sum_s2_photons"])
 
