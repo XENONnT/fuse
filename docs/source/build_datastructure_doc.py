@@ -235,7 +235,7 @@ def build_datastructure_doc():
             )
 
         with open(
-            this_dir + "/source/data_structure.rst", mode="w"
+            this_dir + "/data_structure.rst", mode="w"
         ) as f:
             f.write(out)
 
@@ -342,7 +342,7 @@ The ``{data_kind}``-data kind includes the following data types:
         for d in data_types:
             extra += f"\n - ``{d}``"
         output = output.format(data_types=extra)
-    data_type = this_dir + "/source/data_kinds.rst"
+    data_type = this_dir + "/data_kinds.rst"
     with open(data_type, mode="w") as f:
         f.write(output)
     assert os.path.exists(data_type)
