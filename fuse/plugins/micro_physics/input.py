@@ -265,7 +265,9 @@ class file_loader():
 
         #Sort interactions in events by time and subtract time of the first interaction
         interactions = interactions[ak.argsort(interactions['t'])]
-        interactions['t'] = interactions['t'] - interactions['t'][:, 0]
+        
+        if self.event_rate > 0:
+            interactions['t'] = interactions['t'] - interactions['t'][:, 0]
 
         inter_reshaped = full_array_to_numpy(interactions, self.dtype)
         
@@ -456,7 +458,7 @@ class file_loader():
         instr_df["y_pri"] = instr_df["yp_pri"]/10
         instr_df["z_pri"] = instr_df["zp_pri"]/10
         instr_df["r"] = np.sqrt(instr_df["x"]**2 + instr_df["y"]**2)
-        instr_df["t"] = instr_df["time"]*10**9
+        instr_df["t"] = instr_df["time"]
 
         #Check if all needed columns are in place:
         if not set(self.column_names).issubset(instr_df.columns):
