@@ -46,8 +46,11 @@ def setup(app):
     # if you just try to do a relative import...
     import os
     import sys
-
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
-    from build_release_notes import convert_release_notes
 
+    import build_datastructure_doc
+    build_datastructure_doc.build_datastructure_doc()
+    build_datastructure_doc.write_data_kind_dep_tree()
+
+    from build_release_notes import convert_release_notes
     convert_release_notes()

@@ -29,6 +29,13 @@ simulation chain.
    pmt_and_daq
 
 .. toctree::
+    :maxdepth: 1
+    :caption: Data structure
+
+    reference/data_structure
+    reference/data_kinds
+
+.. toctree::
    :maxdepth: 1
    :caption: Technical Features
    
