@@ -83,7 +83,7 @@ because changing any of those options affect this data indirectly.
 """
 
 data_kinds_header = """
-XENON nT data kinds
+Fuse data kinds
 ====================
 This page summarizes the data kinds and data types used in fuse.
 
