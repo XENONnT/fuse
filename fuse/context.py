@@ -156,6 +156,9 @@ def set_simulation_config_file(context, config_file_name):
             if isinstance(option.default, str) and "SIMULATION_CONFIG_FILE.json" in option.default:
                 context.config[option_key] = option.default.replace("SIMULATION_CONFIG_FILE.json", config_file_name)
                 
+            #Special case for the photoionization_modifier
+            if option_key == "photoionization_modifier":
+                context.config[option_key] = option.default
 
 @URLConfig.register('pattern_map')
 def pattern_map(map_data, pmt_mask, method='WeightedNearestNeighbors'):
