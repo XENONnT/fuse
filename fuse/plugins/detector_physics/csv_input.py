@@ -29,9 +29,9 @@ class ChunkCsvInput(FuseBasePlugin):
 
     source_done = False
 
-    dtype = [(("x position of the cluster [cm]", "x"), np.float32),
-             (("y position of the cluster [cm]", "y"), np.float32),
-             (("z position of the cluster [cm]", "z"), np.float32),
+    dtype = [(("x position of the cluster [mm]", "x"), np.float32),
+             (("y position of the cluster [mm]", "y"), np.float32),
+             (("z position of the cluster [mm]", "z"), np.float32),
              (("Number of photons at interaction position.", "photons"), np.int32),
              (("Number of electrons at interaction position.", "electrons"), np.int32),
              (("Number of excitons at interaction position.", "excitons"), np.int32),
