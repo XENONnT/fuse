@@ -12,6 +12,7 @@ class MicroPhysicsSummary(strax.MergeOnlyPlugin):
                   'quanta',
                   'electric_field_values',
                   ]
+    rechunk_on_save = False
     save_when = strax.SaveWhen.ALWAYS
     provides = 'microphysics_summary'
     __version__ = "0.1.0"
