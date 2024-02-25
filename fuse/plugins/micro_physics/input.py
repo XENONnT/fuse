@@ -29,9 +29,9 @@ class ChunkInput(FuseBasePlugin):
 
     source_done = False
     
-    dtype = [(("x position of the energy deposit [cm]", "x"), np.float64),
-             (("y position of the energy deposit [cm]", "y"), np.float64),
-             (("z position of the energy deposit [cm]", "z"), np.float64),
+    dtype = [(("x position of the energy deposit [mm]", "x"), np.float64),
+             (("y position of the energy deposit [mm]", "y"), np.float64),
+             (("z position of the energy deposit [mm]", "z"), np.float64),
              (("Time with respect to the start of the event [ns]", "t"), np.float64),
              (("Energy deposit in keV", "ed"), np.float32),
              (("Particle type","type"), "<U10"),
