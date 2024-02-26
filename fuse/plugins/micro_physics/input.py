@@ -22,7 +22,7 @@ class ChunkInput(FuseBasePlugin):
     """Plugin to read XENONnT Geant4 root or csv files. The plugin can distribute the events
     in time based on a source rate and will create multiple chunks of data if needed."""
     
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
     
     depends_on = tuple()
     provides = "geant4_interactions"
@@ -217,12 +217,12 @@ class file_loader():
                       (("z position of the energy deposit [cm]", "z"), np.float64),
                       (("Time with respect to the start of the event [ns]", "t"), np.float64),
                       (("Energy deposit in keV", "ed"), np.float32),
-                      (("Particle type","type"), "<U10"),
+                      (("Particle type","type"), "<U18"),
                       (("Geant4 track ID", "trackid"), np.int16),
-                      (("Particle type of the parent particle", "parenttype"), "<U10"),
+                      (("Particle type of the parent particle", "parenttype"), "<U18"),
                       (("Trackid of the parent particle", "parentid"), np.int16),
-                      (("Geant4 process creating the particle", "creaproc"), "<U10"),
-                      (("Geant4 process destroying the particle", 'edproc'), "<U10"),
+                      (("Geant4 process creating the particle", "creaproc"), "<U25"),
+                      (("Geant4 process destroying the particle", 'edproc'), "<U25"),
                       (("Geant4 event ID", "evtid"), np.int32),
                       (("x position of the primary particle", "x_pri"), np.float32),
                       (("y position of the primary particle", "y_pri"), np.float32),
