@@ -17,7 +17,7 @@ Technical Details
    depends_on = ("interactions_in_roi")
    provides = "electric_field_values"
    data_kind = "interactions_in_roi"
-   __version__ = "0.2.1"
+   __version__ = "0.2.2"
 
 
 Provided Columns
