@@ -52,22 +52,22 @@ Provided Columns
      - float32
      - Energy deposit in keV
    * - type
-     - <U10
+     - <U18
      - Particle type 
    * - trackid
      - int16
      - Geant4 track ID
    * - parenttype
-     - <U10
+     - <U25
      - Particle type of the parent particle
    * - parentid
      - int16
      - Trackid of the parent particle
    * - creaproc
-     - <U10
+     - <U25
      - Geant4 process creating the particle
    * - edproc
-     - <U10
+     - <U1
      - Geant4 process destroying the particle
    * - evtid
      - int32
