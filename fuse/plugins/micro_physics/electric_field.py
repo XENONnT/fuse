@@ -16,7 +16,7 @@ class ElectricField(FuseBasePlugin):
     Plugin that calculates the electric field values for the cluster position.
     """
 
-    __version__ = "0.2.1"
+    __version__ = "0.2.2"
 
     depends_on = ("interactions_in_roi",)
     provides = "electric_field_values"
@@ -58,6 +58,12 @@ class ElectricField(FuseBasePlugin):
         if n_negative_values > 0:
             log.warning(f"Found {n_negative_values} negative electric field values. Clipping to 0.")
         electric_field_array['e_field'] = np.clip(electric_field_array['e_field'], 0, None)
+
+        # Clip NaN values to 0
+        n_nan_values = np.sum(np.isnan(electric_field_array['e_field']))
+        if n_nan_values > 0:
+            log.warning(f"Found {n_nan_values} NaN electric field values. Clipping to 0.")
+        electric_field_array['e_field'] = np.nan_to_num(electric_field_array['e_field'])
 
         return electric_field_array
 
