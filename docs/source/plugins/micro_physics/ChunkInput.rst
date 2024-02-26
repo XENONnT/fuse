@@ -58,7 +58,7 @@ Provided Columns
      - int16
      - Geant4 track ID
    * - parenttype
-     - <U25
+     - <U18
      - Particle type of the parent particle
    * - parentid
      - int16
@@ -67,7 +67,7 @@ Provided Columns
      - <U25
      - Geant4 process creating the particle
    * - edproc
-     - <U1
+     - <U25
      - Geant4 process destroying the particle
    * - evtid
      - int32
