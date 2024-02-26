@@ -18,7 +18,7 @@ Technical Details
    depends_on = ()
    provides = "geant4_interactions"
    data_kind = "geant4_interactions"
-   __version__ = "0.2.0"
+   __version__ = "0.3.0"
 
 Provided Columns
 ================
