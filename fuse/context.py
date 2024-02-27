@@ -4,6 +4,7 @@ import fuse
 import numpy as np
 from straxen import URLConfig
 from copy import deepcopy
+import logging
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.context')
