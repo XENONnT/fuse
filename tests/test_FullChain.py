@@ -17,7 +17,7 @@ class TestFullChain(unittest.TestCase):
 
         cls.temp_dir = tempfile.TemporaryDirectory()
 
-        cls.test_context = fuse.context.full_chain_context(output_folder = cls.temp_dir.name)
+        cls.test_context = fuse.context.full_chain_context(output_folder = cls.temp_dir.name, run_without_proper_corrections=True)
         
         cls.test_context.set_config({"path": cls.temp_dir.name,
                                       "file_name": test_root_file_name,

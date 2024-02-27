@@ -96,12 +96,12 @@ class S1PhotonPropagationBase(FuseBasePlugin):
     )
 
     n_top_pmts = straxen.URLConfig(
-        type=(int),
+        type=int,
         help='Number of PMTs on top array',
     )
 
     n_tpc_pmts = straxen.URLConfig(
-        type=(int),
+        type=int,
         help='Number of PMTs in the TPC',
     )
 
