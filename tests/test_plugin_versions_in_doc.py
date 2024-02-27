@@ -59,7 +59,7 @@ class TestPluginVersionsInDocumentation(unittest.TestCase):
 
         cls.temp_dir = tempfile.TemporaryDirectory()
 
-        test_context = fuse.context.full_chain_context(output_folder = cls.temp_dir.name)
+        test_context = fuse.context.full_chain_context(output_folder = cls.temp_dir.name, run_without_proper_corrections=True)
         cls.plugin_registry = test_context._plugin_class_registry
 
         cls.this_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))

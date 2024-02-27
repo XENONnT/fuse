@@ -39,7 +39,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=sample_duration",
-        type=(int),
+        type=int,
         cache=True,
         help='Width of one sample [ns]',
     )
@@ -177,7 +177,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
     )
 
     n_tpc_pmts = straxen.URLConfig(
-        type=(int),
+        type=int,
         help='Number of PMTs in the TPC',
     )
 
