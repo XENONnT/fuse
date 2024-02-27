@@ -152,6 +152,11 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
     def compute(self, interactions_in_roi):
+        #Just apply this to clusters with photons hitting a PMT
+        instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
+
+        if len(instruction) == 0:
+            return np.zeros(0, self.dtype)
 
         #set the global nest random generator with self.short_seed
         nest_rng.set_seed(self.short_seed)
@@ -159,12 +164,6 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         nest_rng.lock_seed()
         #increment the seed. Next chunk we will use the modified seed to generate random numbers
         self.short_seed += 1
-
-        #Just apply this to clusters with photons hitting a PMT
-        instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
-
-        if len(instruction) == 0:
-            return np.zeros(0, self.dtype)
         
         t = instruction['time']
         x = instruction['x']
