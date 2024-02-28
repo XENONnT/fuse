@@ -159,6 +159,11 @@ class ChunkInput(FuseBasePlugin):
 class file_loader():
     """
     Load the complete root file and return interactions in chunks 
+    Featured functions:
+    - _load_root_file: Load a root file using uproot and return interactions
+    - _get_ttree: Search for the correct ttree in the root file
+    - _load_csv_file: Load a csv file using pandas and return interactions
+    - output_chunk: Return one chunk of data from the input file
     """
 
     def __init__(self,
@@ -234,7 +239,7 @@ class file_loader():
     
     def output_chunk(self):
         """
-        Function to return one chunk of data from the root file
+        Function to return one chunk of data from the input file, which is either a root or csv file.
         """
         
         if self.file.endswith(".root"):
