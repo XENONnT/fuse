@@ -474,6 +474,14 @@ class file_loader():
         log.debug("Load instructions from a csv file!")
         
         instr_df =  pd.read_csv(self.file)
+        
+        # Extract the column names from the dtype list, then check if all needed columns are in place
+        expected_columns = [name for (_, name), dtype in self.fuse_input_dtype]
+        missing_columns = [column for column in expected_columns if column not in instr_df.columns]
+        if not missing_columns:
+            log.info("All needed columns are provided in the csv input.")
+        else:
+            log.warning(f"Missing columns: {missing_columns} in the csv input.")
 
         #unit conversion similar to root case
         instr_df["x"] = instr_df["xp"]/10 
