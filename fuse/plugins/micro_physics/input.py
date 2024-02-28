@@ -481,7 +481,7 @@ class file_loader():
         if not missing_columns:
             log.info("All needed columns are provided in the csv input.")
         else:
-            log.warning(f"Missing columns: {missing_columns} in the csv input.")
+            raise ValueError(f"Missing columns: {missing_columns} in the csv input.")
 
         #unit conversion similar to root case
         instr_df["x"] = instr_df["xp"]/10 
