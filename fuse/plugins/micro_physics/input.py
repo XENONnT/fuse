@@ -493,10 +493,6 @@ class file_loader():
         instr_df["r"] = np.sqrt(instr_df["x"]**2 + instr_df["y"]**2)
         instr_df["t"] = instr_df["time"]
 
-        #Check if all needed columns are in place:
-        if not set(self.column_names).issubset(instr_df.columns):
-            log.warning("Not all needed columns provided!")
-
         n_simulated_events = len(np.unique(instr_df.eventid))
 
         if self.outer_cylinder:
