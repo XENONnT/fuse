@@ -20,7 +20,26 @@ log = logging.getLogger('fuse.micro_physics.input')
 @export
 class ChunkInput(FuseBasePlugin):
     """Plugin to read XENONnT Geant4 root or csv files. The plugin can distribute the events
-    in time based on a source rate and will create multiple chunks of data if needed."""
+    in time based on a source rate and will create multiple chunks of data if needed.
+    
+    the csv instruction columns should include:
+    - "xp": x position of the energy deposit [mm]
+    - "yp": y position of the energy deposit [mm]
+    - "zp": z position of the energy deposit [mm]
+    - "time": Time with respect to the start of the event [ns]
+        note: if the times are all zero they are distributed according to source_rate by fuse
+    - "ed": Energy deposit in keV
+    - "type": Particle type
+    - "trackid": Track ID
+    - "parenttype": Particle type of the parent particle
+    - "parentid": Trackid of the parent particle
+    - "creaproc": Geant4 process creating the particle, set for None in csv input
+    - "edproc": Geant4 process destroying the particle, set for None in csv input
+    - "eventid": Event ID
+    - "xp_pri": x position of the primary particle [mm]
+    - "yp_pri": y position of the primary particle [mm]
+    - "zp_pri": z position of the primary particle [mm] 
+    """
     
     __version__ = "0.3.0"
     
@@ -204,6 +223,7 @@ class file_loader():
         
         self.file = os.path.join(self.directory, self.file_name)
 
+        # columns used in the root file
         self.column_names = ["x", "y", "z",
                              "t", "ed",
                              "type", "trackid",
