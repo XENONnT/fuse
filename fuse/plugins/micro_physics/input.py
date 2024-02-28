@@ -216,7 +216,25 @@ class file_loader():
                                f' & ((zp >= {self.outer_cylinder["min_z"] * 10}) & (zp < {self.outer_cylinder["max_z"] * 10}))')            
         else:
             self.cut_string = None
-    
+
+        # set the fuse_input_dtype if the file_type is csv
+        if self.file_type == "csv":
+            self.fuse_input_dtype = [(("x position of the energy deposit [mm]", "xp"), np.float64),
+                      (("y position of the energy deposit [mm]", "yp"), np.float64),
+                      (("z position of the energy deposit [mm]", "zp"), np.float64),
+                      (("Time with respect to the start of the event [ns]", "time"), np.float64),
+                      (("Energy deposit in keV", "ed"), np.float32),
+                      (("Particle type","type"), "<U18"),
+                      (("Track ID", "trackid"), np.int16),
+                      (("Particle type of the parent particle", "parenttype"), "<U18"),
+                      (("Trackid of the parent particle", "parentid"), np.int16),
+                      (("Geant4 process creating the particle (Redundant for csv input)", "creaproc"), "<U25"),
+                      (("Geant4 process destroying the particle (Redundant for csv input) ", 'edproc'), "<U25"),
+                      (("Event ID", "eventid"), np.int32),
+                      (("x position of the primary particle [mm]", "xp_pri"), np.float32),
+                      (("y position of the primary particle [mm]", "yp_pri"), np.float32),
+                      (("z position of the primary particle [mm]", "zp_pri"), np.float32),
+                    ]
         
         
         self.dtype = [(("x position of the energy deposit [cm]", "x"), np.float64),
