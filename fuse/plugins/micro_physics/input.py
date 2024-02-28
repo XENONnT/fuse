@@ -163,6 +163,7 @@ class file_loader():
     - _load_root_file: Load a root file using uproot and return interactions
     - _get_ttree: Search for the correct ttree in the root file
     - _load_csv_file: Load a csv file using pandas and return interactions
+    - _awkwardify_df: Build an awkward array from a pandas dataframe
     - output_chunk: Return one chunk of data from the input file
     """
 
@@ -186,6 +187,7 @@ class file_loader():
 
         self.directory = directory
         self.file_name = file_name
+        self.file_type = self.file_name.split(".")[-1]
         self.rng = random_number_generator
         self.separation_scale = separation_scale
         self.event_rate = event_rate / 1e9 #Conversion to ns 
@@ -242,9 +244,9 @@ class file_loader():
         Function to return one chunk of data from the input file, which is either a root or csv file.
         """
         
-        if self.file.endswith(".root"):
+        if self.file_type == "root":
             interactions, n_simulated_events, start, stop = self._load_root_file()
-        elif self.file.endswith(".csv"):
+        elif self.file_type == "csv":
             interactions, n_simulated_events, start, stop = self._load_csv_file()
         else:
             raise ValueError(f'Cannot load events from file "{self.file}": .root or .cvs file needed.')        
@@ -291,7 +293,7 @@ class file_loader():
             inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
         elif self.event_rate == 0:
             log.info("Using event times from provided input file.")
-            if self.file.endswith(".root"):
+            if self.file_type == "root":
                 log.warning("Using event times from root file is not recommended! Use a source_rate > 0 instead.")
             inter_reshaped["time"] = inter_reshaped["t"]
         else:
