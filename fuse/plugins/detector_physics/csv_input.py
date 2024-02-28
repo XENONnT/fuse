@@ -18,6 +18,18 @@ class ChunkCsvInput(FuseBasePlugin):
     """
     Plugin which reads a CSV file containing instructions for the detector physics simulation
     and returns the data in chunks
+    The CSV file should contain the following columns:
+    - x: x position of the cluster [cm]
+    - y: y position of the cluster [cm]
+    - z: z position of the cluster [cm]
+    - photons: Number of photons at interaction position.
+    - electrons: Number of electrons at interaction position.
+    - excitons: Number of excitons at interaction position.
+    - e_field: Electric field value at the cluster position [V/cm]
+    - ed: Energy of the cluster [keV]
+    - nestid: NEST interaction type
+    - t: Time of the interaction [ns]
+    - eventid: Geant4 event ID
     """
     __version__ = "0.2.0"
 
