@@ -153,12 +153,6 @@ class csv_file_loader():
         self.dtype = self.fuse_input_dtype
         self.dtype = self.dtype + strax.time_fields
 
-        #the csv file needs to have these columns:
-        self.columns = ["x", "y", "z",
-                        "photons", "electrons", "excitons",
-                        "e_field", "ed", "nestid", "t", "eventid"]
-
-
     def output_chunk(self):
         
         instructions, n_simulated_events = self.__load_csv_file()
@@ -221,7 +215,9 @@ class csv_file_loader():
         expected_columns = self.columns
         missing_columns = [column for column in expected_columns if column not in df.columns]
         
-        #Check if all needed columns are in place:
+        # Extract the column names from the dtype list, then check if all needed columns are in place
+        expected_columns = [name for (_, name), dtype in self.fuse_input_dtype]
+        missing_columns = [column for column in expected_columns if column not in df.columns]
         if not missing_columns:
             log.info("All needed columns are provided in the csv input.")
         else:
