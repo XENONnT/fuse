@@ -136,8 +136,8 @@ class csv_file_loader():
         self.last_chunk_length = np.int64(last_chunk_length)
         self.first_chunk_left = np.int64(first_chunk_left)
         self.debug = debug
-
-        self.dtype = [(("x position of the cluster [cm]", "x"), np.float32),
+        
+        self.fuse_input_dtype = [(("x position of the cluster [cm]", "x"), np.float32),
                       (("y position of the cluster [cm]", "y"), np.float32),
                       (("z position of the cluster [cm]", "z"), np.float32),
                       (("Number of photons at interaction position.", "photons"), np.int32),
@@ -149,6 +149,8 @@ class csv_file_loader():
                       (("Time of the interaction", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
                       (("Geant4 event ID", "eventid"), np.int32),#Remove them later as they are not in the usual micropyhsics summary
                       ]
+
+        self.dtype = self.fuse_input_dtype
         self.dtype = self.dtype + strax.time_fields
 
         #the csv file needs to have these columns:
@@ -215,10 +217,15 @@ class csv_file_loader():
     def __load_csv_file(self):
         log.debug("Load detector simulation instructions from a csv file!")
         df = pd.read_csv(self.input_file)
-
+        
+        expected_columns = self.columns
+        missing_columns = [column for column in expected_columns if column not in df.columns]
+        
         #Check if all needed columns are in place:
-        if not set(self.columns).issubset(df.columns):
-            log.warning("Not all needed columns provided!")
+        if not missing_columns:
+            log.info("All needed columns are provided in the csv input.")
+        else:
+            raise ValueError(f"Missing columns: {missing_columns} in the csv input.")
 
         n_simulated_events = len(np.unique(df.eventid))
 
