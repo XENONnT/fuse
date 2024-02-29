@@ -224,7 +224,7 @@ class csv_file_loader():
         log.debug("Load detector simulation instructions from a csv file!")
         df = pd.read_csv(self.input_file)
         
-        expected_columns = self.columns
+        expected_columns = [name for (_, name), dtype in self.fuse_input_dtype]
         missing_columns = [column for column in expected_columns if column not in df.columns]
         
         # Extract the column names from the dtype list, then check if all needed columns are in place
