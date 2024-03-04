@@ -10,3 +10,7 @@ resource_cache
 .DS_Store
 dist/*
 docs/source/release_notes.rst
+strax_data
+fuse_data
+data_kinds.rst
+data_structure.rst

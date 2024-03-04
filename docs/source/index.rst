@@ -30,6 +30,13 @@ simulation chain.
 
 .. toctree::
    :maxdepth: 1
+   :caption: Data structure
+
+   data_structure
+   data_kinds
+
+.. toctree::
+   :maxdepth: 1
    :caption: Technical Features
    
    tech_features/DeterministicSeed
