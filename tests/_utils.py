@@ -26,5 +26,6 @@ def build_random_instructions(n):
     df["t"] = np.zeros(n)
 
     df["eventid"] = np.arange(n)
+    df["cluster_id"] = np.arange(n)
 
     return df

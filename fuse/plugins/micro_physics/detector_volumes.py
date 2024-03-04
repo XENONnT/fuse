@@ -39,7 +39,7 @@ class XENONnT_TPC(VolumePlugin):
 
     provides = "tpc_interactions"
     data_kind = "tpc_interactions"
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     #Can we import this from MergeCluster and just add the needed fields?
     dtype = [(("x position of the cluster [cm]", "x"), np.float32),
@@ -53,6 +53,7 @@ class XENONnT_TPC(VolumePlugin):
              (("x position of the primary particle [cm]", "x_pri"), np.float32),
              (("y position of the primary particle [cm]", "y_pri"), np.float32),
              (("z position of the primary particle [cm]", "z_pri"), np.float32),
+             (("ID of the cluster", "cluster_id"), np.int32),
              (("Xenon density at the cluster position.", "xe_density"), np.float32), 
              (("ID of the volume in which the cluster occured.", "vol_id"), np.int8),
              (("Flag indicating if a cluster can create a S2 signal.", "create_S2"), np.bool_),
@@ -121,7 +122,7 @@ class XENONnT_BelowCathode(VolumePlugin):
 
     provides = "below_cathode_interactions"
     data_kind = "below_cathode_interactions"
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     #Can we import this from MergeCluster and just add the needed fields?
     dtype = [(("x position of the cluster [cm]", "x"), np.float32),
@@ -135,6 +136,7 @@ class XENONnT_BelowCathode(VolumePlugin):
              (("x position of the primary particle [cm]", "x_pri"), np.float32),
              (("y position of the primary particle [cm]", "y_pri"), np.float32),
              (("z position of the primary particle [cm]", "z_pri"), np.float32),
+             (("ID of the cluster", "cluster_id"), np.int32),
              (("Xenon density at the cluster position.", "xe_density"), np.float32), 
              (("ID of the volume in which the cluster occured.", "vol_id"), np.int8),
              (("Flag indicating if a cluster can create a S2 signal.", "create_S2"), np.bool_),
@@ -202,7 +204,7 @@ class XENONnT_GasPhase(VolumePlugin):
 
     provides = "gas_phase_interactions"
     data_kind = "gas_phase_interactions"
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     #Can we import this from MergeCluster and just add the needed fields?
     dtype = [(("x position of the cluster [cm]", "x"), np.float32),
@@ -216,6 +218,7 @@ class XENONnT_GasPhase(VolumePlugin):
              (("x position of the primary particle [cm]", "x_pri"), np.float32),
              (("y position of the primary particle [cm]", "y_pri"), np.float32),
              (("z position of the primary particle [cm]", "z_pri"), np.float32),
+             (("ID of the cluster", "cluster_id"), np.int32),
              (("Xenon density at the cluster position.", "xe_density"), np.float32), 
              (("ID of the volume in which the cluster occured.", "vol_id"), np.int8),
              (("Flag indicating if a cluster can create a S2 signal.", "create_S2"), np.bool_),

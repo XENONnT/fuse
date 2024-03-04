@@ -40,6 +40,14 @@ pmt_and_daq_plugins = [fuse.pmt_and_daq.PMTAfterPulses,
                        fuse.pmt_and_daq.PMTResponseAndDAQ,
                        ]
 
+#Plugins to get truth information
+truth_information_plugins = [fuse.truth_information.RecordsTruth,
+                             fuse.truth_information.PeakTruth,
+                             fuse.truth_information.EventTruth,
+                             fuse.truth_information.SurvivingClusters,
+                             fuse.truth_information.ClusterTagging,
+                             ]
+
 def microphysics_context(output_folder = "./fuse_data"
                          ):
     """
@@ -108,6 +116,10 @@ def full_chain_context(output_folder = "./fuse_data",
 
     #Register PMT and DAQ plugins
     for plugin in pmt_and_daq_plugins:
+        st.register(plugin)
+
+    #Register truth plugins
+    for plugin in truth_information_plugins:
         st.register(plugin)
 
     if corrections_version is not None:

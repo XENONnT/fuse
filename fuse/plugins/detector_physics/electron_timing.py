@@ -17,7 +17,7 @@ class ElectronTiming(FuseBasePlugin):
     
     __version__ = "0.2.0"
     
-    depends_on = ("drifted_electrons", "extracted_electrons")
+    depends_on = ("drifted_electrons", "extracted_electrons", "microphysics_summary")
     provides = "electron_time"
     data_kind = "individual_electrons"
 
@@ -27,7 +27,7 @@ class ElectronTiming(FuseBasePlugin):
     
     dtype = [(("x position of the electron [cm]", "x"), np.float32),
              (("y position of the electron [cm]", "y"), np.float32),
-             (("Index to order electrons", "order_index"), np.int32),
+             (("ID of the cluster creating the electron", "cluster_id"), np.int32),
             ]
     dtype = dtype + strax.time_fields
     
@@ -65,8 +65,8 @@ class ElectronTiming(FuseBasePlugin):
         result["x"] = x
         result["y"] = y
 
-        #result["order_index"] = np.arange(len(timing))
-        result["order_index"] = np.repeat(np.arange(len(interactions_in_roi[mask])), interactions_in_roi[mask]["n_electron_extracted"])
+        result["cluster_id"] = np.repeat(interactions_in_roi[mask]["cluster_id"], interactions_in_roi[mask]["n_electron_extracted"])
+        
         result = strax.sort_by_time(result)
 
         return result

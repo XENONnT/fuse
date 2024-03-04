@@ -17,7 +17,7 @@ class PMTAfterPulses(FuseBasePlugin):
     In the simulation afterpulses will be saved as a list of "pseudo" photons.
     These "photons" can then be combined with real photons from S1 and S2 signals to create a waveform."""
     
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
     
     depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"
@@ -28,6 +28,8 @@ class PMTAfterPulses(FuseBasePlugin):
     dtype = [(("PMT channel of the photon", "channel"), np.int16),
              (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
              (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
+             (("ID of the cluster creating the photon", "cluster_id"), np.int32),
+             (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)","photon_type"), np.int8),
             ]
     dtype = dtype + strax.time_fields
 
@@ -134,6 +136,8 @@ class PMTAfterPulses(FuseBasePlugin):
         result["endtime"] = ap_photon_timings
         result["dpe"] = ap_photon_is_dpe
         result["photon_gain"] = ap_photon_gains
+
+        result["cluster_id"] = -1 * np.ones(len(ap_photon_channels))
 
         result = strax.sort_by_time(result)
         
