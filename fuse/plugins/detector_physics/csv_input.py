@@ -18,6 +18,18 @@ class ChunkCsvInput(FuseBasePlugin):
     """
     Plugin which reads a CSV file containing instructions for the detector physics simulation
     and returns the data in chunks
+    The CSV file should contain the following columns:
+    - x: x position of the cluster [cm]
+    - y: y position of the cluster [cm]
+    - z: z position of the cluster [cm]
+    - photons: Number of photons at interaction position.
+    - electrons: Number of electrons at interaction position.
+    - excitons: Number of excitons at interaction position.
+    - e_field: Electric field value at the cluster position [V/cm]
+    - ed: Energy of the cluster [keV]
+    - nestid: NEST interaction type
+    - t: Time of the interaction [ns]
+    - eventid: Geant4 event ID
     """
     __version__ = "0.2.0"
 
@@ -137,8 +149,8 @@ class csv_file_loader():
         self.last_chunk_length = np.int64(last_chunk_length)
         self.first_chunk_left = np.int64(first_chunk_left)
         self.debug = debug
-
-        self.dtype = [(("x position of the cluster [cm]", "x"), np.float32),
+        
+        self.fuse_input_dtype = [(("x position of the cluster [cm]", "x"), np.float32),
                       (("y position of the cluster [cm]", "y"), np.float32),
                       (("z position of the cluster [cm]", "z"), np.float32),
                       (("Number of photons at interaction position.", "photons"), np.int32),
@@ -151,13 +163,9 @@ class csv_file_loader():
                       (("Time of the interaction", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
                       (("Geant4 event ID", "eventid"), np.int32),#Remove them later as they are not in the usual micropyhsics summary
                       ]
+
+        self.dtype = self.fuse_input_dtype
         self.dtype = self.dtype + strax.time_fields
-
-        #the csv file needs to have these columns:
-        self.columns = ["x", "y", "z",
-                        "photons", "electrons", "excitons",
-                        "e_field", "ed", "nestid", "t", "eventid", "cluster_id"]
-
 
     def output_chunk(self):
         
@@ -217,10 +225,17 @@ class csv_file_loader():
     def __load_csv_file(self):
         log.debug("Load detector simulation instructions from a csv file!")
         df = pd.read_csv(self.input_file)
-
-        #Check if all needed columns are in place:
-        if not set(self.columns).issubset(df.columns):
-            log.warning("Not all needed columns provided!")
+        
+        expected_columns = [name for (_, name), dtype in self.fuse_input_dtype]
+        missing_columns = [column for column in expected_columns if column not in df.columns]
+        
+        # Extract the column names from the dtype list, then check if all needed columns are in place
+        expected_columns = [name for (_, name), dtype in self.fuse_input_dtype]
+        missing_columns = [column for column in expected_columns if column not in df.columns]
+        if not missing_columns:
+            log.info("All needed columns are provided in the csv input.")
+        else:
+            raise ValueError(f"Missing columns: {missing_columns} in the csv input.")
 
         n_simulated_events = len(np.unique(df.eventid))
 

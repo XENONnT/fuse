@@ -20,7 +20,26 @@ log = logging.getLogger('fuse.micro_physics.input')
 @export
 class ChunkInput(FuseBasePlugin):
     """Plugin to read XENONnT Geant4 root or csv files. The plugin can distribute the events
-    in time based on a source rate and will create multiple chunks of data if needed."""
+    in time based on a source rate and will create multiple chunks of data if needed.
+    
+    the csv instruction columns should include:
+    - "xp": x position of the energy deposit [mm]
+    - "yp": y position of the energy deposit [mm]
+    - "zp": z position of the energy deposit [mm]
+    - "time": Time with respect to the start of the event [ns]
+        note: if the times are all zero they are distributed according to source_rate by fuse
+    - "ed": Energy deposit in keV
+    - "type": Particle type
+    - "trackid": Track ID
+    - "parenttype": Particle type of the parent particle
+    - "parentid": Trackid of the parent particle
+    - "creaproc": Geant4 process creating the particle, set for None in csv input
+    - "edproc": Geant4 process destroying the particle, set for None in csv input
+    - "eventid": Event ID
+    - "xp_pri": x position of the primary particle [mm]
+    - "yp_pri": y position of the primary particle [mm]
+    - "zp_pri": z position of the primary particle [mm] 
+    """
     
     __version__ = "0.3.0"
     
@@ -159,6 +178,12 @@ class ChunkInput(FuseBasePlugin):
 class file_loader():
     """
     Load the complete root file and return interactions in chunks 
+    Featured functions:
+    - _load_root_file: Load a root file using uproot and return interactions
+    - _get_ttree: Search for the correct ttree in the root file
+    - _load_csv_file: Load a csv file using pandas and return interactions
+    - _awkwardify_df: Build an awkward array from a pandas dataframe
+    - output_chunk: Return one chunk of data from the input file
     """
 
     def __init__(self,
@@ -181,6 +206,7 @@ class file_loader():
 
         self.directory = directory
         self.file_name = file_name
+        self.file_type = self.file_name.split(".")[-1]
         self.rng = random_number_generator
         self.separation_scale = separation_scale
         self.event_rate = event_rate / 1e9 #Conversion to ns 
@@ -197,6 +223,7 @@ class file_loader():
         
         self.file = os.path.join(self.directory, self.file_name)
 
+        # columns used in the root file
         self.column_names = ["x", "y", "z",
                              "t", "ed",
                              "type", "trackid",
@@ -209,7 +236,25 @@ class file_loader():
                                f' & ((zp >= {self.outer_cylinder["min_z"] * 10}) & (zp < {self.outer_cylinder["max_z"] * 10}))')            
         else:
             self.cut_string = None
-    
+
+        # set the fuse_input_dtype if the file_type is csv
+        if self.file_type == "csv":
+            self.fuse_input_dtype = [(("x position of the energy deposit [mm]", "xp"), np.float64),
+                      (("y position of the energy deposit [mm]", "yp"), np.float64),
+                      (("z position of the energy deposit [mm]", "zp"), np.float64),
+                      (("Time with respect to the start of the event [ns]", "time"), np.float64),
+                      (("Energy deposit in keV", "ed"), np.float32),
+                      (("Particle type","type"), "<U18"),
+                      (("Track ID", "trackid"), np.int16),
+                      (("Particle type of the parent particle", "parenttype"), "<U18"),
+                      (("Trackid of the parent particle", "parentid"), np.int16),
+                      (("Geant4 process creating the particle (Redundant for csv input)", "creaproc"), "<U25"),
+                      (("Geant4 process destroying the particle (Redundant for csv input) ", 'edproc'), "<U25"),
+                      (("Event ID", "eventid"), np.int32),
+                      (("x position of the primary particle [mm]", "xp_pri"), np.float32),
+                      (("y position of the primary particle [mm]", "yp_pri"), np.float32),
+                      (("z position of the primary particle [mm]", "zp_pri"), np.float32),
+                    ]
         
         
         self.dtype = [(("x position of the energy deposit [cm]", "x"), np.float64),
@@ -234,12 +279,12 @@ class file_loader():
     
     def output_chunk(self):
         """
-        Function to return one chunk of data from the root file
+        Function to return one chunk of data from the input file, which is either a root or csv file.
         """
         
-        if self.file.endswith(".root"):
+        if self.file_type == "root":
             interactions, n_simulated_events, start, stop = self._load_root_file()
-        elif self.file.endswith(".csv"):
+        elif self.file_type == "csv":
             interactions, n_simulated_events, start, stop = self._load_csv_file()
         else:
             raise ValueError(f'Cannot load events from file "{self.file}": .root or .cvs file needed.')        
@@ -286,7 +331,7 @@ class file_loader():
             inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
         elif self.event_rate == 0:
             log.info("Using event times from provided input file.")
-            if self.file.endswith(".root"):
+            if self.file_type == "root":
                 log.warning("Using event times from root file is not recommended! Use a source_rate > 0 instead.")
             inter_reshaped["time"] = inter_reshaped["t"]
         else:
@@ -449,6 +494,14 @@ class file_loader():
         log.debug("Load instructions from a csv file!")
         
         instr_df =  pd.read_csv(self.file)
+        
+        # Extract the column names from the dtype list, then check if all needed columns are in place
+        expected_columns = [name for (_, name), dtype in self.fuse_input_dtype]
+        missing_columns = [column for column in expected_columns if column not in instr_df.columns]
+        if not missing_columns:
+            log.info("All needed columns are provided in the csv input.")
+        else:
+            raise ValueError(f"Missing columns: {missing_columns} in the csv input.")
 
         #unit conversion similar to root case
         instr_df["x"] = instr_df["xp"]/10 
@@ -459,10 +512,6 @@ class file_loader():
         instr_df["z_pri"] = instr_df["zp_pri"]/10
         instr_df["r"] = np.sqrt(instr_df["x"]**2 + instr_df["y"]**2)
         instr_df["t"] = instr_df["time"]
-
-        #Check if all needed columns are in place:
-        if not set(self.column_names).issubset(instr_df.columns):
-            log.warning("Not all needed columns provided!")
 
         n_simulated_events = len(np.unique(instr_df.eventid))
 
