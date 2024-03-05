@@ -50,6 +50,7 @@ class ChunkCsvInput(FuseBasePlugin):
              (("Electric field value at the cluster position [V/cm]", "e_field"), np.float32),
              (("Energy of the cluster [keV]", "ed"), np.float32),
              (("NEST interaction type", "nestid"), np.int8),
+             (("ID of the cluster", "cluster_id"), np.int32),
              (("Time of the interaction [ns]", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
              (("Geant4 event ID", "eventid"), np.int32),#Remove them later as they are not in the usual micropyhsics summary
             ]
@@ -158,9 +159,19 @@ class csv_file_loader():
                       (("Electric field value at the cluster position [V/cm]", "e_field"), np.float32),
                       (("Energy of the cluster [keV]", "ed"), np.float32),
                       (("NEST interaction type", "nestid"), np.int8),
+                      (("ID of the cluster", "cluster_id"), np.int32),
                       (("Time of the interaction", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
                       (("Geant4 event ID", "eventid"), np.int32),#Remove them later as they are not in the usual micropyhsics summary
                       ]
+<<<<<<< HEAD
+=======
+        self.dtype = self.dtype + strax.time_fields
+
+        #the csv file needs to have these columns:
+        self.columns = ["x", "y", "z",
+                        "photons", "electrons", "excitons",
+                        "e_field", "ed", "nestid", "t", "eventid", "cluster_id"]
+>>>>>>> 7c974733b4d4a2908e348a3ff09dfd10f8657a75
 
         self.dtype = self.fuse_input_dtype
         self.dtype = self.dtype + strax.time_fields

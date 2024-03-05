@@ -19,7 +19,7 @@ class MergeCluster(FuseBasePlugin):
     The energy of the merged cluster is the sum of the individual energy depositions. The cluster is then 
     classified based on either the first interaction in the cluster or the most energetic interaction."""
     
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
     
     depends_on = ("geant4_interactions", "cluster_index")
     
@@ -39,6 +39,7 @@ class MergeCluster(FuseBasePlugin):
              (("x position of the primary particle [cm]", "x_pri"), np.float32),
              (("y position of the primary particle [cm]", "y_pri"), np.float32),
              (("z position of the primary particle [cm]", "z_pri"), np.float32),
+             (("ID of the cluster", "cluster_id"), np.int32),
              (("Xenon density at the cluster position. Will be set later.", "xe_density"), np.float32), 
              (("ID of the volume in which the cluster occured. Will be set later.", "vol_id"), np.int8),
              (("Flag indicating if a cluster can create a S2 signal. Will be set later.", "create_S2"), np.bool_),
@@ -98,6 +99,9 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
         result[i]["y_pri"] = cluster["y_pri"][main_interaction_index]
         result[i]["z_pri"] = cluster["z_pri"][main_interaction_index]
         result[i]["evtid"] = cluster["evtid"][main_interaction_index]
+        
+        #Get cluster id from and save it!
+        result[i]["cluster_id"] = cluster["cluster_ids"][main_interaction_index]
 
     return result
 

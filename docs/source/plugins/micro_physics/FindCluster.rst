@@ -19,7 +19,7 @@ Technical Details
    depends_on = ("geant4_interactions")
    provides = "cluster_index"
    data_kind = "geant4_interactions"
-   __version__ = "0.2.0"
+   __version__ = "0.2.1"
 
 
 Provided Columns

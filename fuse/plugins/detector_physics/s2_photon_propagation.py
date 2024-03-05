@@ -27,9 +27,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     Note: The timing calculation is defined in the child plugin.
     """
     
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
     
-    depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
+    depends_on = ("electron_time", "s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum", "microphysics_summary")
     provides = "propagated_s2_photons"
     data_kind = "S2_photons"
 
@@ -38,6 +38,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     dtype = [(("PMT channel of the photon", "channel"), np.int16),
              (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
              (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
+             (("ID of the cluster creating the photon", "cluster_id"), np.int32),
+             (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)","photon_type"), np.int8),
             ]
     dtype = dtype + strax.time_fields
 
@@ -332,10 +334,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         electron_time_gaps = individual_electrons["time"][1:] - individual_electrons["time"][:-1] 
         electron_time_gaps = np.append(electron_time_gaps, 0) #Add last gap
 
-        #Index to match the electrons to the corresponding interaction_in_roi (and vice versa)
-        #electron_index = build_electron_index(individual_electrons, interactions_in_roi[mask])
-        #electron_index = individual_electrons["order_index"]
-
         split_index = find_electron_split_index(
             individual_electrons,
             electron_time_gaps,
@@ -345,7 +343,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             )
 
         electron_chunks = np.array_split(individual_electrons, split_index)
-        #index_chunks = np.array_split(electron_index, split_index)
 
         n_chunks = len(electron_chunks)
         if n_chunks > 1:
@@ -356,10 +353,17 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         
         last_start = start
         if n_chunks>1:
-            #for electron_group, index_group in zip(electron_chunks[:-1], index_chunks[:-1]):
             for electron_group in electron_chunks[:-1]:
-                interactions_chunk = interactions_in_roi[mask][np.unique(electron_group["order_index"])]
-                #interactions_chunk = interactions_in_roi[mask][np.min(index_group):np.max(index_group)+1]
+                unique_clusters_in_group = np.unique(electron_group["cluster_id"])
+                interactions_chunk = interactions_in_roi[mask][np.isin(interactions_in_roi["cluster_id"][mask], unique_clusters_in_group)]
+                
+                #Sort both the interactions and the electrons by cluster_id
+                #We will later sort by time again when yielding the data. 
+                sort_index_ic = np.argsort(interactions_chunk["cluster_id"])
+                sort_index_eg = np.argsort(electron_group["cluster_id"])
+                interactions_chunk = interactions_chunk[sort_index_ic]
+                electron_group = electron_group[sort_index_eg]
+
                 positions = np.array([interactions_chunk["x_obs"], interactions_chunk["y_obs"]]).T
 
                 _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
@@ -376,6 +380,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         
                 #repeat for n photons per electron # Should this be before adding delays?
                 _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
+
+                _cluster_id = np.repeat(interactions_chunk['cluster_id'], interactions_chunk["sum_s2_photons"])
                 
                 #Do i want to save both -> timings with and without pmt transit time spread?
                 # Correct for PMT Transit Time Spread 
@@ -397,6 +403,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                                                          _photon_channels=_photon_channels,
                                                          _photon_gains=_photon_gains,
                                                          _photon_is_dpe=_photon_is_dpe,
+                                                         _cluster_id=_cluster_id,
+                                                         photon_type = 2,
                                                          )
 
                 result = strax.sort_by_time(result)
@@ -408,8 +416,15 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                 yield chunk
     
         #And the last chunk
-        interactions_chunk = interactions_in_roi[mask][np.unique(electron_chunks[-1]["order_index"])]
-        #interactions_chunk = interactions_in_roi[mask][np.min(index_chunks[-1]):np.max(index_chunks[-1])+1]
+        electron_group = electron_chunks[-1]
+        unique_clusters_in_group = np.unique(electron_group["cluster_id"])
+        interactions_chunk = interactions_in_roi[mask][np.isin(interactions_in_roi["cluster_id"][mask], unique_clusters_in_group)]
+ 
+        sort_index_ic = np.argsort(interactions_chunk["cluster_id"])
+        sort_index_eg = np.argsort(electron_group["cluster_id"])
+        interactions_chunk = interactions_chunk[sort_index_ic]
+        electron_group = electron_group[sort_index_eg]
+
         positions = np.array([interactions_chunk["x_obs"], interactions_chunk["y_obs"]]).T
 
         _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
@@ -424,7 +439,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                                               _photon_channels,
                                               )
 
-        _photon_timings += np.repeat(electron_chunks[-1]["time"], electron_chunks[-1]["n_s2_photons"])
+        _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
+        
+        _cluster_id = np.repeat(interactions_chunk['cluster_id'], interactions_chunk["sum_s2_photons"])
 
         _photon_timings = pmt_transit_time_spread(_photon_timings=_photon_timings,
                                                   pmt_transit_time_mean=self.pmt_transit_time_mean,
@@ -444,6 +461,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                                                  _photon_channels=_photon_channels,
                                                  _photon_gains=_photon_gains,
                                                  _photon_is_dpe=_photon_is_dpe,
+                                                 _cluster_id=_cluster_id,
+                                                 photon_type = 2,
                                                  )
         
         result = strax.sort_by_time(result)
@@ -995,17 +1014,3 @@ def find_electron_split_index(electrons, gaps, file_size_limit, min_gap_length, 
             split_index.append(i)
 
     return np.array(split_index)+1
-
-def build_electron_index(individual_electrons, interactions_in_roi):
-    "Function to match the electrons to the correct interaction_in_roi"
-
-    electrons_split = np.split(individual_electrons, np.cumsum(interactions_in_roi["n_electron_extracted"]))[:-1]
-
-    index = []
-    k = 0
-    for element in electrons_split:
-        index.append(np.repeat(k, len(element)))
-        k+=1
-    index = np.concatenate(index)
-
-    return index
