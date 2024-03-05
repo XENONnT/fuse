@@ -163,12 +163,6 @@ class csv_file_loader():
                       (("Time of the interaction", "t"), np.int64), #Remove them later as they are not in the usual micropyhsics summary
                       (("Geant4 event ID", "eventid"), np.int32),#Remove them later as they are not in the usual micropyhsics summary
                       ]
-        self.dtype = self.dtype + strax.time_fields
-
-        #the csv file needs to have these columns:
-        self.columns = ["x", "y", "z",
-                        "photons", "electrons", "excitons",
-                        "e_field", "ed", "nestid", "t", "eventid", "cluster_id"]
 
         self.dtype = self.fuse_input_dtype
         self.dtype = self.dtype + strax.time_fields
