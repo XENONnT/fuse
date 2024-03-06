@@ -16,13 +16,15 @@ class TestFullChainwDelayedElectrons(unittest.TestCase):
 
         cls.temp_dir = tempfile.TemporaryDirectory()
 
-        cls.test_context = fuse.context.full_chain_context(output_folder = cls.temp_dir.name)
+        cls.test_context = fuse.context.full_chain_context(output_folder = cls.temp_dir.name,
+                                                           run_without_proper_corrections = True
+                                                           )
         
         cls.test_context.set_config({"path": cls.temp_dir.name,
                                       "file_name": test_root_file_name,
                                       "entry_stop": 5,
                                       "enable_delayed_electrons": True,
-                                      "photoionization_modifier": 0.001,
+                                      "photoionization_modifier": 0.01,
                                       })
         
         cls.run_number = "TestRun_00000"
