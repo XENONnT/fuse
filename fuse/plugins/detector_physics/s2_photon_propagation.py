@@ -220,7 +220,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                   'SIMULATION_CONFIG_FILE.json?'
                   '&key=field_dependencies_map'
                   '&fmt=json.gz'
-                  '&method=RectBivariateSpline',
+                  '&method=WeightedNearestNeighbors',
         cache=True,
         help='Map for the electric field dependencies',
     )
