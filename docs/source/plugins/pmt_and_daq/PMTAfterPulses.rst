@@ -18,7 +18,7 @@ Technical Details
    depends_on = ("propagated_s2_photons", "propagated_s1_photons")
    provides = "pmt_afterpulses"
    data_kind = "AP_photons"
-   __version__ = "0.2.0"
+   __version__ = "0.3.0"
 
 Provided Columns
 ================
@@ -45,6 +45,12 @@ Provided Columns
    * - photon_gain
      - int32
      - Sampled PMT gain for the afterpulse
+   * - cluster_id
+     - int32
+     - ID of the cluster creating the photon
+   * - photon_type
+     - int8
+     - Type of the photon. S1 (1), S2 (2) or PMT AP (0)
 
 Config Options
 ==============

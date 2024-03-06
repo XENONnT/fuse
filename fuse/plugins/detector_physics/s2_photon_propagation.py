@@ -27,14 +27,14 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     Note: The timing calculation is defined in the child plugin.
     """
     
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
     
     depends_on = ("merged_electron_time",
                   "merged_s2_photons",
                   "merged_extracted_electrons",
                   "merged_drifted_electrons",
                   "merged_s2_photons_sum",
-                  "merged_microphysics_summary", #Only needed for cluster_ids -> Somehow take only this data?
+                  "merged_microphysics_summary",
                   )
 
     provides = "propagated_s2_photons"
@@ -45,6 +45,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     dtype = [(("PMT channel of the photon", "channel"), np.int16),
              (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
              (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
+             (("ID of the cluster creating the photon", "cluster_id"), np.int32),
+             (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)","photon_type"), np.int8),
             ]
     dtype = dtype + strax.time_fields
 
@@ -104,12 +106,12 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     )
 
     n_top_pmts = straxen.URLConfig(
-        type=(int),
+        type=int,
         help='Number of PMTs on top array',
     )
 
     n_tpc_pmts = straxen.URLConfig(
-        type=(int),
+        type=int,
         help='Number of PMTs in the TPC',
     )
 
@@ -358,7 +360,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         
         last_start = start
         if n_chunks>1:
-            #for electron_group, index_group in zip(electron_chunks[:-1], index_chunks[:-1]):
             for electron_group in electron_chunks[:-1]:
                 unique_clusters_in_group = np.unique(electron_group["cluster_id"])
                 interactions_chunk = interactions_in_roi[mask][np.isin(interactions_in_roi["cluster_id"][mask], unique_clusters_in_group)]
@@ -386,6 +387,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         
                 #repeat for n photons per electron
                 _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
+
+                _cluster_id = np.repeat(interactions_chunk['cluster_id'], interactions_chunk["sum_s2_photons"])
                 
                 #Do i want to save both -> timings with and without pmt transit time spread?
                 # Correct for PMT Transit Time Spread 
@@ -407,6 +410,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                                                          _photon_channels=_photon_channels,
                                                          _photon_gains=_photon_gains,
                                                          _photon_is_dpe=_photon_is_dpe,
+                                                         _cluster_id=_cluster_id,
+                                                         photon_type = 2,
                                                          )
 
                 result = strax.sort_by_time(result)
@@ -442,6 +447,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                                               )
 
         _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
+        
+        _cluster_id = np.repeat(interactions_chunk['cluster_id'], interactions_chunk["sum_s2_photons"])
 
         _photon_timings = pmt_transit_time_spread(_photon_timings=_photon_timings,
                                                   pmt_transit_time_mean=self.pmt_transit_time_mean,
@@ -461,6 +468,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                                                  _photon_channels=_photon_channels,
                                                  _photon_gains=_photon_gains,
                                                  _photon_is_dpe=_photon_is_dpe,
+                                                 _cluster_id=_cluster_id,
+                                                 photon_type = 2,
                                                  )
         
         result = strax.sort_by_time(result)

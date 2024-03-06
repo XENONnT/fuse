@@ -22,14 +22,14 @@ class TestDeterministicSeed(unittest.TestCase):
             downloader.download_single(test_root_file_name, human_readable_file_name=True)
             assert os.path.exists(os.path.join(temp_dir.name, test_root_file_name))
 
-        self.test_context_0 = fuse.context.full_chain_context(output_folder = self.temp_dir_0.name)
+        self.test_context_0 = fuse.context.full_chain_context(output_folder = self.temp_dir_0.name, run_without_proper_corrections=True)
 
         self.test_context_0.set_config({"path": self.temp_dir_0.name,
                                       "file_name": test_root_file_name,
                                       "entry_stop": 5,
                                       })
 
-        self.test_context_1 = fuse.context.full_chain_context(output_folder = self.temp_dir_1.name)
+        self.test_context_1 = fuse.context.full_chain_context(output_folder = self.temp_dir_1.name, run_without_proper_corrections=True)
 
         self.test_context_1.set_config({"path": self.temp_dir_1.name,
                                       "file_name": test_root_file_name,

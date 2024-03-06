@@ -66,7 +66,7 @@ class ElectronTiming(FuseBasePlugin):
         result["y"] = y
 
         result["cluster_id"] = np.repeat(interactions_in_roi[mask]["cluster_id"], interactions_in_roi[mask]["n_electron_extracted"])
-        #result["order_index"] = np.repeat(np.arange(len(interactions_in_roi[mask])), interactions_in_roi[mask]["n_electron_extracted"])´
+        
         result = strax.sort_by_time(result)
 
         return result

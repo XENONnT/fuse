@@ -26,7 +26,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
     Note: The timing calculation is defined in the child plugin.
     """
     
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
     
     depends_on = ("s1_photons", "microphysics_summary")
     provides = "propagated_s1_photons"
@@ -37,6 +37,8 @@ class S1PhotonPropagationBase(FuseBasePlugin):
     dtype = [(("PMT channel of the photon", "channel"), np.int16),
              (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
              (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
+             (("ID of the cluster creating the photon", "cluster_id"), np.int32),
+             (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)","photon_type"), np.int8),
             ]
     dtype = dtype + strax.time_fields
 
@@ -96,12 +98,12 @@ class S1PhotonPropagationBase(FuseBasePlugin):
     )
 
     n_top_pmts = straxen.URLConfig(
-        type=(int),
+        type=int,
         help='Number of PMTs on top array',
     )
 
     n_tpc_pmts = straxen.URLConfig(
-        type=(int),
+        type=int,
         help='Number of PMTs in the TPC',
     )
 
@@ -152,6 +154,11 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
     def compute(self, interactions_in_roi):
+        #Just apply this to clusters with photons hitting a PMT
+        instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
+
+        if len(instruction) == 0:
+            return np.zeros(0, self.dtype)
 
         #set the global nest random generator with self.short_seed
         nest_rng.set_seed(self.short_seed)
@@ -159,12 +166,6 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         nest_rng.lock_seed()
         #increment the seed. Next chunk we will use the modified seed to generate random numbers
         self.short_seed += 1
-
-        #Just apply this to clusters with photons hitting a PMT
-        instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
-
-        if len(instruction) == 0:
-            return np.zeros(0, self.dtype)
         
         t = instruction['time']
         x = instruction['x']
@@ -174,6 +175,9 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         recoil_type = instruction['nestid']
         positions = np.array([x, y, z]).T  # For map interpolation
         
+
+        _cluster_id = np.repeat(instruction['cluster_id'], instruction["n_s1_photon_hits"])
+
         # The new way interpolation is written always require a list
         _photon_channels = self.photon_channels(positions=positions,
                                                 n_photon_hits=instruction["n_s1_photon_hits"],
@@ -194,6 +198,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         sortind = np.argsort(_photon_timings)
         _photon_channels = _photon_channels[sortind]
         _photon_timings = _photon_timings[sortind]
+        _cluster_id = _cluster_id[sortind]
 
         #Do i want to save both -> timings with and without pmt transit time spread?
         # Correct for PMT transit Time Spread
@@ -216,6 +221,8 @@ class S1PhotonPropagationBase(FuseBasePlugin):
                                                  _photon_channels=_photon_channels,
                                                  _photon_gains=_photon_gains,
                                                  _photon_is_dpe=_photon_is_dpe,
+                                                 _cluster_id=_cluster_id,
+                                                 photon_type = 1,
                                                  )
 
         result = strax.sort_by_time(result)

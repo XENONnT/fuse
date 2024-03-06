@@ -4,6 +4,10 @@ import fuse
 import numpy as np
 from straxen import URLConfig
 from copy import deepcopy
+import logging
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger('fuse.context')
 
 #Plugins to simulate microphysics
 microphysics_plugins = [fuse.micro_physics.ChunkInput,
@@ -54,6 +58,14 @@ pmt_and_daq_plugins = [fuse.pmt_and_daq.PMTAfterPulses,
                        fuse.pmt_and_daq.PMTResponseAndDAQ,
                        ]
 
+#Plugins to get truth information
+truth_information_plugins = [fuse.truth_information.RecordsTruth,
+                             fuse.truth_information.PeakTruth,
+                             fuse.truth_information.EventTruth,
+                             fuse.truth_information.SurvivingClusters,
+                             fuse.truth_information.ClusterTagging,
+                             ]
+
 def microphysics_context(output_folder = "./fuse_data"
                          ):
     """
@@ -81,12 +93,26 @@ def full_chain_context(output_folder = "./fuse_data",
                                                  "electron_lifetime_liquid":"elife",
                                                  "drift_velocity_liquid":"electron_drift_velocity",
                                                  "drift_time_gate":"electron_drift_time_gate",
-                                                 }
+                                                 },
+                       run_without_proper_corrections = False,
                        ):
     """
     Function to create a fuse full chain simulation context. 
     """
 
+    if corrections_run_id is None:
+        raise ValueError("Specify a corrections_run_id to load the corrections")
+    if (corrections_version is None) & (not run_without_proper_corrections):
+        raise ValueError("Specify a corrections_version. If you want to run without proper"
+                         " corrections for testing or just trying out fuse, set run_without_proper_corrections to True"
+                         )
+    if simulation_config_file is None:
+        raise ValueError("Specify a simulation configuration file")
+
+    if run_without_proper_corrections:
+        log.warning("Running without proper correction version. This is not recommended for production use."
+                    "Take the context defined in cutax if you want to run XENONnT simulations.")
+ 
     st = strax.Context(storage=strax.DataDirectory(output_folder),
                        **straxen.contexts.xnt_common_opts)
     
@@ -116,6 +142,10 @@ def full_chain_context(output_folder = "./fuse_data",
 
     #Register PMT and DAQ plugins
     for plugin in pmt_and_daq_plugins:
+        st.register(plugin)
+
+    #Register truth plugins
+    for plugin in truth_information_plugins:
         st.register(plugin)
 
     if corrections_version is not None:

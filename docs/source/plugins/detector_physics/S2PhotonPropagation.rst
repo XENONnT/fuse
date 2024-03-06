@@ -22,7 +22,7 @@ Technical Details
 
 .. code-block:: python
 
-   depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
+   depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum", "microphysics_summary")
    provides = "propagated_s2_photons"
    data_kind = "S2_photons"
    __version__ = "0.2.0"
@@ -52,6 +52,12 @@ Provided Columns
    * - photon_gain
      - int32
      - Sampled PMT gain for the photon
+   * - cluster_id
+     - int32
+     - ID of the cluster creating the photon
+   * - photon_type
+     - int8
+     - Type of the photon. S1 (1), S2 (2) or PMT AP (0)
 
 Config Options
 ==============

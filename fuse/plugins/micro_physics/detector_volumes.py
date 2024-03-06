@@ -39,7 +39,7 @@ class XENONnT_TPC(VolumePlugin):
 
     provides = "tpc_interactions"
     data_kind = "tpc_interactions"
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     #Can we import this from MergeCluster and just add the needed fields?
     dtype = [(("x position of the cluster [cm]", "x"), np.float32),
@@ -122,7 +122,7 @@ class XENONnT_BelowCathode(VolumePlugin):
 
     provides = "below_cathode_interactions"
     data_kind = "below_cathode_interactions"
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     #Can we import this from MergeCluster and just add the needed fields?
     dtype = [(("x position of the cluster [cm]", "x"), np.float32),
@@ -204,7 +204,7 @@ class XENONnT_GasPhase(VolumePlugin):
 
     provides = "gas_phase_interactions"
     data_kind = "gas_phase_interactions"
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     #Can we import this from MergeCluster and just add the needed fields?
     dtype = [(("x position of the cluster [cm]", "x"), np.float32),
