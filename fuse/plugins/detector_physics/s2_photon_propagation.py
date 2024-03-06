@@ -803,7 +803,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
                   '&key=s2_time_spline'
                   '&fmt=json.gz',
         cache=True,
-        help='s2_optical_propagation_spline',
+        help='Spline for the optical propagation of S2 signals',
     )
 
     def setup(self):

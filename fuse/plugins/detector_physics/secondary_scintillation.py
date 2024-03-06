@@ -98,7 +98,7 @@ class SecondaryScintillation(FuseBasePlugin):
                   '&key=se_gain_map'
                   '&fmt=json',
         cache=True,
-        help='Map of the single electron gain ',
+        help='Map of the single electron gain',
     )
     
     s2_correction_map = straxen.URLConfig(

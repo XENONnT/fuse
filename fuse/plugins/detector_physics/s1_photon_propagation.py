@@ -286,7 +286,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                   '&fmt=json.gz'
                   '&method=RegularGridInterpolator',
         cache=True,
-        help='Spline for the optical propagation',
+        help='Spline for the optical propagation of S1 signals',
     )
 
     def setup(self):
