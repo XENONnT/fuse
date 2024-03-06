@@ -802,7 +802,8 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         default = 'itp_map://resource://simulation_config://'
                   'SIMULATION_CONFIG_FILE.json?'
                   '&key=s2_time_spline'
-                  '&fmt=json.gz',
+                  '&fmt=json.gz'
+                  '&method=RegularGridInterpolator',
         cache=True,
         help='s2_optical_propagation_spline',
     )
