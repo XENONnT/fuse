@@ -19,7 +19,7 @@ class ChunkCsvInput(FuseBasePlugin):
     Plugin which reads a CSV file containing instructions for the detector physics simulation
     and returns the data in chunks
     """
-    __version__ = "0.2.1"
+    __version__ = "0.2.0"
 
     depends_on = tuple()
     provides = "microphysics_summary"
@@ -173,9 +173,9 @@ class csv_file_loader():
 
             structure = np.unique(instructions["eventid"], return_counts = True)[1]
             interaction_time = np.repeat(event_times[:len(structure)], structure)
-            instructions["time"] = interaction_time + instructions["time"]
+            instructions["time"] = interaction_time + instructions["t"]
         elif self.event_rate == 0:
-            instructions["time"] = instructions["time"]
+            instructions["time"] = instructions["t"]
             log.debug("Using event times from provided input file.")
         else:
             raise ValueError("Source rate cannot be negative!")
@@ -229,3 +229,4 @@ class csv_file_loader():
             instructions[column] = df[column]
 
         return instructions, n_simulated_events
+
