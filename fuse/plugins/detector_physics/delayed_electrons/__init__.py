@@ -15,3 +15,6 @@ from .photo_ionization_electrons import *
 
 from . import delayed_electrons_merger
 from .delayed_electrons_merger import *
+
+from . import delayed_electrons_s1photonhits
+from .delayed_electrons_s1photonhits import *

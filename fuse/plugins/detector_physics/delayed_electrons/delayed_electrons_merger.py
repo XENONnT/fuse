@@ -76,3 +76,15 @@ class MicrophysicsSummaryMerger(VerticalMergerPlugin):
     provides = 'merged_microphysics_summary'
     data_kind = 'interactions_in_roi'
     __version__ = '0.0.1'
+
+@export
+class S1PhotonHitsMerger(VerticalMergerPlugin):
+    """
+    Plugin which concatenates the output of the regular and delayed s1 photon hits plugins
+    """
+    
+    depends_on = ("s1_photons", "delayed_s1_photons")
+    
+    provides = 'merged_s1_photons'
+    data_kind = 'interactions_in_roi'
+    __version__ = '0.0.1'

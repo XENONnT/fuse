@@ -39,7 +39,7 @@ delayed_electron_simulation_plugins = [fuse.detector_physics.delayed_electrons.P
                                        fuse.detector_physics.delayed_electrons.DelayedElectronsExtraction,
                                        fuse.detector_physics.delayed_electrons.DelayedElectronsTiming,
                                        fuse.detector_physics.delayed_electrons.DelayedElectronsSecondaryScintillation,
-                                       fuse.detector_physics.delayed_electrons.DelayedElectronsDrift,
+                                       fuse.detector_physics.delayed_electrons.S1PhotonHitsEmpty,
                                        ]
 
 #Plugins to merge delayed and regular electrons
@@ -49,6 +49,7 @@ delayed_electron_merger_plugins = [fuse.detector_physics.delayed_electrons.Drift
                                    fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonsMerger,
                                    fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonSumMerger,
                                    fuse.detector_physics.delayed_electrons.MicrophysicsSummaryMerger,
+                                   fuse.detector_physics.delayed_electrons.S1PhotonHitsMerger,
                                    ]
 
 #Plugins to simulate PMTs and DAQ
