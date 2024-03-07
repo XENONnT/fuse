@@ -26,6 +26,9 @@ class PhotoIonizationElectrons(FuseBasePlugin):
 
     save_when = strax.SaveWhen.ALWAYS
 
+    #Not start at 0. 0 are set per default for contributing clusters so we want to avoid that
+    delayed_cluster_index = -1
+
     #Config options
 
     enable_delayed_electrons = straxen.URLConfig(
@@ -171,8 +174,11 @@ class PhotoIonizationElectrons(FuseBasePlugin):
             )
         result['z'] = - electron_delay * self.drift_velocity_liquid
         result['electrons'] = [1]*n_instruction
-        #result['cluster_id'] = np.repeat(interactions_in_roi[mask]["cluster_id"], delayed_electrons_per_interaction)
-        result['cluster_id'] = np.arange(len(result)) * -1 - 1 #Lets try to use negative cluster ids for delayed electrons...
+        
+        result["cluster_id"] = self.delayed_cluster_index - np.arange(n_instruction) - 1
+        self.delayed_cluster_index = np.min(result["cluster_id"])
+
+        #result['cluster_id'] = np.arange(len(result)) * -1 - 1 #Lets try to use negative cluster ids for delayed electrons...
         
         return strax.sort_by_time(result)
 
