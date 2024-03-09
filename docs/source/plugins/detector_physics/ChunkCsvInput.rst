@@ -81,7 +81,7 @@ Config Options
      - track
      - comment
    * - input_file
-     - 
+     -
      - False
      - CSV file to read
    * - separation_scale
