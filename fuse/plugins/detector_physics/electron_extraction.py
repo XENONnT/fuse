@@ -4,7 +4,7 @@ import numpy as np
 import os
 import logging
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -12,39 +12,31 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_extraction')
 
 @export
-class ElectronExtraction(strax.Plugin):
+class ElectronExtraction(FuseBasePlugin):
+    """Plugin to simulate the loss of electrons during the extraction of drifted 
+    electrons from the liquid into the gas phase."""
     
-    __version__ = "0.1.3"
+    __version__ = "0.2.0"
     
     depends_on = ("microphysics_summary", "drifted_electrons")
     provides = "extracted_electrons"
     data_kind = "interactions_in_roi"
     
-    #Forbid rechunking
-    rechunk_on_save = False
-    
     save_when = strax.SaveWhen.ALWAYS
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
-    dtype = [('n_electron_extracted', np.int32),
+    dtype = [(("Number of electrons extracted into the gas phase", "n_electron_extracted"), np.int32),
             ]
     
     dtype = dtype + strax.time_fields
 
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     s2_secondary_sc_gain_mc = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
-        help='Secondary scintillation gain',
+        help='Secondary scintillation gain [PE/e-]',
     )
     #Rename? -> g2_value in beta_yields model 
     g2_mean = straxen.URLConfig(
@@ -53,7 +45,7 @@ class ElectronExtraction(strax.Plugin):
                   "&take=g2_mean",
         type=(int, float),
         cache=True,
-        help='mean value of the g2 gain. ',
+        help='Mean value of the g2 gain [PE/e-]',
     )
 
     electron_extraction_yield = straxen.URLConfig(
@@ -62,7 +54,7 @@ class ElectronExtraction(strax.Plugin):
                   "&take=electron_extraction_yield",
         type=(int, float),
         cache=True,
-        help='Electron extraction yield',
+        help='Electron extraction yield [electron_extracted/electron]',
     )
 
     ext_eff_from_map = straxen.URLConfig(
@@ -100,28 +92,6 @@ class ElectronExtraction(strax.Plugin):
         cache=True,
         help='Map of the single electron gain',
     )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-    
-    def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running ElectronExtraction version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-        
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
 
     def compute(self, interactions_in_roi):
         

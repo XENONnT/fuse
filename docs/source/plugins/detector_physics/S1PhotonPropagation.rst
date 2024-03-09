@@ -2,6 +2,8 @@
 S1PhotonPropagation
 ===================
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/detector_physics/s1_photon_propagation.py>`_.
+
 Plugin Description
 ==================
 Plugin to simulate the propagation of S1 photons in the detector. Photons are 
@@ -22,6 +24,7 @@ Technical Details
    depends_on = ("s1_photons", "microphysics_summary")
    provides = "propagated_s1_photons"
    data_kind = "S1_photons"
+   __version__ = "0.2.0"
 
 Provided Columns
 ================
@@ -35,19 +38,25 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - time of individual s1 photons
+     - Time of individual S1 photon [ns]
    * - endtime
      - int64
-     - endtime of individual s1 photons (will be the same as time)
+     - Endtime of individual S1 photon [ns] (same as time)
    * - channel
      - int16
-     - PMT channel of the detected photon
+     - PMT channel of the S1 photon
    * - dpe
      - bool
-     - Boolean indicating weather the photon will create a double photoelectron emisison or not
+     - Photon creates a double photo-electron emission
    * - photon_gain
      - int32
-     - Gain of the PMT channel
+     - Sampled PMT gain for the photon
+   * - cluster_id
+     - int32
+     - ID of the cluster creating the photon
+   * - photon_type
+     - int8
+     - Type of the photon. S1 (1), S2 (2) or PMT AP (0)
 
 Config Options
 ==============
@@ -63,10 +72,6 @@ S1PhotonPropagationBase plugin
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
    * - p_double_pe_emision
      - 
      - True
@@ -74,15 +79,15 @@ S1PhotonPropagationBase plugin
    * - pmt_transit_time_spread
      - 
      - True
-     - Spread of the PMT transit times
+     - Spread of the PMT transit times [ns]
    * - pmt_transit_time_mean
      - 
      - True
-     - Mean of the PMT transit times
+     - Mean of the PMT transit times [ns]
    * - pmt_circuit_load_resistor
      - 
      - True
-     - PMT circuit load resistor
+     - PMT circuit load resistor [kg m^2/(s^3 A)] (PMT circuit resistance * electron charge * amplification factor * sampling frequency)
    * - digitizer_bits
      - 
      - True
@@ -90,7 +95,7 @@ S1PhotonPropagationBase plugin
    * - digitizer_voltage_range
      - 
      - True
-     - Voltage range of the digitizer boards
+     - Voltage range of the digitizer boards [V]
    * - n_top_pmts
      - 
      - True
@@ -111,10 +116,6 @@ S1PhotonPropagationBase plugin
      - 
      - True
      - S1 pattern map
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).
 
 S1PhotonPropagation plugin
 --------------------------
@@ -130,7 +131,7 @@ S1PhotonPropagation plugin
    * - maximum_recombination_time
      - 
      - False
-     - Maximum recombination time
+     - Maximum recombination time [ns]
    * - s1_optical_propagation_spline
      - 
      - False

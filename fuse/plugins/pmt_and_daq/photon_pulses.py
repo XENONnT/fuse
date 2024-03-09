@@ -6,15 +6,18 @@ import numba
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.photon_pulses')
 
 @export
-class PulseWindow(strax.Plugin):
+class PulseWindow(FuseBasePlugin):
+    """Plugin to compute time intervals (called `pulse_windows`) in which the 
+    PMT response of photons can overlap. Additionally a `pulse_id` is computed 
+    for each propagated photon to identify the pulse window it belongs to."""
 
-    __version__ = "0.1.2"
+    __version__ = "0.2.0"
 
     depends_on = ("photon_summary")
 
@@ -23,31 +26,21 @@ class PulseWindow(strax.Plugin):
                  "pulse_ids" : "propagated_photons"
                 }
 
-    dtype_pulse_windows = strax.interval_dtype + [(('pulse_id'), np.int64)]
-    dtype_pulse_ids =  [('pulse_id', np.int64),] + strax.time_fields
+    dtype_pulse_windows = strax.interval_dtype + [((("ID of the pulse window", "pulse_id")), np.int64)]
+    dtype_pulse_ids = strax.time_fields + [(("Pulse id to map the photon to the pulse window", "pulse_id"), np.int64)]
 
     dtype = dict()
     dtype["pulse_windows"] = dtype_pulse_windows
     dtype["pulse_ids"] = dtype_pulse_ids
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
     save_when = strax.SaveWhen.TARGET
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     dt = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=sample_duration",
-        type=(int),
+        type=int,
         cache=True,
         help='Width of one sample [ns]',
     )
@@ -89,17 +82,12 @@ class PulseWindow(strax.Plugin):
     )
 
     n_tpc_pmts = straxen.URLConfig(
-        type=(int),
+        type=int,
         help='Number of PMTs in the TPC',
     )
 
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running PulseWindow version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
+        super().setup()
 
         #Lets double the samples_to_store_x values to avoid overlapping records when triggering on noise.. 
         self.pulse_left_extenstion = np.int64(2*self.samples_to_store_before) + self.samples_before_pulse_center

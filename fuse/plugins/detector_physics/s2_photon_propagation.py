@@ -9,8 +9,9 @@ from scipy import constants
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT, pmt_gains
-from ...common import DummyMap, init_spe_scaling_factor_distributions, pmt_transition_time_spread, build_photon_propagation_output
+from ...common import pmt_gains, build_photon_propagation_output
+from ...common import init_spe_scaling_factor_distributions, pmt_transit_time_spread, photon_gain_calculation 
+from ...plugin import FuseBaseDownChunkingPlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
@@ -18,40 +19,38 @@ log = logging.getLogger('fuse.detector_physics.s2_photon_propagation')
 conversion_to_bar = 1/constants.elementary_charge / 1e1
 
 @export
-class S2PhotonPropagationBase(strax.DownChunkingPlugin):
+class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
+    """Base plugin to simulate the propagation of S2 photons in the detector. Photons are 
+    randomly assigned to PMT channels based on their starting position and 
+    the timing of the photons is calculated.
     
-    __version__ = "0.1.3"
+    Note: The timing calculation is defined in the child plugin.
+    """
     
-    depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
+    __version__ = "0.3.0"
+    
+    depends_on = ("electron_time", "s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum", "microphysics_summary")
     provides = "propagated_s2_photons"
     data_kind = "S2_photons"
 
-    #Forbid rechunking
-    rechunk_on_save = False
-
     save_when = strax.SaveWhen.TARGET
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
-    dtype = [('channel', np.int16),
-             ('dpe', np.bool_),
-             ('photon_gain', np.int32),
+    dtype = [(("PMT channel of the photon", "channel"), np.int16),
+             (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
+             (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
+             (("ID of the cluster creating the photon", "cluster_id"), np.int32),
+             (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)","photon_type"), np.int8),
             ]
     dtype = dtype + strax.time_fields
 
     #Config options shared by S1 and S2 simulation 
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     p_double_pe_emision = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=p_double_pe_emision",
         type=(int, float),
         cache=True,
-        help='p_double_pe_emision',
+        help='Probability of double photo-electron emission',
     )
 
     pmt_transit_time_spread = straxen.URLConfig(
@@ -60,7 +59,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=pmt_transit_time_spread",
         type=(int, float),
         cache=True,
-        help='pmt_transit_time_spread',
+        help='Spread of the PMT transit times [ns]',
     )
 
     pmt_transit_time_mean = straxen.URLConfig(
@@ -69,7 +68,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=pmt_transit_time_mean",
         type=(int, float),
         cache=True,
-        help='pmt_transit_time_mean',
+        help='Mean of the PMT transit times [ns]',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -78,7 +77,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='pmt_circuit_load_resistor',
+        help='PMT circuit load resistor [kg m^2/(s^3 A)]',
     )
 
     digitizer_bits = straxen.URLConfig(
@@ -87,7 +86,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=digitizer_bits",
         type=(int, float),
         cache=True,
-        help='digitizer_bits',
+        help='Number of bits of the digitizer boards',
     )
 
     digitizer_voltage_range = straxen.URLConfig(
@@ -96,16 +95,16 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='digitizer_voltage_range',
+        help='Voltage range of the digitizer boards [V]',
     )
 
     n_top_pmts = straxen.URLConfig(
-        type=(int),
+        type=int,
         help='Number of PMTs on top array',
     )
 
     n_tpc_pmts = straxen.URLConfig(
-        type=(int),
+        type=int,
         help='Number of PMTs in the TPC',
     )
 
@@ -121,13 +120,13 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   '&key=photon_area_distribution'
                   '&fmt=csv',
         cache=True,
-        help='photon_area_distribution',
+        help='Photon area distribution',
     )
 
     #Config options specific to S2 simulation
     phase_s2 = straxen.URLConfig(
         default="gas",
-        help='phase of the s2 producing region',
+        help='Phase of the S2 producing region',
     )
 
     drift_velocity_liquid = straxen.URLConfig(
@@ -136,7 +135,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=drift_velocity_liquid",
         type=(int, float),
         cache=True,
-        help='Drift velocity of electrons in the liquid xenon',
+        help='Drift velocity of electrons in the liquid xenon [cm/ns]',
     )
 
     tpc_length = straxen.URLConfig(
@@ -145,7 +144,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=tpc_length",
         type=(int, float),
         cache=True,
-        help='Length of the XENONnT TPC',
+        help='Length of the XENONnT TPC [cm]',
     )
 
     tpc_radius = straxen.URLConfig(
@@ -154,7 +153,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=tpc_radius",
         type=(int, float),
         cache=True,
-        help='Radius of the XENONnT TPC ',
+        help='Radius of the XENONnT TPC [cm]',
     )
 
     diffusion_constant_transverse = straxen.URLConfig(
@@ -163,7 +162,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=diffusion_constant_transverse",
         type=(int, float),
         cache=True,
-        help='Transverse diffusion constant',
+        help='Transverse diffusion constant [cm^2/ns]',
     )
 
     s2_aft_skewness = straxen.URLConfig(
@@ -189,7 +188,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=enable_field_dependencies",
         cache=True,
-        help='enable_field_dependencies',
+        help='Field dependencies during electron drift',
     )
 
     s2_mean_area_fraction_top = straxen.URLConfig(
@@ -241,7 +240,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=triplet_lifetime_gas",
         type=(int, float),
         cache=True,
-        help='Liftetime of triplet states in GXe',
+        help='Liftetime of triplet states in GXe [ns]',
     )
 
     singlet_lifetime_gas = straxen.URLConfig(
@@ -250,7 +249,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=singlet_lifetime_gas",
         type=(int, float),
         cache=True,
-        help='Liftetime of singlet states in GXe',
+        help='Liftetime of singlet states in GXe [ns]',
     )
 
     triplet_lifetime_liquid = straxen.URLConfig(
@@ -259,7 +258,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=triplet_lifetime_liquid",
         type=(int, float),
         cache=True,
-        help='Liftetime of triplet states in LXe',
+        help='Liftetime of triplet states in LXe [ns]',
     )
 
     singlet_lifetime_liquid = straxen.URLConfig(
@@ -268,7 +267,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=singlet_lifetime_liquid",
         type=(int, float),
         cache=True,
-        help='Liftetime of singlet states in LXe',
+        help='Liftetime of singlet states in LXe [ns]',
     )
 
     s2_secondary_sc_gain_mc = straxen.URLConfig(
@@ -277,40 +276,21 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                   "&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
-        help='Secondary scintillation gain',
+        help='Secondary scintillation gain [PE/e-]',
     )
 
     propagated_s2_photons_file_size_target = straxen.URLConfig(
-        type=(int, float), default = 500, track=False,
-        help='target for the propagated_s2_photons file size in MB',
+        type=(int, float), default = 300, track=False,
+        help='Target for the propagated_s2_photons file size [MB]',
     )
 
     min_electron_gap_length_for_splitting = straxen.URLConfig(
         type=(int, float), default = 1e5, track=False,
-        help='chunk can not be split if gap between photons is smaller than this value given in ns',
-    )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
+        help='Chunk can not be split if gap between photons is smaller than this value given in ns',
     )
 
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running S2PhotonPropagation version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
 
         #Set the random generator for scipy
         skewnorm.random_state=self.rng
@@ -322,9 +302,9 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                                )
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
-        self.turned_off_pmts = np.arange(len(self.gains))[np.array(self.gains) == 0]
-        
-        self.__uniform_to_pe_arr = init_spe_scaling_factor_distributions(self.photon_area_distribution)
+        self.turned_off_pmts = np.nonzero(np.array(self.gains) == 0)[0]
+
+        self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(self.photon_area_distribution)
 
         #Move this part into a nice URLConfig protocol?
         # Field dependencies 
@@ -354,10 +334,6 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         electron_time_gaps = individual_electrons["time"][1:] - individual_electrons["time"][:-1] 
         electron_time_gaps = np.append(electron_time_gaps, 0) #Add last gap
 
-        #Index to match the electrons to the corresponding interaction_in_roi (and vice versa)
-        #electron_index = build_electron_index(individual_electrons, interactions_in_roi[mask])
-        #electron_index = individual_electrons["order_index"]
-
         split_index = find_electron_split_index(
             individual_electrons,
             electron_time_gaps,
@@ -367,19 +343,27 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
             )
 
         electron_chunks = np.array_split(individual_electrons, split_index)
-        #index_chunks = np.array_split(electron_index, split_index)
 
         n_chunks = len(electron_chunks)
         if n_chunks > 1:
-            log.info("Chunk size exceeding file size target.")
-            log.info("Downchunking to %d chunks" % n_chunks)
+            log.info(
+                "Chunk size exceeding file size target. "
+                f"Downchunking to {n_chunks} chunks"
+            )
         
         last_start = start
         if n_chunks>1:
-            #for electron_group, index_group in zip(electron_chunks[:-1], index_chunks[:-1]):
             for electron_group in electron_chunks[:-1]:
-                interactions_chunk = interactions_in_roi[mask][np.unique(electron_group["order_index"])]
-                #interactions_chunk = interactions_in_roi[mask][np.min(index_group):np.max(index_group)+1]
+                unique_clusters_in_group = np.unique(electron_group["cluster_id"])
+                interactions_chunk = interactions_in_roi[mask][np.isin(interactions_in_roi["cluster_id"][mask], unique_clusters_in_group)]
+                
+                #Sort both the interactions and the electrons by cluster_id
+                #We will later sort by time again when yielding the data. 
+                sort_index_ic = np.argsort(interactions_chunk["cluster_id"])
+                sort_index_eg = np.argsort(electron_group["cluster_id"])
+                interactions_chunk = interactions_chunk[sort_index_ic]
+                electron_group = electron_group[sort_index_eg]
+
                 positions = np.array([interactions_chunk["x_obs"], interactions_chunk["y_obs"]]).T
 
                 _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
@@ -396,28 +380,32 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         
                 #repeat for n photons per electron # Should this be before adding delays?
                 _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
-                
-                #Do i want to save both -> timings with and without pmt transition time spread?
-                # Correct for PMT Transition Time Spread (skip for pmt after-pulses)
-                # note that PMT datasheet provides FWHM TTS, so sigma = TTS/(2*sqrt(2*log(2)))=TTS/2.35482
-                _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
-                    _photon_timings=_photon_timings,
-                    _photon_channels=_photon_channels,
-                    pmt_transit_time_mean=self.pmt_transit_time_mean,
-                    pmt_transit_time_spread=self.pmt_transit_time_spread,
-                    p_double_pe_emision=self.p_double_pe_emision,
-                    gains=self.gains,
-                    __uniform_to_pe_arr=self.__uniform_to_pe_arr,
-                    rng=self.rng,
-                    )
 
-                result = build_photon_propagation_output(
-                    dtype=self.dtype,
-                    _photon_timings=_photon_timings,
-                    _photon_channels=_photon_channels,
-                    _photon_gains=_photon_gains,
-                    _photon_is_dpe=_photon_is_dpe,
-                    )
+                _cluster_id = np.repeat(interactions_chunk['cluster_id'], interactions_chunk["sum_s2_photons"])
+                
+                #Do i want to save both -> timings with and without pmt transit time spread?
+                # Correct for PMT Transit Time Spread 
+                _photon_timings = pmt_transit_time_spread(_photon_timings=_photon_timings,
+                                                          pmt_transit_time_mean=self.pmt_transit_time_mean,
+                                                          pmt_transit_time_spread=self.pmt_transit_time_spread,
+                                                          rng=self.rng,
+                                                          )
+
+                _photon_gains, _photon_is_dpe = photon_gain_calculation(_photon_channels=_photon_channels,
+                                                                        p_double_pe_emision=self.p_double_pe_emision,
+                                                                        gains=self.gains,
+                                                                        spe_scaling_factor_distributions=self.spe_scaling_factor_distributions,
+                                                                        rng=self.rng,
+                                                                        )
+
+                result = build_photon_propagation_output(dtype=self.dtype,
+                                                         _photon_timings=_photon_timings,
+                                                         _photon_channels=_photon_channels,
+                                                         _photon_gains=_photon_gains,
+                                                         _photon_is_dpe=_photon_is_dpe,
+                                                         _cluster_id=_cluster_id,
+                                                         photon_type = 2,
+                                                         )
 
                 result = strax.sort_by_time(result)
 
@@ -428,8 +416,15 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                 yield chunk
     
         #And the last chunk
-        interactions_chunk = interactions_in_roi[mask][np.unique(electron_chunks[-1]["order_index"])]
-        #interactions_chunk = interactions_in_roi[mask][np.min(index_chunks[-1]):np.max(index_chunks[-1])+1]
+        electron_group = electron_chunks[-1]
+        unique_clusters_in_group = np.unique(electron_group["cluster_id"])
+        interactions_chunk = interactions_in_roi[mask][np.isin(interactions_in_roi["cluster_id"][mask], unique_clusters_in_group)]
+ 
+        sort_index_ic = np.argsort(interactions_chunk["cluster_id"])
+        sort_index_eg = np.argsort(electron_group["cluster_id"])
+        interactions_chunk = interactions_chunk[sort_index_ic]
+        electron_group = electron_group[sort_index_eg]
+
         positions = np.array([interactions_chunk["x_obs"], interactions_chunk["y_obs"]]).T
 
         _photon_channels = self.photon_channels(interactions_chunk["n_electron_extracted"],
@@ -444,26 +439,31 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
                                               _photon_channels,
                                               )
 
-        _photon_timings += np.repeat(electron_chunks[-1]["time"], electron_chunks[-1]["n_s2_photons"])
+        _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
+        
+        _cluster_id = np.repeat(interactions_chunk['cluster_id'], interactions_chunk["sum_s2_photons"])
 
-        _photon_timings, _photon_gains, _photon_is_dpe = pmt_transition_time_spread(
-                    _photon_timings=_photon_timings,
-                    _photon_channels=_photon_channels,
-                    pmt_transit_time_mean=self.pmt_transit_time_mean,
-                    pmt_transit_time_spread=self.pmt_transit_time_spread,
-                    p_double_pe_emision=self.p_double_pe_emision,
-                    gains=self.gains,
-                    __uniform_to_pe_arr=self.__uniform_to_pe_arr,
-                    rng=self.rng,
-                    )
+        _photon_timings = pmt_transit_time_spread(_photon_timings=_photon_timings,
+                                                  pmt_transit_time_mean=self.pmt_transit_time_mean,
+                                                  pmt_transit_time_spread=self.pmt_transit_time_spread,
+                                                  rng=self.rng,
+                                                  )
 
-        result = build_photon_propagation_output(
-                    dtype=self.dtype,
-                    _photon_timings=_photon_timings,
-                    _photon_channels=_photon_channels,
-                    _photon_gains=_photon_gains,
-                    _photon_is_dpe=_photon_is_dpe,
-                    )
+        _photon_gains, _photon_is_dpe = photon_gain_calculation(_photon_channels=_photon_channels,
+                                                                p_double_pe_emision=self.p_double_pe_emision,
+                                                                gains=self.gains,
+                                                                spe_scaling_factor_distributions=self.spe_scaling_factor_distributions,
+                                                                rng=self.rng,
+                                                                )
+
+        result = build_photon_propagation_output(dtype=self.dtype,
+                                                 _photon_timings=_photon_timings,
+                                                 _photon_channels=_photon_channels,
+                                                 _photon_gains=_photon_gains,
+                                                 _photon_is_dpe=_photon_is_dpe,
+                                                 _cluster_id=_cluster_id,
+                                                 photon_type = 2,
+                                                 )
         
         result = strax.sort_by_time(result)
 
@@ -475,8 +475,7 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         
         channels = np.arange(self.n_tpc_pmts).astype(np.int64)
         top_index = np.arange(self.n_top_pmts)
-        channels_bottom = np.arange(self.n_top_pmts, self.n_tpc_pmts)
-        bottom_index = np.array(channels_bottom)
+        bottom_index = np.arange(self.n_top_pmts, self.n_tpc_pmts)
         
         if self.diffusion_constant_transverse > 0:
             pattern = self.s2_pattern_map_diffuse(n_electron, z_obs, positions, drift_time_mean)  # [position, pmt]
@@ -558,10 +557,8 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
         # Should be done naturally with the s2 pattern map, however, there's some bug there, so we apply this hard cut
         mask = np.sum(xy_multi ** 2, axis=1) <= self.tpc_radius ** 2
 
-        if isinstance(self.s2_pattern_map, DummyMap):
-            output_dim = self.s2_pattern_map.shape[-1]
-        else:
-            output_dim = self.s2_pattern_map.data['map'].shape[-1]
+        output_dim = self.s2_pattern_map.data['map'].shape[-1]
+
         pattern = np.zeros((len(n_electron), output_dim))
         n0 = 0
         # Average over electrons for each s2
@@ -601,10 +598,10 @@ class S2PhotonPropagationBase(strax.DownChunkingPlugin):
 @export
 class S2PhotonPropagation(S2PhotonPropagationBase):
     """
-    This class is used to simulate the propagation of photons from an S2 signal using 
-    luminescence timing from garfield gasgap, singlet and tripled delays and optical propagation
+    This class is used to simulate the propagation of S2 photons using 
+    luminescence timing from garfield gas gap, singlet and tripled delays and optical propagation
     """
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
     
     child_plugin = True
 
@@ -694,7 +691,7 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 @export
 class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     """
-    This class is used to simulate the propagation of photons from an S2 signal using 
+    This class is used to simulate the propagation of S2 photons using 
     the simple liminescence model, singlet and tripled delays and optical propagation
     """
     __version__ = "0.1.0"
@@ -967,35 +964,35 @@ def _luminescence_timings_simple(
 @njit()
 def simulate_horizontal_shift(n_electron, drift_time_mean,xy, diffusion_constant_radial, diffusion_constant_azimuthal,result, rng):
 
-     hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
-     hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
-     hdiff_radial = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron)
-     hdiff_azimuthal = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron)
-     hdiff = np.column_stack((hdiff_radial, hdiff_azimuthal))
-     theta = np.arctan2(xy[:,1], xy[:,0])
+    hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
+    hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
+    hdiff_radial = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron)
+    hdiff_azimuthal = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_azimuthal, n_electron)
+    hdiff = np.column_stack((hdiff_radial, hdiff_azimuthal))
+    theta = np.arctan2(xy[:,1], xy[:,0])
 
-     sin_theta = np.sin(theta)
-     cos_theta = np.cos(theta)
-     matrix = build_rotation_matrix(sin_theta, cos_theta)
+    sin_theta = np.sin(theta)
+    cos_theta = np.cos(theta)
+    matrix = build_rotation_matrix(sin_theta, cos_theta)
 
-     split_hdiff = np.split(hdiff, np.cumsum(n_electron))[:-1]
+    split_hdiff = np.split(hdiff, np.cumsum(n_electron))[:-1]
 
-     start_idx = np.append([0], np.cumsum(n_electron)[:-1])
-     stop_idx = np.cumsum(n_electron)
+    start_idx = np.append([0], np.cumsum(n_electron)[:-1])
+    stop_idx = np.cumsum(n_electron)
 
-     for i in range(len(matrix)):
-          result[start_idx[i]: stop_idx[i]] = (matrix[i] @ split_hdiff[i].T).T 
+    for i in range(len(matrix)):
+        result[start_idx[i]: stop_idx[i]] = np.ascontiguousarray(split_hdiff[i]) @ matrix[i]
 
-     return result
+    return result
 
 @njit()
 def build_rotation_matrix(sin_theta, cos_theta):
-    matrix = np.zeros((2, 2, len(sin_theta)))
-    matrix[0, 0] = cos_theta
-    matrix[0, 1] = sin_theta
-    matrix[1, 0] = -sin_theta
-    matrix[1, 1] = cos_theta
-    return matrix.T
+    matrix = np.zeros((len(sin_theta), 2, 2))
+    matrix[:, 0, 0] = cos_theta
+    matrix[:, 0, 1] = sin_theta
+    matrix[:, 1, 0] = -sin_theta
+    matrix[:, 1, 1] = cos_theta
+    return matrix
 
 @njit()
 def find_electron_split_index(electrons, gaps, file_size_limit, min_gap_length, mean_n_photons_per_electron):
@@ -1017,17 +1014,3 @@ def find_electron_split_index(electrons, gaps, file_size_limit, min_gap_length, 
             split_index.append(i)
 
     return np.array(split_index)+1
-
-def build_electron_index(individual_electrons, interactions_in_roi):
-    "Function to match the electrons to the correct interaction_in_roi"
-
-    electrons_split = np.split(individual_electrons, np.cumsum(interactions_in_roi["n_electron_extracted"]))[:-1]
-
-    index = []
-    k = 0
-    for element in electrons_split:
-        index.append(np.repeat(k, len(element)))
-        k+=1
-    index = np.concatenate(index)
-
-    return index

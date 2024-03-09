@@ -2,6 +2,8 @@
 S2PhotonPropagation
 ===================
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/detector_physics/s2_photon_propagation.py>`_.
+
 Plugin Description
 ==================
 Plugin to simulate the propagation of S2 photons in the detector. Photons are 
@@ -20,9 +22,10 @@ Technical Details
 
 .. code-block:: python
 
-   depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum")
+   depends_on = ("electron_time","s2_photons", "extracted_electrons", "drifted_electrons", "s2_photons_sum", "microphysics_summary")
    provides = "propagated_s2_photons"
    data_kind = "S2_photons"
+   __version__ = "0.2.0"
 
 Provided Columns
 ================
@@ -36,19 +39,25 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - time of individual s1 photons
+     - Time of individual S2 photon [ns]
    * - endtime
      - int64
-     - endtime of individual s1 photons (will be the same as time)
+     - Endtime of individual S2 photon [ns] (same as time)
    * - channel
      - int16
-     - PMT channel of the detected photon
+     - PMT channel of the S2 photon
    * - dpe
      - bool
-     - Boolean indicating weather the photon will create a double photoelectron emisison or not
+     - Photon creates a double photo-electron emission
    * - photon_gain
      - int32
-     - Gain of the PMT channel
+     - Sampled PMT gain for the photon
+   * - cluster_id
+     - int32
+     - ID of the cluster creating the photon
+   * - photon_type
+     - int8
+     - Type of the photon. S1 (1), S2 (2) or PMT AP (0)
 
 Config Options
 ==============
@@ -64,10 +73,6 @@ S2PhotonPropagationBase plugin
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
    * - p_double_pe_emision
      - 
      - True
@@ -75,15 +80,15 @@ S2PhotonPropagationBase plugin
    * - pmt_transit_time_spread
      - 
      - True
-     - Spread of the PMT transit times
+     - Spread of the PMT transit times [ns]
    * - pmt_transit_time_mean
      - 
      - True
-     - Mean of the PMT transit times
+     - Mean of the PMT transit times [ns]
    * - pmt_circuit_load_resistor
      - 
      - True
-     - PMT circuit load resistor
+     - PMT circuit load resistor [kg m^2/(s^3 A)] (PMT circuit resistance * electron charge * amplification factor * sampling frequency)
    * - digitizer_bits
      - 
      - True
@@ -91,7 +96,7 @@ S2PhotonPropagationBase plugin
    * - digitizer_voltage_range
      - 
      - True
-     - Voltage range of the digitizer boards
+     - Voltage range of the digitizer boards [V]
    * - n_top_pmts
      - 
      - True
@@ -115,19 +120,19 @@ S2PhotonPropagationBase plugin
    * - drift_velocity_liquid
      - 
      - True
-     - Drift velocity of electrons in the liquid xenon
+     - Drift velocity of electrons in the liquid xenon [cm/ns]
    * - tpc_length
      - 
      - True
-     - Length of the XENONnT TPC
+     - Length of the XENONnT TPC [cm]
    * - tpc_radius
      - 
      - True
-     - Radius of the XENONnT TPC
+     - Radius of the XENONnT TPC [cm]
    * - diffusion_constant_transverse
      - 
      - True
-     - Transverse diffusion constant
+     - Transverse diffusion constant [cm^2/ns]
    * - s2_aft_skewness
      - 
      - True
@@ -159,35 +164,31 @@ S2PhotonPropagationBase plugin
    * - triplet_lifetime_gas
      - 
      - True
-     - Liftetime of triplet states in GXe
+     - Liftetime of triplet states in GXe [ns]
    * - singlet_lifetime_gas
      - 
      - True
-     - Liftetime of singlet states in GXe
+     - Liftetime of singlet states in GXe [ns]
    * - triplet_lifetime_liquid
      - 
      - True
-     - Liftetime of triplet states in LXe
+     - Liftetime of triplet states in LXe [ns]
    * - singlet_lifetime_liquid
      - 
      - True
-     - Liftetime of singlet states in LXe
+     - Liftetime of singlet states in LXe [ns]
    * - s2_secondary_sc_gain_mc
      - 
      - True
-     - Secondary scintillation gain
+     - Secondary scintillation gain [PE/e-]
    * - propagated_s2_photons_file_size_target
      - 300
      - False
-     - target for the propagated_s2_photons file size in MB
+     - Target for the propagated_s2_photons file size [MB]
    * - min_electron_gap_length_for_splitting
      - 1e5
      - False
-     - chunk can not be split if gap between photons is smaller than this value given in ns
-   * - deterministic_seed
-     - True
-     - True
-     - Set the random seed from lineage and run_id (True), or pull the seed from the OS (False).
+     - Chunk can not be split if gap between photons is smaller than this value given in ns
 
 S2PhotonPropagation plugin
 --------------------------

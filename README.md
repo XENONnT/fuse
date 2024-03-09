@@ -1,19 +1,26 @@
 # XENON fuse 
 
+[![PyPI version shields.io](https://img.shields.io/pypi/v/xenon-fuse.svg)](https://pypi.python.org/pypi/xenon-fuse/)
+[![Coverage Status](https://coveralls.io/repos/github/XENONnT/fuse/badge.svg)](https://coveralls.io/github/XENONnT/fuse)
+[![Test package](https://github.com/XENONnT/fuse/actions/workflows/pytest.yml/badge.svg?branch=main)](https://github.com/XENONnT/fuse/actions/workflows/pytest.yml)
+[![Readthedocs Badge](https://readthedocs.org/projects/fuse/badge/?version=latest)](https://xenon-fuse.readthedocs.io/en/latest/?badge=latest)
+
 **F**ramework for **U**nified **S**imulation of **E**vents
 
-fuse is the refactored version of the XENONnT simulation chain. The goal of this project is to unify epix and WFSim into a single program. fuse is based on the strax software so that the simulation steps are encoded in plugins with defined inputs and outputs. This allows for a flexible and modular simulation chain.
-
-fuse is still in an alpha-stage, so expect bugs and changes in the future.
+fuse is the refactored version of the XENONnT simulation chain. The goal of this project is to unify [epix](https://github.com/XENONnT/epix) and [WFSim](https://github.com/XENONnT/WFSim) into a single program. fuse is based on the [strax framework](https://github.com/AxFoundation/strax), so that the simulation steps are encoded in plugins with defined inputs and outputs. This allows for a flexible and modular simulation chain.
 
 ## Installation
 
-At the moment the intallation procedure is not very advanced. I would recommend to work on dali in e.g. the base environment and follow the steps below.
-
-1. Clone the fuse repository.
-2. Clone the private_nt_aux_files repository to the same directory as you cloned fuse.
-2. Install fuse using `pip install -e .` in the fuse directory.
-
+With all requirements fulfilled (e.g., on top of the [XENONnT montecarlo_environment](https://github.com/XENONnT/montecarlo_environment)):
+```
+python -m pip install xenon-fuse
+```
+or install from source:
+```
+git clone git@github.com:XENONnT/fuse
+cd fuse
+python -m pip install . --user
+```
 
 ## Plugin Structure
 

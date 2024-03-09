@@ -1,8 +1,7 @@
 Detector Physics Simulation
 ===========================
 
-.. image:: figures/DetectorPhysicsStructure.pdf
-    :width: 600
+The detectorphysics simulation is performed in 8 plugins. These are listed below.
 
 .. toctree::
    :maxdepth: 1
@@ -16,3 +15,15 @@ Detector Physics Simulation
    plugins/detector_physics/SecondaryScintillation
    plugins/detector_physics/S2PhotonPropagation
    plugins/detector_physics/Delayed_Electrons
+
+.. image:: figures/DetectorPhysicsStructure.pdf
+    :width: 600
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Alternative Plugins
+   
+   plugins/detector_physics/ChunkCsvInput
+
+Alternatively the microphysics simulation can be skipped and only the detectorphysic simulation can be performed.
+For this, the `ChunkCsvInput` plugin needs to be registered. 

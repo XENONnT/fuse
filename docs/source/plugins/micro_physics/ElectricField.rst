@@ -2,6 +2,8 @@
 ElectricField
 =============
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/micro_physics/electric_field.py>`_.
+
 Plugin Description
 ==================
 Plugin that calculates the electric field values for the cluster position. 
@@ -15,6 +17,7 @@ Technical Details
    depends_on = ("interactions_in_roi")
    provides = "electric_field_values"
    data_kind = "interactions_in_roi"
+   __version__ = "0.2.2"
 
 
 Provided Columns
@@ -29,13 +32,13 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - time of the energy deposit
+     - Time of the cluster [ns]
    * - endtime
      - int64
-     - endtime of the energy deposit (will be the same as time)
+     - Endtime of the cluster [ns] (same as time)
    * - e_field
-     - int64
-     - Electric field value at the cluster position. 
+     - float32
+     - Electric field value at the cluster position [V/cm]
 
 Config Options
 ==============
@@ -48,11 +51,7 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
    * - efield_map
      - 
      - True
-     - electric field map
+     - Map of the electric field in the detector

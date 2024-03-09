@@ -2,6 +2,7 @@ from immutabledict import immutabledict
 import straxen 
 import strax
 from numba import njit
+from numba.typed import List
 import numpy as np
 import logging
 
@@ -9,13 +10,18 @@ from scipy.interpolate import interp1d
 
 export, __all__ = strax.exporter()
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBaseDownChunkingPlugin
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.pmt_and_daq.pmt_response_and_daq')
 
 @export
-class PMTResponseAndDAQ(strax.DownChunkingPlugin):
+class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
+    """Plugin to simulate the PMT response and DAQ effects. First the single PMT waveform
+    is simulated based on the photon timing and gain information. Next the waveform
+    is converted to ADC counts, noise and a baseline are added. Then hitfinding is performed
+    and the found intervals are split into multiple fragments of fixed length (if needed).
+    Finally the data is saved as raw_records."""
     
     __version__ = "0.1.3"
 
@@ -28,29 +34,14 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
 
     save_when = strax.SaveWhen.ALWAYS
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
-    #Forbid automatic rechunking by strax as we will do it manually
-    rechunk_on_save = False
-
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-
     dt = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
                   "&take=sample_duration",
-        type=(int),
+        type=int,
         cache=True,
-        help='sample_duration',
+        help='Width of one sample [ns]',
     )
 
     pmt_circuit_load_resistor = straxen.URLConfig(
@@ -59,7 +50,7 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
                   "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='PMT circuit load resistor', 
+        help='PMT circuit load resistor [kg m^2/(s^3 A)]', 
     )
 
     external_amplification = straxen.URLConfig(
@@ -86,7 +77,7 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
                   "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards',
+        help='Voltage range of the digitizer boards  [V]',
     )
 
     noise_data = straxen.URLConfig(
@@ -186,13 +177,13 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
     )
 
     n_tpc_pmts = straxen.URLConfig(
-        type=(int),
+        type=int,
         help='Number of PMTs in the TPC',
     )
 
     raw_records_file_size_target = straxen.URLConfig(
         type=(int, float), default = 200, track=False,
-        help='Target for the raw records file size in MB',
+        help='Target for the raw records file size [MB]',
     )
 
     min_records_gap_length_for_splitting = straxen.URLConfig(
@@ -201,21 +192,7 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
     )
 
     def setup(self):
-
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running PMTResponseAndDAQ version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+        super().setup()
 
         self.current_2_adc = self.pmt_circuit_load_resistor \
                 * self.external_amplification \
@@ -253,12 +230,18 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
         
         n_chunks = len(pulse_window_chunks)
         if n_chunks > 1:
-            log.info("Chunk size exceeding file size target.")
-            log.info("Downchunking to %d chunks" % n_chunks)
+            log.info(
+                "Chunk size exceeding file size target. "
+                f"Downchunking to {n_chunks} chunks"
+            )
 
         last_start = start
 
         photons, unique_photon_pulse_ids = split_photons(propagated_photons)
+
+        # convert photons to numba list for njit
+        _photons = List()
+        [_photons.append(x) for x in photons]
 
         if n_chunks>1:
             for pulse_group in pulse_window_chunks[:-1]:
@@ -269,7 +252,7 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
 
                 buffer_level = build_waveform(
                     pulse_group,
-                    photons,
+                    _photons,
                     unique_photon_pulse_ids,
                     waveform_buffer,
                     self.dt,
@@ -300,7 +283,7 @@ class PMTResponseAndDAQ(strax.DownChunkingPlugin):
         
         buffer_level = build_waveform(
             pulse_window_chunks[-1],
-            photons,
+            _photons,
             unique_photon_pulse_ids,
             waveform_buffer,
             self.dt,

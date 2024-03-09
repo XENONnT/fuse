@@ -2,12 +2,14 @@
 FindCluster
 ===========
 
+Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/micro_physics/find_cluster.py>`_.
+
 Plugin Description
 ==================
 Plugin to find clusters of energy deposits. This plugin is performing the first half 
 of the microclustering process. Energy deposits are grouped into clusters based on
 their proximity to each other in 3D space and time. The clustering is performed using
-a 1D temporal clustering algorithm and a 3D DBSCAN spacial clustering.
+a 1D temporal clustering algorithm followed by 3D DBSCAN spacial clustering.
 
 Technical Details
 -----------------
@@ -17,6 +19,7 @@ Technical Details
    depends_on = ("geant4_interactions")
    provides = "cluster_index"
    data_kind = "geant4_interactions"
+   __version__ = "0.2.1"
 
 
 Provided Columns
@@ -31,13 +34,13 @@ Provided Columns
      - Comment
    * - time
      - int64
-     - time of the energy deposit
+     - Time of the energy deposit
    * - endtime
      - int64
-     - endtime of the energy deposit (will be the same as time)
+     - Endtime of the energy deposit (will be the same as time)
    * - cluster_ids
      - int32
-     - Index of the cluster to which the energy deposit belongs.
+     - Cluster index of the energy deposit
 
 Config Options
 ==============
@@ -50,10 +53,6 @@ Config Options
      - default
      - track
      - comment
-   * - debug
-     - False
-     - False
-     - Show debug information during simulation
    * - micro_separation_time
      - 10
      - True

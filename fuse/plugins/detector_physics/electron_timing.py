@@ -3,7 +3,7 @@ import numpy as np
 import straxen
 import logging
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
@@ -11,35 +11,27 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.detector_physics.electron_timing')
 
 @export
-class ElectronTiming(strax.Plugin):
+class ElectronTiming(FuseBasePlugin):
+    """Plugin to simulate the arrival times of electrons extracted from the liquid phase. It includes both the 
+    drift time and the time needed for the extraction."""
     
-    __version__ = "0.1.1"
+    __version__ = "0.2.0"
     
-    depends_on = ("drifted_electrons", "extracted_electrons")
+    depends_on = ("drifted_electrons", "extracted_electrons", "microphysics_summary")
     provides = "electron_time"
     data_kind = "individual_electrons"
-    
-    #Forbid rechunking
-    rechunk_on_save = False
 
     save_when = strax.SaveWhen.TARGET
-
-    input_timeout = FUSE_PLUGIN_TIMEOUT
     
     data_kind = "individual_electrons"
     
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('order_index', np.int32),
+    dtype = [(("x position of the electron [cm]", "x"), np.float32),
+             (("y position of the electron [cm]", "y"), np.float32),
+             (("ID of the cluster creating the electron", "cluster_id"), np.int32),
             ]
     dtype = dtype + strax.time_fields
     
     #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
-
     electron_trapping_time = straxen.URLConfig(
         default = "take://resource://"
                   "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -48,28 +40,6 @@ class ElectronTiming(strax.Plugin):
         cache=True,
         help='Time scale electrons are trapped at the liquid gas interface',
     )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-    
-    def setup(self):
-        
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running ElectronTiming version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
 
     def compute(self, interactions_in_roi):
 
@@ -95,8 +65,8 @@ class ElectronTiming(strax.Plugin):
         result["x"] = x
         result["y"] = y
 
-        #result["order_index"] = np.arange(len(timing))
-        result["order_index"] = np.repeat(np.arange(len(interactions_in_roi[mask])), interactions_in_roi[mask]["n_electron_extracted"])
+        result["cluster_id"] = np.repeat(interactions_in_roi[mask]["cluster_id"], interactions_in_roi[mask]["n_electron_extracted"])
+        
         result = strax.sort_by_time(result)
 
         return result
