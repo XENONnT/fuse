@@ -247,7 +247,7 @@ class ElectronDrift(FuseBasePlugin):
             z: 1d array, postions 2d array
         """
         positions = np.array([x, y, z]).T
-        dr_pre = 0
+        dr_pre = self.fdc_map_fuse(positions)
         for i_iter in range(6):  # 6 iterations seems to work
             dr = 0.5 * self.fdc_map_fuse(positions) + 0.5 * dr_pre  # Average between iter
 
