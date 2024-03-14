@@ -102,7 +102,7 @@ class ElectronDrift(FuseBasePlugin):
                   'SIMULATION_CONFIG_FILE.json?'
                   '&key=field_dependencies_map'
                   '&fmt=json.gz'
-                  '&method=RectBivariateSpline',
+                  '&method=WeightedNearestNeighbors',
         cache=True,
         help='Map for the electric field dependencies',
     )
@@ -122,7 +122,7 @@ class ElectronDrift(FuseBasePlugin):
                   'SIMULATION_CONFIG_FILE.json?'
                   '&key=field_distortion_comsol_map'
                   '&fmt=json.gz'
-                  '&method=RectBivariateSpline',
+                  '&method=WeightedNearestNeighbors',
         cache=True,
         help='Field distortion map used in fuse (Check if we can remove _fuse from the name)',
     )
