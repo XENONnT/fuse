@@ -1,9 +1,10 @@
-# XENON fuse 
+# XENON fuse
 
 [![PyPI version shields.io](https://img.shields.io/pypi/v/xenon-fuse.svg)](https://pypi.python.org/pypi/xenon-fuse/)
 [![Coverage Status](https://coveralls.io/repos/github/XENONnT/fuse/badge.svg)](https://coveralls.io/github/XENONnT/fuse)
 [![Test package](https://github.com/XENONnT/fuse/actions/workflows/pytest.yml/badge.svg?branch=main)](https://github.com/XENONnT/fuse/actions/workflows/pytest.yml)
 [![Readthedocs Badge](https://readthedocs.org/projects/fuse/badge/?version=latest)](https://xenon-fuse.readthedocs.io/en/latest/?badge=latest)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/XENONnT/fuse/main.svg)](https://results.pre-commit.ci/latest/github/XENONnT/fuse/main)
 
 **F**ramework for **U**nified **S**imulation of **E**vents
 
@@ -27,4 +28,3 @@ python -m pip install . --user
 The full simulation chain in split into multiple plugins. An overview of the simulation structure can be found below.
 
 ![fuse plugin structure](docs/source/figures/fuse_simulation_chain.png)
-
