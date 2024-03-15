@@ -17,7 +17,7 @@ class DelayedElectronsDrift(ElectronDrift):
 
     child_plugin = True
 
-    depends_on = ("photo_ionization_electrons",)
+    depends_on = "photo_ionization_electrons"
     provides = "drifted_delayed_electrons"
     data_kind = "delayed_interactions_in_roi"
 
