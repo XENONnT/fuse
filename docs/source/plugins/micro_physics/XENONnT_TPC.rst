@@ -7,9 +7,9 @@ Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/mi
 Plugin Description
 ==================
 Plugin to select only clusters in the XENONnT TPC. The TPC volume
-is defined by the z position of the cathode and gate mesh and by the radius 
+is defined by the z position of the cathode and gate mesh and by the radius
 of the detector. For all clusters passing the volume selection `create_S2` is set
-to `True`. 
+to `True`.
 
 Technical Details
 -----------------
@@ -19,7 +19,7 @@ Technical Details
    depends_on = ("clustered_interactions")
    provides = "tpc_interactions"
    data_kind = "tpc_interactions"
-   __version__ = "0.2.0"
+   __version__ = "0.3.0"
 
 Provided Columns
 ================
@@ -70,6 +70,9 @@ Provided Columns
    * - z_pri
      - float32
      - z position of the primary particle [cm]
+   * - cluster_id
+     - int32
+     - ID of the cluster
    * - xe_density
      - float32
      - Xenon density at the cluster position.

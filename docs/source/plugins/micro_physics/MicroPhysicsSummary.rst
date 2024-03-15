@@ -6,7 +6,7 @@ Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/mi
 
 Plugin Description
 ==================
-MergeOnlyPlugin that summarizes the fuse microphysics simulation results into a single output. 
+MergeOnlyPlugin that summarizes the fuse microphysics simulation results into a single output.
 
 Technical Details
 -----------------

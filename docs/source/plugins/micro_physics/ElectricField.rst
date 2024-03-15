@@ -6,7 +6,7 @@ Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/mi
 
 Plugin Description
 ==================
-Plugin that calculates the electric field values for the cluster position. 
+Plugin that calculates the electric field values for the cluster position.
 
 
 Technical Details
@@ -17,7 +17,7 @@ Technical Details
    depends_on = ("interactions_in_roi")
    provides = "electric_field_values"
    data_kind = "interactions_in_roi"
-   __version__ = "0.2.0"
+   __version__ = "0.2.2"
 
 
 Provided Columns
@@ -37,7 +37,7 @@ Provided Columns
      - int64
      - Endtime of the cluster [ns] (same as time)
    * - e_field
-     - int64
+     - float32
      - Electric field value at the cluster position [V/cm]
 
 Config Options
@@ -52,6 +52,6 @@ Config Options
      - track
      - comment
    * - efield_map
-     - 
+     -
      - True
      - Map of the electric field in the detector
