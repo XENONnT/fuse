@@ -35,7 +35,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
     dtype = strax.raw_record_dtype(samples_per_record=strax.DEFAULT_RECORD_LENGTH)
 
-    save_when = strax.SaveWhen.ALWAYS
+    save_when = strax.SaveWhen.TARGET
 
     # Config options
     dt = straxen.URLConfig(
