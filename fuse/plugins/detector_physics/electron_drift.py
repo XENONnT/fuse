@@ -1,8 +1,7 @@
-import logging
-
-import numpy as np
 import strax
 import straxen
+import logging
+import numpy as np
 
 from ...plugin import FuseBasePlugin
 

@@ -46,7 +46,8 @@ class PhotoIonizationElectrons(FuseBasePlugin):
     # Move the filename to the config file
     delaytime_pmf_hist = straxen.URLConfig(
         help="delaytime_pmf_hist",
-        default="simple_load://resource://format://XENONnT_SR1_photoionization_model.dill?&fmt=dill",
+        default="simple_load://resource://format://"
+        "XENONnT_SR1_photoionization_model.dill?&fmt=dill",
     )
 
     photoionization_modifier = straxen.URLConfig(
@@ -136,7 +137,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         # Just apply this to clusters with S2 photons
         mask = interactions_in_roi["sum_s2_photons"] > 0
 
-        if (len(interactions_in_roi[mask]) == 0) or (self.enable_delayed_electrons == False):
+        if not self.enable_delayed_electrons or (len(interactions_in_roi[mask]) == 0):
             log.debug("No interactions with S2 photons found or delayed electrons are disabled")
             return np.zeros(0, self.dtype)
 
@@ -185,8 +186,6 @@ class PhotoIonizationElectrons(FuseBasePlugin):
 
         result["cluster_id"] = self.delayed_cluster_index - np.arange(n_instruction) - 1
         self.delayed_cluster_index = np.min(result["cluster_id"])
-
-        # result['cluster_id'] = np.arange(len(result)) * -1 - 1 #Lets try to use negative cluster ids for delayed electrons...
 
         return strax.sort_by_time(result)
 
