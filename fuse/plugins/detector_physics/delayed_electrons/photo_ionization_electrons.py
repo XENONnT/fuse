@@ -1,3 +1,5 @@
+# Add instruction generation for photo ionization electrons here
+
 import strax
 import straxen
 import numpy as np
