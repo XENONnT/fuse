@@ -6,7 +6,7 @@ Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/mi
 
 Plugin Description
 ==================
-Plugin that calculates the electric field values for the cluster position. 
+Plugin that calculates the electric field values for the cluster position.
 
 
 Technical Details
@@ -52,6 +52,6 @@ Config Options
      - track
      - comment
    * - efield_map
-     - 
+     -
      - True
      - Map of the electric field in the detector

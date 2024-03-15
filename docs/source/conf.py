@@ -8,8 +8,8 @@
 
 import fuse
 
-project = 'XENON fuse'
-copyright = '2024, fuse contributors, the XENON collaboration'
+project = "XENON fuse"
+copyright = "2024, fuse contributors, the XENON collaboration"
 
 release = fuse.__version__
 version = fuse.__version__
@@ -18,13 +18,13 @@ version = fuse.__version__
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.viewcode',
-    'nbsphinx',
-    ]
+    "sphinx.ext.autodoc",
+    "sphinx.ext.viewcode",
+    "nbsphinx",
+]
 
-templates_path = ['_templates']
-exclude_patterns = []
+templates_path = ["_templates"]
+exclude_patterns = []  # type: ignore
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -33,11 +33,12 @@ exclude_patterns = []
 # -- Options for HTML output
 
 html_theme = "sphinx_rtd_theme"
-#html_static_path = ['_static']
+# html_static_path = ['_static']
 
-#Lets disable notebook execution for now
+# Lets disable notebook execution for now
 nbsphinx_allow_errors = True
-nbsphinx_execute = 'never'
+nbsphinx_execute = "never"
+
 
 def setup(app):
     # app.add_css_file('css/custom.css')

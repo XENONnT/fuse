@@ -6,7 +6,7 @@ Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/de
 
 Plugin Description
 ==================
-Plugin to simulate the arrival times and positions of electrons extracted from the liquid phase. It includes both the 
+Plugin to simulate the arrival times and positions of electrons extracted from the liquid phase. It includes both the
 drift time and the time needed for the extraction.
 
 Technical Details
@@ -57,6 +57,6 @@ Config Options
      - track
      - comment
    * - electron_trapping_time
-     - 
+     -
      - True
      - Time scale electrons are trapped at the liquid gas interface

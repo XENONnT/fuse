@@ -2,7 +2,7 @@
 Deterministic Random Seed
 =========================
 
-One of the main principles of fuse simulations are deterministic random seeds. The goal is to 
+One of the main principles of fuse simulations are deterministic random seeds. The goal is to
 make sure that the simulation is reproducible if the simulation is repeated under the same conditions.
 This is important for debbuging and testing. Furthermore it allows us to store only some of the intermediate
 simulation results and process other steps again in case we need them.
@@ -38,22 +38,22 @@ There are three software packages that generate random numbers in fuse: numpy, s
 the random seed for all three.
 
 - **numpy**: To set the random seed for numpy we make use of numpy random Generator objects.
-  Each plugin with numpy random random numbers has its own generator. the random seed of 
+  Each plugin with numpy random random numbers has its own generator. the random seed of
   of the generator is set in the plugins setup function.
-  
+
   .. code-block:: python
 
     self.rng = np.random.default_rng(seed = seed)
-  
+
   When numpy random numbers are drawn inside a numba accelerated function, the generator needs to be passed as an argument.
   As random number generation in numba functions is not thread save, fuse can not use multi core processing.
 
 - **scipy**: The random state of scipy random number generation can be set using the numpy random number generator
   object. The random state is set in the plugins setup function.
 
-- **nestpy**: Setting the random seed for nestpy is possible since nestpy verison 2.0.1. The random number generator 
+- **nestpy**: Setting the random seed for nestpy is possible since nestpy verison 2.0.1. The random number generator
   in nestpy is a C++ object and needs to be set once for the whole simulation. The random seed can then be set in the
-  plugins setup function. 
+  plugins setup function.
 
 How to test if the simulation is reproducible?
 -----------------------------------------------
@@ -61,4 +61,4 @@ If you run a simulation two times with the same config, run_id and plugins the o
 If you then change the run_id or a tracked config option, the simulation should give you different results.
 fuse will print the random seeds of the plugins when `debug` is set to `True`. You can use this to check if the
 random seeds are set correctly. If you build a new plugin, make sure to follow the deterministic random seed principle!
-Addidtionaly we have a simple test for the deterministic random seed in the tests folder. 
+Addidtionaly we have a simple test for the deterministic random seed in the tests folder.
