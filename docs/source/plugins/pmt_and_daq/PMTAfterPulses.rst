@@ -18,7 +18,7 @@ Technical Details
    depends_on = ("propagated_s2_photons", "propagated_s1_photons")
    provides = "pmt_afterpulses"
    data_kind = "AP_photons"
-   __version__ = "0.3.0"
+   __version__ = "0.3.1"
 
 Provided Columns
 ================
@@ -63,6 +63,10 @@ Config Options
      - default
      - track
      - comment
+   * - enable_pmt_afterpulses
+     - True
+     - True
+     - Decide if you want to to enable PMT afterpulsing
    * - pmt_ap_t_modifier
      -
      - True
