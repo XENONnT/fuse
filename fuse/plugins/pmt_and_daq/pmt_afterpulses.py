@@ -22,7 +22,7 @@ class PMTAfterPulses(FuseBasePlugin):
     S1 and S2 signals to create a waveform.
     """
 
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     depends_on = ("propagated_s2_photons", "propagated_s1_photons")
     provides = "pmt_afterpulses"
@@ -40,6 +40,14 @@ class PMTAfterPulses(FuseBasePlugin):
     dtype = dtype + strax.time_fields
 
     # Config options
+
+    enable_pmt_afterpulses = straxen.URLConfig(
+        default=True,
+        type=bool,
+        track=True,
+        help="Decide if you want to to enable PMT afterpulsing",
+    )
+
     pmt_ap_t_modifier = straxen.URLConfig(
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -116,7 +124,7 @@ class PMTAfterPulses(FuseBasePlugin):
                     self.uniform_to_pmt_ap[k][q] = np.array(self.uniform_to_pmt_ap[k][q])
 
     def compute(self, S1_photons, S2_photons):
-        if len(S1_photons) == 0 and len(S2_photons) == 0:
+        if not self.enable_pmt_afterpulses or (len(S1_photons) == 0 and len(S2_photons) == 0):
             return np.zeros(0, dtype=self.dtype)
 
         merged_photons = np.concatenate([S1_photons, S2_photons])
