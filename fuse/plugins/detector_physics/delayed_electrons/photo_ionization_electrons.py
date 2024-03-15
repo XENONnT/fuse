@@ -10,6 +10,7 @@ export, __all__ = strax.exporter()
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.detector_physics.delayed_electrons.photo_ionization_electrons")
 
+
 @export
 class PhotoIonizationElectrons(FuseBasePlugin):
 
