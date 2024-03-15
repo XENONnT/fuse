@@ -6,8 +6,8 @@ Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/de
 
 Plugin Description
 ==================
-Plugin to simulate the propagation of S2 photons in the detector. Photons are 
-randomly assigned to PMT channels based on their starting position and 
+Plugin to simulate the propagation of S2 photons in the detector. Photons are
+randomly assigned to PMT channels based on their starting position and
 the timing of the photons is calculated.
 
 The plugin is split into a `S2PhotonPropagationBase` class defining the compute
@@ -74,43 +74,43 @@ S2PhotonPropagationBase plugin
      - track
      - comment
    * - p_double_pe_emision
-     - 
+     -
      - True
      - Probability of double photo-electron emission
    * - pmt_transit_time_spread
-     - 
+     -
      - True
      - Spread of the PMT transit times [ns]
    * - pmt_transit_time_mean
-     - 
+     -
      - True
      - Mean of the PMT transit times [ns]
    * - pmt_circuit_load_resistor
-     - 
+     -
      - True
      - PMT circuit load resistor [kg m^2/(s^3 A)] (PMT circuit resistance * electron charge * amplification factor * sampling frequency)
    * - digitizer_bits
-     - 
+     -
      - True
      - Number of bits of the digitizer boards
    * - digitizer_voltage_range
-     - 
+     -
      - True
      - Voltage range of the digitizer boards [V]
    * - n_top_pmts
-     - 
+     -
      - True
      - Number of PMTs on top array
    * - n_tpc_pmts
-     - 
+     -
      - True
      - Number of PMTs in the TPC
    * - gain_model_mc
-     - 
+     -
      - True
      - PMT gain model
    * - photon_area_distribution
-     - 
+     -
      - True
      - Photon area distribution
    * - phase_s2
@@ -118,67 +118,67 @@ S2PhotonPropagationBase plugin
      - True
      - phase of the s2 producing region
    * - drift_velocity_liquid
-     - 
+     -
      - True
      - Drift velocity of electrons in the liquid xenon [cm/ns]
    * - tpc_length
-     - 
+     -
      - True
      - Length of the XENONnT TPC [cm]
    * - tpc_radius
-     - 
+     -
      - True
      - Radius of the XENONnT TPC [cm]
    * - diffusion_constant_transverse
-     - 
+     -
      - True
      - Transverse diffusion constant [cm^2/ns]
    * - s2_aft_skewness
-     - 
+     -
      - True
      - Skew of the S2 area fraction top
    * - s2_aft_sigma
-     - 
+     -
      - True
      - Width of the S2 area fraction top
    * - enable_field_dependencies
-     - 
+     -
      - True
      - Field dependencies during electron drift
    * - s2_mean_area_fraction_top
-     - 
+     -
      - True
      - Mean S2 area fraction top
    * - s2_pattern_map
-     - 
+     -
      - True
      - S2 pattern map
    * - field_dependencies_map_tmp
-     - 
+     -
      - True
      - Map for the electric field dependencies
    * - singlet_fraction_gas
-     - 
+     -
      - True
      - Fraction of singlet states in GXe
    * - triplet_lifetime_gas
-     - 
+     -
      - True
      - Liftetime of triplet states in GXe [ns]
    * - singlet_lifetime_gas
-     - 
+     -
      - True
      - Liftetime of singlet states in GXe [ns]
    * - triplet_lifetime_liquid
-     - 
+     -
      - True
      - Liftetime of triplet states in LXe [ns]
    * - singlet_lifetime_liquid
-     - 
+     -
      - True
      - Liftetime of singlet states in LXe [ns]
    * - s2_secondary_sc_gain_mc
-     - 
+     -
      - True
      - Secondary scintillation gain [PE/e-]
    * - propagated_s2_photons_file_size_target
@@ -202,14 +202,14 @@ S2PhotonPropagation plugin
      - track
      - comment
    * - s2_luminescence_map
-     - 
+     -
      - False
      - Luminescence map for S2 Signals
    * - garfield_gas_gap_map
-     - 
+     -
      - False
      - Garfield gas gap map
    * - s2_optical_propagation_spline
-     - 
+     -
      - False
      - Spline for the optical propagation of S2 signals

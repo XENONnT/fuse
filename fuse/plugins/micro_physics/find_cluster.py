@@ -1,54 +1,61 @@
+import logging
+
 import numpy as np
 import numba
 import strax
-import awkward as ak
-import logging
 import straxen
 from sklearn.cluster import DBSCAN
 
-export, __all__ = strax.exporter()
-
 from ...plugin import FuseBasePlugin
 
+export, __all__ = strax.exporter()
+
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('fuse.micro_physics.find_cluster')
+log = logging.getLogger("fuse.micro_physics.find_cluster")
+
 
 @export
 class FindCluster(FuseBasePlugin):
-    """Plugin to find clusters of energy deposits. This plugin is performing the first half 
-    of the microclustering process. Energy deposits are grouped into clusters based on
-    their proximity to each other in 3D space and time. The clustering is performed using
-    a 1D temporal clustering algorithm followed by 3D DBSCAN spacial clustering."""
-    
+    """Plugin to find clusters of energy deposits.
+
+    This plugin is performing the first half of the microclustering
+    process. Energy deposits are grouped into clusters based on their
+    proximity to each other in 3D space and time. The clustering is
+    performed using a 1D temporal clustering algorithm followed by 3D
+    DBSCAN spacial clustering.
+    """
+
     __version__ = "0.2.1"
-    
-    depends_on = ("geant4_interactions")
-    
+
+    depends_on = "geant4_interactions"
+
     provides = "cluster_index"
-    
-    dtype = [(("Cluster index of the energy deposit", "cluster_ids"), np.int32),
-            ]
+
+    dtype = [
+        (("Cluster index of the energy deposit", "cluster_ids"), np.int32),
+    ]
     dtype = dtype + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
 
-    #Not start at 0. 0 are set per default for contributing clusters so we want to avoid that
-    clusters_seen = 1 
+    # Not start at 0. 0 are set per default for contributing clusters so we want to avoid that
+    clusters_seen = 1
 
-    #Config options
+    # Config options
     micro_separation_time = straxen.URLConfig(
-        default=10, type=(int, float),
-        help='Clustering time (ns)',
+        default=10,
+        type=(int, float),
+        help="Clustering time (ns)",
     )
 
     micro_separation = straxen.URLConfig(
-        default=0.005, type=(int, float),
-        help='DBSCAN clustering distance (mm)',
+        default=0.005,
+        type=(int, float),
+        help="DBSCAN clustering distance (mm)",
     )
-        
+
     def compute(self, geant4_interactions):
-        """
-        Compute the cluster IDs for a set of GEANT4 interactions.
+        """Compute the cluster IDs for a set of GEANT4 interactions.
 
         Args:
             geant4_interactions (np.ndarray): An array of GEANT4 interaction data.
@@ -59,8 +66,9 @@ class FindCluster(FuseBasePlugin):
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        cluster_ids = self.find_cluster(geant4_interactions, self.micro_separation / 10,
-                                  self.micro_separation_time)
+        cluster_ids = self.find_cluster(
+            geant4_interactions, self.micro_separation / 10, self.micro_separation_time
+        )
 
         numpy_data = np.zeros(len(geant4_interactions), dtype=self.dtype)
         numpy_data["cluster_ids"] = cluster_ids + self.clusters_seen
@@ -68,16 +76,17 @@ class FindCluster(FuseBasePlugin):
         numpy_data["time"] = geant4_interactions["time"]
         numpy_data["endtime"] = geant4_interactions["endtime"]
 
-        self.clusters_seen = np.max(numpy_data["cluster_ids"]) + 1 
+        self.clusters_seen = np.max(numpy_data["cluster_ids"]) + 1
 
         return numpy_data
-    
+
     @staticmethod
     def find_cluster(interactions, cluster_size_space, cluster_size_time):
+        """Function to find clusters in a set of interactions.
+
+        First interactions are clustered in time, then in space.
         """
-        Function to find clusters in a set of interactions. First interactions are clustered in time, then in space.
-        """
-        
+
         time_cluster = simple_1d_clustering(interactions["time"], cluster_size_time)
 
         # Splitting into time cluster and apply space clustering space:
@@ -86,16 +95,18 @@ class FindCluster(FuseBasePlugin):
         _t_clusters = np.unique(time_cluster)
         for _t in _t_clusters:
             time_cluster_mask = time_cluster == _t
-            _cl = _find_cluster(interactions[time_cluster_mask], cluster_size_space=cluster_size_space)
+            _cl = _find_cluster(
+                interactions[time_cluster_mask], cluster_size_space=cluster_size_space
+            )
             spacial_cluster[time_cluster_mask] = _cl
         _, cluster_id = np.unique((time_cluster, spacial_cluster), axis=1, return_inverse=True)
-        
+
         return cluster_id
 
-    
+
 def _find_cluster(x, cluster_size_space):
-    """
-    Function to cluster three dimensional data (x, y, z).
+    """Function to cluster three dimensional data (x, y, z).
+
     Args:
         x (np.ndarray): structured numpy array with x, y, z coordinates to be clustered
         cluster_size_space (float): Clustering distance for DBSCAN
@@ -105,14 +116,15 @@ def _find_cluster(x, cluster_size_space):
     db_cluster = DBSCAN(eps=cluster_size_space, min_samples=1)
 
     # Conversion from numpy structured array to regular array
-    xprime = np.stack((x['x'], x['y'], x['z']), axis=1)
+    xprime = np.stack((x["x"], x["y"], x["z"]), axis=1)
 
     return db_cluster.fit_predict(xprime)
-    
+
+
 @numba.jit(nopython=True)
 def simple_1d_clustering(data, scale):
-    """
-    Function to cluster one dimensional data.
+    """Function to cluster one dimensional data.
+
     Args:
         data (numpy.array): one dimensional array to be clusterd
         scale (float): Max distance between two points to

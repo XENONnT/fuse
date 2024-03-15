@@ -78,54 +78,54 @@ Config Options
      - track
      - comment
    * - s2_secondary_sc_gain_mc
-     - 
+     -
      - True
      - Secondary scintillation gain [PE/e-]
    * - pmt_circuit_load_resistor
-     - 
+     -
      - True
      - PMT circuit load resistor [kg m^2/(s^3 A)] (PMT circuit resistance * electron charge * amplification factor * sampling frequency)
    * - digitizer_bits
-     - 
+     -
      - True
      - Number of bits of the digitizer boards
    * - digitizer_voltage_range
-     - 
+     -
      - True
      - Voltage range of the digitizer boards
    * - se_gain_from_map
-     - 
+     -
      - True
      - Boolean indication if the secondary scintillation gain is taken from a map
    * - p_double_pe_emision
-     - 
+     -
      - True
      - Probability of double photo-electron emission
    * - se_gain_map
-     - 
+     -
      - True
      - Map of the single electron gain
    * - s2_correction_map
-     - 
+     -
      - True
      - S2 correction map
    * - gain_model_mc
-     - 
+     -
      - True
      - PMT gain model
    * - n_top_pmts
-     - 
+     -
      - True
      - Number of PMTs on top array
    * - n_tpc_pmts
-     - 
+     -
      - True
      - Number of PMTs in the TPC
    * - s2_mean_area_fraction_top
-     - 
+     -
      - True
      - Mean S2 area fraction top
    * - s2_pattern_map
-     - 
+     -
      - True
      - S2 pattern map

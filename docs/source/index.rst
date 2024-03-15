@@ -10,19 +10,19 @@ simulation chain.
 .. toctree::
    :maxdepth: 1
    :caption: Getting started
-   
+
    installation
    tutorials/0_Getting_Started.ipynb
    tutorials/1_Microphysics_Simulation.ipynb
    tutorials/2_Detectorphysics_Simulation.ipynb
    tutorials/3_csv_input.ipynb
    tutorials/4_Custom_Simulations.ipynb
-   
+
 
 .. toctree::
    :maxdepth: 1
    :caption: Simulation Plugins
-   
+
    simulation_chain
    microphysics_simulation
    detector_physics
@@ -31,7 +31,7 @@ simulation chain.
 .. toctree::
    :maxdepth: 1
    :caption: Technical Features
-   
+
    tech_features/DeterministicSeed
    tech_features/DynamicChunking
 

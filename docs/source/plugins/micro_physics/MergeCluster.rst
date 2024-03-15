@@ -6,10 +6,10 @@ Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/mi
 
 Plugin Description
 ==================
-Plugin that merges energy deposits with the same cluster index into a single interaction. 
+Plugin that merges energy deposits with the same cluster index into a single interaction.
 The 3D postiion is calculated as the energy weighted average of the 3D positions of the energy deposits.
 The time of the merged cluster is calculated as the energy weighted average of the times of the energy deposits.
-The energy of the merged cluster is the sum of the individual energy depositions. The cluster is then 
+The energy of the merged cluster is the sum of the individual energy depositions. The cluster is then
 classified based on either the first interaction in the cluster or the most energetic interaction.
 
 Technical Details

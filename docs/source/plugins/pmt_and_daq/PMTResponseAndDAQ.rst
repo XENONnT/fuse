@@ -69,71 +69,71 @@ Config Options
      - track
      - comment
    * - dt
-     - 
+     -
      - True
      - Width of one sample [ns]
    * - pmt_circuit_load_resistor
-     - 
+     -
      - True
      - PMT circuit load resistor [kg m^2/(s^3 A)] (PMT circuit resistance * electron charge * amplification factor * sampling frequency)
    * - external_amplification
-     - 
+     -
      - True
      - External amplification factor
    * - digitizer_bits
-     - 
+     -
      - True
      - Number of bits of the digitizer boards
    * - digitizer_voltage_range
-     - 
+     -
      - True
      - Voltage range of the digitizer boards  [V]
    * - noise_data
-     - 
+     -
      - True
      - Measured noise data
    * - pe_pulse_ts
-     - 
+     -
      - True
      - Add a good description here
    * - pe_pulse_ys
-     - 
+     -
      - True
      - Add a good description here
    * - pmt_pulse_time_rounding
-     - 
+     -
      - True
      - Time rounding of the PMT pulse
    * - samples_after_pulse_center
-     - 
+     -
      - True
      - Number of samples after the pulse center
    * - samples_before_pulse_center
-     - 
+     -
      - True
      - Number of samples before the pulse center
    * - digitizer_reference_baseline
-     - 
+     -
      - True
      - Digitizer reference baseline
    * - zle_threshold
-     - 
+     -
      - True
      - Threshold for the zero length encoding
    * - trigger_window
-     - 
+     -
      - True
      - Trigger window
    * - samples_to_store_before
-     - 
+     -
      - True
      - Number of samples to store before the pulse center
    * - special_thresholds
-     - 
+     -
      - True
      - Special thresholds for certain PMTs
    * - n_tpc_pmts
-     - 
+     -
      - True
      - Number of PMTs in the TPC
    * - raw_records_file_size_target
