@@ -6,7 +6,7 @@ Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/mi
 
 Plugin Description
 ==================
-Plugin to find clusters of energy deposits. This plugin is performing the first half 
+Plugin to find clusters of energy deposits. This plugin is performing the first half
 of the microclustering process. Energy deposits are grouped into clusters based on
 their proximity to each other in 3D space and time. The clustering is performed using
 a 1D temporal clustering algorithm followed by 3D DBSCAN spacial clustering.
@@ -19,7 +19,7 @@ Technical Details
    depends_on = ("geant4_interactions")
    provides = "cluster_index"
    data_kind = "geant4_interactions"
-   __version__ = "0.2.0"
+   __version__ = "0.2.1"
 
 
 Provided Columns

@@ -1,12 +1,12 @@
 Microphysics Simulation
 =======================
 
-The microphysics simulation is performed in 9 plugins. These are listed below. 
+The microphysics simulation is performed in 9 plugins. These are listed below.
 
 .. toctree::
    :maxdepth: 1
    :caption: Microphysics Plugins
-   
+
    plugins/micro_physics/ChunkInput
    plugins/micro_physics/FindCluster
    plugins/micro_physics/MergeCluster

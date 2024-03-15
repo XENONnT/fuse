@@ -6,3 +6,6 @@ from .detector_physics import *
 
 from . import pmt_and_daq
 from .pmt_and_daq import *
+
+from . import truth_information
+from .truth_information import *

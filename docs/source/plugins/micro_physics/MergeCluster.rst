@@ -6,10 +6,10 @@ Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/mi
 
 Plugin Description
 ==================
-Plugin that merges energy deposits with the same cluster index into a single interaction. 
+Plugin that merges energy deposits with the same cluster index into a single interaction.
 The 3D postiion is calculated as the energy weighted average of the 3D positions of the energy deposits.
 The time of the merged cluster is calculated as the energy weighted average of the times of the energy deposits.
-The energy of the merged cluster is the sum of the individual energy depositions. The cluster is then 
+The energy of the merged cluster is the sum of the individual energy depositions. The cluster is then
 classified based on either the first interaction in the cluster or the most energetic interaction.
 
 Technical Details
@@ -20,7 +20,7 @@ Technical Details
    depends_on = ("geant4_interactions", "cluster_index")
    provides = "clustered_interactions"
    data_kind = "clustered_interactions"
-   __version__ = "0.2.0"
+   __version__ = "0.3.0"
 
 Provided Columns
 ================
@@ -71,6 +71,9 @@ Provided Columns
    * - z_pri
      - float32
      - z position of the primary particle [cm]
+   * - cluster_id
+     - int32
+     - ID of the cluster
    * - xe_density
      - float32
      - Xenon density at the cluster position. Will be set later.
