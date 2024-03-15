@@ -12,7 +12,7 @@ class FuseBasePlugin(strax.Plugin):
     # Forbid rechunking
     rechunk_on_save = False
 
-    #Lets wait 15 minutes for the plugin to finish.. PI takes a while to run
+    # Lets wait 15 minutes for the plugin to finish.. PI takes a while to run
     input_timeout = 900
 
     # Config options

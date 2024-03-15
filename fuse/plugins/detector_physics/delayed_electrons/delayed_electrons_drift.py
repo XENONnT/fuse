@@ -5,18 +5,19 @@ from ..electron_drift import ElectronDrift
 export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('fuse.detector_physics.delayed_electrons.delayed_electrons_drift')
+log = logging.getLogger("fuse.detector_physics.delayed_electrons.delayed_electrons_drift")
+
 
 @export
 class DelayedElectronsDrift(ElectronDrift):
-    """
-    This class is used to simulate the drift of electrons from the sources of electron afterpulses. 
-    """
+    """This class is used to simulate the drift of electrons from the sources
+    of electron afterpulses."""
+
     __version__ = "0.0.1"
-    
+
     child_plugin = True
 
-    depends_on = ('photo_ionization_electrons',)
+    depends_on = ("photo_ionization_electrons",)
     provides = "drifted_delayed_electrons"
     data_kind = "delayed_interactions_in_roi"
 

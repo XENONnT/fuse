@@ -141,5 +141,5 @@ def classify(types, parenttype, creaproc, edproc):
         return 0, 0, 7
     elif types == "e-":
         return 0, 0, 8
-    else: 
+    else:
         return infinity, infinity, 12
