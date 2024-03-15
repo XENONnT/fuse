@@ -12,25 +12,33 @@ class PeakTruth(strax.OverlapWindowPlugin):
 
     __version__ = "0.1.0"
 
-    depends_on = ("photon_summary", "peak_basics", "merged_microphysics_summary", "merged_s1_photons", "merged_s2_photons_sum", "merged_drifted_electrons")
+    depends_on = (
+        "photon_summary",
+        "peak_basics",
+        "merged_microphysics_summary",
+        "merged_s1_photons",
+        "merged_s2_photons_sum",
+        "merged_drifted_electrons",
+    )
     provides = "peak_truth"
     data_kind = "peaks"
 
-    dtype = [('s1_photons_in_peak', np.int32),
-             ('s2_photons_in_peak', np.int32),
-             ('ap_photons_in_peak', np.int32),
-             ('raw_area_truth', np.float32),
-             ('observable_energy_truth', np.float32),
-             ('number_of_contributing_clusters_s1', np.int16),
-             ('number_of_contributing_clusters_s2', np.int16),
-             ('number_of_contributing_delayed_electrons', np.int16),
-             ('average_x_of_contributing_clusters', np.float32),
-             ('average_y_of_contributing_clusters', np.float32),
-             ('average_z_of_contributing_clusters', np.float32),
-             ('average_x_obs_of_contributing_clusters', np.float32),
-             ('average_y_obs_of_contributing_clusters', np.float32),
-             ('average_z_obs_of_contributing_clusters', np.float32),
-            ]
+    dtype = [
+        ("s1_photons_in_peak", np.int32),
+        ("s2_photons_in_peak", np.int32),
+        ("ap_photons_in_peak", np.int32),
+        ("raw_area_truth", np.float32),
+        ("observable_energy_truth", np.float32),
+        ("number_of_contributing_clusters_s1", np.int16),
+        ("number_of_contributing_clusters_s2", np.int16),
+        ("number_of_contributing_delayed_electrons", np.int16),
+        ("average_x_of_contributing_clusters", np.float32),
+        ("average_y_of_contributing_clusters", np.float32),
+        ("average_z_of_contributing_clusters", np.float32),
+        ("average_x_obs_of_contributing_clusters", np.float32),
+        ("average_y_obs_of_contributing_clusters", np.float32),
+        ("average_z_obs_of_contributing_clusters", np.float32),
+    ]
     dtype = dtype + strax.time_fields
 
     gain_model_mc = straxen.URLConfig(
@@ -124,14 +132,24 @@ class PeakTruth(strax.OverlapWindowPlugin):
                     photons_in_peaks[i][photon_cut]["cluster_id"], return_counts=True
                 )
 
-                if photon_type == "s1": 
-                    result['number_of_contributing_clusters_s1'][i] = np.sum(unique_contributing_clusters != 0)
-                    contributing_clusters_s1 = _get_cluster_information(interactions_in_roi, unique_contributing_clusters)
+                if photon_type == "s1":
+                    result["number_of_contributing_clusters_s1"][i] = np.sum(
+                        unique_contributing_clusters != 0
+                    )
+                    contributing_clusters_s1 = _get_cluster_information(
+                        interactions_in_roi, unique_contributing_clusters
+                    )
                     photons_per_cluster_s1 = photons_per_cluster
                 elif photon_type == "s2":
-                    result['number_of_contributing_clusters_s2'][i] = np.sum(unique_contributing_clusters > 0)
-                    result['number_of_contributing_delayed_electrons'][i] = np.sum(unique_contributing_clusters < 0)
-                    contributing_clusters_s2 = _get_cluster_information(interactions_in_roi, unique_contributing_clusters)
+                    result["number_of_contributing_clusters_s2"][i] = np.sum(
+                        unique_contributing_clusters > 0
+                    )
+                    result["number_of_contributing_delayed_electrons"][i] = np.sum(
+                        unique_contributing_clusters < 0
+                    )
+                    contributing_clusters_s2 = _get_cluster_information(
+                        interactions_in_roi, unique_contributing_clusters
+                    )
                     photons_per_cluster_s2 = photons_per_cluster
 
             if (result["s1_photons_in_peak"][i] + result["s2_photons_in_peak"][i]) > 0:
