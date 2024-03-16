@@ -20,7 +20,7 @@ class ChunkCsvInput(FuseBasePlugin):
     """Plugin which reads a CSV file containing instructions for the detector
     physics simulation and returns the data in chunks."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     depends_on: Tuple = tuple()
     provides = "microphysics_summary"
@@ -41,14 +41,6 @@ class ChunkCsvInput(FuseBasePlugin):
         (("Energy of the cluster [keV]", "ed"), np.float32),
         (("NEST interaction type", "nestid"), np.int8),
         (("ID of the cluster", "cluster_id"), np.int32),
-        (
-            ("Time of the interaction [ns]", "t"),
-            np.int64,
-        ),  # Remove them later as they are not in the usual micropyhsics summary
-        (
-            ("Geant4 event ID", "eventid"),
-            np.int32,
-        ),  # Remove them later as they are not in the usual micropyhsics summary
     ]
     dtype = dtype + strax.time_fields
 
@@ -96,11 +88,13 @@ class ChunkCsvInput(FuseBasePlugin):
         try:
             chunk_data, chunk_left, chunk_right, source_done = next(self.file_reader_iterator)
             chunk_data["endtime"] = chunk_data["time"]
+            data = np.zeros(len(chunk_data), dtype=self.dtype)
+            strax.copy_to_buffer(chunk_data, data, "_bring_data_into_correct_format")
 
             self.source_done = source_done
 
             return self.chunk(
-                start=chunk_left, end=chunk_right, data=chunk_data, data_type="geant4_interactions"
+                start=chunk_left, end=chunk_right, data=data, data_type="geant4_interactions"
             )
 
         except StopIteration:
