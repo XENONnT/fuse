@@ -288,7 +288,7 @@ def classify_lineage(particle_interaction):
         elif particle_interaction["edproc"] == "phot":
             return 7, 0, 0
         else:
-            #could be rayleigh scattering or something else. Classify it as beta...
+            #could be rayleigh scattering or something else. Classify it as gamma...
             return 7, 0, 0
     
     #Primaries and decay products 
