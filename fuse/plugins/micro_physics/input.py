@@ -27,7 +27,7 @@ class ChunkInput(FuseBasePlugin):
     and will create multiple chunks of data if needed.
     """
 
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     depends_on: Tuple = tuple()
     provides = "geant4_interactions"
