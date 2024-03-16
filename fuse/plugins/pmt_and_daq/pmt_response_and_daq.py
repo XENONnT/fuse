@@ -90,6 +90,12 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         help="Measured noise data",
     )
 
+    enable_noise = straxen.URLConfig(
+        default=True,
+        cache=True,
+        help="Option to enable or disable noise",
+    )
+
     pe_pulse_ts = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pe_pulse_ts",
         cache=True,
@@ -259,6 +265,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
                     self._pmt_current_templates,
                     self.current_2_adc,
                     self.noise_data["arr_0"],
+                    self.enable_noise,
                     self.digitizer_reference_baseline,
                     self.thresholds,
                     self.trigger_window,
@@ -292,6 +299,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
             self._pmt_current_templates,
             self.current_2_adc,
             self.noise_data["arr_0"],
+            self.enable_noise,
             self.digitizer_reference_baseline,
             self.thresholds,
             self.trigger_window,
@@ -377,6 +385,7 @@ def build_waveform(
     pmt_current_templates,
     current_2_adc,
     noise_data,
+    enable_noise,
     digitizer_reference_baseline,
     thresholds,
     trigger_window,
@@ -407,10 +416,11 @@ def build_waveform(
 
         pulse_waveform_buffer = -np.around(pulse_waveform_buffer * current_2_adc).astype(np.int64)
 
-        # Remember to transpose the noise...
-        pulse_waveform_buffer = add_noise(
-            pulse_waveform_buffer, pulse["time"], noise_data.T[pulse["channel"]]
-        )
+        if enable_noise:
+            # Remember to transpose the noise...
+            pulse_waveform_buffer = add_noise(
+                pulse_waveform_buffer, pulse["time"], noise_data.T[pulse["channel"]]
+            )
 
         add_baseline(pulse_waveform_buffer, digitizer_reference_baseline)
 
