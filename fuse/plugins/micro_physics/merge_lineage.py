@@ -36,6 +36,7 @@ class MergeLineage(strax.Plugin):
              (("Xenon density at the cluster position.", "xe_density"), np.float32), 
              (("ID of the volume in which the cluster occured.", "vol_id"), np.int8),
              (("Flag indicating if a cluster can create a S2 signal.", "create_S2"), np.bool_),
+            (("Type of the main cluster (alpha beta gamma)", "main_cluster_type"), np.dtype("U5")),
             ]
     
     dtype = dtype + strax.time_fields
@@ -75,5 +76,6 @@ def merge_lineages(result, interactions):
         result[i]["nestid"] = lineage["lineage_type"][0]
         result[i]["A"] = lineage["A"][0]
         result[i]["Z"] = lineage["Z"][0]
+        result[i]["main_cluster_type"] = lineage["main_cluster_type"][0]
 
     return result
