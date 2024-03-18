@@ -51,15 +51,16 @@ class NestYields(FuseBasePlugin):
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
 
     def compute(self, interactions_in_roi):
+
+        if len(interactions_in_roi) == 0:
+            return np.zeros(0, dtype=self.dtype)
+
         # set the global nest random generator with self.short_seed
         nest_rng.set_seed(self.short_seed)
         # Now lock the seed during the computation
         nest_rng.lock_seed()
         # increment the seed. Next chunk we will use the modified seed to generate random numbers
         self.short_seed += 1
-
-        if len(interactions_in_roi) == 0:
-            return np.zeros(0, dtype=self.dtype)
 
         result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         result["time"] = interactions_in_roi["time"]
