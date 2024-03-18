@@ -421,6 +421,7 @@ def get_element_and_mass(particle_type):
     return element_number, mass
     
 
+
 def assign_main_cluster_type_to_event(event):
     # Initialize columns for processing
     tracks = event['trackid']
@@ -436,7 +437,8 @@ def assign_main_cluster_type_to_event(event):
     is_alpha = (types == 'alpha') | (edproc == 'ionIoni')
     is_beta = (creaproc == 'RadioactiveDecayBase') & (types == 'e-')
     is_gamma = (creaproc == 'RadioactiveDecayBase') & (types == 'gamma')
-
+    is_beta_brem = (creaproc == 'eBrem') & (types == 'gamma')
+    
     # Apply initial classifications
     main_cluster_types[is_alpha] = 'alpha'
     main_cluster_types[is_beta] = 'beta'
@@ -469,6 +471,10 @@ def assign_main_cluster_type_to_event(event):
     # Propagate each mega type
     for mega_type in ['alpha', 'beta', 'gamma']:
         propagate_mega_type(mega_type)
+    
+    # We need to propagate beta_brem separately, because we overwrite the beta type
+    main_cluster_types[is_beta_brem] = 'beta_brem'
+    propagate_mega_type('beta_brem')
 
     return main_cluster_types
     
