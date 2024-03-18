@@ -322,18 +322,18 @@ def classify_lineage(particle_interaction):
     #Primaries and decay products 
     elif (particle_interaction["creaproc"] == "RadioactiveDecayBase") or (particle_interaction["parenttype"] == "none"):
 
-        print(particle_interaction["type"], particle_interaction["creaproc"], particle_interaction["edproc"], particle_interaction["parenttype"], particle_interaction["trackid"], particle_interaction["ed"])
+        _print(particle_interaction["type"], particle_interaction["creaproc"], particle_interaction["edproc"], particle_interaction["parenttype"], particle_interaction["trackid"], particle_interaction["ed"])
 
 
         #Alpha particles
         if particle_interaction["type"] == "alpha":
-            print("Alpha particle")
+            _print("Alpha particle")
             return NEST_ALPHA
             
         #Ions
         elif num_there(particle_interaction["type"]):
             element_number, mass = get_element_and_mass(particle_interaction["type"])
-            print("Ion", element_number, mass)
+            _print("Ion", element_number, mass)
             return 6, mass, element_number
         
         else:
