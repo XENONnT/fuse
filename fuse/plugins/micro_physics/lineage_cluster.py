@@ -41,7 +41,7 @@ class LineageClustering(FuseBasePlugin):
              (("NEST interaction type", "lineage_type"), np.int32),
              (("Mass number of the interacting particle", "A"), np.int16),
              (("Charge number of the interacting particle", "Z"), np.int16),
-             (("Type of the main cluster (alpha beta gamma)", "main_cluster_type"), np.dtype("U5")),
+             (("Type of the main cluster (alpha beta gamma)", "main_cluster_type"), np.dtype("U10")),
             ]
     dtype = dtype + strax.time_fields
 
@@ -134,7 +134,7 @@ class LineageClustering(FuseBasePlugin):
                     ('lineage_type', np.int32),
                     ('lineage_A', np.int16),
                     ('lineage_Z', np.int16),
-                    ('main_cluster_type', np.dtype("U5")),
+                    ('main_cluster_type', np.dtype("U10")),
                     ]
 
         _print("-"*50)
@@ -322,14 +322,19 @@ def classify_lineage(particle_interaction):
     #Primaries and decay products 
     elif (particle_interaction["creaproc"] == "RadioactiveDecayBase") or (particle_interaction["parenttype"] == "none"):
 
-        #Ions
-        if num_there(particle_interaction["type"]):
-            element_number, mass = get_element_and_mass(particle_interaction["type"])
-            return 6, mass, element_number
-        
+        print(particle_interaction["type"], particle_interaction["creaproc"], particle_interaction["edproc"], particle_interaction["parenttype"], particle_interaction["trackid"], particle_interaction["ed"])
+
+
         #Alpha particles
-        elif particle_interaction["type"] == "alpha":
+        if particle_interaction["type"] == "alpha":
+            print("Alpha particle")
             return NEST_ALPHA
+            
+        #Ions
+        elif num_there(particle_interaction["type"]):
+            element_number, mass = get_element_and_mass(particle_interaction["type"])
+            print("Ion", element_number, mass)
+            return 6, mass, element_number
         
         else:
             #This case should not happen or? Classify it as nontype
@@ -358,9 +363,9 @@ def is_lineage_broken(particle,
     brake_for_ion = parent_lineage["lineage_type"] == 6
     # if brake_for_ion:
     #     print("Ion?", parent["type"], particle["type"], parent['creaproc'], parent['edproc'], particle['creaproc'], particle['edproc'])
-    brake_for_ion &= (parent["type"] != "alpha" and particle["type"] != "alpha")
+    brake_for_ion &= (parent["type"] != "alpha")
     brake_for_ion &= (particle['creaproc'] != 'eIoni')
-    brake_for_ion &= (parent["creaproc"] != particle["creaproc"])
+    # brake_for_ion &= (parent["creaproc"] != particle["creaproc"])
 
     if brake_for_ion:
         # print("Broken for ion")
