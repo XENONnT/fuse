@@ -95,7 +95,7 @@ class ElectronDrift(FuseBasePlugin):
         cache=True,
         help="Use survival probability map from field_dependencies_map_tmp",
     )
-    
+
     enable_drift_velocity_map = straxen.URLConfig(
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
