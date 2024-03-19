@@ -404,9 +404,9 @@ class file_loader:
 
             if self.entry_stop is not None:
                 stop_index = np.argmin(all_eventids["eventid"] < self.entry_stop)
-                
+
                 if stop_index == 0:
-            
+
                     if np.all(~(all_eventids["eventid"] < self.entry_stop)):
                         raise ValueError(
                             "The requested eventid range is not in the file!"
