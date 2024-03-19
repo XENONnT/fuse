@@ -142,7 +142,7 @@ S2PhotonPropagationBase plugin
      - True
      - Width of the S2 area fraction top
   * - enable_diffusion_transverse_map
-     - 
+     -
      - True
      - Enable transverse diffusion map from field_dependencies_map_tmp
    * - s2_mean_area_fraction_top
