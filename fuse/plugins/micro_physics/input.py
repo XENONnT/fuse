@@ -403,7 +403,7 @@ class file_loader:
                 start_index = 0
 
             if self.entry_stop is not None:
-                stop_index = np.argmin(all_eventids["eventid"] < self.entry_stop)
+                stop_index = np.argmin(all_eventids["eventid"] <= self.entry_stop)
 
                 if stop_index == 0:
 
