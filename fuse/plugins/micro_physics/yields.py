@@ -68,15 +68,8 @@ class NestYields(FuseBasePlugin):
 
         # Generate quanta:
         if len(interactions_in_roi) > 0:
-            photons, electrons, excitons = self.quanta_from_NEST(
-                interactions_in_roi["ed"],
-                interactions_in_roi["nestid"],
-                interactions_in_roi["e_field"],
-                interactions_in_roi["A"],
-                interactions_in_roi["Z"],
-                interactions_in_roi["create_S2"],
-                density=interactions_in_roi["xe_density"],
-            )
+            
+            photons, electrons, excitons = self.get_quanta(interactions_in_roi)
             result["photons"] = photons
             result["electrons"] = electrons
             result["excitons"] = excitons
@@ -89,6 +82,20 @@ class NestYields(FuseBasePlugin):
         nest_rng.unlock_seed()
 
         return result
+
+    def get_quanta(self, interactions_in_roi):
+
+        photons, electrons, excitons = self.quanta_from_NEST(
+            interactions_in_roi["ed"],
+            interactions_in_roi["nestid"],
+            interactions_in_roi["e_field"],
+            interactions_in_roi["A"],
+            interactions_in_roi["Z"],
+            interactions_in_roi["create_S2"],
+            density=interactions_in_roi["xe_density"],
+        )
+
+        return photons, electrons, excitons
 
     @staticmethod
     def _quanta_from_NEST(en, model, e_field, A, Z, create_s2, **kwargs):
@@ -167,35 +174,25 @@ class NestYields(FuseBasePlugin):
         return photons, electrons, excitons
 
 
-class BetaYields(strax.Plugin):
-    __version__ = "0.1.1"
 
-    depends_on = ["interactions_in_roi", "electric_field_values"]
-    provides = "quanta"
-    data_kind = "interactions_in_roi"
 
-    dtype = [
-        ("photons", np.int32),
-        ("electrons", np.int32),
-        ("excitons", np.int32),
-    ]
+@export
+class BetaYields(NestYields):
+    """Plugin that calculates the number of photons, electrons and excitons
+    produced by energy deposit using nestpy."""
 
-    dtype = dtype + strax.time_fields
-
-    # Forbid rechunking
-    rechunk_on_save = False
-
-    # Config options
-    debug = straxen.URLConfig(
-        default=False,
-        type=bool,
-        help="Show debug informations",
-    )
+    __version__ = "0.2.0"
 
     use_recombination_fluctuation = straxen.URLConfig(
         default=True,
         type=bool,
         help="use_recombination_fluctuation",
+    )
+
+    recombination_fluctuation_std_factor = straxen.URLConfig(
+        default=3,
+        type=(int, float),
+        help="A factor that is defined to guess the recombination fluctuation",
     )
 
     g1_value = straxen.URLConfig(
@@ -216,95 +213,64 @@ class BetaYields(strax.Plugin):
         help="cs2_spline_path",
     )
 
-    deterministic_seed = straxen.URLConfig(
-        default=True,
-        type=bool,
-        help="Set the random seed from lineage and run_id, or pull the seed from the OS.",
-    )
+    def get_quanta(self, interactions_in_roi):
 
-    def setup(self):
-        if self.debug:
-            log.setLevel("DEBUG")
-            log.debug(f"Running BetaYields version {self.__version__} in debug mode")
-        else:
-            log.setLevel("WARNING")
+        # for the non beta interactions we use the nestpy yields
+        photons, electrons, excitons = self.quanta_from_NEST(
+            interactions_in_roi["ed"],
+            interactions_in_roi["nestid"],
+            interactions_in_roi["e_field"],
+            interactions_in_roi["A"],
+            interactions_in_roi["Z"],
+            interactions_in_roi["create_S2"],
+            density=interactions_in_roi["xe_density"],
+        )
 
-        log.debug(f"Using nestpy version {nestpy.__version__}")
+        mask_beta = interactions_in_roi["nestid"] == 8
 
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            # Dont know but nestpy seems to have a problem with large seeds
-            self.short_seed = int(repr(seed)[-8:])
-            nest_rng.set_seed(self.short_seed)
+        print("We are using the beta yields")
 
-            log.debug(f"Generating random numbers from seed {self.short_seed}")
-        else:
-            log.debug("Generating random numbers with seed pulled from OS")
+        # now for the beta interactions we use the beta yields
+        photons_beta, electrons_beta = self.quanta_from_spline(
+            interactions_in_roi["ed"][mask_beta],
+            interactions_in_roi["e_field"][mask_beta],
+        )
 
-        self.get_quanta_vectorized = np.vectorize(self.get_quanta, excluded="self")
+        photons[mask_beta] = photons_beta
+        electrons[mask_beta] = electrons_beta
 
-        # This can be moved into an URLConfig protocol before merging the PR!
+        return photons, electrons, excitons
+
+    def quanta_from_spline(self, energy, field):
+
+
         with open(self.cs1_spline_path, "rb") as f:
             self.cs1_spline = pickle.load(f)
         with open(self.cs2_spline_path, "rb") as f:
             self.cs2_spline = pickle.load(f)
 
-        self.nc = nestpy.NESTcalc(nestpy.DetectorExample_XENON10())
-        for i in range(self.rng.randint(100)):
-            self.nc.GetQuanta(self.nc.GetYields(energy=np.random.uniform(10, 100)))
-
-    def compute(self, interactions_in_roi):
-        """Computes the charge and light quanta for a list of clustered
-        interactions using custom yields.
-
-        Args:
-            interactions_in_roi (numpy.ndarray): An array of clustered interactions.
-
-        Returns:
-            numpy.ndarray: An array of quanta,
-                with fields for time, endtime, photons, electrons, and excitons.
-        """
-        if len(interactions_in_roi) == 0:
-            return np.zeros(0, dtype=self.dtype)
-
-        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
-        result["time"] = interactions_in_roi["time"]
-        result["endtime"] = interactions_in_roi["endtime"]
-
-        photons, electrons, excitons = self.get_quanta_vectorized(
-            interactions_in_roi["ed"], interactions_in_roi["e_field"]
-        )
-        result["photons"] = photons
-        result["electrons"] = electrons
-        result["excitons"] = excitons
-
-        return result
-
-    def get_quanta(self, energy, field):
         beta_photons = self.cs1_spline(energy) / self.g1_value
         beta_electrons = self.cs2_spline(energy) / self.g2_value
 
         if self.use_recombination_fluctuation:
-            rf = self.rng.normal(0, energy * 3.0, 1)[0]
-            beta_photons = int(beta_photons + rf)
-            beta_electrons = int(beta_electrons - rf)
 
-            if beta_photons < 0:
-                beta_photons = 0
-            if beta_electrons < 0:
-                beta_electrons = 0
+            factor = self.recombination_fluctuation_std_factor
+            rf = self.rng.normal(0, energy * factor, len(energy))
+            beta_photons += rf
+            beta_electrons -= rf
 
-        y = self.nc.GetYields(
-            interaction=nestpy.INTERACTION_TYPE.beta,
-            energy=energy,
-            drift_field=field,
-        )
-        q_ = self.nc.GetQuanta(y)
+            # make integer quanta
+            beta_photons = np.round(beta_photons).astype(int)
+            beta_electrons = np.round(beta_electrons).astype(int)
 
-        return beta_photons, beta_electrons, q_.excitons
+            # make sure we don't have negative quanta, so clip at 0
+            beta_photons = np.clip(beta_photons, 0, np.inf)
+            beta_electrons = np.clip(beta_electrons, 0, np.inf)
+
+        return beta_photons, beta_electrons
 
 
+@export
 class BBFYields(FuseBasePlugin):
     __version__ = "0.1.1"
 
