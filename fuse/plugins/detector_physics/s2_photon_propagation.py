@@ -183,12 +183,12 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
         "&take=enable_diffusion_transverse_map",
-        type=bool,
+        type=bool,  
         cache=True,
         help="Use transverse diffusion map from field_dependencies_map_tmp",
     )
 
-    # stupid naming problem...
+        # stupid naming problem...
     field_dependencies_map_tmp = straxen.URLConfig(
         default="itp_map://resource://simulation_config://"
         "SIMULATION_CONFIG_FILE.json?"

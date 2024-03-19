@@ -81,8 +81,8 @@ def microphysics_context(output_folder="./fuse_data"):
 def full_chain_context(
     output_folder="./fuse_data",
     corrections_version=None,
-    simulation_config_file="fax_config_nt_design.json",
-    corrections_run_id="026000",
+    simulation_config_file="fuse_config_nt_sr1_dev.json",
+    corrections_run_id="046477",
     run_id_specific_config={
         "gain_model_mc": "gain_model",
         "electron_lifetime_liquid": "elife",

@@ -85,10 +85,18 @@ Config Options
      -
      - True
      - Electron lifetime in liquid xenon [ns]
-   * - enable_field_dependencies
+   * - enable_drift_velocity_map
      -
      - True
-     - Field dependencies during electron drift
+     - Enable drift velocity map from field_dependencies_map_tmp
+   * - norm_drift_velocity
+     -
+     - True
+     - Enable normalization of drif velocity map with drift_velocity_liquid
+   * - enable_diffusion_longitudinal_map
+     - 
+     - True
+     - Enable longitudinal diffusion map from field_dependencies_map_tmp
    * - tpc_length
      -
      - True
