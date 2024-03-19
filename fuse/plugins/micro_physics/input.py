@@ -317,7 +317,7 @@ class file_loader:
         # Remove interactions that happen way after the run ended
         delay_cut = inter_reshaped["t"] <= self.cut_delayed
         log.info(
-            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut)/len(delay_cut) * 100:.4%}) "
+            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut)/len(delay_cut):.4%}) "
             f"interactions later than {self.cut_delayed:.2e} ns."
         )
         inter_reshaped = inter_reshaped[delay_cut]
