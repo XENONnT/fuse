@@ -20,6 +20,7 @@ NEST_ALPHA = (6, 4, 2)
 NEST_NR = (0, 0, 0)
 NEST_NONE = (12, 0, 0)
 
+
 @export
 class LineageClustering(FuseBasePlugin):
 
