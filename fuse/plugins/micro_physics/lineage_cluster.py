@@ -143,9 +143,6 @@ class LineageClustering(FuseBasePlugin):
             ("main_cluster_type", np.dtype("U10")),
         ]
 
-        _print("-" * 50)
-        _print(f"Processing event {event[0]['evtid']}")
-
         tmp_result = np.zeros(len(event), dtype=tmp_dtype)
 
         main_cluster_type = assign_main_cluster_type_to_event(event)
@@ -350,24 +347,13 @@ def classify_lineage(particle_interaction):
         particle_interaction["parenttype"] == "none"
     ):
 
-        _print(
-            particle_interaction["type"],
-            particle_interaction["creaproc"],
-            particle_interaction["edproc"],
-            particle_interaction["parenttype"],
-            particle_interaction["trackid"],
-            particle_interaction["ed"],
-        )
-
         # Alpha particles
         if particle_interaction["type"] == "alpha":
-            _print("Alpha particle")
             return NEST_ALPHA
 
         # Ions
         elif num_there(particle_interaction["type"]):
             element_number, mass = get_element_and_mass(particle_interaction["type"])
-            _print("Ion", element_number, mass)
             return 6, mass, element_number
 
         else:
@@ -476,9 +462,7 @@ def assign_main_cluster_type_to_event(event):
 
     # Function to propagate a single mega type
     def propagate_mega_type(mega_type):
-        # Set of tracks that have been assigned this mega type
-        assigned_tracks = set(tracks[main_cluster_types == mega_type])
-
+        
         previous_assigned_tracks = set()
 
         while True:
