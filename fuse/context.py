@@ -75,7 +75,9 @@ def microphysics_context(output_folder="./fuse_data"):
     )
 
     # Register microphysics plugins
-    for plugin in microphysics_plugins:
+    for plugin in microphysics_plugins_dbscan_clustering:
+        st.register(plugin)
+    for plugin in remaining_microphysics_plugins:
         st.register(plugin)
 
     return st
