@@ -7,9 +7,9 @@ from numba import njit
 import re
 import periodictable as pt
 
-export, __all__ = strax.exporter()
-
 from ...plugin import FuseBasePlugin
+
+export, __all__ = strax.exporter()
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger('fuse.micro_physics.lineage_cluster')
@@ -41,7 +41,7 @@ class LineageClustering(FuseBasePlugin):
              (("NEST interaction type", "lineage_type"), np.int32),
              (("Mass number of the interacting particle", "A"), np.int16),
              (("Charge number of the interacting particle", "Z"), np.int16),
-             (("Type of the main cluster (alpha beta gamma)", "main_cluster_type"), np.dtype("U10")),
+             (("Type of main cluster (alpha beta gamma)", "main_cluster_type"), np.dtype("U10")),
             ]
     dtype = dtype + strax.time_fields
 
@@ -52,7 +52,7 @@ class LineageClustering(FuseBasePlugin):
     #Config options
     gamma_distance_threshold = straxen.URLConfig(
         default=0.9, type=(int, float),
-        help='Distance threshold to break lineage for gamma rays [cm]. Default taken from NEST code',
+        help='Distance threshold to break lineage for gamma rays [cm]. Default from NEST code',
     )
 
     time_threshold = straxen.URLConfig(
@@ -76,8 +76,12 @@ class LineageClustering(FuseBasePlugin):
 
         lineage_ids, lineage_types, lineage_A, lineage_Z, main_cluster_type = self.build_lineages(geant4_interactions)
 
-        #The lineage index is now only unique per event. We need to make it unique for the whole run
-        _, unique_lineage_index = np.unique((geant4_interactions["evtid"], lineage_ids),axis = 1 ,return_inverse=True)
+        #The lineage index is now unique per event. We need to make it unique for the whole run
+        _, unique_lineage_index = np.unique(
+            (geant4_interactions["evtid"], lineage_ids),
+            axis = 1,
+            return_inverse=True
+        )
 
         data = np.zeros(len(geant4_interactions), dtype=self.dtype)
         data["lineage_index"] = unique_lineage_index
