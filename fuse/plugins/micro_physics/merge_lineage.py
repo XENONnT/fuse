@@ -9,6 +9,7 @@ from ...plugin import FuseBasePlugin
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.micro_physics.merge_lineage")
 
+
 @export
 class MergeLineage(FuseBasePlugin):
 
