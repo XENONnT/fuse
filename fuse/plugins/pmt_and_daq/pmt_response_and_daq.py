@@ -208,7 +208,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         threshold = self.digitizer_reference_baseline - self.zle_threshold - 1
         self.thresholds = threshold = (
             np.ones(self.n_tpc_pmts) * threshold
-        )  # put n pmts into config!
+        )
         for key, value in self.special_thresholds.items():
             if np.int32(key) < self.n_tpc_pmts:
                 self.thresholds[np.int32(key)] = self.digitizer_reference_baseline - value - 1
