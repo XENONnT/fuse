@@ -240,17 +240,17 @@ def pattern_map(map_data, pmt_mask, method="WeightedNearestNeighbors"):
 @URLConfig.register("s2_aft_scaling")
 def modify_s2_pattern_map(s2_pattern_map, s2_mean_area_fraction_top, n_tpc_pmts, n_top_pmts):
     """Modify the S2 pattern map to match a given input AFT."""
-
-    s2map = deepcopy(s2_pattern_map)
-    s2map_topeff_ = s2map.data["map"][..., 0:n_top_pmts].sum(axis=2)
-    s2map_toteff_ = s2map.data["map"].sum(axis=2)
-    orig_aft_ = np.mean((s2map_topeff_ / s2map_toteff_)[s2map_toteff_ > 0.0])
-    # Getting scales for top/bottom separately to preserve total efficiency
-    scale_top_ = s2_mean_area_fraction_top / orig_aft_
-    scale_bot_ = (1 - s2_mean_area_fraction_top) / (1 - orig_aft_)
-    s2map.data["map"][:, :, 0:n_top_pmts] *= scale_top_
-    s2map.data["map"][:, :, n_top_pmts:n_tpc_pmts] *= scale_bot_
-    s2_pattern_map.__init__(s2map.data)
+    if s2_mean_area_fraction_top > 0:
+        s2map = deepcopy(s2_pattern_map)
+        s2map_topeff_ = s2map.data["map"][..., 0:n_top_pmts].sum(axis=2)
+        s2map_toteff_ = s2map.data["map"].sum(axis=2)
+        orig_aft_ = np.mean((s2map_topeff_ / s2map_toteff_)[s2map_toteff_ > 0.0])
+        # Getting scales for top/bottom separately to preserve total efficiency
+        scale_top_ = s2_mean_area_fraction_top / orig_aft_
+        scale_bot_ = (1 - s2_mean_area_fraction_top) / (1 - orig_aft_)
+        s2map.data["map"][:, :, 0:n_top_pmts] *= scale_top_
+        s2map.data["map"][:, :, n_top_pmts:n_tpc_pmts] *= scale_bot_
+        s2_pattern_map.__init__(s2map.data)
     return s2_pattern_map
 
 

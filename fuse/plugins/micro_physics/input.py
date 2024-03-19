@@ -27,7 +27,7 @@ class ChunkInput(FuseBasePlugin):
     and will create multiple chunks of data if needed.
     """
 
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     depends_on: Tuple = tuple()
     provides = "geant4_interactions"
@@ -132,7 +132,8 @@ class ChunkInput(FuseBasePlugin):
             n_interactions_per_chunk=self.n_interactions_per_chunk,
             arg_debug=self.debug,
             outer_cylinder=None,  # This is not running
-            kwargs={"entry_start": self.entry_start, "entry_stop": self.entry_stop},
+            entry_start=self.entry_start,
+            entry_stop=self.entry_stop,
             cut_by_eventid=self.cut_by_eventid,
             cut_nr_only=self.nr_only,
         )
@@ -184,7 +185,8 @@ class file_loader:
         chunk_delay_fraction=0.75,
         arg_debug=False,
         outer_cylinder=None,
-        kwargs={},
+        entry_start=None,
+        entry_stop=None,
         cut_by_eventid=False,
         cut_nr_only=False,
     ):
@@ -200,7 +202,8 @@ class file_loader:
         self.chunk_delay_fraction = chunk_delay_fraction
         self.arg_debug = arg_debug
         self.outer_cylinder = outer_cylinder
-        self.kwargs = kwargs
+        self.entry_start = entry_start
+        self.entry_stop = entry_stop
         self.cut_by_eventid = cut_by_eventid
         self.cut_nr_only = cut_nr_only
 
@@ -264,10 +267,6 @@ class file_loader:
 
         # Removing all events with zero energy deposit
         m = interactions["ed"] > 0
-        if self.cut_by_eventid:
-            # ufunc does not work here...
-            m2 = (interactions["evtid"] >= start) & (interactions["evtid"] < stop)
-            m = m & m2
         interactions = interactions[m]
 
         if self.cut_nr_only:
@@ -318,7 +317,7 @@ class file_loader:
         # Remove interactions that happen way after the run ended
         delay_cut = inter_reshaped["t"] <= self.cut_delayed
         log.info(
-            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut)/len(delay_cut) * 100:.4%}) "
+            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut)/len(delay_cut):.4%}) "
             f"interactions later than {self.cut_delayed:.2e} ns."
         )
         inter_reshaped = inter_reshaped[delay_cut]
@@ -389,29 +388,41 @@ class file_loader:
             if self.cut_by_eventid:
                 cutby_string = "g4 eventid"
 
-            if self.kwargs["entry_start"] is not None:
-                log.debug(f'Starting to read from {cutby_string} {self.kwargs["entry_start"]}')
-            if self.kwargs["entry_stop"] is not None:
-                log.debug(f'Ending read in at {cutby_string} {self.kwargs["entry_stop"]}')
+            if self.entry_start is not None:
+                log.debug(f"Starting to read from {cutby_string} {self.entry_start}")
+            if self.entry_stop is not None:
+                log.debug(f"Ending read in at {cutby_string} {self.entry_stop}")
 
-        # If user specified entry start/stop we have to update number of
-        # events for source rate computation:
-        if self.kwargs["entry_start"] is not None:
-            start = self.kwargs["entry_start"]
-        else:
-            start = 0
-
-        if self.kwargs["entry_stop"] is not None:
-            stop = self.kwargs["entry_stop"]
-        else:
-            stop = n_simulated_events
-        n_simulated_events = stop - start
-
+        # If we cut by eventid we have to read all of them first to find the start and stop index
         if self.cut_by_eventid:
-            # Start/stop refers to eventid so drop start drop from kwargs
-            # dict if specified, otherwise we cut again on rows.
-            self.kwargs.pop("entry_start", None)
-            self.kwargs.pop("entry_stop", None)
+            all_eventids = ttree.arrays("eventid")
+
+            if self.entry_start is not None:
+                start_index = np.argmax(all_eventids["eventid"] >= self.entry_start)
+            else:
+                start_index = 0
+
+            if self.entry_stop is not None:
+                stop_index = np.argmin(all_eventids["eventid"] < self.entry_stop)
+                if stop_index == 0:
+                    raise ValueError(
+                        "The requested eventid range is not in the file!"
+                        "Maybe you want to set cut_by_eventid to False?"
+                    )
+            else:
+                stop_index = n_simulated_events
+        else:
+            if self.entry_start is not None:
+                start_index = self.entry_start
+            else:
+                start_index = 0
+
+            if self.entry_stop is not None:
+                stop_index = self.entry_stop
+            else:
+                stop_index = n_simulated_events
+
+        n_simulated_events = stop_index - start_index
 
         # Conversions and parameters to be computed:
         alias = {
@@ -424,23 +435,28 @@ class file_loader:
 
         # Read in data, convert mm to cm and perform a first cut if specified:
         interactions = ttree.arrays(
-            self.column_names, self.cut_string, aliases=alias, **self.kwargs
+            self.column_names,
+            self.cut_string,
+            aliases=alias,
+            entry_start=start_index,
+            entry_stop=stop_index,
         )
-        eventids = ttree.arrays("eventid", **self.kwargs)
+        eventids = ttree.arrays("eventid", entry_start=start_index, entry_stop=stop_index)
         eventids = ak.broadcast_arrays(eventids["eventid"], interactions["x"])[0]
         interactions["evtid"] = eventids
 
         xyz_pri = ttree.arrays(
             ["x_pri", "y_pri", "z_pri"],
             aliases={"x_pri": "xp_pri/10", "y_pri": "yp_pri/10", "z_pri": "zp_pri/10"},
-            **self.kwargs,
+            entry_start=start_index,
+            entry_stop=stop_index,
         )
 
         interactions["x_pri"] = ak.broadcast_arrays(xyz_pri["x_pri"], interactions["x"])[0]
         interactions["y_pri"] = ak.broadcast_arrays(xyz_pri["y_pri"], interactions["x"])[0]
         interactions["z_pri"] = ak.broadcast_arrays(xyz_pri["z_pri"], interactions["x"])[0]
 
-        return interactions, n_simulated_events, start, stop
+        return interactions, n_simulated_events, start_index, stop_index
 
     def _get_ttree(self):
         """Function which searches for the correct ttree in MC root file.
