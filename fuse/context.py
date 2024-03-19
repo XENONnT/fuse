@@ -58,7 +58,8 @@ truth_information_plugins = [
 ]
 
 
-def microphysics_context(output_folder="./fuse_data"):
+def microphysics_context(output_folder="./fuse_data",
+                         simulation_config_file="fuse_config_nt_sr1_dev.json"):
     """Function to create a fuse microphysics simulation context."""
 
     st = strax.Context(
@@ -74,6 +75,8 @@ def microphysics_context(output_folder="./fuse_data"):
     # Register microphysics plugins
     for plugin in microphysics_plugins:
         st.register(plugin)
+    
+    set_simulation_config_file(st, simulation_config_file)
 
     return st
 
