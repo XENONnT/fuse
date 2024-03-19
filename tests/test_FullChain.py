@@ -9,6 +9,7 @@ from _utils import test_root_file_name
 
 TIMEOUT = 240
 
+
 class TestFullChain(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
