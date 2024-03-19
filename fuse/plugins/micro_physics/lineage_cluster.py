@@ -463,7 +463,7 @@ def assign_main_cluster_type_to_event(event):
 
     # Function to propagate a single mega type
     def propagate_mega_type(mega_type):
-        
+
         previous_assigned_tracks = set()
 
         while True:
