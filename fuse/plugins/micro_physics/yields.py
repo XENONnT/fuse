@@ -68,7 +68,7 @@ class NestYields(FuseBasePlugin):
 
         # Generate quanta:
         if len(interactions_in_roi) > 0:
-            
+
             photons, electrons, excitons = self.get_quanta(interactions_in_roi)
             result["photons"] = photons
             result["electrons"] = electrons
@@ -174,8 +174,6 @@ class NestYields(FuseBasePlugin):
         return photons, electrons, excitons
 
 
-
-
 @export
 class BetaYields(NestYields):
     """Plugin that calculates the number of photons, electrons and excitons
@@ -242,7 +240,6 @@ class BetaYields(NestYields):
         return photons, electrons, excitons
 
     def quanta_from_spline(self, energy, field):
-
 
         with open(self.cs1_spline_path, "rb") as f:
             self.cs1_spline = pickle.load(f)
