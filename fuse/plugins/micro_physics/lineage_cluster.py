@@ -20,12 +20,6 @@ NEST_ALPHA = (6, 4, 2)
 NEST_NR = (0, 0, 0)
 NEST_NONE = (12, 0, 0)
 
-
-def _print(*args, **kwargs):
-    if False:
-        print(*args)
-
-
 @export
 class LineageClustering(FuseBasePlugin):
 
@@ -55,7 +49,7 @@ class LineageClustering(FuseBasePlugin):
     gamma_distance_threshold = straxen.URLConfig(
         default=0.9,
         type=(int, float),
-        help="Distance threshold to break lineage for gamma rays [cm]. Default taken from NEST code",
+        help="Distance threshold to break lineage for gamma rays [cm]. Default from NEST code",
     )
 
     time_threshold = straxen.URLConfig(
@@ -82,7 +76,7 @@ class LineageClustering(FuseBasePlugin):
             geant4_interactions
         )
 
-        # The lineage index is now only unique per event. We need to make it unique for the whole run
+        # The lineage index is now unique per event. We need to make it unique for the whole run
         _, unique_lineage_index = np.unique(
             (geant4_interactions["evtid"], lineage_ids), axis=1, return_inverse=True
         )
@@ -122,10 +116,6 @@ class LineageClustering(FuseBasePlugin):
             event = event[track_id_sort]
 
             lineage = self.build_lineage_for_event(event)[undo_sort_index]
-
-            _print(
-                f"Event {event_id} has {len(np.unique(lineage['lineage_index']))} lineages ({np.min(lineage['lineage_index'])}, {np.max(lineage['lineage_index'])}) -- lineages build: {self.lineages_build}"
-            )
 
             all_lineag_ids.append(lineage["lineage_index"] + self.lineages_build)
             all_lineage_types.append(lineage["lineage_type"])
@@ -188,7 +178,6 @@ class LineageClustering(FuseBasePlugin):
                     if broken_lineage:
                         # The lineage is broken. We can start a new one!
                         running_lineage_index += 1
-                        _print("Broken lineage! Starting new lineage...")
                         tmp_result = start_new_lineage(
                             particle, tmp_result, i, running_lineage_index
                         )
@@ -219,8 +208,6 @@ class LineageClustering(FuseBasePlugin):
                     )
                     if broken_lineage:
                         # New lineage!
-                        _print("Broken lineage! Starting new lineage...")
-
                         running_lineage_index += 1
                         tmp_result = start_new_lineage(
                             particle, tmp_result, i, running_lineage_index
@@ -234,7 +221,8 @@ class LineageClustering(FuseBasePlugin):
 
                 else:
                     raise ValueError(
-                        "There is no last particle interaction but we have seen this particle before.... Makes no sense.."
+                        "There is no last particle interaction but we have seen \
+                        this particle before.... Makes no sense.."
                     )
 
         tmp_result["main_cluster_type"] = main_cluster_type
@@ -288,7 +276,7 @@ def get_parent(event_interactions, event_lineage, particle):
         parent_to_return = np.argmin(abs(parent_interactions["t"] - particle["t"]))
         return parent_interactions[parent_to_return], parent_lineages[parent_to_return]
 
-    # In case there are multiple parent interactions before the particle, we need to take the last one
+    # If there are multiple parent interactions before the particle, we need to take the last one
     possible_parents = parent_interactions[parent_interactions_time_cut]
     possible_parents_lineages = parent_lineages[parent_interactions_time_cut]
 
@@ -404,14 +392,10 @@ def is_lineage_broken(
     # In the nest code: Lineage is always broken if the parent is a ion
     # But if it's an alpha particle, we want to keep the lineage
     brake_for_ion = parent_lineage["lineage_type"] == 6
-    # if brake_for_ion:
-    #     print("Ion?", parent["type"], particle["type"], parent['creaproc'], parent['edproc'], particle['creaproc'], particle['edproc'])
     brake_for_ion &= parent["type"] != "alpha"
     brake_for_ion &= particle["creaproc"] != "eIoni"
-    # brake_for_ion &= (parent["creaproc"] != particle["creaproc"])
 
     if brake_for_ion:
-        # print("Broken for ion")
         return True
 
     # For gamma rays, check the distance between the parent and the particle
@@ -532,13 +516,6 @@ def start_new_lineage(particle, tmp_result, i, running_lineage_index):
     tmp_result[i]["lineage_type"] = lineage_class
     tmp_result[i]["lineage_A"] = lineage_A
     tmp_result[i]["lineage_Z"] = lineage_Z
-
-    _print("-" * 50)
-    _print(
-        f"Starting new lineage {running_lineage_index} ({lineage_class}, {lineage_A}, {lineage_Z})"
-    )
-    _print(f"Type: {particle['type']} Parent type: {particle['parenttype']}")
-    _print(f"creaproc: {particle['creaproc']} edproc: {particle['edproc']}")
 
     return tmp_result
 
