@@ -837,7 +837,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         "&fmt=json.gz"
         "&method=RegularGridInterpolator",
         cache=True,
-        help="s2_optical_propagation_spline",
+        help="Spline for the optical propagation of S2 signals",
     )
 
     def setup(self):
