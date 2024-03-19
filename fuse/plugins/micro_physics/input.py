@@ -404,11 +404,17 @@ class file_loader:
 
             if self.entry_stop is not None:
                 stop_index = np.argmin(all_eventids["eventid"] < self.entry_stop)
+
                 if stop_index == 0:
-                    raise ValueError(
-                        "The requested eventid range is not in the file!"
-                        "Maybe you want to set cut_by_eventid to False?"
-                    )
+
+                    if np.all(~(all_eventids["eventid"] < self.entry_stop)):
+                        raise ValueError(
+                            "The requested eventid range is not in the file!"
+                            "Maybe you want to set cut_by_eventid to False?"
+                        )
+                    else:
+                        log.warning("entry_stop is larger than the largest eventid in the file.")
+                        stop_index = n_simulated_events
             else:
                 stop_index = n_simulated_events
         else:
