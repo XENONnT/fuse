@@ -405,25 +405,25 @@ class file_loader:
             all_eventids = ttree.arrays("eventid")
 
             if self.entry_start is not None:
-                start_index = np.argmax(all_eventids["eventid"] >= self.entry_start)
+                if self.entry_start > np.max(all_eventids["eventid"]):
+                    raise ValueError(
+                        "The requested eventid range is not in the file!"
+                        "Maybe you want to set cut_by_eventid to False?"
+                    )
+                start_index = np.searchsorted(all_eventids["eventid"], self.entry_start)
             else:
                 start_index = 0
 
             if self.entry_stop is not None:
-                stop_index = np.argmin(all_eventids["eventid"] <= self.entry_stop)
-
-                if stop_index == 0:
-
-                    if np.all(~(all_eventids["eventid"] < self.entry_stop)):
-                        raise ValueError(
-                            "The requested eventid range is not in the file!"
-                            "Maybe you want to set cut_by_eventid to False?"
-                        )
-                    else:
-                        log.warning("entry_stop is larger than the largest eventid in the file.")
-                        stop_index = n_simulated_events
+                if self.entry_stop <= np.min(all_eventids["eventid"]):
+                    raise ValueError(
+                        "The requested eventid range is not in the file!"
+                        "Maybe you want to set cut_by_eventid to False?"
+                    )
+                stop_index = np.searchsorted(all_eventids["eventid"], self.entry_stop)
             else:
                 stop_index = n_simulated_events
+
         else:
             if self.entry_start is not None:
                 start_index = self.entry_start
@@ -436,6 +436,10 @@ class file_loader:
                 stop_index = n_simulated_events
 
         n_simulated_events = stop_index - start_index
+        if n_simulated_events <= 0:
+            raise ValueError(
+                "No events selected! Check entry_start, entry_stop and cut_by_eventid."
+            )
 
         # Conversions and parameters to be computed:
         alias = {
