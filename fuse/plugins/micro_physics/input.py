@@ -393,6 +393,13 @@ class file_loader:
             if self.entry_stop is not None:
                 log.debug(f"Ending read in at {cutby_string} {self.entry_stop}")
 
+        if self.entry_start is not None and self.entry_stop is not None:
+            if self.entry_start >= self.entry_stop:
+                 raise ValueError(
+                     "The requested range is not valid!"
+                     "Make sure that entry_stop is larger than entry_start"
+                 )
+
         # If we cut by eventid we have to read all of them first to find the start and stop index
         if self.cut_by_eventid:
             all_eventids = ttree.arrays("eventid")
