@@ -50,30 +50,30 @@ Config Options
      - track
      - comment
    * - pmt_circuit_load_resistor
-     - 
+     -
      - True
      - PMT circuit load resistor [kg m^2/(s^3 A)] (PMT circuit resistance * electron charge * amplification factor * sampling frequency)
    * - digitizer_bits
-     - 
+     -
      - True
      - Number of bits of the digitizer boards
    * - digitizer_voltage_range
-     - 
+     -
      - True
      - Voltage range of the digitizer boards [V]
    * - gain_model_mc
-     - 
+     -
      - True
      - PMT gain model
    * - s1_pattern_map
-     - 
+     -
      - True
      - S1 pattern map
    * - p_double_pe_emision
-     - 
+     -
      - True
      - Probability of double photo-electron emission
    * - s1_detection_efficiency
-     - 
+     -
      - True
      - S1 detection efficiency

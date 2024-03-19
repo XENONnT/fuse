@@ -18,7 +18,7 @@ Technical Details
    depends_on = ()
    provides = "geant4_interactions"
    data_kind = "geant4_interactions"
-   __version__ = "0.3.0"
+   __version__ = "0.3.1"
 
 Provided Columns
 ================
@@ -53,7 +53,7 @@ Provided Columns
      - Energy deposit in keV
    * - type
      - <U18
-     - Particle type 
+     - Particle type
    * - trackid
      - int16
      - Geant4 track ID
@@ -94,11 +94,11 @@ Config Options
      - track
      - comment
    * - path
-     - 
+     -
      - False
      - Path to the input file
    * - file_name
-     - 
+     -
      - False
      - Name of the input file
    * - separation_scale
@@ -120,7 +120,7 @@ Config Options
    * - entry_start
      - 0
      - True
-     - Geant4 event to start simulation from. 
+     - Geant4 event to start simulation from.
    * - entry_stop
      - None
      - True

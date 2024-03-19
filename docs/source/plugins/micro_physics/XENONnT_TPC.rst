@@ -7,9 +7,9 @@ Link to source: `here <https://github.com/XENONnT/fuse/blob/main/fuse/plugins/mi
 Plugin Description
 ==================
 Plugin to select only clusters in the XENONnT TPC. The TPC volume
-is defined by the z position of the cathode and gate mesh and by the radius 
+is defined by the z position of the cathode and gate mesh and by the radius
 of the detector. For all clusters passing the volume selection `create_S2` is set
-to `True`. 
+to `True`.
 
 Technical Details
 -----------------

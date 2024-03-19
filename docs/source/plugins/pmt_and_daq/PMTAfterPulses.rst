@@ -18,7 +18,7 @@ Technical Details
    depends_on = ("propagated_s2_photons", "propagated_s1_photons")
    provides = "pmt_afterpulses"
    data_kind = "AP_photons"
-   __version__ = "0.3.0"
+   __version__ = "0.3.1"
 
 Provided Columns
 ================
@@ -63,31 +63,35 @@ Config Options
      - default
      - track
      - comment
+   * - enable_pmt_afterpulses
+     - True
+     - True
+     - Decide if you want to to enable PMT afterpulsing
    * - pmt_ap_t_modifier
-     - 
+     -
      - True
      - PMT afterpulse time modifier
    * - pmt_ap_modifier
-     - 
+     -
      - True
      - PMT afterpulse modifier
    * - pmt_circuit_load_resistor
-     - 
+     -
      - True
      - PMT circuit load resistor
    * - digitizer_bits
-     - 
+     -
      - True
      - Number of bits of the digitizer boards
    * - digitizer_voltage_range
-     - 
+     -
      - True
      - Voltage range of the digitizer boards
    * - gain_model_mc
-     - 
+     -
      - True
      - PMT gain model
    * - photon_ap_cdfs
-     - 
+     -
      - True
      - Afterpuse cumulative distribution functions
