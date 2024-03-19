@@ -38,7 +38,7 @@ class RecordsTruth(strax.Plugin):
         "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help='PMT circuit load resistor [kg m^2/(s^3 A)]', 
+        help="PMT circuit load resistor [kg m^2/(s^3 A)]",
     )
 
     digitizer_bits = straxen.URLConfig(
@@ -54,7 +54,7 @@ class RecordsTruth(strax.Plugin):
         "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help='Voltage range of the digitizer boards [V]',
+        help="Voltage range of the digitizer boards [V]",
     )
 
     def setup(self):
