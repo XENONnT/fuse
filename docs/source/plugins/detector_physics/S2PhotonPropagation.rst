@@ -117,10 +117,6 @@ S2PhotonPropagationBase plugin
      - "gas"
      - True
      - phase of the s2 producing region
-   * - drift_velocity_liquid
-     -
-     - True
-     - Drift velocity of electrons in the liquid xenon [cm/ns]
    * - tpc_length
      -
      - True
