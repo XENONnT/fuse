@@ -78,7 +78,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help="Voltage range of the digitizer boards  [V]",
+        help="Voltage range of the digitizer boards [V]",
     )
 
     noise_data = straxen.URLConfig(
@@ -99,13 +99,13 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
     pe_pulse_ts = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pe_pulse_ts",
         cache=True,
-        help="Add a good description here",
+        help="Time for PMT SPE waveform [sample]",
     )
 
     pe_pulse_ys = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pe_pulse_ys",
         cache=True,
-        help="Add a good description here",
+        help="Amplitude for PMT SPE waveform [PE/sample]",
     )
 
     pmt_pulse_time_rounding = straxen.URLConfig(
@@ -132,7 +132,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         "&take=samples_before_pulse_center",
         type=(int, float),
         cache=True,
-        help=" Number of samples before the pulse center",
+        help="Number of samples before the pulse center",
     )
 
     digitizer_reference_baseline = straxen.URLConfig(
@@ -164,7 +164,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         "&take=samples_to_store_before",
         type=(int, float),
         cache=True,
-        help=" Number of samples to store before the pulse center",
+        help="Number of samples to store before the pulse center",
     )
 
     special_thresholds = straxen.URLConfig(
@@ -206,9 +206,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         self._pmt_current_templates, _template_length = self.init_pmt_current_templates()
 
         threshold = self.digitizer_reference_baseline - self.zle_threshold - 1
-        self.thresholds = threshold = (
-            np.ones(self.n_tpc_pmts) * threshold
-        )  # put n pmts into config!
+        self.thresholds = threshold = np.ones(self.n_tpc_pmts) * threshold
         for key, value in self.special_thresholds.items():
             if np.int32(key) < self.n_tpc_pmts:
                 self.thresholds[np.int32(key)] = self.digitizer_reference_baseline - value - 1

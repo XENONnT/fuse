@@ -140,15 +140,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         help="Phase of the S2 producing region",
     )
 
-    drift_velocity_liquid = straxen.URLConfig(
-        default="take://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=drift_velocity_liquid",
-        type=(int, float),
-        cache=True,
-        help="Drift velocity of electrons in the liquid xenon [cm/ns]",
-    )
-
     tpc_length = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=tpc_length",
         type=(int, float),
@@ -188,12 +179,24 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         help="Width of the S2 area fraction top",
     )
 
-    enable_field_dependencies = straxen.URLConfig(
+    enable_diffusion_transverse_map = straxen.URLConfig(
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=enable_field_dependencies",
+        "&take=enable_diffusion_transverse_map",
+        type=bool,
         cache=True,
-        help="Field dependencies during electron drift",
+        help="Use transverse diffusion map from field_dependencies_map_tmp",
+    )
+
+    # stupid naming problem...
+    field_dependencies_map_tmp = straxen.URLConfig(
+        default="itp_map://resource://simulation_config://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=field_dependencies_map"
+        "&fmt=json.gz"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="Map for the electric field dependencies",
     )
 
     s2_mean_area_fraction_top = straxen.URLConfig(
@@ -216,17 +219,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         "&n_top_pmts=plugin.n_top_pmts",
         cache=True,
         help="S2 pattern map",
-    )
-
-    # stupid naming problem...
-    field_dependencies_map_tmp = straxen.URLConfig(
-        default="itp_map://resource://simulation_config://"
-        "SIMULATION_CONFIG_FILE.json?"
-        "&key=field_dependencies_map"
-        "&fmt=json.gz"
-        "&method=WeightedNearestNeighbors",
-        cache=True,
-        help="Map for the electric field dependencies",
     )
 
     singlet_fraction_gas = straxen.URLConfig(
@@ -317,19 +309,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             self.photon_area_distribution
         )
 
-        # Move this part into a nice URLConfig protocol?
         # Field dependencies
-        if any(self.enable_field_dependencies.values()):
-            self.drift_velocity_scaling = 1.0
-            # calculating drift velocity scaling to match total drift time
-            # for R = 0 between cathode and gate
-            if "norm_drift_velocity" in self.enable_field_dependencies.keys():
-                if self.enable_field_dependencies["norm_drift_velocity"]:
-                    norm_dvel = self.field_dependencies_map_tmp(
-                        np.array([[0], [-self.tpc_length]]).T, map_name="drift_speed_map"
-                    )[0]
-                    norm_dvel *= 1e-4
-                    self.drift_velocity_scaling = self.drift_velocity_liquid / norm_dvel
+        if self.enable_diffusion_transverse_map:
 
             def rz_map(z, xy, **kwargs):
                 r = np.sqrt(xy[:, 0] ** 2 + xy[:, 1] ** 2)
@@ -573,7 +554,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         """
         assert all(z < 0), "All S2 in liquid should have z < 0"
 
-        if self.enable_field_dependencies["diffusion_transverse_map"]:
+        if self.enable_diffusion_transverse_map:
             diffusion_constant_radial = self.field_dependencies_map(
                 z, xy, map_name="diffusion_radial_map"
             )  # cm²/s
@@ -583,7 +564,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             diffusion_constant_radial *= 1e-9  # cm²/ns
             diffusion_constant_azimuthal *= 1e-9  # cm²/ns
         else:
-            # diffusion_constant_transverse = diffusion_constant_transverse
             diffusion_constant_radial = self.diffusion_constant_transverse
             diffusion_constant_azimuthal = self.diffusion_constant_transverse
 
@@ -784,7 +764,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
         "&take=enable_gas_gap_warping",
-        type=(int, float),
+        type=bool,
         cache=True,
         help="enable_gas_gap_warping",
     )
@@ -857,7 +837,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         "&fmt=json.gz"
         "&method=RegularGridInterpolator",
         cache=True,
-        help="s2_optical_propagation_spline",
+        help="Spline for the optical propagation of S2 signals",
     )
 
     def setup(self):
