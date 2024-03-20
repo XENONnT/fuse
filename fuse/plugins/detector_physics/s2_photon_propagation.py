@@ -32,7 +32,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     Note: The timing calculation is defined in the child plugin.
     """
 
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     depends_on = (
         "electron_time",
@@ -392,7 +392,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                     positions,
                     interactions_chunk["sum_s2_photons"],
                     _photon_channels,
-                )
+                ).astype(np.int64)
 
                 # Repeat for n photons per electron # Should this be before adding delays?
                 _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
@@ -465,7 +465,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             positions,
             interactions_chunk["sum_s2_photons"],
             _photon_channels,
-        )
+        ).astype(np.int64)
 
         _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
 
