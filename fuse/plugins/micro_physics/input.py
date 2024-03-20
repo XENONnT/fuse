@@ -428,18 +428,14 @@ class file_loader:
             entries = len(ttree.arrays("eventid"))
             if self.entry_start is not None:
                 if self.entry_start > entries:
-                    raise ValueError(
-                        "The requested entry range is not in the file!"
-                    )
+                    raise ValueError("The requested entry range is not in the file!")
                 start_index = max(0, self.entry_start)
             else:
                 start_index = 0
 
             if self.entry_stop is not None:
                 if self.entry_stop < 0:
-                    raise ValueError(
-                        "The requested entry range is not in the file!"
-                    )
+                    raise ValueError("The requested entry range is not in the file!")
                 stop_index = min(self.entry_stop, entries)
             else:
                 stop_index = entries

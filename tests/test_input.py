@@ -121,7 +121,9 @@ class TestInput(unittest.TestCase):
             test_context.make(self.run_number, "geant4_interactions")
         except ValueError:
             return
-        raise RuntimeError("An out-of-range entry_start without cut_by_eventid does not raise an exception!")
+        raise RuntimeError(
+            "An out-of-range entry_start without cut_by_eventid does not raise an exception!"
+        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs2 timed out")
     def test_invalid_args_2(self):
@@ -139,7 +141,9 @@ class TestInput(unittest.TestCase):
             test_context.make(self.run_number, "geant4_interactions")
         except ValueError:
             return
-        raise RuntimeError("An out-of-range entry_stop without cut_by_eventid does not raise an exception!")
+        raise RuntimeError(
+            "An out-of-range entry_stop without cut_by_eventid does not raise an exception!"
+        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs3 timed out")
     def test_invalid_args_3(self):
@@ -157,7 +161,9 @@ class TestInput(unittest.TestCase):
             test_context.make(self.run_number, "geant4_interactions")
         except ValueError:
             return
-        raise RuntimeError("An out-of-range entry_stop with cut_by_eventid does not raise an exception!")
+        raise RuntimeError(
+            "An out-of-range entry_stop with cut_by_eventid does not raise an exception!"
+        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs4 timed out")
     def test_invalid_args_4(self):
@@ -175,7 +181,9 @@ class TestInput(unittest.TestCase):
             test_context.make(self.run_number, "geant4_interactions")
         except ValueError:
             return
-        raise RuntimeError("An out-of-range entry_start with cut_by_eventid does not raise an exception!")
+        raise RuntimeError(
+            "An out-of-range entry_start with cut_by_eventid does not raise an exception!"
+        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs5 timed out")
     def test_invalid_args_5(self):
@@ -193,7 +201,9 @@ class TestInput(unittest.TestCase):
             test_context.make(self.run_number, "geant4_interactions")
         except ValueError:
             return
-        raise RuntimeError("Selecting an empty eventid range with cut_by_eventid does not raise an exception!")
+        raise RuntimeError(
+            "Selecting an empty eventid range with cut_by_eventid does not raise an exception!"
+        )
 
 
 if __name__ == "__main__":
