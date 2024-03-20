@@ -51,7 +51,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         "&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
-        help="PMT circuit load resistor",
+        help="PMT circuit load resistor [kg m^2/(s^3 A)]",
     )
 
     digitizer_bits = straxen.URLConfig(
@@ -67,7 +67,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         "&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
-        help="Voltage range of the digitizer boards",
+        help="Voltage range of the digitizer boards [V]",
     )
 
     max_drift_length = straxen.URLConfig(
@@ -82,7 +82,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         "&take=drift_velocity_liquid",
         type=(int, float),
         cache=True,
-        help="Drift velocity of electrons in the liquid xenon",
+        help="Drift velocity of electrons in the liquid xenon [cm/ns]",
     )
 
     def setup(self):

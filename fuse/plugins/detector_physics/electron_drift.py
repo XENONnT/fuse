@@ -87,12 +87,40 @@ class ElectronDrift(FuseBasePlugin):
         help="Electron lifetime in liquid xenon [ns]",
     )
 
-    enable_field_dependencies = straxen.URLConfig(
+    enable_survival_probability_map = straxen.URLConfig(
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=enable_field_dependencies",
+        "&take=enable_survival_probability_map",
+        type=bool,
         cache=True,
-        help="Field dependencies during electron drift",
+        help="Use survival probability map from field_dependencies_map_tmp",
+    )
+
+    enable_drift_velocity_map = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=enable_drift_velocity_map",
+        type=bool,
+        cache=True,
+        help="Use drift velocity map from field_dependencies_map_tmp",
+    )
+
+    norm_drift_velocity = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=norm_drift_velocity",
+        type=bool,
+        cache=True,
+        help="Normalize drift velocity map according to value defined by drift_velocity_liquid",
+    )
+
+    enable_diffusion_longitudinal_map = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=enable_diffusion_longitudinal_map",
+        type=bool,
+        cache=True,
+        help="Use diffusion longitudinal map from field_dependencies_map_tmp",
     )
 
     tpc_length = straxen.URLConfig(
@@ -143,22 +171,21 @@ class ElectronDrift(FuseBasePlugin):
     def setup(self):
         super().setup()
 
-        # Can i do this scaling in the url config?
+        # Can this be done via URL config?
         if self.field_distortion_model == "inverse_fdc":
             self.fdc_map_fuse.scale_coordinates([1.0, 1.0, -self.drift_velocity_liquid])
 
         # Field dependencies
-        if any(self.enable_field_dependencies.values()):
+        if self.enable_drift_velocity_map:
             self.drift_velocity_scaling = 1.0
             # Calculating drift velocity scaling to match total drift time
             # for R = 0 between cathode and gate
-            if "norm_drift_velocity" in self.enable_field_dependencies.keys():
-                if self.enable_field_dependencies["norm_drift_velocity"]:
-                    norm_dvel = self.field_dependencies_map_tmp(
-                        np.array([[0], [-self.tpc_length]]).T, map_name="drift_speed_map"
-                    )[0]
-                    norm_dvel *= 1e-4
-                    self.drift_velocity_scaling = self.drift_velocity_liquid / norm_dvel
+            if self.norm_drift_velocity:
+                norm_dvel = self.field_dependencies_map_tmp(
+                    np.array([[0], [-self.tpc_length]]).T, map_name="drift_speed_map"
+                )[0]
+                norm_dvel *= 1e-4
+                self.drift_velocity_scaling = self.drift_velocity_liquid / norm_dvel
 
             def rz_map(z, xy, **kwargs):
                 r = np.sqrt(xy[:, 0] ** 2 + xy[:, 1] ** 2)
@@ -168,7 +195,7 @@ class ElectronDrift(FuseBasePlugin):
 
         # Data-driven longitudinal diffusion map
         # TODO: Change to the best way to accommodate simulation/data-driven map
-        if self.enable_field_dependencies["diffusion_longitudinal_map"]:
+        if self.enable_diffusion_longitudinal_map:
 
             def _rz_map(z, xy, **kwargs):
                 r = np.sqrt(xy[:, 0] ** 2 + xy[:, 1] ** 2)
@@ -282,7 +309,7 @@ class ElectronDrift(FuseBasePlugin):
         return z, positions
 
     def in_charge_sensitive_volume(self, xy_int, z_int):
-        if self.enable_field_dependencies["survival_probability_map"]:
+        if self.enable_survival_probability_map:
             p_surv = self.field_dependencies_map(z_int, xy_int, map_name="survival_probability_map")
             p_surv = np.clip(p_surv, a_min=0, a_max=1)
 
@@ -301,7 +328,7 @@ class ElectronDrift(FuseBasePlugin):
             returns two arrays of floats (mean drift time, drift time spread)
         """
         drift_velocity_liquid = self.get_avg_drift_velocity(z_int, xy_int)
-        if self.enable_field_dependencies["diffusion_longitudinal_map"]:
+        if self.enable_diffusion_longitudinal_map:
             diffusion_constant_longitudinal = self.diffusion_longitudinal_map(
                 z_int, xy_int
             )  # cm²/ns
@@ -323,7 +350,7 @@ class ElectronDrift(FuseBasePlugin):
             array of floats corresponding to average drift velocities
                 from given point to the gate.
         """
-        if self.enable_field_dependencies["drift_speed_map"]:
+        if self.enable_drift_velocity_map:
             drift_v_LXe = self.field_dependencies_map(z, xy, map_name="drift_speed_map")  # mm/µs
             drift_v_LXe *= 1e-4  # cm/ns
             drift_v_LXe *= self.drift_velocity_scaling

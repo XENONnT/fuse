@@ -117,10 +117,6 @@ S2PhotonPropagationBase plugin
      - "gas"
      - True
      - phase of the s2 producing region
-   * - drift_velocity_liquid
-     -
-     - True
-     - Drift velocity of electrons in the liquid xenon [cm/ns]
    * - tpc_length
      -
      - True
@@ -141,10 +137,10 @@ S2PhotonPropagationBase plugin
      -
      - True
      - Width of the S2 area fraction top
-   * - enable_field_dependencies
+   * - enable_diffusion_transverse_map
      -
      - True
-     - Field dependencies during electron drift
+     - Enable transverse diffusion map from field_dependencies_map_tmp
    * - s2_mean_area_fraction_top
      -
      - True

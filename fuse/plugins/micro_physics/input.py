@@ -45,7 +45,7 @@ class ChunkInput(FuseBasePlugin):
         (("Particle type of the parent particle", "parenttype"), "<U18"),
         (("Trackid of the parent particle", "parentid"), np.int16),
         (("Geant4 process creating the particle", "creaproc"), "<U25"),
-        (("Geant4 process destroying the particle", "edproc"), "<U25"),
+        (("Geant4 process responsible for the energy deposit", "edproc"), "<U25"),
         (("Geant4 event ID", "evtid"), np.int32),
         (("x position of the primary particle", "x_pri"), np.float32),
         (("y position of the primary particle", "y_pri"), np.float32),
@@ -244,7 +244,7 @@ class file_loader:
             (("Particle type of the parent particle", "parenttype"), "<U18"),
             (("Trackid of the parent particle", "parentid"), np.int16),
             (("Geant4 process creating the particle", "creaproc"), "<U25"),
-            (("Geant4 process destroying the particle", "edproc"), "<U25"),
+            (("Geant4 process responsible for the energy deposit", "edproc"), "<U25"),
             (("Geant4 event ID", "evtid"), np.int32),
             (("x position of the primary particle", "x_pri"), np.float32),
             (("y position of the primary particle", "y_pri"), np.float32),
@@ -393,42 +393,58 @@ class file_loader:
             if self.entry_stop is not None:
                 log.debug(f"Ending read in at {cutby_string} {self.entry_stop}")
 
+        if self.entry_start is not None and self.entry_stop is not None:
+            if self.entry_start >= self.entry_stop:
+                raise ValueError(
+                    "The requested range is not valid! "
+                    "Make sure that entry_stop is larger than entry_start"
+                )
+
         # If we cut by eventid we have to read all of them first to find the start and stop index
         if self.cut_by_eventid:
             all_eventids = ttree.arrays("eventid")
 
             if self.entry_start is not None:
-                start_index = np.argmax(all_eventids["eventid"] >= self.entry_start)
+                if self.entry_start > np.max(all_eventids["eventid"]):
+                    raise ValueError(
+                        "The requested eventid range is not in the file! "
+                        "Maybe you want to set cut_by_eventid to False?"
+                    )
+                start_index = np.searchsorted(all_eventids["eventid"], self.entry_start)
             else:
                 start_index = 0
 
             if self.entry_stop is not None:
-                stop_index = np.argmin(all_eventids["eventid"] < self.entry_stop)
-
-                if stop_index == 0:
-
-                    if np.all(~(all_eventids["eventid"] < self.entry_stop)):
-                        raise ValueError(
-                            "The requested eventid range is not in the file!"
-                            "Maybe you want to set cut_by_eventid to False?"
-                        )
-                    else:
-                        log.warning("entry_stop is larger than the largest eventid in the file.")
-                        stop_index = n_simulated_events
+                if self.entry_stop <= np.min(all_eventids["eventid"]):
+                    raise ValueError(
+                        "The requested eventid range is not in the file! "
+                        "Maybe you want to set cut_by_eventid to False?"
+                    )
+                stop_index = np.searchsorted(all_eventids["eventid"], self.entry_stop)
             else:
                 stop_index = n_simulated_events
+
         else:
+            entries = len(ttree.arrays("eventid"))
             if self.entry_start is not None:
-                start_index = self.entry_start
+                if self.entry_start > entries:
+                    raise ValueError("The requested entry range is not in the file!")
+                start_index = max(0, self.entry_start)
             else:
                 start_index = 0
 
             if self.entry_stop is not None:
-                stop_index = self.entry_stop
+                if self.entry_stop < 0:
+                    raise ValueError("The requested entry range is not in the file!")
+                stop_index = min(self.entry_stop, entries)
             else:
-                stop_index = n_simulated_events
+                stop_index = entries
 
         n_simulated_events = stop_index - start_index
+        if n_simulated_events <= 0:
+            raise ValueError(
+                "No events selected! Check entry_start, entry_stop and cut_by_eventid."
+            )
 
         # Conversions and parameters to be computed:
         alias = {
