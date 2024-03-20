@@ -68,7 +68,7 @@ Provided Columns
      - Geant4 process creating the particle
    * - edproc
      - <U25
-     - Geant4 process destroying the particle
+     - Geant4 process responsible for the energy deposit
    * - evtid
      - int32
      - Geant4 event ID
