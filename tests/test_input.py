@@ -101,7 +101,7 @@ class TestInput(unittest.TestCase):
         )
         try:
             test_context.make(self.run_number, "geant4_interactions")
-        except:
+        except ValueError:
             return
         raise RuntimeError("entry_start >= entry_stop does not raise an exception!")
 
@@ -119,7 +119,7 @@ class TestInput(unittest.TestCase):
         )
         try:
             test_context.make(self.run_number, "geant4_interactions")
-        except:
+        except ValueError:
             return
         raise RuntimeError("An out-of-range entry_stop does not raise an exception!")
 
@@ -137,7 +137,7 @@ class TestInput(unittest.TestCase):
         )
         try:
             test_context.make(self.run_number, "geant4_interactions")
-        except:
+        except ValueError:
             return
         raise RuntimeError("An out-of-range entry_start does not raise an exception!")
 
@@ -155,7 +155,7 @@ class TestInput(unittest.TestCase):
         )
         try:
             test_context.make(self.run_number, "geant4_interactions")
-        except:
+        except ValueError:
             return
         raise RuntimeError("Selecting an empty eventid range does not raise an exception!")
 
