@@ -266,8 +266,11 @@ class file_loader:
             )
 
         # Removing all events with zero energy deposit
-        m = interactions["ed"] > 0
-        interactions = interactions[m]
+        # m = interactions["ed"] > 0
+        if self.cut_by_eventid:
+            # ufunc does not work here...
+            m = (interactions["evtid"] >= start) & (interactions["evtid"] < stop)
+            interactions = interactions[m]
 
         if self.cut_nr_only:
             log.info("'nr_only' set to True, keeping only the NR events")
@@ -279,8 +282,8 @@ class file_loader:
             interactions = interactions[(e_dep_er < 10) & (e_dep_nr > 0)]
 
         # Removing all events with no interactions:
-        m = ak.num(interactions["ed"]) > 0
-        interactions = interactions[m]
+        # m = ak.num(interactions["ed"]) > 0
+        # interactions = interactions[m]
 
         # Sort interactions in events by time and subtract time of the first interaction
         interactions = interactions[ak.argsort(interactions["t"])]

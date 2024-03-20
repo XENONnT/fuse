@@ -18,7 +18,7 @@ class VolumesMerger(VerticalMergerPlugin):
 
     provides = "interactions_in_roi"
     data_kind = "interactions_in_roi"
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
     def compute(self, **kwargs):
         return super().compute(**kwargs)
@@ -41,7 +41,7 @@ class XENONnT_TPC(VolumePlugin):
 
     provides = "tpc_interactions"
     data_kind = "tpc_interactions"
-    __version__ = "0.3.0"
+    __version__ = "0.4.0"
 
     # Can we import this from MergeCluster and just add the needed fields?
     dtype = [
