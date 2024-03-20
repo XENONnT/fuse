@@ -42,7 +42,7 @@ class TestInput(unittest.TestCase):
             }
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
-        loaded_event_count = len(np.unique(g4_loaded['evtid']))
+        loaded_event_count = len(np.unique(g4_loaded["evtid"]))
         assert loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events"
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="LoadHalf timed out")
@@ -53,26 +53,22 @@ class TestInput(unittest.TestCase):
                 "path": self.temp_dir.name,
                 "file_name": test_root_file_name,
                 "entry_start": 0,
-                "entry_stop": 50
+                "entry_stop": 50,
             }
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
-        loaded_event_count = len(np.unique(g4_loaded['evtid']))
-        
+        loaded_event_count = len(np.unique(g4_loaded["evtid"]))
+
         assert loaded_event_count == 26, f"Expecting 26 events, but got {loaded_event_count} events"
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="LoadEventIDAll timed out")
     def test_load_eventid_all(self):
         test_context = fuse.context.microphysics_context(self.temp_dir.name)
         test_context.set_config(
-            {
-                "path": self.temp_dir.name,
-                "file_name": test_root_file_name,
-                "cut_by_eventid": True
-            }
+            {"path": self.temp_dir.name, "file_name": test_root_file_name, "cut_by_eventid": True}
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
-        loaded_event_count = len(np.unique(g4_loaded['evtid']))
+        loaded_event_count = len(np.unique(g4_loaded["evtid"]))
         assert loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events"
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="LoadEventIDHalf timed out")
@@ -84,13 +80,13 @@ class TestInput(unittest.TestCase):
                 "file_name": test_root_file_name,
                 "cut_by_eventid": True,
                 "entry_start": 0,
-                "entry_stop": 50
+                "entry_stop": 50,
             }
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
-        loaded_event_count = len(np.unique(g4_loaded['evtid']))
+        loaded_event_count = len(np.unique(g4_loaded["evtid"]))
         assert loaded_event_count == 23, f"Expecting 23 events, but got {loaded_event_count} events"
-    
+
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs0 timed out")
     def test_invalid_args_0(self):
         test_context = fuse.context.microphysics_context(self.temp_dir.name)
@@ -100,7 +96,7 @@ class TestInput(unittest.TestCase):
                 "file_name": test_root_file_name,
                 "cut_by_eventid": False,
                 "entry_start": 75,
-                "entry_stop": 15
+                "entry_stop": 15,
             }
         )
         try:
@@ -108,7 +104,7 @@ class TestInput(unittest.TestCase):
         except:
             return
         raise RuntimeError("entry_start >= entry_stop does not raise an exception!")
-    
+
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs1 timed out")
     def test_invalid_args_1(self):
         test_context = fuse.context.microphysics_context(self.temp_dir.name)
@@ -118,7 +114,7 @@ class TestInput(unittest.TestCase):
                 "file_name": test_root_file_name,
                 "cut_by_eventid": True,
                 "entry_start": -2,
-                "entry_stop": -1
+                "entry_stop": -1,
             }
         )
         try:
@@ -126,7 +122,7 @@ class TestInput(unittest.TestCase):
         except:
             return
         raise RuntimeError("An out-of-range entry_stop does not raise an exception!")
-    
+
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs2 timed out")
     def test_invalid_args_2(self):
         test_context = fuse.context.microphysics_context(self.temp_dir.name)
@@ -136,7 +132,7 @@ class TestInput(unittest.TestCase):
                 "file_name": test_root_file_name,
                 "cut_by_eventid": True,
                 "entry_start": 102,
-                "entry_stop": 103
+                "entry_stop": 103,
             }
         )
         try:
@@ -144,7 +140,7 @@ class TestInput(unittest.TestCase):
         except:
             return
         raise RuntimeError("An out-of-range entry_start does not raise an exception!")
-    
+
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs3 timed out")
     def test_invalid_args_3(self):
         test_context = fuse.context.microphysics_context(self.temp_dir.name)
@@ -154,7 +150,7 @@ class TestInput(unittest.TestCase):
                 "file_name": test_root_file_name,
                 "cut_by_eventid": True,
                 "entry_start": 10,
-                "entry_stop": 11
+                "entry_stop": 11,
             }
         )
         try:
@@ -162,6 +158,7 @@ class TestInput(unittest.TestCase):
         except:
             return
         raise RuntimeError("Selecting an empty eventid range does not raise an exception!")
+
 
 if __name__ == "__main__":
     unittest.main()
