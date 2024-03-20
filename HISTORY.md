@@ -1,4 +1,4 @@
-1.2.0 / 2024-03-20
+1.1.0 / 2024-03-20
 ------------------
 * Cleanup and refactor configurations (#163)
 * Convert _photon_timings to integer values (#171)
@@ -27,6 +27,6 @@
 * Some code improvements for better performance (#125)
 * Simplify pytest and coveralls to shorten time usage (#123)
 
-1.1.0 / 2024-02-08
+1.0.0 / 2024-02-08
 -------------------
 * First stable release
