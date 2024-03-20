@@ -112,6 +112,42 @@ class TestInput(unittest.TestCase):
             {
                 "path": self.temp_dir.name,
                 "file_name": test_root_file_name,
+                "cut_by_eventid": False,
+                "entry_start": 90,
+                "entry_stop": 91,
+            }
+        )
+        try:
+            test_context.make(self.run_number, "geant4_interactions")
+        except ValueError:
+            return
+        raise RuntimeError("An out-of-range entry_start without cut_by_eventid does not raise an exception!")
+
+    @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs2 timed out")
+    def test_invalid_args_2(self):
+        test_context = fuse.context.microphysics_context(self.temp_dir.name)
+        test_context.set_config(
+            {
+                "path": self.temp_dir.name,
+                "file_name": test_root_file_name,
+                "cut_by_eventid": False,
+                "entry_start": -2,
+                "entry_stop": -1,
+            }
+        )
+        try:
+            test_context.make(self.run_number, "geant4_interactions")
+        except ValueError:
+            return
+        raise RuntimeError("An out-of-range entry_stop without cut_by_eventid does not raise an exception!")
+
+    @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs3 timed out")
+    def test_invalid_args_3(self):
+        test_context = fuse.context.microphysics_context(self.temp_dir.name)
+        test_context.set_config(
+            {
+                "path": self.temp_dir.name,
+                "file_name": test_root_file_name,
                 "cut_by_eventid": True,
                 "entry_start": -2,
                 "entry_stop": -1,
@@ -121,10 +157,10 @@ class TestInput(unittest.TestCase):
             test_context.make(self.run_number, "geant4_interactions")
         except ValueError:
             return
-        raise RuntimeError("An out-of-range entry_stop does not raise an exception!")
+        raise RuntimeError("An out-of-range entry_stop with cut_by_eventid does not raise an exception!")
 
-    @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs2 timed out")
-    def test_invalid_args_2(self):
+    @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs4 timed out")
+    def test_invalid_args_4(self):
         test_context = fuse.context.microphysics_context(self.temp_dir.name)
         test_context.set_config(
             {
@@ -139,10 +175,10 @@ class TestInput(unittest.TestCase):
             test_context.make(self.run_number, "geant4_interactions")
         except ValueError:
             return
-        raise RuntimeError("An out-of-range entry_start does not raise an exception!")
+        raise RuntimeError("An out-of-range entry_start with cut_by_eventid does not raise an exception!")
 
-    @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs3 timed out")
-    def test_invalid_args_3(self):
+    @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs5 timed out")
+    def test_invalid_args_5(self):
         test_context = fuse.context.microphysics_context(self.temp_dir.name)
         test_context.set_config(
             {
@@ -157,7 +193,7 @@ class TestInput(unittest.TestCase):
             test_context.make(self.run_number, "geant4_interactions")
         except ValueError:
             return
-        raise RuntimeError("Selecting an empty eventid range does not raise an exception!")
+        raise RuntimeError("Selecting an empty eventid range with cut_by_eventid does not raise an exception!")
 
 
 if __name__ == "__main__":
