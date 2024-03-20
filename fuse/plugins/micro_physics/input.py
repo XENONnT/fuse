@@ -420,7 +420,7 @@ class file_loader:
                         "The requested eventid range is not in the file! "
                         "Maybe you want to set cut_by_eventid to False?"
                     )
-                stop_index = np.searchsorted(all_eventids["eventid"], self.entry_stop, side='right')
+                stop_index = np.searchsorted(all_eventids["eventid"], self.entry_stop, side="right")
             else:
                 stop_index = n_simulated_events
 
