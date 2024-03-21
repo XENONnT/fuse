@@ -9,7 +9,7 @@ export, __all__ = strax.exporter()
 
 @export
 class PeakTruth(strax.OverlapWindowPlugin):
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
 
     depends_on = (
         "photon_summary",
@@ -26,6 +26,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         ("s1_photons_in_peak", np.int32),
         ("s2_photons_in_peak", np.int32),
         ("ap_photons_in_peak", np.int32),
+        ("dark_count_photons_in_peak", np.int32),
         ("raw_area_truth", np.float32),
         ("observable_energy_truth", np.float32),
         ("number_of_contributing_clusters_s1", np.int16),
@@ -113,6 +114,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
             "s1": 1,
             "s2": 2,
             "ap": 0,
+            "dark_count": 3,
         }
 
         for i in range(n_peaks):

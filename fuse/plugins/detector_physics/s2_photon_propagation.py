@@ -52,7 +52,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
         (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
         (("ID of the cluster creating the photon", "cluster_id"), np.int32),
-        (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)", "photon_type"), np.int8),
+        (("Type of the photon. S1 (1), S2 (2), PMT AP (0) or dark count (3)", "photon_type"), np.int8),
     ]
     dtype = dtype + strax.time_fields
 
