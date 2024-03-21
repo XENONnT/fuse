@@ -157,11 +157,8 @@ class DarkCounts(FuseBasePlugin):
             return np.zeros(0, dtype=self.dtype)
 
         single_simulation_window = np.zeros(len(interactions_in_roi), dtype=strax.interval_dtype)
-        # single_simulation_window["length"] = (self.dark_count_left_window + self.dark_count_right_window)
         single_simulation_window["time"] = interactions_in_roi["time"]
-        single_simulation_window["dt"] = np.ones(
-            len(interactions_in_roi)
-        )  # length will give time in ns
+        single_simulation_window["dt"] = np.ones(len(interactions_in_roi))
 
         simulation_windows = strax.concat_overlapping_hits(
             single_simulation_window,
@@ -170,8 +167,6 @@ class DarkCounts(FuseBasePlugin):
             start=start,
             end=end,
         )
-
-        # simulation_windows["time"] -= np.int64(left_window)
 
         # Get the number of dark counts in the simulation window
         expected_dark_counts_in_simulation_window = (
@@ -185,9 +180,6 @@ class DarkCounts(FuseBasePlugin):
             simulation_windows["length"], dark_counts_in_simulation_window, self.rng
         )
         dark_count_times += np.repeat(simulation_windows["time"], dark_counts_in_simulation_window)
-
-        # Do we need to add the transit time spread here??
-        # I guess no as we just distribute the dark counts randomly in time and it will not make any difference
 
         # distribute the dark counts to the PMTs
         dark_count_channels = self.rng.choice(
