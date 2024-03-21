@@ -9,6 +9,9 @@ export, __all__ = strax.exporter()
 
 @export
 class PeakTruth(strax.OverlapWindowPlugin):
+    """Plugin that computes the truth information for raw_records.
+    """
+
     __version__ = "0.0.3"
 
     depends_on = (
@@ -161,7 +164,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
                         photons_per_cluster_s2,
                     )
 
-                # Assume that we calibrate or detector
+                # Assume that we calibrate or detect
                 # so that sum_s2_photons would give us the observed energy
                 energy_of_s2_photons_in_peak = (
                     photons_per_cluster_s2

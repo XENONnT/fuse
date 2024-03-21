@@ -10,7 +10,8 @@ export, __all__ = strax.exporter()
 
 @export
 class RecordsTruth(strax.Plugin):
-    """Plugin that computes the truth information for raw_records."""
+    """Plugin that computes the truth information for raw_records.
+    """
 
     __version__ = "0.0.1"
 

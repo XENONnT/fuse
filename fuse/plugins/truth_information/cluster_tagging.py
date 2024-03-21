@@ -6,8 +6,11 @@ export, __all__ = strax.exporter()
 
 @export
 class ClusterTagging(strax.Plugin):
-    """Plugin to tag if clusters contribute to the main or alternative
-    s1/s2."""
+    """Plugin to tag if clusters contribute to the main or alternative s1/s2
+    category by looping through the peaks, events and photons. In this loop
+    every category is run through to find which of all the photons associated to
+    what cluster via its cluster_id.
+    """
 
     __version__ = "0.0.2"
 

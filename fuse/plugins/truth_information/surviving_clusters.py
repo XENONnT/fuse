@@ -6,6 +6,10 @@ export, __all__ = strax.exporter()
 
 @export
 class SurvivingClusters(strax.Plugin):
+    """Finds which clusters create contribute more 
+    than one photon or can be found in a peak.
+    """
+    
     __version__ = "0.0.2"
 
     depends_on = ("peak_basics", "photon_summary", "microphysics_summary")
