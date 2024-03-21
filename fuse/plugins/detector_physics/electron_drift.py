@@ -168,6 +168,15 @@ class ElectronDrift(FuseBasePlugin):
         help="Field distortion map used in fuse (Check if we can remove _fuse from the name)",
     )
 
+    liquid_level = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=liquid_level",
+        cache=True,
+        help="Distance between the liquid level and gate in cm",
+    )
+
+
     def setup(self):
         super().setup()
 
@@ -327,7 +336,8 @@ class ElectronDrift(FuseBasePlugin):
         Returns:
             returns two arrays of floats (mean drift time, drift time spread)
         """
-        drift_velocity_liquid = self.get_avg_drift_velocity(z_int, xy_int)
+        drift_velocity_below_gate = self.get_avg_drift_velocity(z_int, xy_int)
+        drift_velocity_above_gate = self.liquid_level / self.drift_time_gate
         if self.enable_diffusion_longitudinal_map:
             diffusion_constant_longitudinal = self.diffusion_longitudinal_map(
                 z_int, xy_int
@@ -335,10 +345,16 @@ class ElectronDrift(FuseBasePlugin):
         else:
             diffusion_constant_longitudinal = self.diffusion_constant_longitudinal
 
-        drift_time_mean = -z_int / drift_velocity_liquid + self.drift_time_gate
+        drift_time_below_gate = -z_int / drift_velocity_below_gate
+        drift_time_above_gate = self.drift_time_gate
+
+        drift_time_mean = drift_time_below_gate + drift_time_above_gate
         drift_time_mean = np.clip(drift_time_mean, 0, np.inf)
-        drift_time_spread = np.sqrt(2 * diffusion_constant_longitudinal * drift_time_mean)
-        drift_time_spread /= drift_velocity_liquid
+
+        drift_time_spread2 = 2 * diffusion_constant_longitudinal * drift_time_below_gate / drift_velocity_below_gate**2
+        drift_time_spread2 += 2 * diffusion_constant_longitudinal * drift_time_above_gate / drift_velocity_above_gate**2
+        drift_time_spread = np.sqrt(drift_time_spread2)
+
         return drift_time_mean, drift_time_spread
 
     def get_avg_drift_velocity(self, z, xy):
