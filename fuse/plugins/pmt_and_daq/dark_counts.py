@@ -15,9 +15,11 @@ export, __all__ = strax.exporter()
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.pmt_and_daq.dark_counts")
 
+
 @export
 class DarkCounts(FuseBasePlugin):
-    """Plugin to simulate dark counts in a window around the physics interaction"""
+    """Plugin to simulate dark counts in a window around the physics
+    interaction."""
 
     __version__ = "0.0.1"
 
@@ -32,7 +34,10 @@ class DarkCounts(FuseBasePlugin):
         (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
         (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
         (("ID of the cluster creating the photon", "cluster_id"), np.int32),
-        (("Type of the photon. S1 (1), S2 (2), PMT AP (0) or dark count (3)", "photon_type"), np.int8),
+        (
+            ("Type of the photon. S1 (1), S2 (2), PMT AP (0) or dark count (3)", "photon_type"),
+            np.int8,
+        ),
     ]
     dtype = dtype + strax.time_fields
 
@@ -67,7 +72,7 @@ class DarkCounts(FuseBasePlugin):
         help="Right window of the dark count simulation",
     )
 
-    #Add a default pointing to the database
+    # Add a default pointing to the database
     dark_count_probability_per_pmt = straxen.URLConfig(
         track=True,
         help="Probability of dark counts per PMT",
@@ -152,35 +157,42 @@ class DarkCounts(FuseBasePlugin):
             return np.zeros(0, dtype=self.dtype)
 
         single_simulation_window = np.zeros(len(interactions_in_roi), dtype=strax.interval_dtype)
-        #single_simulation_window["length"] = (self.dark_count_left_window + self.dark_count_right_window)
+        # single_simulation_window["length"] = (self.dark_count_left_window + self.dark_count_right_window)
         single_simulation_window["time"] = interactions_in_roi["time"]
-        single_simulation_window["dt"] = np.ones(len(interactions_in_roi)) #length will give time in ns
-
+        single_simulation_window["dt"] = np.ones(
+            len(interactions_in_roi)
+        )  # length will give time in ns
 
         simulation_windows = strax.concat_overlapping_hits(
             single_simulation_window,
-            extensions=(self.dark_count_left_window, self.dark_count_right_window), 
+            extensions=(self.dark_count_left_window, self.dark_count_right_window),
             pmt_channels=(0, self.n_tpc_pmts),
-            start = start,
-            end = end
-            )
+            start=start,
+            end=end,
+        )
 
-        #simulation_windows["time"] -= np.int64(left_window)
+        # simulation_windows["time"] -= np.int64(left_window)
 
         # Get the number of dark counts in the simulation window
-        expected_dark_counts_in_simulation_window = simulation_windows["length"].astype(np.int64) * self.dark_count_rate/1e9
-        dark_counts_in_simulation_window =self.rng.poisson(expected_dark_counts_in_simulation_window)
-        
-        dark_count_times = get_random_times(simulation_windows["length"], dark_counts_in_simulation_window, self.rng)
+        expected_dark_counts_in_simulation_window = (
+            simulation_windows["length"].astype(np.int64) * self.dark_count_rate / 1e9
+        )
+        dark_counts_in_simulation_window = self.rng.poisson(
+            expected_dark_counts_in_simulation_window
+        )
+
+        dark_count_times = get_random_times(
+            simulation_windows["length"], dark_counts_in_simulation_window, self.rng
+        )
         dark_count_times += np.repeat(simulation_windows["time"], dark_counts_in_simulation_window)
 
         # Do we need to add the transit time spread here??
         # I guess no as we just distribute the dark counts randomly in time and it will not make any difference
 
-
         # distribute the dark counts to the PMTs
-        dark_count_channels = self.rng.choice(self.n_tpc_pmts, len(dark_count_times), p=self.dark_count_probability_per_pmt)
-
+        dark_count_channels = self.rng.choice(
+            self.n_tpc_pmts, len(dark_count_times), p=self.dark_count_probability_per_pmt
+        )
 
         # We for sure need to update the inputs for this step
         photon_gains, photon_is_dpe = photon_gain_calculation(
@@ -189,7 +201,7 @@ class DarkCounts(FuseBasePlugin):
             gains=self.gains,
             spe_scaling_factor_distributions=self.spe_scaling_factor_distributions,
             rng=self.rng,
-            )
+        )
         photon_is_dpe = False
 
         # now build the output
@@ -199,13 +211,14 @@ class DarkCounts(FuseBasePlugin):
             _photon_channels=dark_count_channels,
             _photon_gains=photon_gains,
             _photon_is_dpe=photon_is_dpe,
-            _cluster_id=0, #rethink this part...
+            _cluster_id=0,  # rethink this part...
             photon_type=3,
         )
 
         return result
 
-#For sure this can be done more efficiently 
+
+# For sure this can be done more efficiently
 def get_random_times(interval_length, number_of_entries, rng):
     times = []
     for max_time, n in zip(interval_length, number_of_entries):

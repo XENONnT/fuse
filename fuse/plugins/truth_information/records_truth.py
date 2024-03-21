@@ -98,7 +98,9 @@ class RecordsTruth(strax.Plugin):
             result["s1_photons_in_record"][result_mask] = result_buffer["s1_photons_in_record"]
             result["s2_photons_in_record"][result_mask] = result_buffer["s2_photons_in_record"]
             result["ap_photons_in_record"][result_mask] = result_buffer["ap_photons_in_record"]
-            result["dark_count_photons_in_record"][result_mask] = result_buffer["dark_count_photons_in_record"]
+            result["dark_count_photons_in_record"][result_mask] = result_buffer[
+                "dark_count_photons_in_record"
+            ]
 
         return result
 
