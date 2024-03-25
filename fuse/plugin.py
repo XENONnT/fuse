@@ -29,6 +29,11 @@ class FuseBasePlugin(strax.Plugin):
         help="Set the random seed from lineage and run_id, or pull the seed from the OS.",
     )
 
+    user_defined_random_seed = straxen.URLConfig(
+        default=None,
+        help="Define the random seed manually. You need to set deterministic_seed to False.",
+    )
+
     def setup(self):
         super().setup()
 
@@ -44,10 +49,19 @@ class FuseBasePlugin(strax.Plugin):
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             self.seed = int(hash_string.encode().hex(), 16)
             self.rng = np.random.default_rng(seed=self.seed)
-            log.debug(f"Generating random numbers from seed {self.seed}")
+            log.debug(f"Generating random numbers from deterministic seed {self.seed}")
         else:
-            self.rng = np.random.default_rng()
-            log.debug("Generating random numbers with seed pulled from OS")
+
+            if self.user_defined_random_seed is not None:
+                self.seed = self.user_defined_random_seed
+                self.rng = np.random.default_rng(self.user_defined_random_seed)
+                log.info(
+                    "Generating random numbers with user"
+                    f"defined seed {self.user_defined_random_seed}"
+                )
+            else:
+                self.rng = np.random.default_rng()
+                log.debug("Generating random numbers with seed pulled from OS")
 
 
 class FuseBaseDownChunkingPlugin(strax.DownChunkingPlugin, FuseBasePlugin):
