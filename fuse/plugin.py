@@ -60,6 +60,12 @@ class FuseBasePlugin(strax.Plugin):
         else:
 
             if self.user_defined_random_seed is not None:
+
+                assert (
+                    isinstance(self.user_defined_random_seed, int)
+                    and self.user_defined_random_seed > 0
+                ), "user_defined_random_seed must be a positive integer!"
+
                 self.seed = self.user_defined_random_seed
                 self.rng = np.random.default_rng(self.user_defined_random_seed)
                 log.info(
