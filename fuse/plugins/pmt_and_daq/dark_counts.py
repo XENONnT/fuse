@@ -74,6 +74,7 @@ class DarkCounts(FuseBasePlugin):
 
     # Add a default pointing to the database
     dark_count_probability_per_pmt = straxen.URLConfig(
+        default=None,
         track=True,
         help="Probability of dark counts per PMT",
     )
@@ -136,8 +137,6 @@ class DarkCounts(FuseBasePlugin):
     def setup(self):
         super().setup()
 
-        # self.dark_count_probability_per_pmt = np.ones(494) / 494 # uniform distribution
-
         self.gains = pmt_gains(
             self.gain_model_mc,
             digitizer_voltage_range=self.digitizer_voltage_range,
@@ -182,9 +181,13 @@ class DarkCounts(FuseBasePlugin):
         dark_count_times += np.repeat(simulation_windows["time"], dark_counts_in_simulation_window)
 
         # distribute the dark counts to the PMTs
-        dark_count_channels = self.rng.choice(
-            self.n_tpc_pmts, len(dark_count_times), p=self.dark_count_probability_per_pmt
-        )
+        if self.dark_count_probability_per_pmt is None:
+            log.warning("No dark count probability per PMT provided. Using uniform distribution.")
+            dark_count_channels = self.rng.choice(self.n_tpc_pmts, len(dark_count_times))
+        else:
+            dark_count_channels = self.rng.choice(
+                self.n_tpc_pmts, len(dark_count_times), p=self.dark_count_probability_per_pmt
+            )
 
         # We for sure need to update the inputs for this step
         photon_gains, photon_is_dpe = photon_gain_calculation(
