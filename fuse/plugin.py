@@ -46,6 +46,13 @@ class FuseBasePlugin(strax.Plugin):
             log.setLevel("INFO")
 
         if self.deterministic_seed:
+
+            if self.user_defined_random_seed is not None:
+                log.warning(
+                    "deterministic_seed is set to True. "
+                    "The provided user_defined_random_seed will not be used!"
+                )
+
             hash_string = strax.deterministic_hash((self.run_id, self.lineage))
             self.seed = int(hash_string.encode().hex(), 16)
             self.rng = np.random.default_rng(seed=self.seed)
