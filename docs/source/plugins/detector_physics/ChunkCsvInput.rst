@@ -16,7 +16,7 @@ Technical Details
    depends_on = ()
    provides = "microphysics_summary"
    data_kind = "interactions_in_roi"
-   __version__ = "0.2.0"
+   __version__ = "0.2.1"
 
 
 Provided Columns
@@ -62,12 +62,6 @@ Provided Columns
    * - nestid
      - int8
      - NEST interaction type
-   * - t
-     - int64
-     - Time of the interaction [ns]
-   * - evtid
-     - int32
-     - Geant4 event ID
 
 Config Options
 ==============

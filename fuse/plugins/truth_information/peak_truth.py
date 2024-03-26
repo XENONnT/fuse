@@ -9,15 +9,16 @@ export, __all__ = strax.exporter()
 
 @export
 class PeakTruth(strax.OverlapWindowPlugin):
-    __version__ = "0.0.3"
+
+    __version__ = "0.1.0"
 
     depends_on = (
         "photon_summary",
         "peak_basics",
-        "microphysics_summary",
-        "s1_photons",
-        "s2_photons_sum",
-        "drifted_electrons",
+        "merged_microphysics_summary",
+        "merged_s1_photons",
+        "merged_s2_photons_sum",
+        "merged_drifted_electrons",
     )
     provides = "peak_truth"
     data_kind = "peaks"
@@ -30,6 +31,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         ("observable_energy_truth", np.float32),
         ("number_of_contributing_clusters_s1", np.int16),
         ("number_of_contributing_clusters_s2", np.int16),
+        ("number_of_contributing_delayed_electrons", np.int16),
         ("average_x_of_contributing_clusters", np.float32),
         ("average_y_of_contributing_clusters", np.float32),
         ("average_z_of_contributing_clusters", np.float32),
@@ -132,7 +134,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
 
                 if photon_type == "s1":
                     result["number_of_contributing_clusters_s1"][i] = np.sum(
-                        unique_contributing_clusters > 0
+                        unique_contributing_clusters != 0
                     )
                     contributing_clusters_s1 = _get_cluster_information(
                         interactions_in_roi, unique_contributing_clusters
@@ -141,6 +143,9 @@ class PeakTruth(strax.OverlapWindowPlugin):
                 elif photon_type == "s2":
                     result["number_of_contributing_clusters_s2"][i] = np.sum(
                         unique_contributing_clusters > 0
+                    )
+                    result["number_of_contributing_delayed_electrons"][i] = np.sum(
+                        unique_contributing_clusters < 0
                     )
                     contributing_clusters_s2 = _get_cluster_information(
                         interactions_in_roi, unique_contributing_clusters
