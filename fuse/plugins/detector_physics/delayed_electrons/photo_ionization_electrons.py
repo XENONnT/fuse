@@ -2,6 +2,7 @@ import strax
 import straxen
 import numpy as np
 import logging
+from scipy.stats import truncexpon
 
 from ....plugin import FuseBasePlugin
 
@@ -14,11 +15,8 @@ log = logging.getLogger("fuse.detector_physics.delayed_electrons.photo_ionizatio
 @export
 class PhotoIonizationElectrons(FuseBasePlugin):
 
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
-    # Try to build these ones from the SecondaryScintillation output first
-    # We are now having the number of photons of an interaction as input
-    # In WFSim the number of photons in a potentially merged S2 is used.
     depends_on = (
         "s2_photons_sum",
         "extracted_electrons",
@@ -43,11 +41,20 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         help="Decide if you want to to enable delayed electrons from photoionization",
     )
 
-    # Move the filename to the config file
-    delaytime_pmf_hist = straxen.URLConfig(
-        help="delaytime_pmf_hist",
-        default="simple_load://resource://format://"
-        "XENONnT_SR1_photoionization_model.dill?&fmt=dill",
+    # Calculate this from TPC dimenstions and drift velocity
+    photoionization_time_cutoff = straxen.URLConfig(
+        default=2.25e6,
+        type=(int, float),
+        cache=True,
+        help="Time window for photoionization after a S2 in [ns]",
+    )
+
+    # Add this to our simulation config
+    photoionization_time_constant = straxen.URLConfig(
+        default=42,
+        type=(int, float),
+        cache=True,
+        help="Timeconstant for photoionization in [ns]",
     )
 
     photoionization_modifier = straxen.URLConfig(
@@ -132,6 +139,10 @@ class PhotoIonizationElectrons(FuseBasePlugin):
             self.s2_secondary_sc_gain_mc * self.electron_extraction_yield
         ) / (1 + self.p_double_pe_emision)
 
+        self.photoionization_cutoff = (
+            self.photoionization_time_cutoff / self.photoionization_time_constant
+        )
+
     def compute(self, interactions_in_roi, individual_electrons):
 
         # Just apply this to clusters with S2 photons
@@ -154,7 +165,13 @@ class PhotoIonizationElectrons(FuseBasePlugin):
             / self.photoionization_scaling
         )
 
-        electron_delay = get_random(self.delaytime_pmf_hist, self.rng, np.sum(n_delayed_electrons))
+        electron_delay = truncexpon.rvs(
+            self.photoionization_cutoff,
+            size=np.sum(n_delayed_electrons),
+            scale=self.photoionization_time_constant,
+            random_state=self.rng,
+        )
+
         electron_delay = np.split(electron_delay, np.cumsum(n_delayed_electrons)[:-1])
 
         # Randomly select the time of the extracted electrons as time zeros
@@ -196,20 +213,6 @@ def ramdom_xy_position(n, radius, rng):
     angle = rng.uniform(-np.pi, np.pi, n)
 
     return r * np.cos(angle), r * np.sin(angle)
-
-
-def get_random(hist_object, rng, size=10):
-    """
-    get_random function from multihist but with fixed seed for reproducibility
-    https://github.com/JelleAalbers/multihist/blob/6c4f786bc95f0e73ffec228e17c957744e0d9594/multihist.py#L186
-    """
-    bin_i = rng.choice(
-        np.arange(len(hist_object.bin_centers)), size=size, p=hist_object.normalized_histogram
-    )
-    return (
-        hist_object.bin_centers[bin_i]
-        + rng.uniform(-0.5, 0.5, size=size) * hist_object.bin_volumes()[bin_i]
-    )
 
 
 # This sort of groupby function is used in several places in fuse
