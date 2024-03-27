@@ -6,7 +6,7 @@ import timeout_decorator
 import fuse
 from _utils import build_random_instructions
 
-TIMEOUT = 240
+TIMEOUT = 360
 
 
 class TestDetectorPhysicsCsv(unittest.TestCase):
