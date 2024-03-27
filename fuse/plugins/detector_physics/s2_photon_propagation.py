@@ -347,7 +347,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         last_start = start
         if n_chunks > 1:
             for electron_group in electron_chunks[:-1]:
-                result = self.compute_chunk(electron_group, interactions_in_roi, mask)
+                result = self.compute_chunk(interactions_in_roi, mask, electron_group)
 
                 # Move the chunk bound 90% of the minimal gap length to
                 # the next photon to make space for afterpluses
@@ -360,12 +360,12 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         # And the last chunk
         electron_group = electron_chunks[-1]
-        result = self.compute_chunk(electron_group, interactions_in_roi, mask)
+        result = self.compute_chunk(interactions_in_roi, mask, electron_group)
 
         chunk = self.chunk(start=last_start, end=end, data=result)
         yield chunk
 
-    def compute_chunk(self, electron_group, interactions_in_roi, mask):
+    def compute_chunk(self, interactions_in_roi, mask, electron_group):
         unique_clusters_in_group = np.unique(electron_group["cluster_id"])
         interactions_chunk = interactions_in_roi[mask][
             np.isin(interactions_in_roi["cluster_id"][mask], unique_clusters_in_group)
