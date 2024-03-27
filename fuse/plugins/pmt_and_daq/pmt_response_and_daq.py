@@ -313,6 +313,41 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
         chunk = self.chunk(start=last_start, end=end, data=records)
         yield chunk
+    
+    def compute_chunk(self, _photons, unique_photon_pulse_ids, pulse_group):
+        # use an upper limit for the waveform buffer
+        length_waveform_buffer = np.int32(
+            np.sum(np.ceil(pulse_group["length"] / strax.DEFAULT_RECORD_LENGTH))
+        )
+        waveform_buffer = np.zeros(length_waveform_buffer, dtype=self.dtype)
+
+        buffer_level = build_waveform(
+            pulse_group,
+            _photons,
+            unique_photon_pulse_ids,
+            waveform_buffer,
+            self.dt,
+            self._pmt_current_templates,
+            self.current_2_adc,
+            self.noise_data["arr_0"],
+            self.enable_noise,
+            self.digitizer_reference_baseline,
+            self.thresholds,
+            self.trigger_window,
+        )
+
+        records = waveform_buffer[:buffer_level]
+
+        # Digitzier saturation
+        # Clip negative values to 0
+        records["data"][records["data"] < 0] = 0
+
+        records = strax.sort_by_time(records)
+
+        chunk_end = np.max(strax.endtime(records))
+        chunk = self.chunk(start=last_start, end=chunk_end, data=records)
+        last_start = chunk_end
+        return chunk
 
     def init_pmt_current_templates(self):
         """Create spe templates, for 10ns sample duration and 1ns rounding we

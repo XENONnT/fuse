@@ -9,3 +9,6 @@ from .photon_summary import *
 
 from . import photon_pulses
 from .photon_pulses import *
+
+from . import sprinkled_records
+from .sprinkled_records import *

@@ -175,6 +175,48 @@ def full_chain_context(
 
     return st
 
+def full_chain_sprinkle_context(
+    raw_records_st_module="fuse",
+    raw_records_st_name="full_chain_context",
+    raw_records_st_kwargs={},
+    raw_records_st_config={},
+    sprinkle_run_id="046477",
+    output_folder="./fuse_data",
+    corrections_version=None,
+    simulation_config_file="fuse_config_nt_sr1_dev.json",
+    corrections_run_id="046477",
+    run_id_specific_config={
+        "gain_model_mc": "gain_model",
+        "electron_lifetime_liquid": "elife",
+        "drift_velocity_liquid": "electron_drift_velocity",
+        "drift_time_gate": "electron_drift_time_gate",
+    },
+    run_without_proper_corrections=False,
+):
+    """
+    Context for sprinkling. Mix the simulated raw_records with a random
+    time range from the sprinkled_run_id.
+    """
+    st = full_chain_context(
+        output_folder,
+        corrections_version,
+        simulation_config_file,
+        corrections_run_id,
+        run_id_specific_config,
+        run_without_proper_corrections
+    )
+    del st._plugin_class_registry["raw_records"]
+    st.set_config({
+        "raw_records_st_module": raw_records_st_module,
+        "raw_records_st_name": raw_records_st_name,
+        "raw_records_st_kwargs": raw_records_st_kwargs,
+        "raw_records_st_config": raw_records_st_config,
+        "sprinkle_run_id": sprinkle_run_id
+    })
+    st.register(fuse.pmt_and_daq.SprinkledRecords)
+    set_simulation_config_file(st, simulation_config_file)
+    return st
+
 
 def set_simulation_config_file(context, config_file_name):
     """Function to loop over the plugin config and replace
