@@ -483,7 +483,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         chunk = self.chunk(start=last_start, end=end, data=result)
         yield chunk
-    
+
     def compute_chunk(self, interactions_in_roi, mask):
         unique_clusters_in_group = np.unique(electron_group["cluster_id"])
         interactions_chunk = interactions_in_roi[mask][

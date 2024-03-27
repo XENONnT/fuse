@@ -258,7 +258,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         records = self.compute_chunk(_photons, unique_photon_pulse_ids, pulse_window_chunks[-1])
         chunk = self.chunk(start=last_start, end=end, data=records)
         yield chunk
-    
+
     def compute_chunk(self, _photons, unique_photon_pulse_ids, pulse_group):
         # use an upper limit for the waveform buffer
         length_waveform_buffer = np.int32(
