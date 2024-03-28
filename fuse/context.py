@@ -175,6 +175,7 @@ def full_chain_context(
 
     return st
 
+
 def full_chain_sprinkle_context(
     raw_records_st_module="fuse",
     raw_records_st_name="full_chain_context",
@@ -193,9 +194,10 @@ def full_chain_sprinkle_context(
     },
     run_without_proper_corrections=False,
 ):
-    """
-    Context for sprinkling. Mix the simulated raw_records with a random
-    time range from the sprinkled_run_id.
+    """Context for sprinkling.
+
+    Mix the simulated raw_records with a random time range from the
+    sprinkled_run_id.
     """
     st = full_chain_context(
         output_folder,
@@ -203,16 +205,18 @@ def full_chain_sprinkle_context(
         simulation_config_file,
         corrections_run_id,
         run_id_specific_config,
-        run_without_proper_corrections
+        run_without_proper_corrections,
     )
     del st._plugin_class_registry["raw_records"]
-    st.set_config({
-        "raw_records_st_module": raw_records_st_module,
-        "raw_records_st_name": raw_records_st_name,
-        "raw_records_st_kwargs": raw_records_st_kwargs,
-        "raw_records_st_config": raw_records_st_config,
-        "sprinkle_run_id": sprinkle_run_id
-    })
+    st.set_config(
+        {
+            "raw_records_st_module": raw_records_st_module,
+            "raw_records_st_name": raw_records_st_name,
+            "raw_records_st_kwargs": raw_records_st_kwargs,
+            "raw_records_st_config": raw_records_st_config,
+            "sprinkle_run_id": sprinkle_run_id,
+        }
+    )
     st.register(fuse.pmt_and_daq.SprinkledRecords)
     set_simulation_config_file(st, simulation_config_file)
     return st
