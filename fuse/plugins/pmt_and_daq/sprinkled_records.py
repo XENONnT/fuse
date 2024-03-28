@@ -8,7 +8,8 @@ import strax
 import straxen
 
 from ...plugin import FuseBaseDownChunkingPlugin
-from .pmt_response_and_daq import PMTResponseAndDAQ
+from .pmt_response_and_daq import PMTResponseAndDAQ, find_split_index, split_photons
+from .photon_pulses import concat_overlapping_hits
 from ..micro_physics.find_cluster import simple_1d_clustering
 
 export, __all__ = strax.exporter()
@@ -108,61 +109,95 @@ class SprinkledRecords(PMTResponseAndDAQ):
             )
         self.raw_records_st_sanity_check()
         self.raw_records_st.set_config(self.raw_records_st_config)
-
-    def compute(self, propagated_photons, pulse_windows, start, end):
-        # Simulate raw_records as in pmt_response_and_daq
-        simulated_raw_records = next(
-            super().compute(propagated_photons, pulse_windows, start, end)
-        ).data
-        last_start = start
-        
-        # With propagated_photons, define where to sprinkle raw_records from data
-        # The time window is defined as within the 2*full-drift-time window left/right, no other
-        # hits can be found.
-        full_drift_time = self.tpc_length / self.drift_velocity_liquid
-        photons_time_cluster = simple_1d_clustering(propagated_photons["time"], 2*full_drift_time)
-        photons_time_cluster_ids, photons_time_cluster_start = np.unique(
-            photons_time_cluster, return_inverse=True
-        )
-        sprinkle_time_window_start = np.minimum.reduceat(
-            photons_time_cluster, photons_time_cluster_start
-        )
-        sprinkle_time_window_end = np.maximum.reduceat(
-            photons_time_cluster, photons_time_cluster_start
-        )
         
         # Get time/endtime of a run
         sprinkle_run_info = self.raw_records_st.select_runs(run_id=self.sprinkle_run_id)
         if len(sprinkle_run_info == 1):
-            sprinkle_run_start = sprinkle_run_info["time"].iloc(0)
-            sprinkle_run_end = sprinkle_run_info["end"].iloc(0)
+            self.sprinkle_run_start = sprinkle_run_info["time"].iloc(0)
+            self.sprinkle_run_end = sprinkle_run_info["end"].iloc(0)
         else:
             log.warning("Can't get run metadata. Assuming that this is an MC run. "
                         "Try to load raw_records to memory. THIS MAY CAUSE OOM!")
             raw_records_data = self.raw_records_st.get_array(
                 self.sprinkle_run_id, "raw_records"
             )
-            sprinkle_run_start = np.min(raw_records_data["time"])
-            sprinkle_run_end = np.max(
+            self.sprinkle_run_start = np.min(raw_records_data["time"])
+            self.sprinkle_run_end = np.max(
                 raw_records_data["time"] + raw_records_data["length"]*raw_records_data["dt"]
             )
+
+
+    def compute(self, propagated_photons, pulse_windows, start, end):
+        if len(propagated_photons) == 0 or len(pulse_windows) == 0:
+            log.debug("No photons or pulse windows found for chunk!")
+
+            yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
         
-        sprinkled_raw_records = []
-        # Get raw_records to sprinkle
-        for photons_time_cluster_id in photons_time_cluster_ids:
-            raw_records_to_sprinkle = self.get_sprinkle_raw_records(
-                sprinkle_run_start,
-                sprinkle_run_end,
-                sprinkle_time_window_start[photons_time_cluster_id],
-                sprinkle_time_window_end[photons_time_cluster_id]
-            )
-            raw_records_to_sprinkle["channel"] += self.n_tpc_pmts
-            sprinkled_raw_records.append(raw_records_to_sprinkle)
-        sprinkled_raw_records = np.concatenate(sprinkled_raw_records)
-        raw_records = np.concatenate((simulated_raw_records, sprinkled_raw_records))
-        chunk = self.chunk(start=np.min(raw_records["time"]), end=chunk_end, data=records)
+        # Split into "sub-chunks"
+        pulse_gaps = pulse_windows["time"][1:] - strax.endtime(pulse_windows)[:-1]
+        pulse_gaps = np.append(pulse_gaps, 0)  # Add 0 for last pulse gap
+
+        split_index = find_split_index(
+            pulse_windows,
+            pulse_gaps,
+            file_size_limit=self.raw_records_file_size_target,
+            min_gap_length=self.min_records_gap_length_for_splitting,
+        )
+
+        pulse_window_chunks = np.array_split(pulse_windows, split_index)
+
+        n_chunks = len(pulse_window_chunks)
+        if n_chunks > 1:
+            log.info(f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks")
+
+        last_start = start
+
+        photons, unique_photon_pulse_ids = split_photons(propagated_photons)
+
+        # convert photons to numba list for njit
+        _photons = List()
+        [_photons.append(x) for x in photons]
+
+        if n_chunks > 1:
+            for pulse_group in pulse_window_chunks[:-1]:
+                records = self.compute_chunk(_photons, unique_photon_pulse_ids, pulse_group)
+                chunk_end = np.max(strax.endtime(records))
+                chunk = self.chunk(start=last_start, end=chunk_end, data=records)
                 last_start = chunk_end
                 yield chunk
+
+        # And the last chunk
+        records = self.compute_chunk(_photons, unique_photon_pulse_ids, pulse_window_chunks[-1])
+        chunk = self.chunk(start=last_start, end=end, data=records)
+        yield chunk
+        
+    def compute_chunk(self, _photons, unique_photon_pulse_ids, pulse_group):
+        simulated_records = super().compute_chunk(_photons, unique_photon_pulse_ids, pulse_group)
+        # With pulse_group, define where to sprinkle raw_records from data
+        # The time window is defined as within the 2*full-drift-time window left/right, no other
+        # hits can be found. 
+        full_drift_time = self.tpc_length / self.drift_velocity_liquid
+        # Reuse concat_overlapping_hits. Define a "fake" pulse_group
+        fake_pulse_group = np.copy(pulse_group)
+        fake_pulse_group["channel"] = 1
+        sprinkle_time_windows, sprinkle_time_window_ids = concat_overlapping_hits(
+            fake_pulse_group, (2*full_drift_time, 2*full_drift_time), (1,1), 0, float("inf")
+        )
+        
+        sprinkled_records = []
+        # Get raw_records to sprinkle
+        for sprinkle_time_window_id in sprinkle_time_window_ids:
+            raw_records_to_sprinkle = self.get_sprinkle_raw_records(
+                self.sprinkle_run_start,
+                self.sprinkle_run_end,
+                sprinkle_time_windows[sprinkle_time_window_id, 0],
+                sprinkle_time_windows[sprinkle_time_window_id, 1]
+            )
+            raw_records_to_sprinkle["channel"] += self.n_tpc_pmts
+            sprinkled_records.append(raw_records_to_sprinkle)
+        sprinkled_records = np.concatenate(sprinkled_records)
+        records = np.concatenate((simulated_records, sprinkled_records))
+        return strax.sort_by_time(records)
 
     def raw_records_st_sanity_check(self):
         if not isinstance(self.raw_records_st, strax.Context):
