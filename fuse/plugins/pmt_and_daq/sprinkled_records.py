@@ -187,13 +187,15 @@ class SprinkledRecords(PMTResponseAndDAQ):
         sprinkled_records = []
         # Get raw_records to sprinkle
         for sprinkle_time_window_id in sprinkle_time_window_ids:
+            sprinkle_time_window_start = sprinkle_time_windows[sprinkle_time_window_id]["time"]
+            sprinkle_time_window_end = sprinkle_time_window_start \
+                                       + sprinkle_time_windows[sprinkle_time_window_id]["length"]
             raw_records_to_sprinkle = self.get_sprinkle_raw_records(
                 self.sprinkle_run_start,
                 self.sprinkle_run_end,
-                sprinkle_time_windows[sprinkle_time_window_id, 0],
-                sprinkle_time_windows[sprinkle_time_window_id, 1]
+                sprinkle_time_window_start,
+                sprinkle_time_window_end
             )
-            raw_records_to_sprinkle["channel"] += self.n_tpc_pmts
             sprinkled_records.append(raw_records_to_sprinkle)
         sprinkled_records = np.concatenate(sprinkled_records)
         records = np.concatenate((simulated_records, sprinkled_records))
@@ -239,10 +241,14 @@ class SprinkledRecords(PMTResponseAndDAQ):
         except ValueError:
             # Expecting ValueError if st.get_array returns nothing
             return np.array([], dtype=self.dtype)
-        return _get_sprinkle_raw_records(
+        raw_records_to_sprinkle = _get_sprinkle_raw_records(
             sprinkle_raw_records_candidate, sprinkle_waveform_time_start,
             sprinkle_time_window_length, full_drift_time, self.peaklet_gap_threshold
         )
+        raw_records_to_sprinkle["channel"] += self.n_tpc_pmts
+        raw_records_to_sprinkle["time"] -= sprinkle_waveform_time_start
+        raw_records_to_sprinkle["time"] += sprinkle_time_window_start
+        return raw_records_to_sprinkle
 
 @njit(cache=True)
 def _get_sprinkle_raw_records(
