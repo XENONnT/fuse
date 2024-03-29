@@ -43,7 +43,7 @@ class TestInput(unittest.TestCase):
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
         loaded_event_count = len(np.unique(g4_loaded["evtid"]))
-        assert loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events"
+        self.assertTrue(loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="LoadHalf timed out")
     def test_load_half(self):
@@ -59,7 +59,7 @@ class TestInput(unittest.TestCase):
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
         loaded_event_count = len(np.unique(g4_loaded["evtid"]))
 
-        assert loaded_event_count == 26, f"Expecting 26 events, but got {loaded_event_count} events"
+        self.assertTrue(loaded_event_count == 26, f"Expecting 26 events, but got {loaded_event_count} events")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="LoadEventIDAll timed out")
     def test_load_eventid_all(self):
@@ -69,7 +69,7 @@ class TestInput(unittest.TestCase):
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
         loaded_event_count = len(np.unique(g4_loaded["evtid"]))
-        assert loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events"
+        self.assertTrue(loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="LoadEventIDHalf timed out")
     def test_load_eventid_half(self):
@@ -85,7 +85,7 @@ class TestInput(unittest.TestCase):
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
         loaded_event_count = len(np.unique(g4_loaded["evtid"]))
-        assert loaded_event_count == 23, f"Expecting 23 events, but got {loaded_event_count} events"
+        self.assertTrue(loaded_event_count == 23, f"Expecting 23 events, but got {loaded_event_count} events")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs0 timed out")
     def test_invalid_args_0(self):
@@ -99,11 +99,8 @@ class TestInput(unittest.TestCase):
                 "entry_stop": 15,
             }
         )
-        try:
+        with self.assertRaises(ValueError):
             test_context.make(self.run_number, "geant4_interactions")
-        except ValueError:
-            return
-        raise RuntimeError("entry_start >= entry_stop does not raise an exception!")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs1 timed out")
     def test_invalid_args_1(self):
@@ -117,13 +114,8 @@ class TestInput(unittest.TestCase):
                 "entry_stop": 91,
             }
         )
-        try:
+        with self.assertRaises(ValueError):
             test_context.make(self.run_number, "geant4_interactions")
-        except ValueError:
-            return
-        raise RuntimeError(
-            "An out-of-range entry_start without cut_by_eventid does not raise an exception!"
-        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs2 timed out")
     def test_invalid_args_2(self):
@@ -137,13 +129,8 @@ class TestInput(unittest.TestCase):
                 "entry_stop": -1,
             }
         )
-        try:
+        with self.assertRaises(ValueError):
             test_context.make(self.run_number, "geant4_interactions")
-        except ValueError:
-            return
-        raise RuntimeError(
-            "An out-of-range entry_stop without cut_by_eventid does not raise an exception!"
-        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs3 timed out")
     def test_invalid_args_3(self):
@@ -157,13 +144,8 @@ class TestInput(unittest.TestCase):
                 "entry_stop": -1,
             }
         )
-        try:
+        with self.assertRaises(ValueError):
             test_context.make(self.run_number, "geant4_interactions")
-        except ValueError:
-            return
-        raise RuntimeError(
-            "An out-of-range entry_stop with cut_by_eventid does not raise an exception!"
-        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs4 timed out")
     def test_invalid_args_4(self):
@@ -177,13 +159,8 @@ class TestInput(unittest.TestCase):
                 "entry_stop": 103,
             }
         )
-        try:
+        with self.assertRaises(ValueError):
             test_context.make(self.run_number, "geant4_interactions")
-        except ValueError:
-            return
-        raise RuntimeError(
-            "An out-of-range entry_start with cut_by_eventid does not raise an exception!"
-        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs5 timed out")
     def test_invalid_args_5(self):
@@ -197,14 +174,8 @@ class TestInput(unittest.TestCase):
                 "entry_stop": 11,
             }
         )
-        try:
+        with self.assertRaises(ValueError):
             test_context.make(self.run_number, "geant4_interactions")
-        except ValueError:
-            return
-        raise RuntimeError(
-            "Selecting an empty eventid range with cut_by_eventid does not raise an exception!"
-        )
-
 
 if __name__ == "__main__":
     unittest.main()
