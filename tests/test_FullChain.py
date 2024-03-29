@@ -12,6 +12,7 @@ TIMEOUT = 240
 
 class TestFullChain(unittest.TestCase):
     __test__ = False
+
     @classmethod
     def setUpClass(cls):
         cls.temp_dir = tempfile.TemporaryDirectory()
@@ -86,18 +87,15 @@ class TestFullChain(unittest.TestCase):
     @timeout_decorator.timeout(TIMEOUT, exception_message="PMTResponseAndDAQ timed out")
     def test_PMTResponseAndDAQ(self):
         self.test_context.make(self.run_number, "raw_records")
-    
+
+
 class TestChunkedFullChain(TestFullChain):
     __test__ = True
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.test_context.set_config(
-            {
-                "n_interactions_per_chunk": 2
-            }
-        )
+        cls.test_context.set_config({"n_interactions_per_chunk": 2})
 
 
 if __name__ == "__main__":

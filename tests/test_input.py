@@ -43,7 +43,9 @@ class TestInput(unittest.TestCase):
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
         loaded_event_count = len(np.unique(g4_loaded["evtid"]))
-        self.assertTrue(loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events")
+        self.assertTrue(
+            loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events"
+        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="LoadHalf timed out")
     def test_load_half(self):
@@ -59,7 +61,9 @@ class TestInput(unittest.TestCase):
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
         loaded_event_count = len(np.unique(g4_loaded["evtid"]))
 
-        self.assertTrue(loaded_event_count == 26, f"Expecting 26 events, but got {loaded_event_count} events")
+        self.assertTrue(
+            loaded_event_count == 26, f"Expecting 26 events, but got {loaded_event_count} events"
+        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="LoadEventIDAll timed out")
     def test_load_eventid_all(self):
@@ -69,7 +73,9 @@ class TestInput(unittest.TestCase):
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
         loaded_event_count = len(np.unique(g4_loaded["evtid"]))
-        self.assertTrue(loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events")
+        self.assertTrue(
+            loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events"
+        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="LoadEventIDHalf timed out")
     def test_load_eventid_half(self):
@@ -85,7 +91,9 @@ class TestInput(unittest.TestCase):
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
         loaded_event_count = len(np.unique(g4_loaded["evtid"]))
-        self.assertTrue(loaded_event_count == 23, f"Expecting 23 events, but got {loaded_event_count} events")
+        self.assertTrue(
+            loaded_event_count == 23, f"Expecting 23 events, but got {loaded_event_count} events"
+        )
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="InvalidArgs0 timed out")
     def test_invalid_args_0(self):
@@ -176,6 +184,7 @@ class TestInput(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             test_context.make(self.run_number, "geant4_interactions")
+
 
 if __name__ == "__main__":
     unittest.main()
