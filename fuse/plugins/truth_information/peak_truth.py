@@ -184,15 +184,14 @@ class PeakTruth(strax.OverlapWindowPlugin):
                 ) + np.sum(energy_of_s2_photons_in_peak)
 
                 # Calculate the raw area truth
-                # we will exclude AP pulses for now
-                non_ap_photons_in_peak = photons_in_peaks[i]
-                non_ap_photons_in_peak = non_ap_photons_in_peak[
-                    non_ap_photons_in_peak["photon_type"] != 0
+                # exclude PMT AP photons as well as photons from delayed electrons
+                masked_photons = photons_in_peaks[i]
+                masked_photons = masked_photons[
+                    (masked_photons["photon_type"] != 0) & (masked_photons["cluster_id"] > 0)
                 ]
 
                 result["raw_area_truth"][i] = np.sum(
-                    non_ap_photons_in_peak["photon_gain"]
-                    / self.gains[non_ap_photons_in_peak["channel"]]
+                    masked_photons["photon_gain"] / self.gains[masked_photons["channel"]]
                 )
 
         return result
