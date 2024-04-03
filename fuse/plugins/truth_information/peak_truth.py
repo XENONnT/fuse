@@ -9,7 +9,7 @@ export, __all__ = strax.exporter()
 
 @export
 class PeakTruth(strax.OverlapWindowPlugin):
-    __version__ = "0.0.4"
+    __version__ = "0.0.5"
 
     depends_on = (
         "photon_summary",
@@ -26,6 +26,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         ("s1_photons_in_peak", np.int32),
         ("s2_photons_in_peak", np.int32),
         ("ap_photons_in_peak", np.int32),
+        ("pi_photons_in_peak", np.int32),
         ("raw_area_truth", np.float32),
         ("observable_energy_truth", np.float32),
         ("number_of_contributing_clusters_s1", np.int16),
@@ -150,6 +151,10 @@ class PeakTruth(strax.OverlapWindowPlugin):
                         interactions_in_roi, unique_contributing_clusters
                     )
                     photons_per_cluster_s2 = photons_per_cluster
+
+                    # Get the number of photons from delayed electrons
+                    photon_cut &= photons_in_peaks[i]["cluster_id"] < 0
+                    result["pi_photons_in_peak"][i] = np.sum(photon_cut)
 
             if (result["s1_photons_in_peak"][i] + result["s2_photons_in_peak"][i]) > 0:
                 positions_to_evaluate = ["x", "y", "z", "x_obs", "y_obs", "z_obs"]
