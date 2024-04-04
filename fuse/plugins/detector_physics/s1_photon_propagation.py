@@ -143,7 +143,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
     def setup(self):
         super().setup()
 
-        if self.deterministic_seed:
+        if self.deterministic_seed or (self.user_defined_random_seed is not None):
             # Dont know but nestpy seems to have a problem with large seeds
             self.short_seed = int(repr(self.seed)[-8:])
             log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
