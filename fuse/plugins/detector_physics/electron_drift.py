@@ -22,7 +22,7 @@ class ElectronDrift(FuseBasePlugin):
     time and observed position is calculated.
     """
 
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     depends_on = "microphysics_summary"
     provides = "drifted_electrons"

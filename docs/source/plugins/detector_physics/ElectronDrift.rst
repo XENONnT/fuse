@@ -20,7 +20,7 @@ Technical Details
    depends_on = ("microphysics_summary")
    provides = "drifted_electrons"
    data_kind = "interactions_in_roi"
-   __version__ = "0.2.0"
+   __version__ = "0.3.0"
 
 Provided Columns
 ================
@@ -117,3 +117,7 @@ Config Options
      -
      - True
      - Field distortion map used in fuse (Check if we can remove _fuse from the name)
+   * - liquid_level
+      -
+      - True
+      - Distance between the liquid level and gate in cm
