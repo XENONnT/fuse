@@ -348,19 +348,22 @@ class ElectronDrift(FuseBasePlugin):
         drift_time_mean = drift_time_below_gate + drift_time_above_gate
         drift_time_mean = np.clip(drift_time_mean, 0, np.inf)
 
-        drift_time_spread2 = (
+        drift_time_spread_below_gate_squared = (
             2
             * diffusion_constant_longitudinal
             * drift_time_below_gate
             / drift_velocity_below_gate**2
         )
-        drift_time_spread2 += (
+        drift_time_spread_above_gate_squared = (
             2
             * diffusion_constant_longitudinal
             * drift_time_above_gate
             / drift_velocity_above_gate**2
         )
-        drift_time_spread = np.sqrt(drift_time_spread2)
+        drift_time_spread = np.sqrt(
+            drift_time_spread_below_gate_squared
+            + drift_time_spread_above_gate_squared
+        )
 
         return drift_time_mean, drift_time_spread
 
