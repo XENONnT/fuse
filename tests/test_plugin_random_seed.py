@@ -136,4 +136,4 @@ class TestPluginRandomSeeds(unittest.TestCase):
         self.test_context.set_config({"entry_stop": 20})
         seed_1 = self.test_context.get_single_plugin(self.run_number, "raw_records").seed
 
-        assert seed_0 != seed_1, f"Expecting seed to be different for different config arg!"
+        assert seed_0 != seed_1, "Expecting seed to be different for different config args!"
