@@ -94,13 +94,12 @@ class TestPluginRandomSeeds(unittest.TestCase):
         # Lets check the random seed for all fuse plugins
         for key in self.all_registered_fuse_plugins.keys():
 
-            try:
+            with self.assertRaises(AssertionError):
                 plugin = self.test_context.get_single_plugin(self.run_number, key)
-            except AssertionError:
-                continue
 
-            if hasattr(plugin, "seed"):
-                raise ValueError(f"Plugin {key} has a negative seed")
+                # Some plugins have no seed, so we can't check for negative seeds.
+                if not hasattr(plugin, "seed"):
+                    raise AssertionError(f"Plugin {key} has no seed")
 
     @timeout_decorator.timeout(
         TIMEOUT, exception_message="test_if_run_number_changes_deterministic_seed timed out"
