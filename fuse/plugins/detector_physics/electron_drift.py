@@ -169,7 +169,7 @@ class ElectronDrift(FuseBasePlugin):
     )
 
     liquid_level = straxen.URLConfig(
-        default="take://resource://" "SIMULATION_CONFIG_FILE.json?&fmt=json" "&take=liquid_level",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=liquid_level",
         cache=True,
         help="Distance between the liquid level and gate in cm",
     )
