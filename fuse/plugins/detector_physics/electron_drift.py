@@ -361,8 +361,7 @@ class ElectronDrift(FuseBasePlugin):
             / drift_velocity_above_gate**2
         )
         drift_time_spread = np.sqrt(
-            drift_time_spread_below_gate_squared
-            + drift_time_spread_above_gate_squared
+            drift_time_spread_below_gate_squared + drift_time_spread_above_gate_squared
         )
 
         return drift_time_mean, drift_time_spread
