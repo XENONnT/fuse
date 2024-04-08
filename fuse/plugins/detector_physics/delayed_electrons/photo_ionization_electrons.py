@@ -43,7 +43,9 @@ class PhotoIonizationElectrons(FuseBasePlugin):
 
     # Calculate this from TPC dimenstions and drift velocity
     photoionization_time_cutoff = straxen.URLConfig(
-        default=2.25e6,
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=photoionization_time_cutoff",
         type=(int, float),
         cache=True,
         help="Time window for photoionization after a S2 in [ns]",
@@ -51,7 +53,9 @@ class PhotoIonizationElectrons(FuseBasePlugin):
 
     # Add this to our simulation config
     photoionization_time_constant = straxen.URLConfig(
-        default=42,
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=photoionization_time_constant",
         type=(int, float),
         cache=True,
         help="Timeconstant for photoionization in [ns]",
