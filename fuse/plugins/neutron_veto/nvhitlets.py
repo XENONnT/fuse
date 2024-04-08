@@ -91,7 +91,19 @@ def channel_cluster_nv(t):
     t_val=np.array(t)
     clusters=np.array(db_cluster.fit_predict(t_val.reshape(-1, 1)))
     return clusters
-    
+def get_clusters_arrays(arr,typ):
+    arr_nv_c=np.zeros(1, dtype=typ)
+    arr_nv_c['n_clusters_hits']= len(arr)
+    for i in arr.fields:
+        if (i=='time') or (i=='pmthitTime') or (i=='cluster_times_ns'):
+            arr_nv_c[i] = np.min(arr[i])
+        elif i== 'endtime':
+            arr_nv_c[i]= np.max(arr[i])
+        elif (i == 'pe_area') or (i=='pmthitEnergy'):
+            arr_nv_c[i]= np.sum(arr[i])
+        elif (i=='evtid') or (i=='pmthitID') or (i=='labels') : 
+            arr_nv_c[i]= np.unique(arr[i])
+    return arr_nv_c    
 #Function to use in pivot_table module (clearly something we can optimize)
 def recover_value(x):
     m_size= np.array(x).size
@@ -145,6 +157,15 @@ def df_to_hit_array(data):
     result['dt'] =np.array([10.]*len(data))
     result['channel']=data.pmthitID.values
     result['area']= data.pe_area.values
+    result=strax.sort_by_time(result)
+    return result
+def hit_array_to_nvhitlet(data):
+    result = np.zeros(len(data), dtype = dtype)
+    result['time'] = data['time']
+    result['length']= np.array([1.]*len(data))
+    result['dt'] =np.array([10.]*len(data))
+    result['channel']=data['pmthitID']
+    result['area']= data['pe_area']
     result=strax.sort_by_time(result)
     return result
     
@@ -263,7 +284,17 @@ class NeutronVetoHitlets(strax.Plugin):
         maks_qe = pe>0
         pmthits=pmthits[maks_qe]
         
-        #2. Stacked hitlets: this correspond to hitlets in the same pmt with a time difference below some estimated time response of the Channel (8 ns, i.e. 4 samples).        
+        #2. Sampling charge from SPE
+        print("Sampling hitlets charge pe")
+        pmthits['pe_area'] = np.vectorize(self.pe_charge_N)(pmthits['pmthitID'])
+        dtypes=[]
+        for i in test_array.fields + ['labels','n_clusters_hits']:
+            if (i=='evtid') or (i=='time') or (i=='pmthitID') or (i=='endtime'):
+                dtypes.append((i,np.int64))
+            else:
+                dtypes.append((i,np.float64))
+        
+        #3. Stacked hitlets: this correspond to hitlets in the same pmt with a time difference below some estimated time response of the Channel (8 ns, i.e. 4 samples).        
         print('Looking for stacket hitlets')
         #Here we set times related to the first hit, we only use that for stacket hitlets
         times=[]
@@ -273,45 +304,19 @@ class NeutronVetoHitlets(strax.Plugin):
             cluster_times_ns = pmthits_evt.pmthitTime - min(pmthits_evt.pmthitTime)
             times.append(cluster_times_ns)
         pmthits['cluster_times_ns'] = flat_list(times)
-        pmthits['pe_area'] = np.vectorize(self.pe_charge_N)(pmthits['pmthitID'])
-        column = ['evtid','pmthitID']
-        df=ak.to_dataframe(pmthits)
-        #return pmthits
-        df_c = pd.pivot_table(df, index = column, aggfunc={'cluster_times_ns': lambda x : list(x)})
-        clusters = [channel_cluster_nv(i) for i in df_c.cluster_times_ns.values]
-        df_sorted = df.sort_values(['evtid','pmthitID'], ascending = [True,True])
-        df_sorted.insert(len(df.columns), 'labels',flat_list(clusters))
-        #We track the stacket hitlets using the labels and save the min time and max endtime
-
-        #3.Creating hitlet dataframe
-        #We track the stacket hitlets using the labels and save the min time and max endtime
-        #***(Dataframe format is because group by is not already implemented into a ankward array)
-        col_index = ['evtid','pmthitID','labels']
-        mask = np.isin(df_sorted.columns.values, col_index, invert=True)
-        col_hitlet=df_sorted.columns.values[mask]
-        arg_dicio = dict.fromkeys(col_hitlet)
-        for i in col_hitlet:
-            if i == 'pe_area':
-                arg_dicio[i]= np.sum
-            elif i == 'time':
-                arg_dicio[i]= np.min
-            elif i == 'endtime':
-                arg_dicio[i]= np.max
-            else:
-                arg_dicio[i]= lambda x: recover_value(x)  
-        table_stack = pd.pivot_table(df_sorted, index = col_index, aggfunc=arg_dicio)
-        print('Creating hitlet dataframe')
-        hitlet_df = pd.DataFrame(columns=col_index )
-        for j in tq.tqdm(range(len(col_index))): 
-            hitlet_df[col_index[j]] = [table_stack.index[i][j] for i in range(len(table_stack))]
-        for i in tq.tqdm(col_hitlet):
-            hitlet_df.insert(len(hitlet_df.columns), i , table_stack[i].values)
-        print('getting time of hitlets_nv')  
-        
-        #4.Transforming to hitlets_nv format
-        print("Creating hitlets_nv")
-        hitlets_nv = df_to_hit_array(hitlet_df)
-        return hitlet_df
+        arr_c_evt=[]
+        for i in tq.tqdm(np.unique(pmthits['evtid'])):
+            arr_evt = pmthits[pmthits['evtid']==i]
+            arr_c_pmt=[]
+            for j in np.unique(arr_evt['pmthitID']):
+                arr_pmt = arr_evt[arr_evt['pmthitID']==j]
+                labels = channel_cluster_nv(arr_pmt['cluster_times_ns'])
+                arr_pmt['labels'] = labels
+                arr_c =np.concatenate([get_clusters_arrays(arr_pmt[arr_pmt['labels']==l],dtypes) for l in np.unique(labels)])
+                arr_c_pmt.append(arr_c)
+            arr_c_evt.append(np.concatenate(arr_c_pmt))
+        nv_arrays = np.concatenate(arr_c_evt)
+        return nv_arrays
         
     def setup(self):
 
@@ -352,10 +357,5 @@ class NeutronVetoHitlets(strax.Plugin):
             return np.zeros(0, self.dtype)
         
         #All your NV goes here
-        result = df_to_hit_array(self._nv_hitlets(nv_pmthits))
+        result = hit_array_to_nvhitlet(nv_pmthits)
         return result
-
-
-
-
-
