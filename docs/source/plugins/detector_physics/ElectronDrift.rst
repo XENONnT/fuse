@@ -118,6 +118,6 @@ Config Options
      - True
      - Field distortion map used in fuse (Check if we can remove _fuse from the name)
    * - liquid_level
-      -
-      - True
-      - Distance between the liquid level and gate in cm
+     -
+     - True
+     - Distance between the liquid level and gate in cm
