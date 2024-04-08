@@ -14,6 +14,15 @@ log = logging.getLogger("fuse.detector_physics.delayed_electrons.photo_ionizatio
 
 @export
 class PhotoIonizationElectrons(FuseBasePlugin):
+    """Plugin to simulate the emission of delayed electrons from
+    photoionization in the liquid xenon using a phenomenological model.
+
+    The plugin uses the number of S2 photons per energy deposit as input
+    and creates delayed_interactions_in_roi. The simulation of delayed
+    electrons can be enabled or disabled using the config option
+    enable_delayed_electrons. The amount of delayed electrons can be
+    scaled using the config option photoionization_modifier.
+    """
 
     __version__ = "0.0.2"
 
@@ -99,7 +108,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         default="take://resource://" "SIMULATION_CONFIG_FILE.json?&fmt=json" "&take=tpc_radius",
         type=(int, float),
         cache=True,
-        help="Radius of the XENONnT TPC ",
+        help="Radius of the XENONnT TPC [cm]",
     )
 
     s2_secondary_sc_gain_mc = straxen.URLConfig(
