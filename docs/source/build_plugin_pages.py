@@ -2,6 +2,22 @@
 
 import fuse
 import os
+import graphviz
+import shutil
+
+kind_colors = dict(
+    propagated_photons="#ffffff",
+    S2_photons="#98fb98",
+    individual_electrons="#0066ff",
+    interactions_in_roi="#d9ff66",
+    tpc_interactions="#ccffcc",
+    clustered_interactions="#CAFF70",
+    geant4_interactions="#ffa500",
+    below_cathode_interactions="#ff4500",
+    S1_photons="#ff4500",
+    AP_photons="#ff4500",
+    pulse_windows="deepskyblue",
+)
 
 
 def add_headline(headline, output, line):
@@ -84,6 +100,43 @@ def reformat_docstring(docstring):
     return y
 
 
+def add_deps_to_graph_tree(graph_tree, plugin, data_type, _seen=None):
+    """Recursively add nodes to graph base on plugin.deps."""
+    if _seen is None:
+        _seen = []
+    if data_type in _seen:
+        return graph_tree, _seen
+
+    # Add new one
+    graph_tree.node(
+        data_type,
+        style="filled",
+        href="#" + data_type.replace("_", "-"),
+        fillcolor=kind_colors.get(plugin.data_kind_for(data_type), "grey"),
+    )
+    for dep in plugin.depends_on:
+        graph_tree.edge(data_type, dep)
+
+    # Add any of the lower plugins if we have to
+    for lower_data_type, lower_plugin in plugin.deps.items():
+        graph_tree, _seen = add_deps_to_graph_tree(graph_tree, lower_plugin, lower_data_type, _seen)
+    _seen.append(data_type)
+    return graph_tree, _seen
+
+
+def add_spaces(x):
+    """Add four spaces to every line in x.
+
+    This is needed to make html raw blocks in rst format correctly
+    """
+    y = ""
+    if isinstance(x, str):
+        x = x.split("\n")
+    for q in x:
+        y += "    " + q
+    return y
+
+
 def create_plugin_documentation_text(st, plugin):
 
     output = ""
@@ -125,6 +178,19 @@ def create_plugin_documentation_text(st, plugin):
     output = add_headline("Config Options", output, "=")
     output += "\n"
     output = add_config_table(st, plugin.provides[0], output)
+    output += "\n"
+
+    output = add_headline("Dependency Graph", output, "=")
+    output += "\n"
+
+    graph_tree = graphviz.Digraph(format="svg")
+    add_deps_to_graph_tree(graph_tree, plugin, target)
+    fn = "." + "/graphs/" + target
+    graph_tree.render(fn)
+    with open(f"{fn}.svg", mode="r") as f:
+        svg = add_spaces(f.readlines()[5:])
+
+    output += svg
 
     return output
 
@@ -162,6 +228,8 @@ def build_all_pages():
         os.makedirs(os.path.dirname(file_name), exist_ok=True)
         with open(file_name, "w") as f:
             f.write(documentation)
+
+    shutil.rmtree(os.path.dirname(os.path.realpath(__file__)) + "/graphs")
 
 
 if __name__ == "__main__":
