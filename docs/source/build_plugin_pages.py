@@ -8,7 +8,6 @@ import shutil
 kind_colors = dict(
     geant4_interactions="#40C4F3",
     clustered_interactions="#FBCE56",
-    clustered_interactions="#FBCE56",
     tpc_interactions="#F44E43",
     below_cathode_interactions="#F44E43",
     interactions_in_roi="#56C46C",
