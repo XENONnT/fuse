@@ -19,6 +19,12 @@ kind_colors = dict(
     pulse_windows="deepskyblue",
 )
 
+raw_html_text = """
+.. raw:: html
+
+{svg}
+"""
+
 
 def add_headline(headline, output, line):
     output += headline + "\n"
@@ -190,7 +196,7 @@ def create_plugin_documentation_text(st, plugin):
     with open(f"{fn}.svg", mode="r") as f:
         svg = add_spaces(f.readlines()[5:])
 
-    output += svg
+    output += raw_html_text.format(svg=svg)
 
     return output
 
