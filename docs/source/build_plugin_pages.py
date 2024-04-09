@@ -97,7 +97,7 @@ def create_plugin_documentation_text(st, plugin):
     output += "\n"
     module = str(plugin.__module__).replace(".", "/")
     url_to_source = f"https://github.com/XENONnT/fuse/blob/master/{module}.py"
-    output += f"Link to source: `{plugin.__class__.__name__} <{url_to_source}>`_"
+    output += f"Link to source: `{plugin.__class__.__name__} <{url_to_source}>`_ \n"
     output += "\n"
 
     output = add_headline("Plugin Description", output, "=")
