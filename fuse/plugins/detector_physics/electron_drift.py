@@ -169,13 +169,19 @@ class ElectronDrift(FuseBasePlugin):
     )
 
     gate_to_anode_distance = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=gate_to_anode_distance",
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&fmt=json"
+        "&take=gate_to_anode_distance",
         cache=True,
         help="Distance between the liquid surface and anode in cm",
     )
 
     elr_gas_gap_length = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=elr_gas_gap_length",
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&fmt=json"
+        "&take=elr_gas_gap_length",
         cache=True,
         help="Distance between the gate and anode in cm",
     )
