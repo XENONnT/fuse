@@ -1,5 +1,4 @@
 # Script to automatically generate the documentation pages for the plugins
-
 import fuse
 import os
 import graphviz
@@ -20,6 +19,17 @@ kind_colors = dict(
     raw_records="#0260EF",
     individual_electrons="#F44E43",
 )
+
+# List of config options that are not tracked
+config_options_not_tracked = [
+    "debug",
+    "raw_records_file_size_target",
+    "min_records_gap_length_for_splitting",
+    "input_file" "path",
+    "file_name",
+    "propagated_s2_photons_file_size_target",
+    "min_electron_gap_length_for_splitting",
+]
 
 raw_html_text = """
 .. raw:: html
@@ -90,8 +100,11 @@ def add_config_table(st, target, output):
     for i, row in config_df.iterrows():
         output += f"   * - {row['option']}" + "\n"
         output += f"     - {row['default']}" + "\n"
-        # Can i get this somehow...?
-        output += "     - True" + "\n"
+
+        if row["option"] in config_options_not_tracked:
+            output += "     - False" + "\n"
+        else:
+            output += "     - True" + "\n"
         output += f"     - {row['help']}" + "\n"
 
     return output
