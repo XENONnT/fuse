@@ -6,17 +6,20 @@ import graphviz
 import shutil
 
 kind_colors = dict(
-    propagated_photons="#ffffff",
-    S2_photons="#98fb98",
-    individual_electrons="#0066ff",
-    interactions_in_roi="#d9ff66",
-    tpc_interactions="#ccffcc",
-    clustered_interactions="#CAFF70",
-    geant4_interactions="#ffa500",
-    below_cathode_interactions="#ff4500",
-    S1_photons="#ff4500",
-    AP_photons="#ff4500",
-    pulse_windows="deepskyblue",
+    geant4_interactions="#40C4F3",
+    clustered_interactions="#FBCE56",
+    clustered_interactions="#FBCE56",
+    tpc_interactions="#F44E43",
+    below_cathode_interactions="#F44E43",
+    interactions_in_roi="#56C46C",
+    S1_photons="#54E4CF",
+    S2_photons="#54E4CF",
+    AP_photons="#54E4CF",
+    propagated_photons="#54E4CF",
+    pulse_ids="#54E4CF",
+    pulse_windows="#F78C27",
+    raw_records="#0260EF",
+    individual_electrons="#F44E43",
 )
 
 raw_html_text = """
