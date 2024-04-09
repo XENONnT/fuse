@@ -168,10 +168,16 @@ class ElectronDrift(FuseBasePlugin):
         help="Field distortion map used in fuse (Check if we can remove _fuse from the name)",
     )
 
-    liquid_level = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=liquid_level",
+    gate_to_anode_distance = straxen.URLConfig(
+        default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=gate_to_anode_distance",
         cache=True,
-        help="Distance between the liquid level and gate in cm",
+        help="Distance between the liquid surface and anode in cm",
+    )
+
+    elr_gas_gap_length = straxen.URLConfig(
+        default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=elr_gas_gap_length",
+        cache=True,
+        help="Distance between the gate and anode in cm",
     )
 
     def setup(self):
@@ -333,8 +339,9 @@ class ElectronDrift(FuseBasePlugin):
         Returns:
             returns two arrays of floats (mean drift time, drift time spread)
         """
+        liquid_level = self.gate_to_anode_distance - self.elr_gas_gap_length
         drift_velocity_below_gate = self.get_avg_drift_velocity(z_int, xy_int)
-        drift_velocity_above_gate = self.liquid_level / self.drift_time_gate
+        drift_velocity_above_gate = liquid_level / self.drift_time_gate
         if self.enable_diffusion_longitudinal_map:
             diffusion_constant_longitudinal = self.diffusion_longitudinal_map(
                 z_int, xy_int
