@@ -25,7 +25,7 @@ class MergeCluster(FuseBasePlugin):
     interaction.
     """
 
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     depends_on = ("geant4_interactions", "cluster_index")
 
@@ -47,11 +47,11 @@ class MergeCluster(FuseBasePlugin):
         (("y position of the primary particle [cm]", "y_pri"), np.float32),
         (("z position of the primary particle [cm]", "z_pri"), np.float32),
         (("ID of the cluster", "cluster_id"), np.int32),
-        (("Xenon density at the cluster position. Will be set later.", "xe_density"), np.float32),
-        (("ID of the volume in which the cluster occured. Will be set later.", "vol_id"), np.int8),
+        (("Xenon density at the cluster position. Will be set later", "xe_density"), np.float32),
+        (("ID of the volume in which the cluster occured. Will be set later", "vol_id"), np.int8),
         (
             (
-                "Flag indicating if a cluster can create a S2 signal. Will be set later.",
+                "Flag indicating if a cluster can create a S2 signal. Will be set later",
                 "create_S2",
             ),
             np.bool_,
@@ -65,7 +65,7 @@ class MergeCluster(FuseBasePlugin):
         default="take://resource://SIMULATION_CONFIG_FILE.json?fmt=json&take=tag_cluster_by",
         cache=True,
         help="Decide if you tag the cluster "
-        "according to first interaction (time) or most energetic (energy) one.",
+        "according to first interaction (time) or most energetic (energy) one",
     )
 
     def compute(self, geant4_interactions):

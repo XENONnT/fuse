@@ -27,7 +27,7 @@ class ChunkInput(FuseBasePlugin):
     and will create multiple chunks of data if needed.
     """
 
-    __version__ = "0.3.1"
+    __version__ = "0.3.2"
 
     depends_on: Tuple = tuple()
     provides = "geant4_interactions"
@@ -47,9 +47,9 @@ class ChunkInput(FuseBasePlugin):
         (("Geant4 process creating the particle", "creaproc"), "<U25"),
         (("Geant4 process responsible for the energy deposit", "edproc"), "<U25"),
         (("Geant4 event ID", "evtid"), np.int32),
-        (("x position of the primary particle", "x_pri"), np.float32),
-        (("y position of the primary particle", "y_pri"), np.float32),
-        (("z position of the primary particle", "z_pri"), np.float32),
+        (("x position of the primary particle [cm]", "x_pri"), np.float32),
+        (("y position of the primary particle [cm]", "y_pri"), np.float32),
+        (("z position of the primary particle [cm]", "z_pri"), np.float32),
     ]
 
     dtype = dtype + strax.time_fields
@@ -86,7 +86,7 @@ class ChunkInput(FuseBasePlugin):
     cut_delayed = straxen.URLConfig(
         default=9e18,
         type=(int, float),
-        help="All interactions happening after this time (including the event time) will be cut.",
+        help="All interactions happening after this time (including the event time) will be cut",
     )
 
     n_interactions_per_chunk = straxen.URLConfig(
@@ -98,12 +98,12 @@ class ChunkInput(FuseBasePlugin):
     entry_start = straxen.URLConfig(
         default=0,
         type=(int, float),
-        help="Geant4 event to start simulation from.",
+        help="Geant4 event to start simulation from",
     )
 
     entry_stop = straxen.URLConfig(
         default=None,
-        help="Geant4 event to stop simulation at. If None, all events are simulated.",
+        help="Geant4 event to stop simulation at. If None, all events are simulated",
     )
 
     cut_by_eventid = straxen.URLConfig(

@@ -9,9 +9,9 @@ class ClusterTagging(strax.Plugin):
     """Plugin to tag if clusters contribute to the main or alternative
     s1/s2."""
 
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
-    depends_on = ("peak_basics", "microphysics_summary", "event_basics", "photon_summary")
+    depends_on = ("microphysics_summary", "photon_summary", "peak_basics", "event_basics")
     provides = "tagged_clusters"
     data_kind = "interactions_in_roi"
 
@@ -27,7 +27,7 @@ class ClusterTagging(strax.Plugin):
     ]
     dtype = dtype + strax.time_fields
 
-    def compute(self, peaks, interactions_in_roi, events, propagated_photons):
+    def compute(self, interactions_in_roi, propagated_photons, peaks, events):
         peaks_in_event = strax.split_by_containment(peaks, events)
         photon_in_event = strax.split_touching_windows(propagated_photons, events)
 

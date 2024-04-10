@@ -32,9 +32,9 @@ class S1PhotonPropagationBase(FuseBasePlugin):
     Note: The timing calculation is defined in the child plugin.
     """
 
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
-    depends_on = ("s1_photons", "microphysics_summary")
+    depends_on = ("microphysics_summary", "s1_photons")
     provides = "propagated_s1_photons"
     data_kind = "S1_photons"
 
