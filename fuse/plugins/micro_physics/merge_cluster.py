@@ -91,7 +91,9 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
         result[i]["A"] = A
         result[i]["Z"] = Z
         result[i]["nestid"] = nestid
-
+        result[i]["x_pri"] = cluster["x_pri"][main_interaction_index]
+        result[i]["y_pri"] = cluster["y_pri"][main_interaction_index]
+        result[i]["z_pri"] = cluster["z_pri"][main_interaction_index]
         result[i]["evtid"] = cluster["evtid"][main_interaction_index]
 
         # Get cluster id from and save it!
