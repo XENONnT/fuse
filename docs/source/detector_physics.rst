@@ -14,7 +14,7 @@ The detectorphysics simulation is performed in multiple plugins. They are listed
    plugins/detector_physics/ElectronTiming
    plugins/detector_physics/SecondaryScintillation
    plugins/detector_physics/S2PhotonPropagation
-   plugins/detector_physics/delayed_electrons/PhotoionizationElectrons
+   plugins/detector_physics/delayed_electrons/PhotoIonizationElectrons
    plugins/detector_physics/delayed_electrons/DelayedElectronsDrift
    plugins/detector_physics/delayed_electrons/DelayedElectronsExtraction
    plugins/detector_physics/delayed_electrons/DelayedElectronsTiming
