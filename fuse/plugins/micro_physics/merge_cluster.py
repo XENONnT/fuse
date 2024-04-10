@@ -59,7 +59,7 @@ class MergeCluster(FuseBasePlugin):
         default="take://resource://SIMULATION_CONFIG_FILE.json?fmt=json&take=tag_cluster_by",
         cache=True,
         help="Decide if you tag the cluster "
-        "according to first interaction (time) or most energetic (energy) one.",
+        "according to first interaction (time) or most energetic (energy) one",
     )
 
     def compute(self, geant4_interactions):

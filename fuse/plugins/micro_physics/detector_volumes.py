@@ -57,9 +57,9 @@ class XENONnT_TPC(VolumePlugin):
         (("y position of the primary particle [cm]", "y_pri"), np.float32),
         (("z position of the primary particle [cm]", "z_pri"), np.float32),
         (("ID of the cluster", "cluster_id"), np.int32),
-        (("Xenon density at the cluster position.", "xe_density"), np.float32),
-        (("ID of the volume in which the cluster occured.", "vol_id"), np.int8),
-        (("Flag indicating if a cluster can create a S2 signal.", "create_S2"), np.bool_),
+        (("Xenon density at the cluster position", "xe_density"), np.float32),
+        (("ID of the volume in which the cluster occured", "vol_id"), np.int8),
+        (("Flag indicating if a cluster can create a S2 signal", "create_S2"), np.bool_),
     ]
 
     dtype = dtype + strax.time_fields
@@ -126,7 +126,7 @@ class XENONnT_BelowCathode(VolumePlugin):
 
     provides = "below_cathode_interactions"
     data_kind = "below_cathode_interactions"
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     # Can we import this from MergeCluster and just add the needed fields?
     dtype = [
@@ -142,9 +142,9 @@ class XENONnT_BelowCathode(VolumePlugin):
         (("y position of the primary particle [cm]", "y_pri"), np.float32),
         (("z position of the primary particle [cm]", "z_pri"), np.float32),
         (("ID of the cluster", "cluster_id"), np.int32),
-        (("Xenon density at the cluster position.", "xe_density"), np.float32),
-        (("ID of the volume in which the cluster occured.", "vol_id"), np.int8),
-        (("Flag indicating if a cluster can create a S2 signal.", "create_S2"), np.bool_),
+        (("Xenon density at the cluster position", "xe_density"), np.float32),
+        (("ID of the volume in which the cluster occured", "vol_id"), np.int8),
+        (("Flag indicating if a cluster can create a S2 signal", "create_S2"), np.bool_),
     ]
 
     dtype = dtype + strax.time_fields
@@ -209,7 +209,7 @@ class XENONnT_GasPhase(VolumePlugin):
 
     provides = "gas_phase_interactions"
     data_kind = "gas_phase_interactions"
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     # Can we import this from MergeCluster and just add the needed fields?
     dtype = [
@@ -225,9 +225,9 @@ class XENONnT_GasPhase(VolumePlugin):
         (("y position of the primary particle [cm]", "y_pri"), np.float32),
         (("z position of the primary particle [cm]", "z_pri"), np.float32),
         (("ID of the cluster", "cluster_id"), np.int32),
-        (("Xenon density at the cluster position.", "xe_density"), np.float32),
-        (("ID of the volume in which the cluster occured.", "vol_id"), np.int8),
-        (("Flag indicating if a cluster can create a S2 signal.", "create_S2"), np.bool_),
+        (("Xenon density at the cluster position", "xe_density"), np.float32),
+        (("ID of the volume in which the cluster occured", "vol_id"), np.int8),
+        (("Flag indicating if a cluster can create a S2 signal", "create_S2"), np.bool_),
     ]
 
     dtype = dtype + strax.time_fields
@@ -237,31 +237,31 @@ class XENONnT_GasPhase(VolumePlugin):
     xenonnt_z_top_pmts = straxen.URLConfig(
         default=7.3936,  # cm
         type=(int, float),
-        help="xenonnt_z_top_pmts",
+        help="Position of the top of gas phase [cm]",
     )
 
     xenonnt_z_lxe = straxen.URLConfig(
         default=0.416,  # cm ... liquid-gas interface
         type=(int, float),
-        help="xenonnt_z_lxe",
+        help="Position of the bottom of gas phase [cm]",
     )
 
     xenonnt_sensitive_volume_radius = straxen.URLConfig(
         default=66.4,  # cm
         type=(int, float),
-        help="xenonnt_sensitive_volume_radius",
+        help="Radius of the XENONnT TPC [cm]",
     )
 
     xenon_density_gas_phase = straxen.URLConfig(
         default=0.0177,
         type=(int, float),
-        help="xenon_density",
+        help="Density of XENON in the gas phase [g/cm3]",
     )
 
     create_S2_xenonnt_gas_phase = straxen.URLConfig(
         default=False,
         type=bool,
-        help="No S2s in gas",
+        help="Whether generate S2s in gas phase",
     )
 
     def compute(self, clustered_interactions):
