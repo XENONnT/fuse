@@ -27,6 +27,7 @@ simulation chain.
    microphysics_simulation
    detector_physics
    pmt_and_daq
+   truth_plugins
 
 .. toctree::
    :maxdepth: 1
