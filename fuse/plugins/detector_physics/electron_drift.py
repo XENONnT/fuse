@@ -21,7 +21,7 @@ class ElectronDrift(FuseBasePlugin):
     time and observed position is calculated.
     """
 
-    __version__ = "0.2.1"
+    __version__ = "0.3.0"
 
     depends_on = "microphysics_summary"
     provides = "drifted_electrons"
@@ -165,6 +165,24 @@ class ElectronDrift(FuseBasePlugin):
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="Field distortion map used in fuse (Check if we can remove _fuse from the name)",
+    )
+
+    gate_to_anode_distance = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&fmt=json"
+        "&take=gate_to_anode_distance",
+        cache=True,
+        help="Distance between the liquid surface and anode in cm",
+    )
+
+    elr_gas_gap_length = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&fmt=json"
+        "&take=elr_gas_gap_length",
+        cache=True,
+        help="Distance between the gate and anode in cm",
     )
 
     def setup(self):
@@ -332,7 +350,9 @@ class ElectronDrift(FuseBasePlugin):
         Returns:
             returns two arrays of floats (mean drift time, drift time spread)
         """
-        drift_velocity_liquid = self.get_avg_drift_velocity(z_int, xy_int)
+        liquid_level = self.gate_to_anode_distance - self.elr_gas_gap_length
+        drift_velocity_below_gate = self.get_avg_drift_velocity(z_int, xy_int)
+        drift_velocity_above_gate = liquid_level / self.drift_time_gate
         if self.enable_diffusion_longitudinal_map:
             diffusion_constant_longitudinal = self.diffusion_longitudinal_map(
                 z_int, xy_int
@@ -340,10 +360,28 @@ class ElectronDrift(FuseBasePlugin):
         else:
             diffusion_constant_longitudinal = self.diffusion_constant_longitudinal
 
-        drift_time_mean = -z_int / drift_velocity_liquid + self.drift_time_gate
+        drift_time_below_gate = -z_int / drift_velocity_below_gate
+        drift_time_above_gate = self.drift_time_gate
+
+        drift_time_mean = drift_time_below_gate + drift_time_above_gate
         drift_time_mean = np.clip(drift_time_mean, 0, np.inf)
-        drift_time_spread = np.sqrt(2 * diffusion_constant_longitudinal * drift_time_mean)
-        drift_time_spread /= drift_velocity_liquid
+
+        drift_time_spread_below_gate_squared = (
+            2
+            * diffusion_constant_longitudinal
+            * drift_time_below_gate
+            / drift_velocity_below_gate**2
+        )
+        drift_time_spread_above_gate_squared = (
+            2
+            * diffusion_constant_longitudinal
+            * drift_time_above_gate
+            / drift_velocity_above_gate**2
+        )
+        drift_time_spread = np.sqrt(
+            drift_time_spread_below_gate_squared + drift_time_spread_above_gate_squared
+        )
+
         return drift_time_mean, drift_time_spread
 
     def get_avg_drift_velocity(self, z, xy):
