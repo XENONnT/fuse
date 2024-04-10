@@ -26,12 +26,12 @@ class FuseBasePlugin(strax.Plugin):
     deterministic_seed = straxen.URLConfig(
         default=True,
         type=bool,
-        help="Set the random seed from lineage and run_id, or pull the seed from the OS.",
+        help="Set the random seed from lineage and run_id, or pull the seed from the OS",
     )
 
     user_defined_random_seed = straxen.URLConfig(
         default=None,
-        help="Define the random seed manually. You need to set deterministic_seed to False.",
+        help="Define the random seed manually. You need to set deterministic_seed to False",
     )
 
     def setup(self):
