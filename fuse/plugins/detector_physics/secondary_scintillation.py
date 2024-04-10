@@ -25,10 +25,10 @@ class SecondaryScintillation(FuseBasePlugin):
     result_name_photons_sum = "s2_photons_sum"
 
     depends_on = (
+        "microphysics_summary",
         "drifted_electrons",
         "extracted_electrons",
         "electron_time",
-        "microphysics_summary",
     )
     provides = (result_name_photons, result_name_photons_sum)
     data_kind = {
