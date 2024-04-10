@@ -22,16 +22,16 @@ class NestYields(FuseBasePlugin):
     """Plugin that calculates the number of photons, electrons and excitons
     produced by energy deposit using nestpy."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
-    depends_on = ["interactions_in_roi", "electric_field_values"]
+    depends_on = ("interactions_in_roi", "electric_field_values")
     provides = "quanta"
     data_kind = "interactions_in_roi"
 
     dtype = [
-        (("Number of photons at interaction position.", "photons"), np.int32),
-        (("Number of electrons at interaction position.", "electrons"), np.int32),
-        (("Number of excitons at interaction position.", "excitons"), np.int32),
+        (("Number of photons at interaction position", "photons"), np.int32),
+        (("Number of electrons at interaction position", "electrons"), np.int32),
+        (("Number of excitons at interaction position", "excitons"), np.int32),
     ]
 
     dtype = dtype + strax.time_fields
@@ -271,7 +271,7 @@ class BetaYields(NestYields):
 class BBFYields(FuseBasePlugin):
     __version__ = "0.1.1"
 
-    depends_on = ["interactions_in_roi", "electric_field_values"]
+    depends_on = ("interactions_in_roi", "electric_field_values")
     provides = "quanta"
 
     dtype = [

@@ -6,9 +6,9 @@ export, __all__ = strax.exporter()
 
 @export
 class EventTruth(strax.Plugin):
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
-    depends_on = ("peak_truth", "microphysics_summary", "event_basics", "photon_summary")
+    depends_on = ("microphysics_summary", "photon_summary", "peak_truth", "event_basics")
     provides = "event_truth"
     data_kind = "events"
 
@@ -21,7 +21,7 @@ class EventTruth(strax.Plugin):
     ]
     dtype = dtype + strax.time_fields
 
-    def compute(self, peaks, propagated_photons, interactions_in_roi, events):
+    def compute(self, interactions_in_roi, propagated_photons, peaks, events):
         peaks_in_event = strax.split_by_containment(peaks, events)
         photons_per_event = strax.split_by_containment(propagated_photons, events)
 
