@@ -43,7 +43,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         "s2_photons",
     )
     provides = "propagated_s2_photons"
-    data_kind = "S2_photons"
+    data_kind = "s2_photons"
 
     save_when = strax.SaveWhen.TARGET
 

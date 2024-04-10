@@ -36,7 +36,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
 
     depends_on = ("microphysics_summary", "s1_photons")
     provides = "propagated_s1_photons"
-    data_kind = "S1_photons"
+    data_kind = "s1_photons"
 
     save_when = strax.SaveWhen.TARGET
 
