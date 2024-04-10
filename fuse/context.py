@@ -105,8 +105,26 @@ def full_chain_context(
         "drift_velocity_liquid": "electron_drift_velocity",
         "drift_time_gate": "electron_drift_time_gate",
     },
+    run_without_proper_corrections=False,
 ):
     """Function to create a fuse full chain simulation context."""
+
+    if corrections_run_id is None:
+        raise ValueError("Specify a corrections_run_id to load the corrections")
+    if (corrections_version is None) & (not run_without_proper_corrections):
+        raise ValueError(
+            "Specify a corrections_version. If you want to run without proper "
+            "corrections for testing or just trying out fuse, "
+            "set run_without_proper_corrections to True"
+        )
+    if simulation_config_file is None:
+        raise ValueError("Specify a simulation configuration file")
+
+    if run_without_proper_corrections:
+        log.warning(
+            "Running without proper correction version. This is not recommended for production use."
+            "Take the context defined in cutax if you want to run XENONnT simulations."
+        )
 
     st = strax.Context(
         storage=strax.DataDirectory(output_folder), **straxen.contexts.xnt_common_opts
@@ -170,6 +188,9 @@ def full_chain_context(
 
     # No blinding in simulations
     st.config["event_info_function"] = "disabled"
+
+    # Deregister plugins with missing dependencies
+    st.deregister_plugins_with_missing_dependencies()
 
     return st
 
