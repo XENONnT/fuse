@@ -24,11 +24,9 @@ def dynamic_chunking(data, scale, n_min):
         if value <= scale:
             clusters.append(c)
             n_cluster += 1
-
         elif n_cluster + 1 < n_min:
             clusters.append(c)
             n_cluster += 1
-
         elif value > scale:
             c = c + 1
             clusters.append(c)

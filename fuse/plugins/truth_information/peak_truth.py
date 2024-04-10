@@ -9,15 +9,15 @@ export, __all__ = strax.exporter()
 
 @export
 class PeakTruth(strax.OverlapWindowPlugin):
-    __version__ = "0.0.4"
+    __version__ = "0.0.5"
 
     depends_on = (
-        "photon_summary",
-        "peak_basics",
         "microphysics_summary",
         "s1_photons",
-        "s2_photons_sum",
         "drifted_electrons",
+        "s2_photons_sum",
+        "photon_summary",
+        "peak_basics",
     )
     provides = "peak_truth"
     data_kind = "peaks"

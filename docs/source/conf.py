@@ -50,5 +50,7 @@ def setup(app):
 
     sys.path.append(os.path.dirname(os.path.realpath(__file__)))
     from build_release_notes import convert_release_notes
+    from build_plugin_pages import build_all_pages
 
     convert_release_notes()
+    build_all_pages()
