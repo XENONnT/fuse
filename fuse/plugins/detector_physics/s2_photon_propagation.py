@@ -32,18 +32,18 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     Note: The timing calculation is defined in the child plugin.
     """
 
-    __version__ = "0.3.2"
+    __version__ = "0.3.3"
 
     depends_on = (
-        "electron_time",
-        "s2_photons",
+        "microphysics_summary",
         "extracted_electrons",
         "drifted_electrons",
         "s2_photons_sum",
-        "microphysics_summary",
+        "electron_time",
+        "s2_photons",
     )
     provides = "propagated_s2_photons"
-    data_kind = "S2_photons"
+    data_kind = "s2_photons"
 
     save_when = strax.SaveWhen.TARGET
 
@@ -318,7 +318,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
             self.field_dependencies_map = rz_map
 
-    def compute(self, individual_electrons, interactions_in_roi, start, end):
+    def compute(self, interactions_in_roi, individual_electrons, start, end):
         # Just apply this to clusters with photons
         mask = interactions_in_roi["n_electron_extracted"] > 0
 
@@ -689,14 +689,14 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=pressure",
         type=(int, float),
         cache=True,
-        help="pressure",
+        help="Pressure of liquid xenon [bar/e], while e is the elementary charge",
     )
 
     temperature = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=temperature",
         type=(int, float),
         cache=True,
-        help="temperature",
+        help="Temperature of liquid xenon [K]",
     )
 
     gas_drift_velocity_slope = straxen.URLConfig(
@@ -759,14 +759,14 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         "&take=gate_to_anode_distance",
         type=(int, float),
         cache=True,
-        help="gate_to_anode_distance",
+        help="Top of gate to bottom of anode (not considering perpendicular wires) [cm]",
     )
 
     anode_voltage = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=anode_voltage",
         type=(int, float),
         cache=True,
-        help="anode_voltage",
+        help="Voltage of anode [V]",
     )
 
     lxe_dielectric_constant = straxen.URLConfig(

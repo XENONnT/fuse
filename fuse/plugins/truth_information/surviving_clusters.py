@@ -6,10 +6,11 @@ export, __all__ = strax.exporter()
 
 @export
 class SurvivingClusters(strax.Plugin):
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
-    depends_on = ("peak_basics", "photon_summary", "microphysics_summary")
+    depends_on = ("microphysics_summary", "photon_summary", "peak_basics")
     provides = "surviving_clusters"
+    data_kind = "interactions_in_roi"
 
     dtype = [
         ("creating_a_photon", np.bool_),
@@ -17,9 +18,7 @@ class SurvivingClusters(strax.Plugin):
     ]
     dtype += strax.time_fields
 
-    data_kind = "interactions_in_roi"
-
-    def compute(self, peaks, propagated_photons, interactions_in_roi):
+    def compute(self, interactions_in_roi, propagated_photons, peaks):
         # Check if the cluster contributes to any cluster
         cluster_creating_a_photon = np.isin(
             interactions_in_roi["cluster_id"], np.unique(propagated_photons["cluster_id"])

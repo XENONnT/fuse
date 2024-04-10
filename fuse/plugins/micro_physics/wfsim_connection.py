@@ -18,9 +18,9 @@ log = logging.getLogger("fuse.micro_physics.output")
 
 @export
 class output_plugin(FuseBasePlugin):
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
-    depends_on = ["interactions_in_roi", "quanta", "electric_field_values"]  # Add times later
+    depends_on = ("interactions_in_roi", "quanta", "electric_field_values")  # Add times later
 
     provides = "wfsim_instructions"
     data_kind = "wfsim_instructions"
@@ -28,7 +28,7 @@ class output_plugin(FuseBasePlugin):
     save_when = strax.SaveWhen.TARGET
 
     dtype = [
-        (("Waveform simulator event number.", "event_number"), np.int32),
+        (("Waveform simulator event number", "event_number"), np.int32),
         (("Quanta type (S1 photons or S2 electrons)", "type"), np.int8),
         (("Time of the interaction [ns]", "time"), np.int64),
         (("End Time of the interaction [ns]", "endtime"), np.int64),
@@ -36,7 +36,7 @@ class output_plugin(FuseBasePlugin):
         (("Y position of the cluster [cm]", "y"), np.float32),
         (("Z position of the cluster [cm]", "z"), np.float32),
         (("Number of quanta", "amp"), np.int32),
-        (("Recoil type of interaction.", "recoil"), np.int8),
+        (("Recoil type of interaction", "recoil"), np.int8),
         (("Energy deposit of interaction", "e_dep"), np.float32),
         (("Eventid like in geant4 output rootfile", "g4id"), np.int32),
         (("Volume id giving the detector subvolume", "vol_id"), np.int32),
