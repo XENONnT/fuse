@@ -1,3 +1,15 @@
+1.2.0 / 2024-04-11
+------------------
+* Specify lxml version (#185)
+* Avoid duplicate code in downchunking (#180)
+* Exclude PMT AP photons from raw_area_truth calculation (#176)
+* Optional random seed as user input (#179)
+* pre-commit autoupdate (#186)
+* Automatic Plugin Documentation (#187)
+* Embellish some codes (#188)
+* Separate above- and below-gate drift of electrons (#178)
+* Add photoionization plugins (#52)
+
 1.1.0 / 2024-03-20
 ------------------
 * Cleanup and refactor configurations (#163)
