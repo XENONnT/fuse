@@ -22,16 +22,16 @@ class NestYields(FuseBasePlugin):
     """Plugin that calculates the number of photons, electrons and excitons
     produced by energy deposit using nestpy."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
-    depends_on = ["interactions_in_roi", "electric_field_values"]
+    depends_on = ("interactions_in_roi", "electric_field_values")
     provides = "quanta"
     data_kind = "interactions_in_roi"
 
     dtype = [
-        (("Number of photons at interaction position.", "photons"), np.int32),
-        (("Number of electrons at interaction position.", "electrons"), np.int32),
-        (("Number of excitons at interaction position.", "excitons"), np.int32),
+        (("Number of photons at interaction position", "photons"), np.int32),
+        (("Number of electrons at interaction position", "electrons"), np.int32),
+        (("Number of excitons at interaction position", "excitons"), np.int32),
     ]
 
     dtype = dtype + strax.time_fields
@@ -41,7 +41,7 @@ class NestYields(FuseBasePlugin):
     def setup(self):
         super().setup()
 
-        if self.deterministic_seed:
+        if self.deterministic_seed or (self.user_defined_random_seed is not None):
             # Dont know but nestpy seems to have a problem with large seeds
             self.short_seed = int(repr(self.seed)[-8:])
             log.debug(f"Generating nest random numbers starting with seed {self.short_seed}")
@@ -170,7 +170,7 @@ class NestYields(FuseBasePlugin):
 class BetaYields(strax.Plugin):
     __version__ = "0.1.1"
 
-    depends_on = ["interactions_in_roi", "electric_field_values"]
+    depends_on = ("interactions_in_roi", "electric_field_values")
     provides = "quanta"
     data_kind = "interactions_in_roi"
 
@@ -219,7 +219,7 @@ class BetaYields(strax.Plugin):
     deterministic_seed = straxen.URLConfig(
         default=True,
         type=bool,
-        help="Set the random seed from lineage and run_id, or pull the seed from the OS.",
+        help="Set the random seed from lineage and run_id, or pull the seed from the OS",
     )
 
     def setup(self):
@@ -308,7 +308,7 @@ class BetaYields(strax.Plugin):
 class BBFYields(FuseBasePlugin):
     __version__ = "0.1.1"
 
-    depends_on = ["interactions_in_roi", "electric_field_values"]
+    depends_on = ("interactions_in_roi", "electric_field_values")
     provides = "quanta"
 
     dtype = [

@@ -1,3 +1,5 @@
+lxml==5.1.0
+graphviz==0.20.1
 nbsphinx
 ipython
 sphinx

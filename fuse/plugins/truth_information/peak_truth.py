@@ -9,15 +9,15 @@ export, __all__ = strax.exporter()
 
 @export
 class PeakTruth(strax.OverlapWindowPlugin):
-    __version__ = "0.0.3"
+    __version__ = "0.0.5"
 
     depends_on = (
-        "photon_summary",
-        "peak_basics",
         "microphysics_summary",
         "s1_photons",
-        "s2_photons_sum",
         "drifted_electrons",
+        "s2_photons_sum",
+        "photon_summary",
+        "peak_basics",
     )
     provides = "peak_truth"
     data_kind = "peaks"
@@ -179,8 +179,16 @@ class PeakTruth(strax.OverlapWindowPlugin):
                     energy_of_s1_photons_in_peak
                 ) + np.sum(energy_of_s2_photons_in_peak)
 
+                # Calculate the raw area truth
+                # we will exclude AP pulses for now
+                non_ap_photons_in_peak = photons_in_peaks[i]
+                non_ap_photons_in_peak = non_ap_photons_in_peak[
+                    non_ap_photons_in_peak["photon_type"] != 0
+                ]
+
                 result["raw_area_truth"][i] = np.sum(
-                    photons_in_peaks[i]["photon_gain"] / self.gains[photons_in_peaks[i]["channel"]]
+                    non_ap_photons_in_peak["photon_gain"]
+                    / self.gains[non_ap_photons_in_peak["channel"]]
                 )
 
         return result
