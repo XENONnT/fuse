@@ -1,7 +1,7 @@
 Detector Physics Simulation
 ===========================
 
-The detectorphysics simulation is performed in 8 plugins. These are listed below.
+The detectorphysics simulation is performed in multiple plugins. They are listed below.
 
 .. toctree::
    :maxdepth: 1
@@ -14,7 +14,12 @@ The detectorphysics simulation is performed in 8 plugins. These are listed below
    plugins/detector_physics/ElectronTiming
    plugins/detector_physics/SecondaryScintillation
    plugins/detector_physics/S2PhotonPropagation
-   plugins/detector_physics/Delayed_Electrons
+   plugins/detector_physics/delayed_electrons/PhotoIonizationElectrons
+   plugins/detector_physics/delayed_electrons/DelayedElectronsDrift
+   plugins/detector_physics/delayed_electrons/DelayedElectronsExtraction
+   plugins/detector_physics/delayed_electrons/DelayedElectronsTiming
+   plugins/detector_physics/delayed_electrons/DelayedElectronsSecondaryScintillation
+
 
 .. image:: figures/DetectorPhysicsStructure.pdf
     :width: 600
