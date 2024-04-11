@@ -12,8 +12,8 @@ class FuseBasePlugin(strax.Plugin):
     # Forbid rechunking
     rechunk_on_save = False
 
-    # Lets wait 10 minutes for the plugin to finish
-    input_timeout = 600
+    # Lets wait 15 minutes for the plugin to finish.. PI takes a while to run
+    input_timeout = 900
 
     # Config options
     debug = straxen.URLConfig(
