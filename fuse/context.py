@@ -49,6 +49,27 @@ s2_simulation_plugins = [
     fuse.detector_physics.S2PhotonPropagation,
 ]
 
+# Plugins to simulate delayed electrons
+delayed_electron_simulation_plugins = [
+    fuse.detector_physics.delayed_electrons.PhotoIonizationElectrons,
+    fuse.detector_physics.delayed_electrons.DelayedElectronsDrift,
+    fuse.detector_physics.delayed_electrons.DelayedElectronsExtraction,
+    fuse.detector_physics.delayed_electrons.DelayedElectronsTiming,
+    fuse.detector_physics.delayed_electrons.DelayedElectronsSecondaryScintillation,
+    fuse.detector_physics.delayed_electrons.S1PhotonHitsEmpty,
+]
+
+# Plugins to merge delayed and regular electrons
+delayed_electron_merger_plugins = [
+    fuse.detector_physics.delayed_electrons.DriftedElectronsMerger,
+    fuse.detector_physics.delayed_electrons.ExtractedElectronsMerger,
+    fuse.detector_physics.delayed_electrons.ElectronTimingMerger,
+    fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonsMerger,
+    fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonSumMerger,
+    fuse.detector_physics.delayed_electrons.MicrophysicsSummaryMerger,
+    fuse.detector_physics.delayed_electrons.S1PhotonHitsMerger,
+]
+
 # Plugins to simulate PMTs and DAQ
 pmt_and_daq_plugins = [
     fuse.pmt_and_daq.PMTAfterPulses,
@@ -157,6 +178,14 @@ def full_chain_context(
     for plugin in s2_simulation_plugins:
         st.register(plugin)
 
+    # Register delayed Electrons plugins
+    for plugin in delayed_electron_simulation_plugins:
+        st.register(plugin)
+
+    # Register merger plugins.
+    for plugin in delayed_electron_merger_plugins:
+        st.register(plugin)
+
     # Register PMT and DAQ plugins
     for plugin in pmt_and_daq_plugins:
         st.register(plugin)
@@ -202,9 +231,12 @@ def set_simulation_config_file(context, config_file_name):
         for option_key, option in plugin.takes_config.items():
             if isinstance(option.default, str) and "SIMULATION_CONFIG_FILE.json" in option.default:
                 context.config[option_key] = option.default.replace(
-                    "SIMULATION_CONFIG_FILE.json",
-                    config_file_name,
+                    "SIMULATION_CONFIG_FILE.json", config_file_name
                 )
+
+            # Special case for the photoionization_modifier
+            if option_key == "photoionization_modifier":
+                context.config[option_key] = option.default
 
 
 @URLConfig.register("pattern_map")

@@ -239,9 +239,9 @@ def build_all_pages():
         plugin = st._get_plugins(targets=(target,), run_id="00000")[target]
 
         class_string = str(plugin.__class__)
-        file_path = os.path.join(
-            this_dir, class_string.split(".")[2], *class_string.split(".")[4:]
-        )[:-2]
+        path_components = class_string.split(".")
+        del path_components[-2]  # remove the file name
+        file_path = os.path.join(this_dir, *path_components[2:])[:-2]
 
         documentation = create_plugin_documentation_text(st, plugin)
 
