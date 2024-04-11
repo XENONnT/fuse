@@ -1,8 +1,7 @@
-import logging
-
-import numpy as np
 import strax
 import straxen
+import logging
+import numpy as np
 
 from ...plugin import FuseBasePlugin
 
@@ -260,11 +259,17 @@ class ElectronDrift(FuseBasePlugin):
         drift_time_mean, drift_time_spread = self.get_s2_drift_time_params(
             xy_int=np.array([x, y]).T, z_int=z
         )
-        electron_lifetime_correction = np.exp(-1 * drift_time_mean / self.electron_lifetime_liquid)
 
-        n_electron = self.rng.binomial(
-            n=n_electron.astype(np.int32), p=electron_lifetime_correction
-        )
+        if self.electron_lifetime_liquid > 0:
+            electron_lifetime_correction = np.exp(
+                -1 * drift_time_mean / self.electron_lifetime_liquid
+            )
+
+            n_electron = self.rng.binomial(
+                n=n_electron.astype(np.int32), p=electron_lifetime_correction
+            )
+        else:
+            log.debug("No electron lifetime applied")
 
         result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         result["time"] = interactions_in_roi["time"]

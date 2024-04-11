@@ -35,13 +35,14 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     __version__ = "0.3.3"
 
     depends_on = (
-        "microphysics_summary",
-        "extracted_electrons",
-        "drifted_electrons",
-        "s2_photons_sum",
-        "electron_time",
-        "s2_photons",
+        "merged_electron_time",
+        "merged_s2_photons",
+        "merged_extracted_electrons",
+        "merged_drifted_electrons",
+        "merged_s2_photons_sum",
+        "merged_microphysics_summary",
     )
+
     provides = "propagated_s2_photons"
     data_kind = "s2_photons"
 
