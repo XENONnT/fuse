@@ -248,7 +248,7 @@ class NeutronVetoHitlets(strax.Plugin):
 
     #--------------------------- Hitlet function ------------------------------------------------------------#
 
-    def _nv_hitlets(self,pmthits, CE_Scaling=0.75):
+    def _nv_hitlets(self,pmthits, CE_Scaling=0.75, Stacked=None):
         
     #-------------------------------------------------Arguments---------------------------------------------------#
     
@@ -288,7 +288,7 @@ class NeutronVetoHitlets(strax.Plugin):
         print("Sampling hitlets charge pe")
         pmthits['pe_area'] = np.vectorize(self.pe_charge_N)(pmthits['pmthitID'])
         dtypes=[]
-        for i in test_array.fields + ['labels','n_clusters_hits']:
+        for i in pmthits.fields + ['labels','n_clusters_hits']:
             if (i=='evtid') or (i=='time') or (i=='pmthitID') or (i=='endtime'):
                 dtypes.append((i,np.int64))
             else:
@@ -304,6 +304,7 @@ class NeutronVetoHitlets(strax.Plugin):
             cluster_times_ns = pmthits_evt.pmthitTime - min(pmthits_evt.pmthitTime)
             times.append(cluster_times_ns)
         pmthits['cluster_times_ns'] = flat_list(times)
+        dtypes=dtypes + [('cluster_times_ns', np.float64)]
         arr_c_evt=[]
         for i in tq.tqdm(np.unique(pmthits['evtid'])):
             arr_evt = pmthits[pmthits['evtid']==i]
@@ -355,7 +356,7 @@ class NeutronVetoHitlets(strax.Plugin):
         #Make sure your plugin can handle empty inputs 
         if len(nv_pmthits) == 0:
             return np.zeros(0, self.dtype)
-        
+        hitlets= self._nv_hitlets(nv_pmthits)
         #All your NV goes here
-        result = hit_array_to_nvhitlet(nv_pmthits)
+        result = hit_array_to_nvhitlet(hitlets)
         return result
