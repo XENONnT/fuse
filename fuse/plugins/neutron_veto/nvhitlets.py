@@ -29,12 +29,7 @@ import cutax
 #We use the Quantum efficiencies QE for each PMT as a wavelength function for nVeto provided by Andrea Mancuso.
 
 #WIKI NOTES:
-#1.The details of this hitlet simulation leading to the main functions 'G4_nveto_hitlets' and 'G4_mveto_hitlets' for muon and neutron Vetos:
-#https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:xenonnt:layos:snhitlet_from_geant4_output
-#In the note mentioned above we test several approaches of charge sampling, for that we can use the function 'G4_to_Veto_hitlets_comparison'.
-
-#2.THE LAST UPDATE, leading to the actual structure of the code is here :https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:xenonnt:layos:vetohitlets_v2 , this one is ongoing and we expect to test with SR1 AmBe runs.
-#In the note mentioned above we test several approaches of charge sampling, for that we can use the function 'G4_to_Veto_hitlets_comparison'.
+#https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:xenonnt:layos:nveto_hitlet_into_fuse
 
     
 #--------------------------------------------------------HITLETS AUXILIAR FUNCTIONS--------------------------------------------------------------------#
@@ -122,11 +117,12 @@ def type_pri_evt(x):
     return ret
 #For building independent time hitlets to compute into events or hitlets time from a source (ex: AmBe)
 def time_hitlets_nv(time,ids,freq):
-    if type(time)==np.float64:
+    #freq: corresponds to the rate in [1/s] of the calibration source
+    if type(time)==list:
+        ret=min(time)
+    else:
         ret=time
-    elif type(time)==list:
-        ret=min(time)               
-    return ret + freq*ids
+    return ret + freq*ids*1e9
     
 #Fonction to transform a hitlet dataframe output into 'hitlets_nv' ndarray
 #Fonction to transform a hitlet dataframe output into 'hitlets_nv' ndarray
@@ -248,23 +244,17 @@ class NeutronVetoHitlets(strax.Plugin):
 
     #--------------------------- Hitlet function ------------------------------------------------------------#
 
-    def _nv_hitlets(self,pmthits, CE_Scaling=0.75, Stacked=None):
+    def _nv_hitlets(self,pmthits, CE_Scaling=0.75, Stacked='No', period = 1.):
         
     #-------------------------------------------------Arguments---------------------------------------------------#
-    
-    #e_1,e_2= range of entries from root file
-    #root_keys= for primaries or flags that you to keep if you don't wont any just root_keys=[]
     #QE_Scaling corrrespond to collection efficiency, no study has been done on the CE of muon Veto we use a default value close to the nVeto see https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:mancuso:hitletsimulator:collection_efficiency
-    #period : this could be related to the rate of a source, or the rate for a time bin if we reconstruct an spectrum. If no source 1e9 is the default value (see Comments)
-    #csv : if you want to save the hitlet when you run several chuncks
-    #Name : to name this csv file
-    #Isotopes : if we want to keep information about some activated isotopes (True) if False it cut these events.(See comments) 
+    #period : this could be related to the rate of a source, or the rate for a time bin if we reconstruct an spectrum. If no source 1 second is the default value (see Comments)
+
         
     #----------------------------------------------Commments-----------------------------------------------------------------#:
     #1.There is no application of a threshold per channel based on the acceptation by default, but we keep the value in the data frame for each pmt, and one can do manually. This is in order to not condition the sampling, and compare it with the data with different cuts.
     #.2. The period is set by default at 1s to care about no pyle up or merge of hitlets if one want to do an analysis for rare events (independent non sourced ones). If we simulate a calibration or a constant flux this value has to be changed to real rate one.  
-    #.3. The way the code works, if information of Isotopes is keeped we cannot recover G4 primary parameters after building 'event_nv'. We have to think in this case a different way to do it.
-    #4.Stacked hitlets: using DBSCAN is maybe not required (as it makes the hitlet slower) and an easier approach can be used (some ideas???)
+
     
     
         #0.---------------Load GEANT output-------------------#
@@ -293,30 +283,35 @@ class NeutronVetoHitlets(strax.Plugin):
                 dtypes.append((i,np.int64))
             else:
                 dtypes.append((i,np.float64))
-        
-        #3. Stacked hitlets: this correspond to hitlets in the same pmt with a time difference below some estimated time response of the Channel (8 ns, i.e. 4 samples).        
-        print('Looking for stacket hitlets')
-        #Here we set times related to the first hit, we only use that for stacket hitlets
+                
+        #3. Creating hitlet times       
+        print('Getting time hitlets')
         times=[]
         for i in (np.unique(pmthits.evtid)):
             mask= pmthits.evtid==i
             pmthits_evt=pmthits[mask]
             cluster_times_ns = pmthits_evt.pmthitTime - min(pmthits_evt.pmthitTime)
             times.append(cluster_times_ns)
-        pmthits['cluster_times_ns'] = flat_list(times)
+        pmthits['cluster_times_ns'] = np.vectorize(time_hitlets_nv)(flat_list(times),pmthits['evtid'],period)
         dtypes=dtypes + [('cluster_times_ns', np.float64)]
-        arr_c_evt=[]
-        for i in tq.tqdm(np.unique(pmthits['evtid'])):
-            arr_evt = pmthits[pmthits['evtid']==i]
-            arr_c_pmt=[]
-            for j in np.unique(arr_evt['pmthitID']):
-                arr_pmt = arr_evt[arr_evt['pmthitID']==j]
-                labels = channel_cluster_nv(arr_pmt['cluster_times_ns'])
-                arr_pmt['labels'] = labels
-                arr_c =np.concatenate([get_clusters_arrays(arr_pmt[arr_pmt['labels']==l],dtypes) for l in np.unique(labels)])
-                arr_c_pmt.append(arr_c)
-            arr_c_evt.append(np.concatenate(arr_c_pmt))
-        nv_arrays = np.concatenate(arr_c_evt)
+        if Stacked=='No':
+            nv_arrays= pmthits
+        elif Stacked =='yes':
+            #3.1 Stacked hitlets: this correspond to hitlets in the same pmt with a time difference below some estimated time response of the Channel (8 ns, i.e. 4 samples).        
+            print('Looking for stacket hitlets')
+            #Here we set times related to the first hit, we only use that for stacket hitlets
+            arr_c_evt=[]
+            for i in tq.tqdm(np.unique(pmthits['evtid'])):
+                arr_evt = pmthits[pmthits['evtid']==i]
+                arr_c_pmt=[]
+                for j in np.unique(arr_evt['pmthitID']):
+                    arr_pmt = arr_evt[arr_evt['pmthitID']==j]
+                    labels = channel_cluster_nv(arr_pmt['cluster_times_ns'])
+                    arr_pmt['labels'] = labels
+                    arr_c =np.concatenate([get_clusters_arrays(arr_pmt[arr_pmt['labels']==l],dtypes) for l in np.unique(labels)])
+                    arr_c_pmt.append(arr_c)
+                arr_c_evt.append(np.concatenate(arr_c_pmt))
+            nv_arrays = np.concatenate(arr_c_evt)
         return nv_arrays
         
     def setup(self):
@@ -352,11 +347,11 @@ class NeutronVetoHitlets(strax.Plugin):
 
     #The compute method is the heart of the plugin. It is executed for each chunk of input data and 
     #must produce data in the format specified in the self.dtype variable.
-    def compute(self, nv_pmthits):
+    def compute(self, nv_pmthits, eCE=0.75, Stacked_opt='No', rate = 1.):
         #Make sure your plugin can handle empty inputs 
         if len(nv_pmthits) == 0:
             return np.zeros(0, self.dtype)
-        hitlets= self._nv_hitlets(nv_pmthits)
+        hitlets= self._nv_hitlets(nv_pmthits,CE_Scaling=eCE, Stacked=Stacked_opt, period = rate)
         #All your NV goes here
         result = hit_array_to_nvhitlet(hitlets)
         return result
