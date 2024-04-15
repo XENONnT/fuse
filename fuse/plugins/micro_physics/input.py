@@ -278,8 +278,8 @@ class file_loader:
             interactions = interactions[(e_dep_er < 10) & (e_dep_nr > 0)]
 
         # Removing all events with no interactions:
-        # m = ak.num(interactions["ed"]) > 0
-        # interactions = interactions[m]
+        m = ak.num(interactions["ed"]) > 0
+        interactions = interactions[m]
 
         # Sort interactions in events by time and subtract time of the first interaction
         interactions = interactions[ak.argsort(interactions["t"])]
