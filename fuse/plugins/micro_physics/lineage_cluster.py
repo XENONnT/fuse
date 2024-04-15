@@ -378,11 +378,11 @@ def is_lineage_broken(
 
     # In the nest code: Lineage is always broken if the parent is a ion
     # But if it's an alpha particle, we want to keep the lineage
-    brake_for_ion = parent_lineage["lineage_type"] == 6
-    brake_for_ion &= parent["type"] != "alpha"
-    brake_for_ion &= particle["creaproc"] != "eIoni"
+    break_for_ion = parent_lineage["lineage_type"] == 6
+    break_for_ion &= parent["type"] != "alpha"
+    break_for_ion &= particle["creaproc"] != "eIoni"
 
-    if brake_for_ion:
+    if break_for_ion:
         return True
 
     # For gamma rays, check the distance between the parent and the particle
