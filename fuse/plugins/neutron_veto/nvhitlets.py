@@ -40,17 +40,26 @@ def energytowavelenght(E):
     Joules_to_eV=1.602*1e-19
     return 1e9*const.h*const.c/(E*Joules_to_eV)
 
-#SPE parameters: ID, pe, SPE, acceptance, threshold_pe(based on acceptance)
-def SPE_parameters(json_file_spe_model,file_spe_acceptance):
-    with open(json_file_spe_model,'r') as f:
-        data_spe = json.loads(f.read())
-    with open(file_spe_acceptance) as f:
-        acceptance = json.load(f)
-    SPE_ch= pd.DataFrame(columns=['pmtID','pe','SPE','acceptance','threshold_pe'])
-    SPE_ch['pmtID'],SPE_ch['pe'], SPE_ch['SPE'],SPE_ch['acceptance']=data_spe['pmtID'],data_spe['charge'],data_spe['SPE_values'],acceptance['acceptance']
-    acceptance_ch= [threshold_acc(SPE_ch,i) for i in np.arange(2000,2120)]
-    SPE_ch['threshold_pe']=acceptance_ch
-    return SPE_ch
+def create_SPE_file(path,sr='0'):
+    #path to the aux_files
+    #SR : to change configuration for each SR
+    spe_df=pd.DataFrame(columns=['pmtID', 'pe', 'SPE_values','acceptance'])
+    array_x = np.load(path + 'x_data_sr'+sr+'.npy')
+    array_y = np.load(path+'sr'+sr+'_pdfs.npy')
+    spe_df['pmtID']= np.arange(2000,2120)
+    spe_df['pe']=array_x.tolist()
+    spe_df['SPE_values']=array_y.tolist()
+    spe_df['acceptance']= np.load(path+'spe_acc_sr'+sr+'.npy',allow_pickle=True)
+    return np.save(path+'SPE_SR'+sr+'.npy',spe_df.to_records())
+    
+#SPE parameters: ID, pe, SPE, acceptance
+def SPE_parameters(file_spe_model):
+    data_spe=np.load(file_spe_model,allow_pickle=True)
+    #SPE_ch= pd.DataFrame(columns=['pmtID','pe','SPE','acceptance'])
+    #SPE_ch['pmtID'],SPE_ch['pe'], SPE_ch['SPE'],SPE_ch['acceptance']=data_spe['pmtID'],data_spe['charge'],data_spe['SPE_values'],data_spe['acceptance']
+    #acceptance_ch= [threshold_acc(SPE_ch,i) for i in np.arange(2000,2120)]
+    #SPE_ch['threshold_pe']=acceptance_ch
+    return data_spe
     
 def threshold_acc(SPE_df, ID):
     SPE_ID=pd.DataFrame()
@@ -217,7 +226,7 @@ class NeutronVetoHitlets(strax.Plugin):
     def __init__(self):
         self.path = '/home/layos/env_starter/fuse/private_nt_aux_files/sim_files/'#Have to put here the correct paths....
         self.QE_value = QE_nVeto(self.path+'nveto_pmt_qe.json')
-        self.SPE_nVeto = SPE_parameters(self.path+'SPE_'+'SR1'+'_test_fuse.json',self.path+'acceptance_SR0_test_fuse.json')
+        self.SPE_nVeto = SPE_parameters(self.path+'SPE_SR0.npy')
         self.dtype=dtype
     #Get Quantum efficiency
     def QE_E(self,E,ID):
@@ -227,8 +236,7 @@ class NeutronVetoHitlets(strax.Plugin):
         return qe
         
     def get_acceptance(self,ID):
-        ind=ID-2000
-        acc= self.SPE_nVeto.acceptance.values[ind]
+        acc=self.SPE_nVeto[self.SPE_nVeto['pmtID']==ID]['acceptance']
         return acc
     #Get acceptance threshold
     def get_threshold_acc(self,ID):
@@ -239,7 +247,7 @@ class NeutronVetoHitlets(strax.Plugin):
     #Sampling charge from SPE  
     def pe_charge_N(self,pmt_id):
         SPE_channel= self.SPE_nVeto[self.SPE_nVeto.pmtID==pmt_id]
-        charge=rd.choices(SPE_channel.pe.values[0],SPE_channel.SPE.values[0],k=1)[0]    
+        charge=rd.choices(SPE_channel['pe'][0],SPE_channel['SPE_values'][0],k=1)[0]    
         return charge
 
     #--------------------------- Hitlet function ------------------------------------------------------------#
@@ -258,7 +266,6 @@ class NeutronVetoHitlets(strax.Plugin):
     
     
         #0.---------------Load GEANT output-------------------#
-    
 
 
         #1. First step PHOTON to first dinode
