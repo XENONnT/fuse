@@ -279,6 +279,9 @@ class file_loader:
 
         # Removing all events with no interactions:
         m = ak.num(interactions["ed"]) > 0
+        # and all events with no deposited energy
+        m = m & (ak.sum(interactions["ed"], axis=1) > 0)
+
         interactions = interactions[m]
 
         # Sort interactions in events by time and subtract time of the first interaction
