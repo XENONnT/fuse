@@ -13,6 +13,15 @@ log = logging.getLogger("fuse.micro_physics.merge_lineage")
 
 @export
 class MergeLineage(FuseBasePlugin):
+    """Plugin that merges energy deposits with the same lineage_index into a
+    single interaction.
+
+    The 3D postiion is calculated as the energy weighted average of the
+    3D positions of the energy deposits. The time of the merged lineage
+    is calculated as the energy weighted average of the times of the
+    energy deposits. The energy of the merged lineage is the sum of the
+    individual energy depositions.
+    """
 
     __version__ = "0.0.1"
 

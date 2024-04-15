@@ -23,6 +23,13 @@ NEST_NONE = (12, 0, 0)
 
 @export
 class LineageClustering(FuseBasePlugin):
+    """Plugin to cluster interactions based the lineage of the particle track.
+
+    This plugin groups energy deposits into clusters based on a set of
+    rules defining if the energy deposits belong to the same lineage or
+    not. A lineage is then classified based on the type of the particle
+    and its parent.
+    """
 
     __version__ = "0.0.2"
 
@@ -30,8 +37,6 @@ class LineageClustering(FuseBasePlugin):
 
     provides = "interaction_lineage"
 
-    # output of this plugin will be a index indicating what interaction belongs to what cluster
-    # and the lineage type which is the nest model that will later be used to calculate the yields.
     dtype = [
         (("Lineage index of the energy deposit", "lineage_index"), np.int32),
         (("Event lineage index", "event_lineage_index"), np.int32),
