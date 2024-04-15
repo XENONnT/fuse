@@ -63,5 +63,8 @@ def merge_lineages(result, interactions):
         result[i]["nestid"] = lineage["lineage_type"][0]
         result[i]["A"] = lineage["A"][0]
         result[i]["Z"] = lineage["Z"][0]
-
+        result[i]["x_pri"] = lineage["x_pri"][0]
+        result[i]["y_pri"] = lineage["y_pri"][0]
+        result[i]["z_pri"] = lineage["z_pri"][0]
+        
     return result
