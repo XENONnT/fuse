@@ -3,7 +3,6 @@ import nestpy
 import strax
 import straxen
 import logging
-import pickle
 
 from ...plugin import FuseBasePlugin
 
