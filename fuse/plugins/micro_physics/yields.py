@@ -237,7 +237,7 @@ class BetaYields(NestYields):
 
         beta_photons = self.cs1_cs2_spline(energy, map_name="cs1_map") / self.g1
         beta_electrons = self.cs1_cs2_spline(energy, map_name="cs2_map") / self.g2
- 
+
         if self.use_recombination_fluctuation:
 
             factor = self.recombination_fluctuation_std_factor
