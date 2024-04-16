@@ -193,12 +193,12 @@ class BetaYields(NestYields):
         help="A factor that is defined to guess the recombination fluctuation",
     )
 
-    g1_value = straxen.URLConfig(
+    g1 = straxen.URLConfig(
         type=(int, float),
         help="g1",
     )
 
-    g2_value = straxen.URLConfig(
+    g2 = straxen.URLConfig(
         type=(int, float),
         help="g2",
     )
@@ -226,7 +226,6 @@ class BetaYields(NestYields):
         # now for the beta interactions we use the beta yields
         photons_beta, electrons_beta = self.quanta_from_spline(
             interactions_in_roi["ed"][mask_beta],
-            interactions_in_roi["e_field"][mask_beta],
         )
 
         photons[mask_beta] = photons_beta
@@ -234,10 +233,10 @@ class BetaYields(NestYields):
 
         return photons, electrons, excitons
 
-    def quanta_from_spline(self, energy, field):
+    def quanta_from_spline(self, energy):
 
-        beta_photons = self.cs1_cs2_spline(energy, map_name = 'cs1_map') / self.g1_value
-        beta_electrons = self.cs1_cs2_spline(energy, map_name = 'cs2_map') / self.g2_value
+        beta_photons = self.cs1_cs2_spline(energy, map_name = 'cs1_map') / self.g1
+        beta_electrons = self.cs1_cs2_spline(energy, map_name = 'cs2_map') / self.g2
 
         if self.use_recombination_fluctuation:
 
