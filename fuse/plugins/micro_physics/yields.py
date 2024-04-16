@@ -203,12 +203,9 @@ class BetaYields(NestYields):
         help="g2",
     )
 
-    cs1_spline_path = straxen.URLConfig(
-        help="cs1_spline_path",
-    )
-
-    cs2_spline_path = straxen.URLConfig(
-        help="cs2_spline_path",
+    cs1_cs2_spline = straxen.URLConfig(
+        default = None, #Set the default later....
+        help="cS1 and cS2 from beta spectrum",
     )
 
     def get_quanta(self, interactions_in_roi):
@@ -226,8 +223,6 @@ class BetaYields(NestYields):
 
         mask_beta = interactions_in_roi["nestid"] == 8
 
-        print("We are using the beta yields")
-
         # now for the beta interactions we use the beta yields
         photons_beta, electrons_beta = self.quanta_from_spline(
             interactions_in_roi["ed"][mask_beta],
@@ -241,13 +236,8 @@ class BetaYields(NestYields):
 
     def quanta_from_spline(self, energy, field):
 
-        with open(self.cs1_spline_path, "rb") as f:
-            self.cs1_spline = pickle.load(f)
-        with open(self.cs2_spline_path, "rb") as f:
-            self.cs2_spline = pickle.load(f)
-
-        beta_photons = self.cs1_spline(energy) / self.g1_value
-        beta_electrons = self.cs2_spline(energy) / self.g2_value
+        beta_photons = self.cs1_cs2_spline(energy, map_name = 'cs1_map') / self.g1_value
+        beta_electrons = self.cs1_cs2_spline(energy, map_name = 'cs2_map') / self.g2_value
 
         if self.use_recombination_fluctuation:
 
