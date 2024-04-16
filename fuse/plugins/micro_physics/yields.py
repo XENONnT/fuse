@@ -204,7 +204,7 @@ class BetaYields(NestYields):
     )
 
     cs1_cs2_spline = straxen.URLConfig(
-        default = None, #Set the default later....
+        default=None,  # Set the default later....
         help="cS1 and cS2 from beta spectrum",
     )
 
@@ -236,8 +236,8 @@ class BetaYields(NestYields):
 
     def quanta_from_spline(self, energy, field):
 
-        beta_photons = self.cs1_cs2_spline(energy, map_name = 'cs1_map') / self.g1_value
-        beta_electrons = self.cs1_cs2_spline(energy, map_name = 'cs2_map') / self.g2_value
+        beta_photons = self.cs1_cs2_spline(energy, map_name="cs1_map") / self.g1_value
+        beta_electrons = self.cs1_cs2_spline(energy, map_name="cs2_map") / self.g2_value
 
         if self.use_recombination_fluctuation:
 
