@@ -43,7 +43,7 @@ class TestAlternativeYields(unittest.TestCase):
         shutil.rmtree(self.temp_dir.name)
         os.makedirs(self.temp_dir.name)
 
-    @timeout_decorator.timeout(TIMEOUT, exception_message="NestYields timed out")
+    @timeout_decorator.timeout(TIMEOUT, exception_message="BetaYields timed out")
     def test_BetaYields(self):
         self.test_context.register(fuse.BetaYields)
         self.test_context.make(self.run_number, "quanta")
