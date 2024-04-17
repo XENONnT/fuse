@@ -79,3 +79,114 @@ class FuseBasePlugin(strax.Plugin):
 
 class FuseBaseDownChunkingPlugin(strax.DownChunkingPlugin, FuseBasePlugin):
     """Base plugin for fuse DownChunkingPlugins."""
+
+
+# Modified from Cutax cutlist
+class FuseCutList(strax.MergeOnlyPlugin):
+    """Add nice documentation here."""
+
+    __version__ = "0.0.0"
+
+    save_when = strax.SaveWhen.TARGET
+    cuts = ()
+    # need to declare depends_on here to satisfy strax
+    # https://github.com/AxFoundation/strax/blob/df18c9cef38ea1cee9737d56b1bea078ebb246a9/strax/plugin.py#L99
+    depends_on = ()
+    _depends_on = ()
+
+    def setup(self):
+        # I can get the conditions in the volumes from the plugin lineage!
+
+        selection_the_plugin_depends_on = [p for p in self.depends_on if "_selection" in p]
+        self.volume_names = [p[:-10] for p in selection_the_plugin_depends_on]
+
+        self.density_dict = {}
+        self.create_s2_dict = {}
+        for volume in self.volume_names:
+            self.density_dict[volume] = self.lineage[f"{volume}_selection"][2][
+                f"xenon_density_{volume}"
+            ]
+            self.create_s2_dict[volume] = self.lineage[f"{volume}_selection"][2][
+                f"create_S2_xenonnt_{volume}"
+            ]
+
+    def infer_dtype(self):
+        dtype = super().infer_dtype()
+
+        dtype += [
+            (
+                (
+                    f"Combined boolean of all cuts and selections in {self.accumulated_cuts_string}",
+                    self.accumulated_cuts_string,
+                ),
+                np.bool_,
+            ),
+            (
+                (
+                    "Flag indicating if a cluster can create a S2 signal",
+                    "create_S2",
+                ),
+                np.bool_,
+            ),
+            (
+                (
+                    "Xenon density at the cluster position",
+                    "xe_density",
+                ),
+                np.float32,
+            ),
+        ]
+        return dtype
+
+    def compute(self, **kwargs):
+        cuts = super().compute(**kwargs)
+
+        cuts_joint = np.zeros(len(cuts), self.dtype)
+        strax.copy_to_buffer(
+            cuts, cuts_joint, f"_copy_cuts_{strax.deterministic_hash(self.depends_on)}"
+        )
+        cuts_joint[self.accumulated_cuts_string] = get_accumulated_bool(cuts)
+
+        for volume in self.volume_names:
+            cuts_joint["create_S2"] = np.where(
+                cuts[f"{volume}_selection"], self.create_s2_dict[volume], cuts_joint["create_S2"]
+            )
+            cuts_joint["xe_density"] = np.where(
+                cuts[f"{volume}_selection"], self.density_dict[volume], cuts_joint["xe_density"]
+            )
+
+        return cuts_joint
+
+    @property
+    def depends_on(self):
+        if not len(self._depends_on):
+            deps = []
+            for c in self.cuts:
+                deps.extend(strax.to_str_tuple(c.provides))
+            self._depends_on = tuple(deps)
+        return self._depends_on
+
+    @depends_on.setter
+    def depends_on(self, str_or_tuple):
+        self._depends_on = strax.to_str_tuple(str_or_tuple)
+
+
+def get_accumulated_bool(array):
+    """Computes accumulated boolean over all cuts and selections.
+
+    :param array: Array containing merged cuts.
+    """
+    fields = array.dtype.names
+    fields = np.array([f for f in fields if f not in ("time", "endtime")])
+
+    res = np.zeros(len(array), np.bool_)
+    # Modified from the default code
+    for field in fields:
+        if field.endswith("_selection"):
+            res |= array[field]
+
+    for field in fields:
+        if field.endswith("_cut"):
+            res &= array[field]
+
+    return res
