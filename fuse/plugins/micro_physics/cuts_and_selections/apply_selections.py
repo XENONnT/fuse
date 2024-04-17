@@ -7,9 +7,10 @@ from .physics_cases import EnergyCut
 
 export, __all__ = strax.exporter()
 
+
 @export
 class ApplyCuts(FuseBasePlugin):
-    """Plugin that applies the previous cuts"""
+    """Plugin that applies the previous cuts."""
 
     depends_on = ("clustered_interactions", "microphysics_selection")
 
@@ -45,7 +46,7 @@ class ApplyCuts(FuseBasePlugin):
         strax.copy_to_buffer(reduced_data, data, "_remove_cuts_and_selections")
 
         return data
-        
+
 
 @export
 class LowEnergySimulation(FuseCutList):
@@ -53,6 +54,7 @@ class LowEnergySimulation(FuseCutList):
     provides = "microphysics_selection"
     accumulated_cuts_string = "microphysics_selection"
     cuts = (XENONnT_TPC, XENONnT_BelowCathode, EnergyCut)
+
 
 @export
 class DefaultSimulation(FuseCutList):

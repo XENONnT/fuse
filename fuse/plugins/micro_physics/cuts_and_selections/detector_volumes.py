@@ -17,31 +17,31 @@ class VolumeSelection(strax.CutPlugin):
 
     # Config options
     min_z = straxen.URLConfig(
-        default= 0,
+        default=0,
         type=(int, float),
         help="Lower limit of the volume [cm]",
     )
 
     max_z = straxen.URLConfig(
         type=(int, float),
-        default= 0,
+        default=0,
         help="Upper limit of the volume [cm]",
     )
 
     max_r = straxen.URLConfig(
-        default= 0,
+        default=0,
         type=(int, float),
         help="Radius of the Volume [cm]",
     )
 
     create_s2_in_volume = straxen.URLConfig(
-        default= True,
+        default=True,
         type=bool,
         help="Create S2s in the volume",
     )
 
     xenon_density_in_volume = straxen.URLConfig(
-        default= 1,
+        default=1,
         type=(int, float),
         help="Density of xenon in the volume",
     )
@@ -58,6 +58,7 @@ class VolumeSelection(strax.CutPlugin):
         )
 
         return mask
+
 
 @numba.njit
 def in_cylinder(x, y, z, min_z, max_z, max_r):
@@ -78,8 +79,8 @@ def in_cylinder(x, y, z, min_z, max_z, max_r):
 
 
 class XENONnT_TPC(VolumeSelection):
-
     """Plugin to select only clusters in the XENONnT TPC."""
+
     child_plugin = True
     __version__ = "0.0.1"
 
@@ -128,8 +129,8 @@ class XENONnT_TPC(VolumeSelection):
         help="Density of xenon in the TPC volume [g/cm3]",
     )
 
-class XENONnT_BelowCathode(VolumeSelection):
 
+class XENONnT_BelowCathode(VolumeSelection):
     """Plugin to select only clusters  below the XENONnT cathode."""
 
     child_plugin = True

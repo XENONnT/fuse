@@ -4,7 +4,8 @@ import numpy as np
 
 
 class EnergyCut(strax.CutPlugin):
-    """Plugin evaluates if the sum of the events energy is below a threshold"""
+    """Plugin evaluates if the sum of the events energy is below a
+    threshold."""
 
     depends_on = "clustered_interactions"
     __version__ = "0.0.1"
@@ -15,7 +16,7 @@ class EnergyCut(strax.CutPlugin):
 
     # Config options
     max_energy = straxen.URLConfig(
-        default= 500,
+        default=500,
         type=(int, float),
         help="Upper limit of the energy in this simulation",
     )
@@ -25,17 +26,21 @@ class EnergyCut(strax.CutPlugin):
         energies = build_energies(clustered_interactions)
 
         mask = energies < self.max_energy
-            
+
         return mask
+
 
 def build_energies(interactions):
 
-    split_energies, event_ids = group_interaction_energies_by_cluster_id(interactions["ed"], interactions["evtid"])
+    split_energies, event_ids = group_interaction_energies_by_cluster_id(
+        interactions["ed"], interactions["evtid"]
+    )
 
     energy_per_event = [np.sum(e) for e in split_energies]
     energy_event_mapping = dict(zip(event_ids, energy_per_event))
     energies = np.array([energy_event_mapping[event_id] for event_id in interactions["evtid"]])
     return energies
+
 
 def group_interaction_energies_by_cluster_id(energy, event_id):
 
