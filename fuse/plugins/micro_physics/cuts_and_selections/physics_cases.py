@@ -18,7 +18,13 @@ class EnergyCut(strax.CutPlugin):
     max_energy = straxen.URLConfig(
         default=500,
         type=(int, float),
-        help="Upper limit of the energy in this simulation",
+        help="Upper limit of the event energy in this simulation",
+    )
+
+    min_energy = straxen.URLConfig(
+        default=0,
+        type=(int, float),
+        help="Lower limit of the event energy in this simulation",
     )
 
     def cut_by(self, clustered_interactions):
@@ -26,6 +32,7 @@ class EnergyCut(strax.CutPlugin):
         energies = build_energies(clustered_interactions)
 
         mask = energies < self.max_energy
+        mask = mask & (energies > self.min_energy)
 
         return mask
 
