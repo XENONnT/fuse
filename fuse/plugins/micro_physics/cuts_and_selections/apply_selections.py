@@ -10,7 +10,7 @@ export, __all__ = strax.exporter()
 
 @export
 class SelectionMerger(FuseBasePlugin):
-    """Base class for cut and selection merger plugins"""
+    """Base class for cut and selection merger plugins."""
 
     __version__ = "0.0.1"
 
@@ -44,7 +44,9 @@ class SelectionMerger(FuseBasePlugin):
         # I can get the conditions in the volumes from the plugin lineage!
         self.selections_the_plugin_depends_on = [p for p in self.depends_on if "_selection" in p]
         self.cuts_the_plugin_depends_on = [p for p in self.depends_on if "_cut" in p]
-        self.cuts_and_selections = self.selections_the_plugin_depends_on + self.cuts_the_plugin_depends_on
+        self.cuts_and_selections = (
+            self.selections_the_plugin_depends_on + self.cuts_the_plugin_depends_on
+        )
         self.volume_names = [p[:-10] for p in self.selections_the_plugin_depends_on]
 
         self.density_dict = {}
@@ -89,10 +91,17 @@ def get_accumulated_bool(array):
 
     return res
 
+
 @export
 class LowEnergySimulation(SelectionMerger):
     __version__ = "0.0.1"
-    depends_on = ["clustered_interactions", "tpc_selection", "below_cathode_selection", "energy_range_cut"]
+    depends_on = [
+        "clustered_interactions",
+        "tpc_selection",
+        "below_cathode_selection",
+        "energy_range_cut",
+    ]
+
 
 @export
 class DefaultSimulation(SelectionMerger):
