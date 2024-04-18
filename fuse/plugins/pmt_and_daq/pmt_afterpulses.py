@@ -3,6 +3,7 @@ import numpy as np
 import straxen
 import logging
 
+from ...dtypes import propagated_photons_fields
 from ...common import pmt_gains
 from ...plugin import FuseBasePlugin
 
@@ -30,13 +31,7 @@ class PMTAfterPulses(FuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
 
-    dtype = [
-        (("PMT channel of the photon", "channel"), np.int16),
-        (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
-        (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
-        (("ID of the cluster creating the photon", "cluster_id"), np.int32),
-        (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)", "photon_type"), np.int8),
-    ] + strax.time_fields
+    dtype = propagated_photons_fields + strax.time_fields
 
     # Config options
 
