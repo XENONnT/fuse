@@ -16,6 +16,7 @@ class RecordsTruth(strax.Plugin):
 
     depends_on = ("photon_summary", "raw_records")
     provides = "records_truth"
+    data_kind = "raw_records"
 
     dtype = [
         (("Number of S1 photons in record", "s1_photons_in_record"), np.int32),
