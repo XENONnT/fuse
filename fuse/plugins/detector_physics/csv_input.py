@@ -17,18 +17,17 @@ from ...common import dynamic_chunking
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-__all__.extend(["csv_input_fields"])
+__all__.extend(["microphysics_summary_fields"])
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.detector_physics.csv_input")
 
 
-csv_input_fields = (
-    cluster_positions_fields
-    + quanta_fields
-    + electric_fields
-    + cluster_id_fields
-    + csv_cluster_misc_fields
+# In some cases we might want to change dtype of microphysics_summary
+# through microphysics_summary_fields, so do not set microphysics_summary_fields
+# or variable related to it as a static attribute of a class.
+microphysics_summary_fields = (
+    cluster_positions_fields + quanta_fields + electric_fields + cluster_id_fields
 )
 
 
@@ -46,14 +45,6 @@ class ChunkCsvInput(FuseBasePlugin):
     save_when = strax.SaveWhen.TARGET
 
     source_done = False
-
-    dtype = (
-        cluster_positions_fields
-        + quanta_fields
-        + electric_fields
-        + cluster_id_fields
-        + strax.time_fields
-    )
 
     # Config options
     input_file = straxen.URLConfig(
@@ -81,6 +72,13 @@ class ChunkCsvInput(FuseBasePlugin):
         type=(int, float),
         help="n_interactions_per_chunk",
     )
+
+    def infer_dtype(self):
+        return microphysics_summary_fields + strax.time_fields
+
+    @staticmethod
+    def needed_csv_input_fields():
+        return microphysics_summary_fields + csv_cluster_misc_fields
 
     def setup(self):
         super().setup()
@@ -152,8 +150,9 @@ class csv_file_loader:
         self.debug = debug
 
         # The csv file needs to have these columns:
-        self.columns = list(np.dtype(csv_input_fields).names)
-        self.dtype = csv_input_fields + strax.time_fields
+        _fields = ChunkCsvInput.needed_csv_input_fields()
+        self.columns = list(np.dtype(_fields).names)
+        self.dtype = _fields + strax.time_fields
 
     def output_chunk(self):
         instructions, n_simulated_events = self.__load_csv_file()
