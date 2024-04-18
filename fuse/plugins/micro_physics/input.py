@@ -489,9 +489,11 @@ class file_loader:
         df["r"] = np.sqrt(df["x"] ** 2 + df["y"] ** 2)
         df["t"] = df["time"]
 
+        missing_columns = set(self.columns) - set(df.columns)
+
         # Check if all needed columns are in place:
-        if not set(self.columns).issubset(df.columns):
-            log.warning("Not all needed columns provided!")
+        if missing_columns:
+            raise ValueError(f"Not all needed columns provided! {missing_columns} are missing.")
 
         n_simulated_events = len(np.unique(df.eventid))
 
