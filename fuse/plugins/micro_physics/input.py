@@ -192,19 +192,11 @@ class file_loader:
 
         self.file = os.path.join(self.directory, self.file_name)
 
-        self.column_names = [
-            "x",
-            "y",
-            "z",
-            "t",
-            "ed",
-            "type",
-            "trackid",
-            "parenttype",
-            "parentid",
-            "creaproc",
-            "edproc",
-        ]
+        self.dtype = deposit_positions_fields + g4_fields
+        self.columns = list(np.dtype(self.dtype).names)
+        # Remove evtid as it is not in the usual root or csv file
+        self.columns.remove("evtid")
+        self.dtype += primary_positions_fields + strax.time_fields
 
         # Prepare cut for root and csv case
         if self.outer_cylinder:
@@ -216,12 +208,8 @@ class file_loader:
         else:
             self.cut_string = None
 
-        self.dtype = deposit_positions_fields + g4_fields + primary_positions_fields
-
-        self.dtype = self.dtype + strax.time_fields
-
     def output_chunk(self):
-        """Function to return one chunk of data from the root file."""
+        """Function to return one chunk of data from the root or csv file."""
 
         if self.file.endswith(".root"):
             interactions, n_simulated_events, start, stop = self._load_root_file()
@@ -424,7 +412,7 @@ class file_loader:
 
         # Read in data, convert mm to cm and perform a first cut if specified:
         interactions = ttree.arrays(
-            self.column_names,
+            self.columns,
             self.cut_string,
             aliases=alias,
             entry_start=start_index,
@@ -490,30 +478,30 @@ class file_loader:
 
         log.debug("Load instructions from a csv file!")
 
-        instr_df = pd.read_csv(self.file)
+        df = pd.read_csv(self.file)
 
         # unit conversion similar to root case
-        instr_df["x"] = instr_df["xp"] / 10
-        instr_df["y"] = instr_df["yp"] / 10
-        instr_df["z"] = instr_df["zp"] / 10
-        instr_df["x_pri"] = instr_df["xp_pri"] / 10
-        instr_df["y_pri"] = instr_df["yp_pri"] / 10
-        instr_df["z_pri"] = instr_df["zp_pri"] / 10
-        instr_df["r"] = np.sqrt(instr_df["x"] ** 2 + instr_df["y"] ** 2)
-        instr_df["t"] = instr_df["time"]
+        df["x"] = df["xp"] / 10
+        df["y"] = df["yp"] / 10
+        df["z"] = df["zp"] / 10
+        df["x_pri"] = df["xp_pri"] / 10
+        df["y_pri"] = df["yp_pri"] / 10
+        df["z_pri"] = df["zp_pri"] / 10
+        df["r"] = np.sqrt(df["x"] ** 2 + df["y"] ** 2)
+        df["t"] = df["time"]
 
         # Check if all needed columns are in place:
-        if not set(self.column_names).issubset(instr_df.columns):
+        if not set(self.columns).issubset(df.columns):
             log.warning("Not all needed columns provided!")
 
-        n_simulated_events = len(np.unique(instr_df.eventid))
+        n_simulated_events = len(np.unique(df.eventid))
 
         if self.outer_cylinder:
-            instr_df = instr_df.query(self.cut_string)
+            df = df.query(self.cut_string)
 
-        instr_df = instr_df[self.column_names + ["eventid", "x_pri", "y_pri", "z_pri"]]
+        df = df[self.columns + ["eventid", "x_pri", "y_pri", "z_pri"]]
 
-        interactions = self._awkwardify_df(instr_df)
+        interactions = self._awkwardify_df(df)
 
         # Use always all events in the csv file
         start = 0

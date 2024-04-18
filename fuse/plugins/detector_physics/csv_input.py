@@ -151,23 +151,9 @@ class csv_file_loader:
                 ),  # Remove them later as they are not in the usual micropyhsics summary
             ]
         )
-        self.dtype = self.dtype + strax.time_fields
-
         # The csv file needs to have these columns:
-        self.columns = [
-            "x",
-            "y",
-            "z",
-            "photons",
-            "electrons",
-            "excitons",
-            "e_field",
-            "ed",
-            "nestid",
-            "t",
-            "eventid",
-            "cluster_id",
-        ]
+        self.columns = list(np.dtype(self.dtype).names)
+        self.dtype += strax.time_fields
 
     def output_chunk(self):
         instructions, n_simulated_events = self.__load_csv_file()
