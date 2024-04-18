@@ -2,7 +2,7 @@ import numpy as np
 
 
 g4_fields = [
-    (("Time with respect to the start of the event [ns]", "t"), np.float64),
+    (("Time with respect to the start of the event [ns]", "t"), np.int64),
     (("Energy deposit [keV]", "ed"), np.float32),
     (("Particle type", "type"), "<U18"),
     (("Geant4 track ID", "trackid"), np.int16),
