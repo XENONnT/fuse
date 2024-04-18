@@ -27,7 +27,7 @@ class ChunkInput(FuseBasePlugin):
     and will create multiple chunks of data if needed.
     """
 
-    __version__ = "0.3.2"
+    __version__ = "0.3.3"
 
     depends_on: Tuple = tuple()
     provides = "geant4_interactions"
@@ -35,11 +35,11 @@ class ChunkInput(FuseBasePlugin):
     source_done = False
 
     dtype = [
-        (("x position of the energy deposit [cm]", "x"), np.float64),
-        (("y position of the energy deposit [cm]", "y"), np.float64),
-        (("z position of the energy deposit [cm]", "z"), np.float64),
+        (("x position of the energy deposit [cm]", "x"), np.float32),
+        (("y position of the energy deposit [cm]", "y"), np.float32),
+        (("z position of the energy deposit [cm]", "z"), np.float32),
         (("Time with respect to the start of the event [ns]", "t"), np.float64),
-        (("Energy deposit in keV", "ed"), np.float32),
+        (("Energy deposit [keV]", "ed"), np.float32),
         (("Particle type", "type"), "<U18"),
         (("Geant4 track ID", "trackid"), np.int16),
         (("Particle type of the parent particle", "parenttype"), "<U18"),
@@ -234,11 +234,11 @@ class file_loader:
             self.cut_string = None
 
         self.dtype = [
-            (("x position of the energy deposit [cm]", "x"), np.float64),
-            (("y position of the energy deposit [cm]", "y"), np.float64),
-            (("z position of the energy deposit [cm]", "z"), np.float64),
+            (("x position of the energy deposit [cm]", "x"), np.float32),
+            (("y position of the energy deposit [cm]", "y"), np.float32),
+            (("z position of the energy deposit [cm]", "z"), np.float32),
             (("Time with respect to the start of the event [ns]", "t"), np.float64),
-            (("Energy deposit in keV", "ed"), np.float32),
+            (("Energy deposit [keV]", "ed"), np.float32),
             (("Particle type", "type"), "<U18"),
             (("Geant4 track ID", "trackid"), np.int16),
             (("Particle type of the parent particle", "parenttype"), "<U18"),
@@ -246,9 +246,9 @@ class file_loader:
             (("Geant4 process creating the particle", "creaproc"), "<U25"),
             (("Geant4 process responsible for the energy deposit", "edproc"), "<U25"),
             (("Geant4 event ID", "evtid"), np.int32),
-            (("x position of the primary particle", "x_pri"), np.float32),
-            (("y position of the primary particle", "y_pri"), np.float32),
-            (("z position of the primary particle", "z_pri"), np.float32),
+            (("x position of the primary particle [cm]", "x_pri"), np.float32),
+            (("y position of the primary particle [cm]", "y_pri"), np.float32),
+            (("z position of the primary particle [cm]", "z_pri"), np.float32),
         ]
 
         self.dtype = self.dtype + strax.time_fields
