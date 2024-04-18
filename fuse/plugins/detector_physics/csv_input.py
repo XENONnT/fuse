@@ -6,14 +6,30 @@ import pandas as pd
 import strax
 import straxen
 
-from ...dtypes import cluster_positions_fields, cluster_id_fields, quanta_fields, electric_fields
+from ...dtypes import (
+    cluster_positions_fields,
+    cluster_id_fields,
+    csv_cluster_misc_fields,
+    quanta_fields,
+    electric_fields,
+)
 from ...common import dynamic_chunking
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
+__all__.extend(["csv_input_fields"])
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.detector_physics.csv_input")
+
+
+csv_input_fields = (
+    cluster_positions_fields
+    + quanta_fields
+    + electric_fields
+    + cluster_id_fields
+    + csv_cluster_misc_fields
+)
 
 
 @export
@@ -135,25 +151,9 @@ class csv_file_loader:
         self.first_chunk_left = np.int64(first_chunk_left)
         self.debug = debug
 
-        self.dtype = (
-            cluster_positions_fields
-            + quanta_fields
-            + electric_fields
-            + cluster_id_fields
-            + [
-                (
-                    ("Time of the interaction", "t"),
-                    np.int64,
-                ),  # Remove them later as they are not in the usual micropyhsics summary
-                (
-                    ("Geant4 event ID", "eventid"),
-                    np.int32,
-                ),  # Remove them later as they are not in the usual micropyhsics summary
-            ]
-        )
         # The csv file needs to have these columns:
-        self.columns = list(np.dtype(self.dtype).names)
-        self.dtype += strax.time_fields
+        self.columns = list(np.dtype(csv_input_fields).names)
+        self.dtype = csv_input_fields + strax.time_fields
 
     def output_chunk(self):
         instructions, n_simulated_events = self.__load_csv_file()

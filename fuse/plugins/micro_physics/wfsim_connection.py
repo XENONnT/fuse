@@ -7,7 +7,6 @@ import awkward as ak
 import numpy as np
 import strax
 
-from ...dtypes import primary_positions_fields
 from ...common import offset_range, reshape_awkward
 from ...plugin import FuseBasePlugin
 
@@ -43,7 +42,10 @@ class output_plugin(FuseBasePlugin):
         (("Volume id giving the detector subvolume", "vol_id"), np.int32),
         (("Local field [ V / cm ]", "local_field"), np.float64),
         (("Number of excitons", "n_excitons"), np.int32),
-    ] + primary_positions_fields
+        (("X position of the primary particle [cm]", "x_pri"), np.float32),
+        (("Y position of the primary particle [cm]", "y_pri"), np.float32),
+        (("Z position of the primary particle [cm]", "z_pri"), np.float32),
+    ]
 
     def compute(self, interactions_in_roi):
         if len(interactions_in_roi) == 0:

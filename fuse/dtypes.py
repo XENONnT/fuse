@@ -41,6 +41,11 @@ cluster_id_fields = [
     (("ID of the cluster", "cluster_id"), np.int32),
 ]
 
+csv_cluster_misc_fields = [
+    (("Time of the interaction", "t"), np.int64),
+    (("Geant4 event ID", "eventid"), np.int32),
+]
+
 
 cluster_misc_fields = [
     (("Mass number of the interacting particle", "A"), np.int8),
