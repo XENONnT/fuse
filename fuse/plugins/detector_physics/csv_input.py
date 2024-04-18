@@ -6,6 +6,7 @@ import pandas as pd
 import strax
 import straxen
 
+from ...dtypes import cluster_positions_fields, cluster_id_fields, quanta_fields, electric_fields
 from ...common import dynamic_chunking
 from ...plugin import FuseBasePlugin
 
@@ -30,19 +31,13 @@ class ChunkCsvInput(FuseBasePlugin):
 
     source_done = False
 
-    dtype = [
-        (("x position of the cluster [cm]", "x"), np.float32),
-        (("y position of the cluster [cm]", "y"), np.float32),
-        (("z position of the cluster [cm]", "z"), np.float32),
-        (("Number of photons at interaction position", "photons"), np.int32),
-        (("Number of electrons at interaction position", "electrons"), np.int32),
-        (("Number of excitons at interaction position", "excitons"), np.int32),
-        (("Electric field value at the cluster position [V/cm]", "e_field"), np.float32),
-        (("Energy of the cluster [keV]", "ed"), np.float32),
-        (("NEST interaction type", "nestid"), np.int8),
-        (("ID of the cluster", "cluster_id"), np.int32),
-    ]
-    dtype = dtype + strax.time_fields
+    dtype = (
+        cluster_positions_fields
+        + quanta_fields
+        + electric_fields
+        + cluster_id_fields
+        + strax.time_fields
+    )
 
     # Config options
     input_file = straxen.URLConfig(
@@ -140,26 +135,22 @@ class csv_file_loader:
         self.first_chunk_left = np.int64(first_chunk_left)
         self.debug = debug
 
-        self.dtype = [
-            (("x position of the cluster [cm]", "x"), np.float32),
-            (("y position of the cluster [cm]", "y"), np.float32),
-            (("z position of the cluster [cm]", "z"), np.float32),
-            (("Number of photons at interaction position", "photons"), np.int32),
-            (("Number of electrons at interaction position", "electrons"), np.int32),
-            (("Number of excitons at interaction position", "excitons"), np.int32),
-            (("Electric field value at the cluster position [V/cm]", "e_field"), np.float32),
-            (("Energy of the cluster [keV]", "ed"), np.float32),
-            (("NEST interaction type", "nestid"), np.int8),
-            (("ID of the cluster", "cluster_id"), np.int32),
-            (
-                ("Time of the interaction", "t"),
-                np.int64,
-            ),  # Remove them later as they are not in the usual micropyhsics summary
-            (
-                ("Geant4 event ID", "eventid"),
-                np.int32,
-            ),  # Remove them later as they are not in the usual micropyhsics summary
-        ]
+        self.dtype = (
+            cluster_positions_fields
+            + quanta_fields
+            + electric_fields
+            + cluster_id_fields
+            + [
+                (
+                    ("Time of the interaction", "t"),
+                    np.int64,
+                ),  # Remove them later as they are not in the usual micropyhsics summary
+                (
+                    ("Geant4 event ID", "eventid"),
+                    np.int32,
+                ),  # Remove them later as they are not in the usual micropyhsics summary
+            ]
+        )
         self.dtype = self.dtype + strax.time_fields
 
         # The csv file needs to have these columns:

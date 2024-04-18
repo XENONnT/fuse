@@ -29,8 +29,7 @@ class S1PhotonHits(FuseBasePlugin):
 
     dtype = [
         (("Number detected S1 photons", "n_s1_photon_hits"), np.int32),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     # Config options
     pmt_circuit_load_resistor = straxen.URLConfig(

@@ -22,8 +22,7 @@ class S1PhotonHitsEmpty(FuseBasePlugin):
 
     dtype = [
         (("Number detected S1 photons", "n_s1_photon_hits"), np.int32),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     def compute(self, delayed_interactions_in_roi):
         result = np.zeros(len(delayed_interactions_in_roi), dtype=self.dtype)

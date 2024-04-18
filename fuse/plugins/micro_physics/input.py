@@ -9,6 +9,7 @@ import pandas as pd
 import strax
 import straxen
 
+from ...dtypes import g4_fields, primary_positions_fields, deposit_positions_fields
 from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
 from ...plugin import FuseBasePlugin
 
@@ -34,25 +35,7 @@ class ChunkInput(FuseBasePlugin):
 
     source_done = False
 
-    dtype = [
-        (("x position of the energy deposit [cm]", "x"), np.float32),
-        (("y position of the energy deposit [cm]", "y"), np.float32),
-        (("z position of the energy deposit [cm]", "z"), np.float32),
-        (("Time with respect to the start of the event [ns]", "t"), np.float64),
-        (("Energy deposit [keV]", "ed"), np.float32),
-        (("Particle type", "type"), "<U18"),
-        (("Geant4 track ID", "trackid"), np.int16),
-        (("Particle type of the parent particle", "parenttype"), "<U18"),
-        (("Trackid of the parent particle", "parentid"), np.int16),
-        (("Geant4 process creating the particle", "creaproc"), "<U25"),
-        (("Geant4 process responsible for the energy deposit", "edproc"), "<U25"),
-        (("Geant4 event ID", "evtid"), np.int32),
-        (("x position of the primary particle [cm]", "x_pri"), np.float32),
-        (("y position of the primary particle [cm]", "y_pri"), np.float32),
-        (("z position of the primary particle [cm]", "z_pri"), np.float32),
-    ]
-
-    dtype = dtype + strax.time_fields
+    dtype = deposit_positions_fields + g4_fields + primary_positions_fields + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
 
@@ -233,23 +216,7 @@ class file_loader:
         else:
             self.cut_string = None
 
-        self.dtype = [
-            (("x position of the energy deposit [cm]", "x"), np.float32),
-            (("y position of the energy deposit [cm]", "y"), np.float32),
-            (("z position of the energy deposit [cm]", "z"), np.float32),
-            (("Time with respect to the start of the event [ns]", "t"), np.float64),
-            (("Energy deposit [keV]", "ed"), np.float32),
-            (("Particle type", "type"), "<U18"),
-            (("Geant4 track ID", "trackid"), np.int16),
-            (("Particle type of the parent particle", "parenttype"), "<U18"),
-            (("Trackid of the parent particle", "parentid"), np.int16),
-            (("Geant4 process creating the particle", "creaproc"), "<U25"),
-            (("Geant4 process responsible for the energy deposit", "edproc"), "<U25"),
-            (("Geant4 event ID", "evtid"), np.int32),
-            (("x position of the primary particle [cm]", "x_pri"), np.float32),
-            (("y position of the primary particle [cm]", "y_pri"), np.float32),
-            (("z position of the primary particle [cm]", "z_pri"), np.float32),
-        ]
+        self.dtype = deposit_positions_fields + g4_fields + primary_positions_fields
 
         self.dtype = self.dtype + strax.time_fields
 

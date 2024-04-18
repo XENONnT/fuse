@@ -46,8 +46,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
         (("ID of the cluster creating the photon", "cluster_id"), np.int32),
         (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)", "photon_type"), np.int8),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     # Config options shared by S1 and S2 simulation
     p_double_pe_emision = straxen.URLConfig(
