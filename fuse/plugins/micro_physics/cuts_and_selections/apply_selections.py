@@ -2,8 +2,6 @@ import strax
 import numpy as np
 
 from ....plugin import FuseBasePlugin
-from .detector_volumes import XENONnT_TPC, XENONnT_BelowCathode
-from .physics_cases import EnergyCut
 
 export, __all__ = strax.exporter()
 
