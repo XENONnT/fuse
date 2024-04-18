@@ -33,8 +33,6 @@ class ChunkInput(FuseBasePlugin):
     depends_on: Tuple = tuple()
     provides = "geant4_interactions"
 
-    source_done = False
-
     dtype = deposit_positions_fields + g4_fields + primary_positions_fields + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
