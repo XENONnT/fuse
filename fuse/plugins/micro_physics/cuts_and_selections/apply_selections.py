@@ -67,11 +67,15 @@ class SelectionMerger(FuseBasePlugin):
 
         for volume in self.volume_names:
             reduced_data["create_S2"] = np.where(
-                reduced_data[f"{volume}_selection"], self.create_s2_dict[volume], reduced_data["create_S2"]
+                reduced_data[f"{volume}_selection"],
+                self.create_s2_dict[volume],
+                reduced_data["create_S2"],
             )
 
             reduced_data["xe_density"] = np.where(
-                reduced_data[f"{volume}_selection"], self.density_dict[volume], reduced_data["xe_density"]
+                reduced_data[f"{volume}_selection"],
+                self.density_dict[volume],
+                reduced_data["xe_density"],
             )
 
         data = np.zeros(len(reduced_data), dtype=self.dtype)
