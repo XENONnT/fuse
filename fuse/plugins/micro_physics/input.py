@@ -173,6 +173,7 @@ class file_loader:
     ):
         self.directory = directory
         self.file_name = file_name
+        self.file_type = self.file_name.split(".")[-1]
         self.rng = random_number_generator
         self.separation_scale = separation_scale
         self.event_rate = event_rate / 1e9  # Conversion to ns
@@ -209,9 +210,9 @@ class file_loader:
     def output_chunk(self):
         """Function to return one chunk of data from the root or csv file."""
 
-        if self.file.endswith(".root"):
+        if self.file_type == "root":
             interactions, n_simulated_events, start, stop = self._load_root_file()
-        elif self.file.endswith(".csv"):
+        elif self.file_type == "csv":
             interactions, n_simulated_events, start, stop = self._load_csv_file()
         else:
             raise ValueError(
@@ -257,7 +258,7 @@ class file_loader:
             inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
         elif self.event_rate == 0:
             log.info("Using event times from provided input file.")
-            if self.file.endswith(".root"):
+            if self.file_type == "root":
                 msg = (
                     "Using event times from root file is not recommended! "
                     "Use a source_rate > 0 instead."
