@@ -10,7 +10,6 @@ from ...dtypes import (
     cluster_misc_fields,
 )
 from ...plugin import FuseBasePlugin
-from ...shared_dtypes import clustered_interactions_dtype
 
 export, __all__ = strax.exporter()
 
