@@ -3,6 +3,7 @@ import numpy as np
 import logging
 import straxen
 
+from ...dtypes import electric_fields
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -24,10 +25,7 @@ class ElectricField(FuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
 
-    dtype = [
-        (("Electric field value at the cluster position [V/cm]", "e_field"), np.float32),
-        *strax.time_fields,
-    ]
+    dtype = electric_fields + strax.time_fields
 
     # Config options
     efield_map = straxen.URLConfig(

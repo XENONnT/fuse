@@ -1,5 +1,8 @@
 __version__ = "1.2.0"
 
+from . import dtypes
+from .dtypes import *
+
 from . import plugins
 from .plugins import *
 

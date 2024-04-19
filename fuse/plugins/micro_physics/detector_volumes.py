@@ -1,6 +1,13 @@
+import strax
 import straxen
 import logging
 
+from ...dtypes import (
+    primary_positions_fields,
+    cluster_positions_fields,
+    cluster_id_fields,
+    cluster_misc_fields,
+)
 from ...volume_plugin import VolumePlugin
 from ...vertical_merger_plugin import VerticalMergerPlugin
 
@@ -35,11 +42,18 @@ class XENONnT_TPC(VolumePlugin):
     to ``True``.
     """
 
+    __version__ = "0.3.2"
     depends_on = "clustered_interactions"
-
     provides = "tpc_interactions"
     data_kind = "tpc_interactions"
-    __version__ = "0.4.0"
+
+    dtype = (
+        cluster_positions_fields
+        + cluster_id_fields
+        + cluster_misc_fields
+        + primary_positions_fields
+        + strax.time_fields
+    )
 
     # Config options
     # Define the TPC volume
@@ -99,11 +113,18 @@ class XENONnT_BelowCathode(VolumePlugin):
     to ``False``.
     """
 
+    __version__ = "0.3.2"
     depends_on = "clustered_interactions"
-
     provides = "below_cathode_interactions"
     data_kind = "below_cathode_interactions"
-    __version__ = "0.3.1"
+
+    dtype = (
+        cluster_positions_fields
+        + cluster_id_fields
+        + cluster_misc_fields
+        + primary_positions_fields
+        + strax.time_fields
+    )
 
     # Config options
     # Define the volume
@@ -161,11 +182,18 @@ class XENONnT_GasPhase(VolumePlugin):
     meant to go into a vertical merger plugin.
     """
 
+    __version__ = "0.3.2"
     depends_on = "clustered_interactions"
-
     provides = "gas_phase_interactions"
     data_kind = "gas_phase_interactions"
-    __version__ = "0.3.1"
+
+    dtype = (
+        cluster_positions_fields
+        + cluster_id_fields
+        + cluster_misc_fields
+        + primary_positions_fields
+        + strax.time_fields
+    )
 
     # Config options
     # Define the volume

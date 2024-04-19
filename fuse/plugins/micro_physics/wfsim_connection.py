@@ -72,10 +72,10 @@ class output_plugin(FuseBasePlugin):
         # TODO: Currently not supported rows with only electrons or photons due to
         # this super odd shape
         for i in range(2):
-            structure = np.unique(interactions["evtid"], return_counts=True)[1]
-            evtid = reshape_awkward(interactions["evtid"], structure)
+            structure = np.unique(interactions["eventid"], return_counts=True)[1]
+            eventid = reshape_awkward(interactions["eventid"], structure)
 
-            res["event_number"][i::2] = offset_range(ak.to_numpy(ak.num(evtid)))
+            res["event_number"][i::2] = offset_range(ak.to_numpy(ak.num(eventid)))
             res["type"][i::2] = i + 1
             res["x"][i::2] = interactions["x"]
             res["y"][i::2] = interactions["y"]
@@ -83,7 +83,7 @@ class output_plugin(FuseBasePlugin):
             res["x_pri"][i::2] = interactions["x_pri"]
             res["y_pri"][i::2] = interactions["y_pri"]
             res["z_pri"][i::2] = interactions["z_pri"]
-            res["g4id"][i::2] = interactions["evtid"]
+            res["g4id"][i::2] = interactions["eventid"]
             res["vol_id"][i::2] = interactions["vol_id"]
             res["e_dep"][i::2] = interactions["ed"]
             if "local_field" in res.dtype.names:

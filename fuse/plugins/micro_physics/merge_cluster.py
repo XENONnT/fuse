@@ -3,6 +3,12 @@ import straxen
 import numpy as np
 import logging
 
+from ...dtypes import (
+    primary_positions_fields,
+    cluster_positions_fields,
+    cluster_id_fields,
+    cluster_misc_fields,
+)
 from ...plugin import FuseBasePlugin
 from ...shared_dtypes import clustered_interactions_dtype
 
@@ -27,15 +33,19 @@ class MergeCluster(FuseBasePlugin):
     """
 
     __version__ = "0.3.2"
-
     depends_on = ("geant4_interactions", "cluster_index")
-
     provides = "clustered_interactions"
     data_kind = "clustered_interactions"
 
     save_when = strax.SaveWhen.TARGET
 
-    dtype = clustered_interactions_dtype
+    dtype = (
+        cluster_positions_fields
+        + cluster_id_fields
+        + cluster_misc_fields
+        + primary_positions_fields
+        + strax.time_fields
+    )
 
     # Config options
     tag_cluster_by = straxen.URLConfig(
@@ -94,7 +104,7 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
         result[i]["x_pri"] = cluster["x_pri"][main_interaction_index]
         result[i]["y_pri"] = cluster["y_pri"][main_interaction_index]
         result[i]["z_pri"] = cluster["z_pri"][main_interaction_index]
-        result[i]["evtid"] = cluster["evtid"][main_interaction_index]
+        result[i]["eventid"] = cluster["eventid"][main_interaction_index]
 
         # Get cluster id from and save it!
         result[i]["cluster_id"] = cluster["cluster_ids"][main_interaction_index]
