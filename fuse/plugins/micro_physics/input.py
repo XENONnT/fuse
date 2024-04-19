@@ -193,8 +193,8 @@ class file_loader:
 
         self.dtype = deposit_positions_fields + g4_fields
         self.columns = list(np.dtype(self.dtype).names)
-        # Remove evtid as it is not in the usual root or csv file
-        self.columns.remove("evtid")
+        # Remove eventid as it is not in the usual root or csv file
+        self.columns.remove("eventid")
         self.dtype += primary_positions_fields + strax.time_fields
 
         # Prepare cut for root and csv case
@@ -251,7 +251,7 @@ class file_loader:
             ).astype(np.int64)
             event_times = np.sort(event_times)
 
-            structure = np.unique(inter_reshaped["evtid"], return_counts=True)[1]
+            structure = np.unique(inter_reshaped["eventid"], return_counts=True)[1]
 
             # Check again why [:len(structure)] is needed
             interaction_time = np.repeat(event_times[: len(structure)], structure)
@@ -419,7 +419,7 @@ class file_loader:
         )
         eventids = ttree.arrays("eventid", entry_start=start_index, entry_stop=stop_index)
         eventids = ak.broadcast_arrays(eventids["eventid"], interactions["x"])[0]
-        interactions["evtid"] = eventids
+        interactions["eventid"] = eventids
 
         xyz_pri = ttree.arrays(
             ["x_pri", "y_pri", "z_pri"],
@@ -538,7 +538,7 @@ class file_loader:
             "parentid": reshape_awkward(df["parentid"].values, evt_offsets),
             "creaproc": reshape_awkward(np.array(df["creaproc"], dtype=str), evt_offsets),
             "edproc": reshape_awkward(np.array(df["edproc"], dtype=str), evt_offsets),
-            "evtid": reshape_awkward(df["eventid"].values, evt_offsets),
+            "eventid": reshape_awkward(df["eventid"].values, evt_offsets),
         }
 
         return ak.Array(dictionary)

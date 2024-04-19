@@ -100,7 +100,7 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
         result[i]["x_pri"] = cluster["x_pri"][main_interaction_index]
         result[i]["y_pri"] = cluster["y_pri"][main_interaction_index]
         result[i]["z_pri"] = cluster["z_pri"][main_interaction_index]
-        result[i]["evtid"] = cluster["evtid"][main_interaction_index]
+        result[i]["eventid"] = cluster["eventid"][main_interaction_index]
 
         # Get cluster id from and save it!
         result[i]["cluster_id"] = cluster["cluster_ids"][main_interaction_index]

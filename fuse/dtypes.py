@@ -10,7 +10,7 @@ g4_fields = [
     (("Trackid of the parent particle", "parentid"), np.int16),
     (("Geant4 process creating the particle", "creaproc"), "<U25"),
     (("Geant4 process responsible for the energy deposit", "edproc"), "<U25"),
-    (("Geant4 event ID", "evtid"), np.int32),
+    (("Geant4 event ID", "eventid"), np.int32),
 ]
 
 
@@ -50,7 +50,7 @@ csv_cluster_misc_fields = [
 cluster_misc_fields = [
     (("Mass number of the interacting particle", "A"), np.int8),
     (("Charge number of the interacting particle", "Z"), np.int8),
-    (("Geant4 event ID", "evtid"), np.int32),
+    (("Geant4 event ID", "eventid"), np.int32),
     (("Xenon density at the cluster position", "xe_density"), np.float32),
     (("ID of the volume in which the cluster occured", "vol_id"), np.int8),
     (("Flag indicating if a cluster can create a S2 signal", "create_S2"), np.bool_),

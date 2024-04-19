@@ -42,7 +42,7 @@ class TestInput(unittest.TestCase):
             }
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
-        loaded_event_count = len(np.unique(g4_loaded["evtid"]))
+        loaded_event_count = len(np.unique(g4_loaded["eventid"]))
         self.assertTrue(
             loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events"
         )
@@ -59,7 +59,7 @@ class TestInput(unittest.TestCase):
             }
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
-        loaded_event_count = len(np.unique(g4_loaded["evtid"]))
+        loaded_event_count = len(np.unique(g4_loaded["eventid"]))
 
         self.assertTrue(
             loaded_event_count == 26, f"Expecting 26 events, but got {loaded_event_count} events"
@@ -72,7 +72,7 @@ class TestInput(unittest.TestCase):
             {"path": self.temp_dir.name, "file_name": test_root_file_name, "cut_by_eventid": True}
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
-        loaded_event_count = len(np.unique(g4_loaded["evtid"]))
+        loaded_event_count = len(np.unique(g4_loaded["eventid"]))
         self.assertTrue(
             loaded_event_count == 52, f"Expecting 52 events, but got {loaded_event_count} events"
         )
@@ -90,7 +90,7 @@ class TestInput(unittest.TestCase):
             }
         )
         g4_loaded = test_context.get_array(self.run_number, "geant4_interactions")
-        loaded_event_count = len(np.unique(g4_loaded["evtid"]))
+        loaded_event_count = len(np.unique(g4_loaded["eventid"]))
         self.assertTrue(
             loaded_event_count == 23, f"Expecting 23 events, but got {loaded_event_count} events"
         )
