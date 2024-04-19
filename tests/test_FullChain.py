@@ -11,7 +11,7 @@ TIMEOUT = 240
 
 
 class TestFullChain(unittest.TestCase):
-    __test__ = False
+    __test__ = True
 
     @classmethod
     def setUpClass(cls):
