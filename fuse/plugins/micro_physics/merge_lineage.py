@@ -79,7 +79,7 @@ def merge_lineages(result, interactions):
         result[i]["cluster_id"] = lineage["lineage_index"][0]
 
         # These ones are the same for all interactions in the lineage
-        result[i]["evtid"] = lineage["evtid"][0]
+        result[i]["eventid"] = lineage["eventid"][0]
         result[i]["nestid"] = lineage["lineage_type"][0]
         result[i]["A"] = lineage["A"][0]
         result[i]["Z"] = lineage["Z"][0]

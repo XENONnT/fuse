@@ -44,8 +44,7 @@ class LineageClustering(FuseBasePlugin):
         (("Mass number of the interacting particle", "A"), np.int16),
         (("Charge number of the interacting particle", "Z"), np.int16),
         (("Type of the main cluster (alpha beta gamma)", "main_cluster_type"), np.dtype("U10")),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
 
