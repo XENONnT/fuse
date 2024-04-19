@@ -5,6 +5,7 @@ import straxen
 import logging
 import pickle
 
+from ...dtypes import quanta_fields
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -28,13 +29,7 @@ class NestYields(FuseBasePlugin):
     provides = "quanta"
     data_kind = "interactions_in_roi"
 
-    dtype = [
-        (("Number of photons at interaction position", "photons"), np.int32),
-        (("Number of electrons at interaction position", "electrons"), np.int32),
-        (("Number of excitons at interaction position", "excitons"), np.int32),
-    ]
-
-    dtype = dtype + strax.time_fields
+    dtype = quanta_fields + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
 
@@ -178,9 +173,7 @@ class BetaYields(strax.Plugin):
         ("photons", np.int32),
         ("electrons", np.int32),
         ("excitons", np.int32),
-    ]
-
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     # Forbid rechunking
     rechunk_on_save = False
@@ -311,13 +304,7 @@ class BBFYields(FuseBasePlugin):
     depends_on = ("interactions_in_roi", "electric_field_values")
     provides = "quanta"
 
-    dtype = [
-        ("photons", np.int32),
-        ("electrons", np.int32),
-        ("excitons", np.int32),
-    ]
-
-    dtype = dtype + strax.time_fields
+    dtype = quanta_fields + strax.time_fields
 
     def setup(self):
         super().setup()

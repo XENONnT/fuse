@@ -43,8 +43,7 @@ class ElectronDrift(FuseBasePlugin):
             ("Observed z position of the cluster after field distortion correction [cm]", "z_obs"),
             np.float32,
         ),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     save_when = strax.SaveWhen.ALWAYS
 
