@@ -47,7 +47,6 @@ class XENONnT_TPC(VolumePlugin):
     provides = "tpc_interactions"
     data_kind = "tpc_interactions"
 
-    # Can we import this from MergeCluster and just add the needed fields?
     dtype = (
         cluster_positions_fields
         + cluster_id_fields
@@ -119,7 +118,6 @@ class XENONnT_BelowCathode(VolumePlugin):
     provides = "below_cathode_interactions"
     data_kind = "below_cathode_interactions"
 
-    # Can we import this from MergeCluster and just add the needed fields?
     dtype = (
         cluster_positions_fields
         + cluster_id_fields
@@ -189,7 +187,6 @@ class XENONnT_GasPhase(VolumePlugin):
     provides = "gas_phase_interactions"
     data_kind = "gas_phase_interactions"
 
-    # Can we import this from MergeCluster and just add the needed fields?
     dtype = (
         cluster_positions_fields
         + cluster_id_fields
