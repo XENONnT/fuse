@@ -18,8 +18,7 @@ class EventTruth(strax.Plugin):
         ("z_obs_truth", np.float32),
         ("energy_of_main_peaks_truth", np.float32),
         ("total_energy_in_event_truth", np.float32),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     def compute(self, interactions_in_roi, propagated_photons, peaks, events):
         peaks_in_event = strax.split_by_containment(peaks, events)

@@ -3,6 +3,12 @@ import straxen
 import numpy as np
 import logging
 
+from ...dtypes import (
+    primary_positions_fields,
+    cluster_positions_fields,
+    cluster_id_fields,
+    cluster_misc_fields,
+)
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -25,40 +31,20 @@ class MergeCluster(FuseBasePlugin):
     interaction.
     """
 
-    __version__ = "0.3.1"
-
+    __version__ = "0.3.2"
     depends_on = ("geant4_interactions", "cluster_index")
-
     provides = "clustered_interactions"
     data_kind = "clustered_interactions"
 
     save_when = strax.SaveWhen.TARGET
 
-    dtype = [
-        (("x position of the cluster [cm]", "x"), np.float32),
-        (("y position of the cluster [cm]", "y"), np.float32),
-        (("z position of the cluster [cm]", "z"), np.float32),
-        (("Energy of the cluster [keV]", "ed"), np.float32),
-        (("NEST interaction type", "nestid"), np.int8),
-        (("Mass number of the interacting particle", "A"), np.int8),
-        (("Charge number of the interacting particle", "Z"), np.int8),
-        (("Geant4 event ID", "evtid"), np.int32),
-        (("x position of the primary particle [cm]", "x_pri"), np.float32),
-        (("y position of the primary particle [cm]", "y_pri"), np.float32),
-        (("z position of the primary particle [cm]", "z_pri"), np.float32),
-        (("ID of the cluster", "cluster_id"), np.int32),
-        (("Xenon density at the cluster position. Will be set later", "xe_density"), np.float32),
-        (("ID of the volume in which the cluster occured. Will be set later", "vol_id"), np.int8),
-        (
-            (
-                "Flag indicating if a cluster can create a S2 signal. Will be set later",
-                "create_S2",
-            ),
-            np.bool_,
-        ),
-    ]
-
-    dtype = dtype + strax.time_fields
+    dtype = (
+        cluster_positions_fields
+        + cluster_id_fields
+        + cluster_misc_fields
+        + primary_positions_fields
+        + strax.time_fields
+    )
 
     # Config options
     tag_cluster_by = straxen.URLConfig(
@@ -114,7 +100,7 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
         result[i]["x_pri"] = cluster["x_pri"][main_interaction_index]
         result[i]["y_pri"] = cluster["y_pri"][main_interaction_index]
         result[i]["z_pri"] = cluster["z_pri"][main_interaction_index]
-        result[i]["evtid"] = cluster["evtid"][main_interaction_index]
+        result[i]["eventid"] = cluster["eventid"][main_interaction_index]
 
         # Get cluster id from and save it!
         result[i]["cluster_id"] = cluster["cluster_ids"][main_interaction_index]
