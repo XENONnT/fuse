@@ -177,17 +177,7 @@ class BetaYields(NestYields):
     provides = "quanta"
     data_kind = "interactions_in_roi"
 
-    dtype = quanta_fields + strax.time_fields
-
-    # Forbid rechunking
-    rechunk_on_save = False
-
     # Config options
-    debug = straxen.URLConfig(
-        default=False,
-        type=bool,
-        help="Show debug informations",
-    )
 
     use_recombination_fluctuation = straxen.URLConfig(
         default=True,
