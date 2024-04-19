@@ -83,7 +83,7 @@ class LineageClustering(FuseBasePlugin):
 
         # The lineage index is now unique per event. We need to make it unique for the whole run
         _, unique_lineage_index = np.unique(
-            (geant4_interactions["evtid"], lineage_ids), axis=1, return_inverse=True
+            (geant4_interactions["eventid"], lineage_ids), axis=1, return_inverse=True
         )
 
         data = np.zeros(len(geant4_interactions), dtype=self.dtype)
@@ -104,7 +104,7 @@ class LineageClustering(FuseBasePlugin):
         geant4_interactions,
     ):
 
-        event_ids = np.unique(geant4_interactions["evtid"])
+        event_ids = np.unique(geant4_interactions["eventid"])
 
         all_lineag_ids = []
         all_lineage_types = []
@@ -114,7 +114,7 @@ class LineageClustering(FuseBasePlugin):
 
         for event_id in event_ids:
 
-            event = geant4_interactions[geant4_interactions["evtid"] == event_id]
+            event = geant4_interactions[geant4_interactions["eventid"] == event_id]
 
             track_id_sort = np.argsort(event[["trackid", "t"]])
             undo_sort_index = np.argsort(track_id_sort)
