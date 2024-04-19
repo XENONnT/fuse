@@ -22,6 +22,7 @@ class RecordsTruth(strax.Plugin):
         (("Number of S1 photons in record", "s1_photons_in_record"), np.int32),
         (("Number of S2 photons in record", "s2_photons_in_record"), np.int32),
         (("Number of AP photons in record", "ap_photons_in_record"), np.int32),
+        (("Number of dark counts in record", "dark_count_photons_in_record"), np.int32),
         (("Sum of the photon gains", "raw_area"), np.float32),
     ]
 
@@ -98,6 +99,9 @@ class RecordsTruth(strax.Plugin):
             result["s1_photons_in_record"][result_mask] = result_buffer["s1_photons_in_record"]
             result["s2_photons_in_record"][result_mask] = result_buffer["s2_photons_in_record"]
             result["ap_photons_in_record"][result_mask] = result_buffer["ap_photons_in_record"]
+            result["dark_count_photons_in_record"][result_mask] = result_buffer[
+                "dark_count_photons_in_record"
+            ]
 
         return result
 
@@ -110,6 +114,7 @@ def fill_result_buffer(list_input, result_buffer):
         result_buffer["s1_photons_in_record"][i] = np.sum(photons["photon_type"] == 1)
         result_buffer["s2_photons_in_record"][i] = np.sum(photons["photon_type"] == 2)
         result_buffer["ap_photons_in_record"][i] = np.sum(photons["photon_type"] == 0)
+        result_buffer["dark_count_photons_in_record"][i] = np.sum(photons["photon_type"] == 3)
 
 
 def split_photons_by_channel(propagated_photons):

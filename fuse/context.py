@@ -64,6 +64,7 @@ delayed_electron_merger_plugins = [
 # Plugins to simulate PMTs and DAQ
 pmt_and_daq_plugins = [
     fuse.pmt_and_daq.PMTAfterPulses,
+    fuse.pmt_and_daq.DarkCounts,
     fuse.pmt_and_daq.PhotonSummary,
     fuse.pmt_and_daq.PulseWindow,
     fuse.pmt_and_daq.PMTResponseAndDAQ,
