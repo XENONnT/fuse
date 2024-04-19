@@ -4,6 +4,7 @@ import logging
 import numpy as np
 
 from ...plugin import FuseBasePlugin
+from ...dtypes import propagated_photons_fields
 from ...common import pmt_gains, build_photon_propagation_output
 from ...common import (
     init_spe_scaling_factor_distributions,
@@ -29,17 +30,7 @@ class DarkCounts(FuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
 
-    dtype = [
-        (("PMT channel of the photon", "channel"), np.int16),
-        (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
-        (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
-        (("ID of the cluster creating the photon", "cluster_id"), np.int32),
-        (
-            ("Type of the photon. S1 (1), S2 (2), PMT AP (0) or dark count (3)", "photon_type"),
-            np.int8,
-        ),
-    ]
-    dtype = dtype + strax.time_fields
+    dtype = propagated_photons_fields + strax.time_fields
 
     # Config options
 
