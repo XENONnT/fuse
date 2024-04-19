@@ -2,8 +2,13 @@ import strax
 import numpy as np
 import logging
 
+from ...dtypes import (
+    primary_positions_fields,
+    cluster_positions_fields,
+    cluster_id_fields,
+    cluster_misc_fields,
+)
 from ...plugin import FuseBasePlugin
-from ...shared_dtypes import clustered_interactions_dtype
 
 export, __all__ = strax.exporter()
 
@@ -32,7 +37,13 @@ class MergeLineage(FuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
 
-    dtype = clustered_interactions_dtype
+    dtype = (
+        cluster_positions_fields
+        + cluster_id_fields
+        + cluster_misc_fields
+        + primary_positions_fields
+        + strax.time_fields
+    )
 
     def compute(self, geant4_interactions):
 
