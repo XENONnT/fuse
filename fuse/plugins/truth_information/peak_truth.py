@@ -39,8 +39,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         ("average_x_obs_of_contributing_clusters", np.float32),
         ("average_y_obs_of_contributing_clusters", np.float32),
         ("average_z_obs_of_contributing_clusters", np.float32),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     gain_model_mc = straxen.URLConfig(
         default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
