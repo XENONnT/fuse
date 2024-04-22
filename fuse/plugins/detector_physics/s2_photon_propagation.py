@@ -217,7 +217,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         "&pmt_mask=plugin.pmt_mask"
         "&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top"
         "&n_tpc_pmts=plugin.n_tpc_pmts"
-        "&n_top_pmts=plugin.n_top_pmts",
+        "&n_top_pmts=plugin.n_top_pmts"
+        "&turned_off_pmts=plugin.turned_off_pmts",
         cache=True,
         help="S2 pattern map",
     )
@@ -449,9 +450,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             pattern = np.pad(
                 pattern, [[0, 0], [0, len(bottom_index)]], "constant", constant_values=1
             )
-
-        # Remove turned off pmts
-        pattern[:, np.in1d(channels, self.turned_off_pmts)] = 0
 
         sum_pat = np.sum(pattern, axis=1).reshape(-1, 1)
         pattern = np.divide(pattern, sum_pat, out=np.zeros_like(pattern), where=sum_pat != 0)
