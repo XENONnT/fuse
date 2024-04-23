@@ -11,4 +11,4 @@ _Please include the following if applicable:_
   - [ ] _Bump plugin version(s)_
   - [ ] _Update the documentation_
   - [ ] _Tests to check the (new) code is working as desired._
-  - [ ] _Does it solve one of the open issues on github?_
+  - [ ] _Does it solve one of the [GitHub open issues](https://github.com/XENONnT/fuse/issues)?_
