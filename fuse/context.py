@@ -250,16 +250,13 @@ def modify_s2_pattern_map(
         s2map = deepcopy(s2_pattern_map)
         # First we need to set turned off pmts before scaling
         s2map.data["map"][..., turned_off_pmts] = 0
-        s2map_topeff_ = s2map.data["map"][..., 0:n_top_pmts].sum(axis=2, keepdims=True)
+        s2map_topeff_ = s2map.data["map"][..., :n_top_pmts].sum(axis=2, keepdims=True)
         s2map_toteff_ = s2map.data["map"].sum(axis=2, keepdims=True)
-        # Scale the map to match the desired AFT, for each space point
-        orig_aft_ = np.where(
-            s2map_toteff_ != 0, s2map_topeff_ / s2map_toteff_, s2_mean_area_fraction_top
-        )
+        orig_aft_ = np.nanmean(s2map_topeff_ / s2map_toteff_)
         # Getting scales for top/bottom separately to preserve total efficiency
         scale_top_ = s2_mean_area_fraction_top / orig_aft_
         scale_bot_ = (1 - s2_mean_area_fraction_top) / (1 - orig_aft_)
-        s2map.data["map"][..., 0:n_top_pmts] *= scale_top_
+        s2map.data["map"][..., :n_top_pmts] *= scale_top_
         s2map.data["map"][..., n_top_pmts:n_tpc_pmts] *= scale_bot_
         s2_pattern_map.__init__(s2map.data)
     return s2_pattern_map
