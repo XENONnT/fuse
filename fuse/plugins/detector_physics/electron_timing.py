@@ -32,8 +32,7 @@ class ElectronTiming(FuseBasePlugin):
         (("x position of the electron [cm]", "x"), np.float32),
         (("y position of the electron [cm]", "y"), np.float32),
         (("ID of the cluster creating the electron", "cluster_id"), np.int32),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     # Config options
     electron_trapping_time = straxen.URLConfig(

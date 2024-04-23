@@ -27,9 +27,7 @@ class ElectronExtraction(FuseBasePlugin):
 
     dtype = [
         (("Number of electrons extracted into the gas phase", "n_electron_extracted"), np.int32),
-    ]
-
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     # Config options
     s2_secondary_sc_gain_mc = straxen.URLConfig(

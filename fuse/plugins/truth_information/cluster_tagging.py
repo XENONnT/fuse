@@ -24,8 +24,7 @@ class ClusterTagging(strax.Plugin):
         ("photons_in_main_s2", np.int32),
         ("photons_in_alt_s1", np.int32),
         ("photons_in_alt_s2", np.int32),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     def compute(self, interactions_in_roi, propagated_photons, peaks, events):
         peaks_in_event = strax.split_by_containment(peaks, events)
