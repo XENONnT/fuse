@@ -160,7 +160,8 @@ class SecondaryScintillation(FuseBasePlugin):
         "&pmt_mask=plugin.pmt_mask"
         "&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top"
         "&n_tpc_pmts=plugin.n_tpc_pmts"
-        "&n_top_pmts=plugin.n_top_pmts",
+        "&n_top_pmts=plugin.n_top_pmts"
+        "&turned_off_pmts=plugin.turned_off_pmts",
         cache=True,
         help="S2 pattern map",
     )
