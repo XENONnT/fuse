@@ -5,6 +5,7 @@
 [![Test package](https://github.com/XENONnT/fuse/actions/workflows/pytest.yml/badge.svg?branch=main)](https://github.com/XENONnT/fuse/actions/workflows/pytest.yml)
 [![Readthedocs Badge](https://readthedocs.org/projects/fuse/badge/?version=latest)](https://xenon-fuse.readthedocs.io/en/latest/?badge=latest)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/XENONnT/fuse/main.svg)](https://results.pre-commit.ci/latest/github/XENONnT/fuse/main)
+[![DOI](https://zenodo.org/badge/622956443.svg)](https://zenodo.org/doi/10.5281/zenodo.11059395)
 
 **F**ramework for **U**nified **S**imulation of **E**vents
 
