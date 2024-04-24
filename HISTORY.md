@@ -3,7 +3,7 @@
 * pre-commit autoupdate (#191)
 * Fix the `data_kind` of `RecordsTruth` (#194)
 * Test full chain in multiple chunks and clean up input tests (#184)
-* Add a dtypes manger (#195)
+* Add a dtypes manager (#195)
 * Add pull_request_template.md (#197)
 * Scale S2 pattern map to correct S2 AFT (#196)
 
