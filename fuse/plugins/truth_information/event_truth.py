@@ -13,6 +13,9 @@ class EventTruth(strax.Plugin):
     data_kind = "events"
 
     dtype = [
+        ("x_truth", np.float32),
+        ("y_truth", np.float32),
+        ("z_truth", np.float32),
         ("x_obs_truth", np.float32),
         ("y_obs_truth", np.float32),
         ("z_obs_truth", np.float32),
@@ -33,6 +36,15 @@ class EventTruth(strax.Plugin):
         for i, (pic, e) in enumerate(zip(peaks_in_event, events)):
             s1 = pic[e["s1_index"]]
             s2 = pic[e["s2_index"]]
+
+            result["x_truth"][i] = s2["average_x_of_contributing_clusters"]
+            result["y_truth"][i] = s2["average_y_of_contributing_clusters"]
+            result["z_truth"][i] = np.mean(
+                [
+                    s2["average_z_of_contributing_clusters"],
+                    s1["average_z_of_contributing_clusters"],
+                ]
+            )
 
             result["x_obs_truth"][i] = s2["average_x_obs_of_contributing_clusters"]
             result["y_obs_truth"][i] = s2["average_y_obs_of_contributing_clusters"]
