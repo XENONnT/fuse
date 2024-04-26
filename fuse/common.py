@@ -306,9 +306,6 @@ def build_photon_propagation_output(
     result["cluster_id"] = _cluster_id
     result["photon_type"] = photon_type
 
-    # Remove photons with photon_gain <= 0
-    result = result[result["photon_gain"] > 0]
-
     return result
 
 
