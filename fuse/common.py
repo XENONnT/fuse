@@ -308,6 +308,7 @@ def build_photon_propagation_output(
 
     # Remove photons with photon_gain <= 0
     result = result[result["photon_gain"] > 0]
+    result = result[result["channel"] >= 0]
 
     return result
 
