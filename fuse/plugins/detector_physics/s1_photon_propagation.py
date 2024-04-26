@@ -157,7 +157,9 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         )
 
     def infer_dtype(self):
-        s1_photons_detected_dtype = [(("Number detected S1 photons", "n_s1_photon_detected"), np.int32)] + strax.time_fields
+        s1_photons_detected_dtype = [
+            (("Number detected S1 photons", "n_s1_photon_detected"), np.int32)
+        ] + strax.time_fields
         propagated_s1_photons_dtype = propagated_photons_fields + strax.time_fields
         return dict(
             propagated_s1_photons=propagated_s1_photons_dtype,
@@ -170,11 +172,15 @@ class S1PhotonPropagationBase(FuseBasePlugin):
 
         if len(instruction) == 0:
             propagated_s1_photons = np.zeros(0, self.dtype_for("propagated_s1_photons"))
-            s1_photons_detected = np.zeros(len(interactions_in_roi), self.dtype_for("s1_photons_detected"))
-            s1_photons_detected['time'] = interactions_in_roi['time']
-            s1_photons_detected['endtime'] = interactions_in_roi['endtime']
-            s1_photons_detected['n_s1_photon_detected'] = 0
-            return dict(propagated_s1_photons=propagated_s1_photons, s1_photons_detected=s1_photons_detected)
+            s1_photons_detected = np.zeros(
+                len(interactions_in_roi), self.dtype_for("s1_photons_detected")
+            )
+            s1_photons_detected["time"] = interactions_in_roi["time"]
+            s1_photons_detected["endtime"] = interactions_in_roi["endtime"]
+            s1_photons_detected["n_s1_photon_detected"] = 0
+            return dict(
+                propagated_s1_photons=propagated_s1_photons, s1_photons_detected=s1_photons_detected
+            )
 
         # set the global nest random generator with self.short_seed
         nest_rng.set_seed(self.short_seed)
@@ -235,9 +241,9 @@ class S1PhotonPropagationBase(FuseBasePlugin):
             rng=self.rng,
         )
 
-
         if debug:
             import pdb
+
             pdb.set_trace()
 
         propagated_s1_photons = build_photon_propagation_output(
@@ -253,19 +259,23 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         propagated_s1_photons = strax.sort_by_time(propagated_s1_photons)
 
         # Calculate the number of photons detected (PhD)
-        s1_photons_detected = np.zeros(len(interactions_in_roi), self.dtype_for("s1_photons_detected"))
-        s1_photons_detected['time'] = interactions_in_roi['time']
-        s1_photons_detected['endtime'] = interactions_in_roi['endtime']
+        s1_photons_detected = np.zeros(
+            len(interactions_in_roi), self.dtype_for("s1_photons_detected")
+        )
+        s1_photons_detected["time"] = interactions_in_roi["time"]
+        s1_photons_detected["endtime"] = interactions_in_roi["endtime"]
         # The cluster id and photon gain are from the propagated_s1_photons
         # This is because there are some roundings in the photon gain calculation
         # Small gains will be rounded to zeros
-        cluster_id = propagated_s1_photons['cluster_id']
-        photon_gains = propagated_s1_photons['photon_gain']
+        cluster_id = propagated_s1_photons["cluster_id"]
+        photon_gains = propagated_s1_photons["photon_gain"]
         n_s1_photon_hit_on_dead_pmts = self._count_photon_hits_on_dead_pmts(
             cluster_id_with_zero_gains=cluster_id[photon_gains <= 0],
             interactions_in_roi=interactions_in_roi,
         )
-        s1_photons_detected['n_s1_photon_detected'] = interactions_in_roi['n_s1_photon_hits'] - n_s1_photon_hit_on_dead_pmts
+        s1_photons_detected["n_s1_photon_detected"] = (
+            interactions_in_roi["n_s1_photon_hits"] - n_s1_photon_hit_on_dead_pmts
+        )
 
         # Remove photons with photon_gain <= 0
         propagated_s1_photons = propagated_s1_photons[propagated_s1_photons["photon_gain"] > 0]
@@ -273,11 +283,13 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         # Unlock the nest random generator seed again
         nest_rng.unlock_seed()
 
-        return dict(propagated_s1_photons=propagated_s1_photons, s1_photons_detected=s1_photons_detected)
+        return dict(
+            propagated_s1_photons=propagated_s1_photons, s1_photons_detected=s1_photons_detected
+        )
 
     def _count_photon_hits_on_dead_pmts(self, cluster_id_with_zero_gains, interactions_in_roi):
         cluster_id_with_zero_gains = cluster_id_with_zero_gains[np.newaxis, :]
-        cluster_id = interactions_in_roi['cluster_id'][:, np.newaxis]
+        cluster_id = interactions_in_roi["cluster_id"][:, np.newaxis]
         return np.sum(cluster_id_with_zero_gains == cluster_id, axis=1)
 
     def photon_channels(self, positions, n_photon_hits):
