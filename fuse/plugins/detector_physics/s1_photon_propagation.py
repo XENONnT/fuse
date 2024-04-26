@@ -166,7 +166,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
             s1_photons_detected=s1_photons_detected_dtype,
         )
 
-    def compute(self, interactions_in_roi, debug=False):
+    def compute(self, interactions_in_roi):
         # Just apply this to clusters with photons hitting a PMT
         instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
 
@@ -240,11 +240,6 @@ class S1PhotonPropagationBase(FuseBasePlugin):
             spe_scaling_factor_distributions=self.spe_scaling_factor_distributions,
             rng=self.rng,
         )
-
-        if debug:
-            import pdb
-
-            pdb.set_trace()
 
         propagated_s1_photons = build_photon_propagation_output(
             dtype=self.dtype_for("propagated_s1_photons"),
