@@ -467,6 +467,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                 pat[bottom_index] *= (1 - _new_aft) / (1 - _cur_aft)
 
             # Pattern map return zeros
+            # Photons will be rejected when building photon propagation output
             if np.isnan(pat).sum() > 0:
                 _photon_channels = np.array([-1] * n_ph)
 
