@@ -241,6 +241,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
             rng=self.rng,
         )
 
+        # Build the output of propagated_s1_photons
         propagated_s1_photons = build_photon_propagation_output(
             dtype=self.dtype_for("propagated_s1_photons"),
             _photon_timings=_photon_timings,
@@ -250,10 +251,9 @@ class S1PhotonPropagationBase(FuseBasePlugin):
             _cluster_id=_cluster_id,
             photon_type=1,
         )
-
         propagated_s1_photons = strax.sort_by_time(propagated_s1_photons)
 
-        # Calculate the number of photons detected (PhD)
+        # Build the output of s1_photons_detected
         s1_photons_detected = np.zeros(
             len(interactions_in_roi), self.dtype_for("s1_photons_detected")
         )
@@ -264,12 +264,12 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         # Small gains will be rounded to zeros
         cluster_id = propagated_s1_photons["cluster_id"]
         photon_gains = propagated_s1_photons["photon_gain"]
-        n_s1_photon_hit_on_dead_pmts = self._count_photon_hits_on_dead_pmts(
-            cluster_id_with_zero_gains=cluster_id[photon_gains <= 0],
-            interactions_in_roi=interactions_in_roi,
+        n_s1_photon_hits_on_dead_pmts = self._photon_hits_on_dead_pmts(
+            cluster_id[photon_gains <= 0],
+            interactions_in_roi,
         )
         s1_photons_detected["n_s1_photon_detected"] = (
-            interactions_in_roi["n_s1_photon_hits"] - n_s1_photon_hit_on_dead_pmts
+            interactions_in_roi["n_s1_photon_hits"] - n_s1_photon_hits_on_dead_pmts
         )
 
         # Remove photons with photon_gain <= 0
@@ -282,7 +282,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
             propagated_s1_photons=propagated_s1_photons, s1_photons_detected=s1_photons_detected
         )
 
-    def _count_photon_hits_on_dead_pmts(self, cluster_id_with_zero_gains, interactions_in_roi):
+    def _photon_hits_on_dead_pmts(self, cluster_id_with_zero_gains, interactions_in_roi):
         cluster_id_with_zero_gains = cluster_id_with_zero_gains[np.newaxis, :]
         cluster_id = interactions_in_roi["cluster_id"][:, np.newaxis]
         return np.sum(cluster_id_with_zero_gains == cluster_id, axis=1)
