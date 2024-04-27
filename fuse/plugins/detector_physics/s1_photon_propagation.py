@@ -28,7 +28,8 @@ nest_rng = nestpy.RandomGen.rndm()
 class S1PhotonPropagationBase(FuseBasePlugin):
     """Base plugin to simulate the propagation of S1 photons in the detector.
     Photons are randomly assigned to PMT channels based on their starting
-    position and the timing of the photons is calculated.
+    position and the timing of the photons is calculated. The plugin has two
+    provides, propagated_s1_photons and s1_photons_detected.
 
     Note: The timing calculation is defined in the child plugin.
     """
