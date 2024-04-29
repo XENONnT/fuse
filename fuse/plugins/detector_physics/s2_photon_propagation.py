@@ -424,6 +424,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             photon_type=2,
         )
 
+        # Discard photons associated with negative channel numbers
+        result = result[result["channel"] >= 0]
+
         result = strax.sort_by_time(result)
 
         return result
@@ -466,8 +469,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                 pat[top_index] *= _new_aft / _cur_aft
                 pat[bottom_index] *= (1 - _new_aft) / (1 - _cur_aft)
 
-            # Pattern map return zeros
-            # Photons will be rejected when building photon propagation output
+            # If pattern map return zeros or has NAN values assign negative channel
+            # Photons with negative channel number will be rejected when building photon propagation output
             if np.isnan(pat).sum() > 0:
                 _photon_channels = np.array([-1] * n_ph)
 
