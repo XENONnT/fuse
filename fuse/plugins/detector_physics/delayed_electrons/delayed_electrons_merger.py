@@ -82,8 +82,8 @@ class S1PhotonHitsMerger(VerticalMergerPlugin):
     """Plugin which concatenates the output of the regular and delayed s1
     photon hits plugins."""
 
-    depends_on = ("s1_photons", "delayed_s1_photons")
+    depends_on = ("s1_photon_hits", "delayed_s1_photon_hits")
 
-    provides = "merged_s1_photons"
+    provides = "merged_s1_photon_hits"
     data_kind = "interactions_in_roi"
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
