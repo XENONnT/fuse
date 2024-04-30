@@ -256,12 +256,15 @@ class file_loader:
         # Adjust event times if necessary
         if self.event_rate > 0:
 
+            # We need to get the number of interactions in the event,
+            # as we could have empty for TPC but not for other detectors
+            num_interactions = len(interactions["t"])
             event_times = self.rng.uniform(
-                low=start / self.event_rate, high=stop / self.event_rate, size=stop - start
+                low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
             ).astype(np.int64)
-
+        
             event_times = np.sort(event_times)
-
+            
             interactions["time"] = interactions["t"] + event_times
 
         elif self.event_rate == 0:
