@@ -48,7 +48,7 @@ class TestFullChain(unittest.TestCase):
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="S1PhotonHits timed out")
     def test_S1PhotonHits(self):
-        self.test_context.make(self.run_number, "s1_photon_hits")
+        self.test_context.make(self.run_number, "s1_photons")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="S1PhotonPropagation timed out")
     def test_S1PhotonPropagation(self):

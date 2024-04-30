@@ -35,7 +35,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
 
     __version__ = "0.3.1"
 
-    depends_on = ("microphysics_summary", "s1_photon_hits")
+    depends_on = ("microphysics_summary", "s1_photons")
     provides = "propagated_s1_photons"
     data_kind = "s1_photons"
 
