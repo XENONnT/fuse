@@ -249,7 +249,7 @@ class file_loader:
         # we will apply the cut later on the times instead of t
         delay_cut = interaction_time <= self.cut_delayed
         log.info(
-            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut)/len(delay_cut):.4%}) "
+            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut) / len(delay_cut):.4%}) "
             f"interactions later than {self.cut_delayed:.2e} ns."
         )
 
@@ -264,7 +264,7 @@ class file_loader:
             ).astype(np.int64)
         
             event_times = np.sort(event_times)
-            
+
             interactions["time"] = interactions["t"] + event_times
 
         elif self.event_rate == 0:
