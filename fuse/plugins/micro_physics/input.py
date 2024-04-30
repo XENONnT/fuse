@@ -250,7 +250,6 @@ class file_loader:
             f"interactions later than {self.cut_delayed:.2e} ns."
         )
 
-
         if self.event_rate > 0:
             interactions["t"] = interactions["t"] - interactions["t"][:, 0]
 
@@ -259,7 +258,7 @@ class file_loader:
                 low=start / self.event_rate, high=stop / self.event_rate, size=stop - start
             ).astype(np.int64)
             event_times = np.sort(event_times)
-            interactions['time'] = interactions['t'] + event_times
+            interactions["time"] = interactions["t"] + event_times
 
         elif self.event_rate == 0:
             log.info("Using event times from provided input file.")
@@ -269,7 +268,7 @@ class file_loader:
                     "Use a source_rate > 0 instead."
                 )
                 log.warning(msg)
-            interactions['time'] = interactions['t']
+            interactions["time"] = interactions["t"]
 
         else:
             raise ValueError("Source rate cannot be negative!")
