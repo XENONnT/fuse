@@ -332,8 +332,8 @@ class file_loader:
             current_chunk = interactions[m]
 
             if len(current_chunk) == 0:
-                # This is needed otherwise the shape is not correct
-                current_chunk = np.array([], dtype=self.dtype)
+                current_chunk = np.empty(0, dtype=self.dtype)
+            
             else:
                 # Convert the chunk from awkward array to a numpy array
                 current_chunk = full_array_to_numpy(current_chunk, self.dtype)
