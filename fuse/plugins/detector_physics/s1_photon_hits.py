@@ -22,7 +22,7 @@ class S1PhotonHits(FuseBasePlugin):
     __version__ = "0.2.0"
 
     depends_on = "microphysics_summary"
-    provides = "s1_photons"
+    provides = "s1_photon_hits"
     data_kind = "interactions_in_roi"
 
     save_when = strax.SaveWhen.ALWAYS
