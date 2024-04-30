@@ -10,7 +10,7 @@ import strax
 import straxen
 
 from ...dtypes import g4_fields, primary_positions_fields, deposit_positions_fields
-from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
+from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, awkward_to_flat_numpy
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
