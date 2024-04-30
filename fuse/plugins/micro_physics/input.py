@@ -262,9 +262,9 @@ class file_loader:
             event_times = self.rng.uniform(
                 low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
             ).astype(np.int64)
-        
+
             event_times = np.sort(event_times)
-            
+
             interactions["time"] = interactions["t"] + event_times
 
         elif self.event_rate == 0:
