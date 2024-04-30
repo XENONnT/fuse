@@ -14,10 +14,10 @@ log = logging.getLogger("fuse.detector_physics.delayed_electrons.delayed_electro
 class S1PhotonHitsEmpty(FuseBasePlugin):
     """Plugin to return zeros for all S1 photon hits of delayed electrons."""
 
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     depends_on = "photo_ionization_electrons"
-    provides = "delayed_s1_photons"
+    provides = "delayed_s1_photon_hits"
     data_kind = "delayed_interactions_in_roi"
 
     dtype = [
