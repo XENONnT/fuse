@@ -17,7 +17,7 @@ class S1PhotonHitsEmpty(FuseBasePlugin):
     __version__ = "0.0.2"
 
     depends_on = "photo_ionization_electrons"
-    provides = "delayed_s1_photon_hits"
+    provides = "delayed_s1_photons"
     data_kind = "delayed_interactions_in_roi"
 
     dtype = [
