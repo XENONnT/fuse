@@ -330,11 +330,16 @@ class file_loader:
             m = ak.min(interactions["time"], axis=1) >= chunk_left
             m = m & (ak.max(interactions["time"], axis=1) <= chunk_right)
             current_chunk = interactions[m]
-            current_chunk = full_array_to_numpy(current_chunk, self.dtype)
+
+            if len(current_chunk) == 0:
+                # This is needed otherwise the shape is not correct
+                current_chunk = np.array([], dtype=self.dtype)
+            else:
+                # Convert the chunk from awkward array to a numpy array
+                current_chunk = full_array_to_numpy(current_chunk, self.dtype)
 
             # Now we have the chunk of data in numpy format
             # We can now filter the interactions within the chunk
-
             select_times = (current_chunk["time"] >= chunk_left) & (
                 current_chunk["time"] <= chunk_right
             )
