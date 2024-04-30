@@ -86,4 +86,4 @@ class S1PhotonHitsMerger(VerticalMergerPlugin):
 
     provides = "merged_s1_photon_hits"
     data_kind = "interactions_in_roi"
-    __version__ = "0.0.2"
+    __version__ = "0.0.1"

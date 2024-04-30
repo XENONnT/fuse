@@ -19,7 +19,7 @@ class S1PhotonHits(FuseBasePlugin):
     """Plugin to simulate the number of detected S1 photons using a S1 light
     collection efficiency map."""
 
-    __version__ = "0.2.1"
+    __version__ = "0.2.0"
 
     depends_on = "microphysics_summary"
     provides = "s1_photon_hits"
