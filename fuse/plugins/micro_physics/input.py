@@ -244,10 +244,10 @@ class file_loader:
 
         if self.event_rate > 0:
             event_times = self.rng.uniform(
-            low=start / self.event_rate, high=stop / self.event_rate, size=stop - start
+                low=start / self.event_rate, high=stop / self.event_rate, size=stop - start
             ).astype(np.int64)
             event_times = np.sort(event_times)
-            interactions['t'] = event_times + interactions['t']
+            interactions["t"] = event_times + interactions["t"]
 
         elif self.event_rate == 0:
             log.info("Using event times from provided input file.")
@@ -261,10 +261,9 @@ class file_loader:
         else:
             raise ValueError("Source rate cannot be negative!")
 
-
         # Get the interaction times into flat numpy array
         # we will use this to find the chunk boundaries
-        # and only convert the full array to numpy when we have the 
+        # and only convert the full array to numpy when we have the
         # chunk boundaries to optimize memory usage
         interaction_time = awkward_to_flat_numpy(interactions["t"])
 
@@ -281,15 +280,18 @@ class file_loader:
         interaction_time = interaction_time[sort_idx]
 
         # Group interactions into chunks
-        chunk_idx = dynamic_chunking(interaction_time, 
-            scale=self.separation_scale, 
-            n_min=self.n_interactions_per_chunk
-            )
+        chunk_idx = dynamic_chunking(
+            interaction_time, scale=self.separation_scale, n_min=self.n_interactions_per_chunk
+        )
         unique_chunk_index_values = np.unique(chunk_idx)
 
         # Find the chunk boundaries
-        chunk_start = np.array([interaction_time[chunk_idx == i][0] for i in unique_chunk_index_values])
-        chunk_end = np.array([interaction_time[chunk_idx == i][-1] for i in unique_chunk_index_values])
+        chunk_start = np.array(
+            [interaction_time[chunk_idx == i][0] for i in unique_chunk_index_values]
+        )
+        chunk_end = np.array(
+            [interaction_time[chunk_idx == i][-1] for i in unique_chunk_index_values]
+        )
 
         # Find the chunk bounds
         if (len(chunk_start) > 1) & (len(chunk_end) > 1):
@@ -297,7 +299,7 @@ class file_loader:
             gap_length = np.append(gap_length, gap_length[-1] + self.last_chunk_length)
             chunk_bounds = chunk_end + np.int64(self.chunk_delay_fraction * gap_length)
             self.chunk_bounds = np.append(chunk_start[0] - self.first_chunk_left, chunk_bounds)
-        
+
         else:
             log.warning(
                 "Only one Chunk created! Only a few events simulated? "
@@ -308,7 +310,6 @@ class file_loader:
                 chunk_start[0] - self.first_chunk_left,
                 chunk_end[0] + self.last_chunk_length,
             ]
-            
 
         # Process and yield each chunk
         source_done = False
@@ -316,16 +317,16 @@ class file_loader:
 
             # We do a preselction of the events that have interactions within the chunk
             # before converting the full array to numpy (which is expensive in terms of memory)
-            m = (ak.min(interactions["t"], axis=1) >= chunk_left)
+            m = ak.min(interactions["t"], axis=1) >= chunk_left
             m = m & (ak.max(interactions["t"], axis=1) <= chunk_right)
             current_chunk = interactions[m]
-            current_chunk['time'] = current_chunk['t']
+            current_chunk["time"] = current_chunk["t"]
             current_chunk = full_array_to_numpy(current_chunk, self.dtype)
-            
+
             # Now we have the chunk of data in numpy format
             # We can now filter the interactions within the chunk
-            select_times = (current_chunk['time'] >= chunk_left) 
-            select_times &= (current_chunk['time'] <= chunk_right)
+            select_times = current_chunk["time"] >= chunk_left
+            select_times &= current_chunk["time"] <= chunk_right
             current_chunk = current_chunk[select_times]
 
             # Sorting each ed by time within the chunk
