@@ -239,6 +239,18 @@ class file_loader:
         # Sort interactions in events by time and subtract time of the first interaction
         interactions = interactions[ak.argsort(interactions["t"])]
 
+        # Get the interaction times into flat numpy array
+        interaction_time = awkward_to_flat_numpy(interactions["t"])
+
+        # Remove interactions that happen way after the run ended
+        # We will apply the cut later on the times instead of t
+        delay_cut = interaction_time <= self.cut_delayed
+        log.info(
+            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut)/len(delay_cut):.4%}) "
+            f"interactions later than {self.cut_delayed:.2e} ns."
+        )
+
+
         if self.event_rate > 0:
             interactions["t"] = interactions["t"] - interactions["t"][:, 0]
 
@@ -247,7 +259,7 @@ class file_loader:
             low=start / self.event_rate, high=stop / self.event_rate, size=stop - start
             ).astype(np.int64)
             event_times = np.sort(event_times)
-            interactions['t'] = event_times + interactions['t']
+            interactions['time'] = interactions['t'] + event_times
 
         elif self.event_rate == 0:
             log.info("Using event times from provided input file.")
@@ -257,6 +269,7 @@ class file_loader:
                     "Use a source_rate > 0 instead."
                 )
                 log.warning(msg)
+            interactions['time'] = interactions['t']
 
         else:
             raise ValueError("Source rate cannot be negative!")
@@ -266,14 +279,8 @@ class file_loader:
         # we will use this to find the chunk boundaries
         # and only convert the full array to numpy when we have the 
         # chunk boundaries to optimize memory usage
-        interaction_time = awkward_to_flat_numpy(interactions["t"])
-
-        # Remove interactions that happen way after the run ended
-        delay_cut = interaction_time <= self.cut_delayed
-        log.info(
-            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut)/len(delay_cut):.4%}) "
-            f"interactions later than {self.cut_delayed:.2e} ns."
-        )
+        interaction_time = awkward_to_flat_numpy(interactions["time"])
+        interaction_time = interaction_time.astype(np.int64)
         interaction_time = interaction_time[delay_cut]
 
         # Sort interactions by time
@@ -312,7 +319,10 @@ class file_loader:
 
         # Process and yield each chunk
         source_done = False
-        for c_ix, chunk_left, chunk_right in zip(unique_chunk_index_values, chunk_start, chunk_end):
+        log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
+        for c_ix, chunk_left, chunk_right in zip(
+            unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]
+        ):
 
             # We do a preselction of the events that have interactions within the chunk
             # before converting the full array to numpy (which is expensive in terms of memory)
