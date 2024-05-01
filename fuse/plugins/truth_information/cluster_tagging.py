@@ -7,8 +7,8 @@ export, __all__ = strax.exporter()
 
 @export
 class ClusterTagging(strax.Plugin):
-    """Plugin to tag if clusters contribute to the main or alternative
-    s1/s2 in an event, or successfully reconstructed as s0/s1/s2 peaks."""
+    """Plugin to tag if clusters contribute to the main or alternative s1/s2 in
+    an event, or successfully reconstructed as s0/s1/s2 peaks."""
 
     __version__ = "0.0.4"
 
@@ -36,7 +36,7 @@ class ClusterTagging(strax.Plugin):
         default=200,
         type=int,
         help="Time window [ns] that defines whether a photon is in a peak. "
-             "Peaks' start and end times are extended by this window to find photons in them.",
+        "Peaks' start and end times are extended by this window to find photons in them.",
     )
 
     def compute(self, interactions_in_roi, propagated_photons, peaks, events):
