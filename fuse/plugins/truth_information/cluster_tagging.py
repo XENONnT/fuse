@@ -1,4 +1,5 @@
 import strax
+import straxen
 import numpy as np
 
 export, __all__ = strax.exporter()
@@ -9,13 +10,18 @@ class ClusterTagging(strax.Plugin):
     """Plugin to tag if clusters contribute to the main or alternative
     s1/s2."""
 
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
 
     depends_on = ("microphysics_summary", "photon_summary", "peak_basics", "event_basics")
     provides = "tagged_clusters"
     data_kind = "interactions_in_roi"
 
     dtype = [
+        ("in_peak", np.bool_),
+        ("in_s0", np.bool_),
+        ("in_s1", np.bool_),
+        ("in_s2", np.bool_),
+        ("tight_coincidence", np.int32),
         ("in_main_s1", np.bool_),
         ("in_main_s2", np.bool_),
         ("in_alt_s1", np.bool_),
@@ -26,13 +32,29 @@ class ClusterTagging(strax.Plugin):
         ("photons_in_alt_s2", np.int32),
     ] + strax.time_fields
 
-    def compute(self, interactions_in_roi, propagated_photons, peaks, events):
-        peaks_in_event = strax.split_by_containment(peaks, events)
-        photon_in_event = strax.split_touching_windows(propagated_photons, events)
+    photon_finding_window = straxen.URLConfig(
+        default=200,
+        type=int,
+        help="Time window [ns] that defines whether a photon is in a peak. Peaks' start and end times are extended by this window.",
+    )
 
+    def compute(self, interactions_in_roi, propagated_photons, peaks, events):
         result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         result["time"] = interactions_in_roi["time"]
         result["endtime"] = interactions_in_roi["endtime"]
+
+        # First we tag the clusters that are in a peak
+        photons_in_peak = strax.split_touching_windows(interactions_in_roi, peaks, window=self.photon_finding_window)
+        for peak, photons in zip(peaks, photons_in_peak):
+            peak_type = peak['type']
+            mask = np.isin(interactions_in_roi['cluster_id'], photons['cluster_id'])
+            result["in_peak"][mask] = True
+            result[f"in_s{peak_type}"][mask] = True
+            result["tight_coincidence"][mask] = peak['tight_coincidence']
+
+        # Then we tag the clusters that are in an event's main or alternative s1/s2
+        peaks_in_event = strax.split_by_containment(peaks, events)
+        photon_in_event = strax.split_touching_windows(propagated_photons, events)
 
         for i, (peaks_of_event, event_i, photon_of_event) in enumerate(
             zip(peaks_in_event, events, photon_in_event)
