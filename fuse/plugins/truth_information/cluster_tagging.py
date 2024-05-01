@@ -35,7 +35,7 @@ class ClusterTagging(strax.Plugin):
     photon_finding_window = straxen.URLConfig(
         default=200,
         type=int,
-        help="Time window [ns] that defines whether a photon is in a peak. Peaks' start and end times are extended by this window.",
+        help="Time window [ns] that defines whether a photon is in a peak. Peaks' start and end times are extended by this window to find photons in them.",
     )
 
     def compute(self, interactions_in_roi, propagated_photons, peaks, events):
@@ -59,7 +59,7 @@ class ClusterTagging(strax.Plugin):
         for i, (peaks_of_event, event_i, photon_of_event) in enumerate(
             zip(peaks_in_event, events, photon_in_event)
         ):
-            peak_photons = strax.split_touching_windows(photon_of_event, peaks_of_event)
+            peak_photons = strax.split_touching_windows(photon_of_event, peaks_of_event, window=self.photon_finding_window)
 
             peak_name_dict = {
                 "main_s1": "s1_index",
