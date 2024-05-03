@@ -6,7 +6,7 @@ export, __all__ = strax.exporter()
 
 @export
 class EventTruth(strax.Plugin):
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
 
     depends_on = ("microphysics_summary", "photon_summary", "peak_truth", "event_basics")
     provides = "event_truth"
