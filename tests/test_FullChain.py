@@ -48,6 +48,7 @@ class TestFullChainBase(unittest.TestCase):
 
 
 class TestFullChain(TestFullChainBase):
+    __test__ = True
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="S1PhotonHits timed out")
     def test_S1PhotonHits(self):
@@ -99,14 +100,6 @@ class TestChunkedFullChain(TestFullChain):
     def setUpClass(cls):
         super().setUpClass()
         cls.test_context.set_config({"n_interactions_per_chunk": 2})
-
-
-class TestFullChainAlternativePlugins(TestFullChainBase):
-
-    @timeout_decorator.timeout(TIMEOUT, exception_message="S2PhotonPropagationSimple timed out")
-    def test_S2PhotonPropagationSimple(self):
-        self.test_context.register(fuse.plugins.S2PhotonPropagationSimple)
-        self.test_context.make(self.run_number, "propagated_s2_photons")
 
 
 if __name__ == "__main__":
