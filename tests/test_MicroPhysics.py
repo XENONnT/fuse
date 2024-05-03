@@ -10,7 +10,7 @@ from _utils import test_root_file_name
 TIMEOUT = 60
 
 
-class TestMicroPhysics(unittest.TestCase):
+class TestMicroPhysicsBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.temp_dir = tempfile.TemporaryDirectory()
@@ -42,6 +42,12 @@ class TestMicroPhysics(unittest.TestCase):
         shutil.rmtree(self.temp_dir.name)
         os.makedirs(self.temp_dir.name)
 
+
+class TestMicroPhysics(TestMicroPhysicsBase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
     @timeout_decorator.timeout(TIMEOUT, exception_message="ChunkInput timed out")
     def test_ChunkInput(self):
         self.test_context.make(self.run_number, "geant4_interactions")
@@ -64,13 +70,17 @@ class TestMicroPhysics(unittest.TestCase):
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="NestYields timed out")
     def test_NestYields(self):
-        # make sure the correct yields plugin is registered
-        self.test_context.register(fuse.plugins.NestYields)
         self.test_context.make(self.run_number, "quanta")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="MicroPhysicsSummary timed out")
     def test_MicroPhysicsSummary(self):
         self.test_context.make(self.run_number, "microphysics_summary")
+
+
+class TestMicroPhysicsAlternativePlugins(TestMicroPhysicsBase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="BBFYields timed out")
     def test_BBFYields(self):
