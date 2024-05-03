@@ -1,9 +1,10 @@
 1.2.2 / 2024-05-03
 ------------------
+* Add Zenodo batch (f08d6ce)
 * pre-commit autoupdate (#205)
 * No photons from electrons outside (#200)
 * Rename s1 photon hits output (#206)
-* Change dtype for time input back to float64 (#209)
+* Change g4_fields dtype for t (#209)
 * Add x_truth, y_truth, z_truth (#202)
 * Add tight coincidence and peak tagging in `ClusterTagging` (#210)
 
