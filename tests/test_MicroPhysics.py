@@ -64,11 +64,18 @@ class TestMicroPhysics(unittest.TestCase):
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="NestYields timed out")
     def test_NestYields(self):
+        # make sure the correct yields plugin is registered
+        self.test_context.register(fuse.plugins.NestYields)
         self.test_context.make(self.run_number, "quanta")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="MicroPhysicsSummary timed out")
     def test_MicroPhysicsSummary(self):
         self.test_context.make(self.run_number, "microphysics_summary")
+
+    @timeout_decorator.timeout(TIMEOUT, exception_message="BBFYields timed out")
+    def test_BBFYields(self):
+        self.test_context.register(fuse.plugins.BBFYields)
+        self.test_context.make(self.run_number, "quanta")
 
 
 if __name__ == "__main__":
