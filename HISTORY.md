@@ -1,3 +1,12 @@
+1.2.2 / 2024-05-03
+------------------
+* pre-commit autoupdate (#205)
+* No photons from electrons outside (#200)
+* Rename s1 photon hits output (#206)
+* Change dtype for time input back to float64 (#209)
+* Add x_truth, y_truth, z_truth (#202)
+* Add tight coincidence and peak tagging in `ClusterTagging` (#210)
+
 1.2.1 / 2024-04-24
 ------------------
 * pre-commit autoupdate (#191)
