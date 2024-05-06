@@ -10,7 +10,7 @@ import strax
 import straxen
 
 from ...dtypes import g4_fields, primary_positions_fields, deposit_positions_fields
-from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
+from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, awkward_to_flat_numpy
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -242,20 +242,31 @@ class file_loader:
         if self.event_rate > 0:
             interactions["t"] = interactions["t"] - interactions["t"][:, 0]
 
-        inter_reshaped = full_array_to_numpy(interactions, self.dtype)
+        # Get the interaction times into flat numpy array
+        interaction_time = awkward_to_flat_numpy(interactions["t"])
 
-        # Need to check start and stop again....
+        # Remove interactions that happen way after the run ended
+        # we will apply the cut later on the times instead of t
+        delay_cut = interaction_time <= self.cut_delayed
+        log.info(
+            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut) / len(delay_cut):.4%}) "
+            f"interactions later than {self.cut_delayed:.2e} ns."
+        )
+
+        # Adjust event times if necessary
         if self.event_rate > 0:
+
+            # We need to get the number of interactions in the event,
+            # as we could have empty for TPC but not for other detectors
+            num_interactions = len(interactions["t"])
             event_times = self.rng.uniform(
-                low=start / self.event_rate, high=stop / self.event_rate, size=stop - start
+                low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
             ).astype(np.int64)
+
             event_times = np.sort(event_times)
 
-            structure = np.unique(inter_reshaped["eventid"], return_counts=True)[1]
+            interactions["time"] = interactions["t"] + event_times
 
-            # Check again why [:len(structure)] is needed
-            interaction_time = np.repeat(event_times[: len(structure)], structure)
-            inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
         elif self.event_rate == 0:
             log.info("Using event times from provided input file.")
             if self.file_type == "root":
@@ -264,32 +275,30 @@ class file_loader:
                     "Use a source_rate > 0 instead."
                 )
                 log.warning(msg)
-            inter_reshaped["time"] = inter_reshaped["t"]
+            interactions["time"] = interactions["t"]
+
         else:
             raise ValueError("Source rate cannot be negative!")
 
-        # Remove interactions that happen way after the run ended
-        delay_cut = inter_reshaped["t"] <= self.cut_delayed
-        log.info(
-            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut) / len(delay_cut):.4%}) "
-            f"interactions later than {self.cut_delayed:.2e} ns."
-        )
-        inter_reshaped = inter_reshaped[delay_cut]
+        # Sort interactions by time
+        interaction_time = awkward_to_flat_numpy(interactions["time"])
+        interaction_time = interaction_time.astype(np.int64)
+        interaction_time = interaction_time[delay_cut]
 
-        sort_idx = np.argsort(inter_reshaped["time"])
-        inter_reshaped = inter_reshaped[sort_idx]
+        sort_idx = np.argsort(interaction_time)
+        interaction_time = interaction_time[sort_idx]
 
-        # Group into chunks
         chunk_idx = dynamic_chunking(
-            inter_reshaped["time"], scale=self.separation_scale, n_min=self.n_interactions_per_chunk
+            interaction_time, scale=self.separation_scale, n_min=self.n_interactions_per_chunk
         )
 
-        # Calculate chunk start and end times
+        unique_chunk_index_values = np.unique(chunk_idx)
+
         chunk_start = np.array(
-            [inter_reshaped[chunk_idx == i][0]["time"] for i in np.unique(chunk_idx)]
+            [interaction_time[chunk_idx == i][0] for i in unique_chunk_index_values]
         )
         chunk_end = np.array(
-            [inter_reshaped[chunk_idx == i][-1]["time"] for i in np.unique(chunk_idx)]
+            [interaction_time[chunk_idx == i][-1] for i in unique_chunk_index_values]
         )
 
         if (len(chunk_start) > 1) & (len(chunk_end) > 1):
@@ -309,17 +318,41 @@ class file_loader:
                 chunk_end[0] + self.last_chunk_length,
             ]
 
+        # Process and yield each chunk
         source_done = False
-        unique_chunk_index_values = np.unique(chunk_idx)
         log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
         for c_ix, chunk_left, chunk_right in zip(
             unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]
         ):
+
+            # We do a preselction of the events that have interactions within the chunk
+            # before converting the full array to numpy (which is expensive in terms of memory)
+            m = ak.min(interactions["time"], axis=1) >= chunk_left
+            m = m & (ak.max(interactions["time"], axis=1) <= chunk_right)
+            current_chunk = interactions[m]
+
+            if len(current_chunk) == 0:
+                current_chunk = np.empty(0, dtype=self.dtype)
+
+            else:
+                # Convert the chunk from awkward array to a numpy array
+                current_chunk = full_array_to_numpy(current_chunk, self.dtype)
+
+            # Now we have the chunk of data in numpy format
+            # We can now filter the interactions within the chunk
+            select_times = (current_chunk["time"] >= chunk_left) & (
+                current_chunk["time"] <= chunk_right
+            )
+            current_chunk = current_chunk[select_times]
+
+            # Sorting each chunk by time within the chunk
+            sort_chunk = np.argsort(current_chunk["time"])
+            current_chunk = current_chunk[sort_chunk]
+
             if c_ix == unique_chunk_index_values[-1]:
                 source_done = True
-                log.debug("Last chunk created!")
 
-            yield inter_reshaped[chunk_idx == c_ix], chunk_left, chunk_right, source_done
+            yield current_chunk, chunk_left, chunk_right, source_done
 
     def last_chunk_bounds(self):
         return self.chunk_bounds[-1]
