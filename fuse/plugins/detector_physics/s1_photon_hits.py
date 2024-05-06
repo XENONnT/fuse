@@ -19,18 +19,17 @@ class S1PhotonHits(FuseBasePlugin):
     """Plugin to simulate the number of detected S1 photons using a S1 light
     collection efficiency map."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     depends_on = "microphysics_summary"
-    provides = "s1_photons"
+    provides = "s1_photon_hits"
     data_kind = "interactions_in_roi"
 
     save_when = strax.SaveWhen.ALWAYS
 
     dtype = [
         (("Number detected S1 photons", "n_s1_photon_hits"), np.int32),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     # Config options
     pmt_circuit_load_resistor = straxen.URLConfig(

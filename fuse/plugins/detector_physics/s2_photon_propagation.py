@@ -7,6 +7,7 @@ from numba import njit
 from scipy.stats import skewnorm
 from scipy import constants
 
+from ...dtypes import propagated_photons_fields
 from ...common import pmt_gains, build_photon_propagation_output
 from ...common import (
     init_spe_scaling_factor_distributions,
@@ -32,29 +33,23 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     Note: The timing calculation is defined in the child plugin.
     """
 
-    __version__ = "0.3.3"
+    __version__ = "0.3.4"
 
     depends_on = (
-        "microphysics_summary",
-        "extracted_electrons",
-        "drifted_electrons",
-        "s2_photons_sum",
-        "electron_time",
-        "s2_photons",
+        "merged_electron_time",
+        "merged_s2_photons",
+        "merged_extracted_electrons",
+        "merged_drifted_electrons",
+        "merged_s2_photons_sum",
+        "merged_microphysics_summary",
     )
+
     provides = "propagated_s2_photons"
     data_kind = "s2_photons"
 
     save_when = strax.SaveWhen.TARGET
 
-    dtype = [
-        (("PMT channel of the photon", "channel"), np.int16),
-        (("Photon creates a double photo-electron emission", "dpe"), np.bool_),
-        (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
-        (("ID of the cluster creating the photon", "cluster_id"), np.int32),
-        (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)", "photon_type"), np.int8),
-    ]
-    dtype = dtype + strax.time_fields
+    dtype = propagated_photons_fields + strax.time_fields
 
     # Config options shared by S1 and S2 simulation
     p_double_pe_emision = straxen.URLConfig(
@@ -216,7 +211,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         "&pmt_mask=plugin.pmt_mask"
         "&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top"
         "&n_tpc_pmts=plugin.n_tpc_pmts"
-        "&n_top_pmts=plugin.n_top_pmts",
+        "&n_top_pmts=plugin.n_top_pmts"
+        "&turned_off_pmts=plugin.turned_off_pmts",
         cache=True,
         help="S2 pattern map",
     )
@@ -428,6 +424,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             photon_type=2,
         )
 
+        # Discard photons associated with negative channel numbers
+        result = result[result["channel"] >= 0]
+
         result = strax.sort_by_time(result)
 
         return result
@@ -448,9 +447,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             pattern = np.pad(
                 pattern, [[0, 0], [0, len(bottom_index)]], "constant", constant_values=1
             )
-
-        # Remove turned off pmts
-        pattern[:, np.in1d(channels, self.turned_off_pmts)] = 0
 
         sum_pat = np.sum(pattern, axis=1).reshape(-1, 1)
         pattern = np.divide(pattern, sum_pat, out=np.zeros_like(pattern), where=sum_pat != 0)
@@ -473,7 +469,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                 pat[top_index] *= _new_aft / _cur_aft
                 pat[bottom_index] *= (1 - _new_aft) / (1 - _cur_aft)
 
-            # Pattern map return zeros
+            # If pattern map return zeros or has NAN values assign negative channel
+            # Photons with negative channel number will be rejected when
+            # building photon propagation output
             if np.isnan(pat).sum() > 0:
                 _photon_channels = np.array([-1] * n_ph)
 

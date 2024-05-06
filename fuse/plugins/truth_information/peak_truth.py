@@ -12,12 +12,12 @@ class PeakTruth(strax.OverlapWindowPlugin):
     __version__ = "0.0.5"
 
     depends_on = (
-        "microphysics_summary",
-        "s1_photons",
-        "drifted_electrons",
-        "s2_photons_sum",
         "photon_summary",
         "peak_basics",
+        "merged_microphysics_summary",
+        "merged_s1_photon_hits",
+        "merged_s2_photons_sum",
+        "merged_drifted_electrons",
     )
     provides = "peak_truth"
     data_kind = "peaks"
@@ -26,18 +26,19 @@ class PeakTruth(strax.OverlapWindowPlugin):
         ("s1_photons_in_peak", np.int32),
         ("s2_photons_in_peak", np.int32),
         ("ap_photons_in_peak", np.int32),
+        ("pi_photons_in_peak", np.int32),
         ("raw_area_truth", np.float32),
         ("observable_energy_truth", np.float32),
         ("number_of_contributing_clusters_s1", np.int16),
         ("number_of_contributing_clusters_s2", np.int16),
+        ("number_of_contributing_delayed_electrons", np.int16),
         ("average_x_of_contributing_clusters", np.float32),
         ("average_y_of_contributing_clusters", np.float32),
         ("average_z_of_contributing_clusters", np.float32),
         ("average_x_obs_of_contributing_clusters", np.float32),
         ("average_y_obs_of_contributing_clusters", np.float32),
         ("average_z_obs_of_contributing_clusters", np.float32),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     gain_model_mc = straxen.URLConfig(
         default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
@@ -132,7 +133,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
 
                 if photon_type == "s1":
                     result["number_of_contributing_clusters_s1"][i] = np.sum(
-                        unique_contributing_clusters > 0
+                        unique_contributing_clusters != 0
                     )
                     contributing_clusters_s1 = _get_cluster_information(
                         interactions_in_roi, unique_contributing_clusters
@@ -142,10 +143,17 @@ class PeakTruth(strax.OverlapWindowPlugin):
                     result["number_of_contributing_clusters_s2"][i] = np.sum(
                         unique_contributing_clusters > 0
                     )
+                    result["number_of_contributing_delayed_electrons"][i] = np.sum(
+                        unique_contributing_clusters < 0
+                    )
                     contributing_clusters_s2 = _get_cluster_information(
                         interactions_in_roi, unique_contributing_clusters
                     )
                     photons_per_cluster_s2 = photons_per_cluster
+
+                    # Get the number of photons from delayed electrons
+                    photon_cut &= photons_in_peaks[i]["cluster_id"] < 0
+                    result["pi_photons_in_peak"][i] = np.sum(photon_cut)
 
             if (result["s1_photons_in_peak"][i] + result["s2_photons_in_peak"][i]) > 0:
                 positions_to_evaluate = ["x", "y", "z", "x_obs", "y_obs", "z_obs"]
@@ -180,15 +188,14 @@ class PeakTruth(strax.OverlapWindowPlugin):
                 ) + np.sum(energy_of_s2_photons_in_peak)
 
                 # Calculate the raw area truth
-                # we will exclude AP pulses for now
-                non_ap_photons_in_peak = photons_in_peaks[i]
-                non_ap_photons_in_peak = non_ap_photons_in_peak[
-                    non_ap_photons_in_peak["photon_type"] != 0
+                # exclude PMT AP photons as well as photons from delayed electrons
+                masked_photons = photons_in_peaks[i]
+                masked_photons = masked_photons[
+                    (masked_photons["photon_type"] != 0) & (masked_photons["cluster_id"] > 0)
                 ]
 
                 result["raw_area_truth"][i] = np.sum(
-                    non_ap_photons_in_peak["photon_gain"]
-                    / self.gains[non_ap_photons_in_peak["channel"]]
+                    masked_photons["photon_gain"] / self.gains[masked_photons["channel"]]
                 )
 
         return result

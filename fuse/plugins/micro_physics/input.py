@@ -9,7 +9,8 @@ import pandas as pd
 import strax
 import straxen
 
-from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking
+from ...dtypes import g4_fields, primary_positions_fields, deposit_positions_fields
+from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, awkward_to_flat_numpy
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -27,32 +28,12 @@ class ChunkInput(FuseBasePlugin):
     and will create multiple chunks of data if needed.
     """
 
-    __version__ = "0.3.2"
+    __version__ = "0.3.3"
 
     depends_on: Tuple = tuple()
     provides = "geant4_interactions"
 
-    source_done = False
-
-    dtype = [
-        (("x position of the energy deposit [cm]", "x"), np.float64),
-        (("y position of the energy deposit [cm]", "y"), np.float64),
-        (("z position of the energy deposit [cm]", "z"), np.float64),
-        (("Time with respect to the start of the event [ns]", "t"), np.float64),
-        (("Energy deposit in keV", "ed"), np.float32),
-        (("Particle type", "type"), "<U18"),
-        (("Geant4 track ID", "trackid"), np.int16),
-        (("Particle type of the parent particle", "parenttype"), "<U18"),
-        (("Trackid of the parent particle", "parentid"), np.int16),
-        (("Geant4 process creating the particle", "creaproc"), "<U25"),
-        (("Geant4 process responsible for the energy deposit", "edproc"), "<U25"),
-        (("Geant4 event ID", "evtid"), np.int32),
-        (("x position of the primary particle [cm]", "x_pri"), np.float32),
-        (("y position of the primary particle [cm]", "y_pri"), np.float32),
-        (("z position of the primary particle [cm]", "z_pri"), np.float32),
-    ]
-
-    dtype = dtype + strax.time_fields
+    dtype = deposit_positions_fields + g4_fields + primary_positions_fields + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
 
@@ -192,6 +173,7 @@ class file_loader:
     ):
         self.directory = directory
         self.file_name = file_name
+        self.file_type = self.file_name.split(".")[-1]
         self.rng = random_number_generator
         self.separation_scale = separation_scale
         self.event_rate = event_rate / 1e9  # Conversion to ns
@@ -209,19 +191,11 @@ class file_loader:
 
         self.file = os.path.join(self.directory, self.file_name)
 
-        self.column_names = [
-            "x",
-            "y",
-            "z",
-            "t",
-            "ed",
-            "type",
-            "trackid",
-            "parenttype",
-            "parentid",
-            "creaproc",
-            "edproc",
-        ]
+        self.dtype = deposit_positions_fields + g4_fields
+        self.columns = list(np.dtype(self.dtype).names)
+        # Remove eventid as it is not in the usual root or csv file
+        self.columns.remove("eventid")
+        self.dtype += primary_positions_fields + strax.time_fields
 
         # Prepare cut for root and csv case
         if self.outer_cylinder:
@@ -233,32 +207,12 @@ class file_loader:
         else:
             self.cut_string = None
 
-        self.dtype = [
-            (("x position of the energy deposit [cm]", "x"), np.float64),
-            (("y position of the energy deposit [cm]", "y"), np.float64),
-            (("z position of the energy deposit [cm]", "z"), np.float64),
-            (("Time with respect to the start of the event [ns]", "t"), np.float64),
-            (("Energy deposit in keV", "ed"), np.float32),
-            (("Particle type", "type"), "<U18"),
-            (("Geant4 track ID", "trackid"), np.int16),
-            (("Particle type of the parent particle", "parenttype"), "<U18"),
-            (("Trackid of the parent particle", "parentid"), np.int16),
-            (("Geant4 process creating the particle", "creaproc"), "<U25"),
-            (("Geant4 process responsible for the energy deposit", "edproc"), "<U25"),
-            (("Geant4 event ID", "evtid"), np.int32),
-            (("x position of the primary particle", "x_pri"), np.float32),
-            (("y position of the primary particle", "y_pri"), np.float32),
-            (("z position of the primary particle", "z_pri"), np.float32),
-        ]
-
-        self.dtype = self.dtype + strax.time_fields
-
     def output_chunk(self):
-        """Function to return one chunk of data from the root file."""
+        """Function to return one chunk of data from the root or csv file."""
 
-        if self.file.endswith(".root"):
+        if self.file_type == "root":
             interactions, n_simulated_events, start, stop = self._load_root_file()
-        elif self.file.endswith(".csv"):
+        elif self.file_type == "csv":
             interactions, n_simulated_events, start, stop = self._load_csv_file()
         else:
             raise ValueError(
@@ -266,8 +220,7 @@ class file_loader:
             )
 
         # Removing all events with zero energy deposit
-        m = interactions["ed"] > 0
-        interactions = interactions[m]
+        # m = interactions["ed"] > 0
 
         if self.cut_nr_only:
             log.info("'nr_only' set to True, keeping only the NR events")
@@ -280,6 +233,9 @@ class file_loader:
 
         # Removing all events with no interactions:
         m = ak.num(interactions["ed"]) > 0
+        # and all events with no deposited energy
+        m = m & (ak.sum(interactions["ed"], axis=1) > 0)
+
         interactions = interactions[m]
 
         # Sort interactions in events by time and subtract time of the first interaction
@@ -288,54 +244,63 @@ class file_loader:
         if self.event_rate > 0:
             interactions["t"] = interactions["t"] - interactions["t"][:, 0]
 
-        inter_reshaped = full_array_to_numpy(interactions, self.dtype)
+        # Get the interaction times into flat numpy array
+        interaction_time = awkward_to_flat_numpy(interactions["t"])
 
-        # Need to check start and stop again....
+        # Remove interactions that happen way after the run ended
+        # we will apply the cut later on the times instead of t
+        delay_cut = interaction_time <= self.cut_delayed
+        log.info(
+            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut) / len(delay_cut):.4%}) "
+            f"interactions later than {self.cut_delayed:.2e} ns."
+        )
+
+        # Adjust event times if necessary
         if self.event_rate > 0:
+
+            # We need to get the number of interactions in the event,
+            # as we could have empty for TPC but not for other detectors
+            num_interactions = len(interactions["t"])
             event_times = self.rng.uniform(
-                low=start / self.event_rate, high=stop / self.event_rate, size=stop - start
+                low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
             ).astype(np.int64)
+
             event_times = np.sort(event_times)
 
-            structure = np.unique(inter_reshaped["evtid"], return_counts=True)[1]
+            interactions["time"] = interactions["t"] + event_times
 
-            # Check again why [:len(structure)] is needed
-            interaction_time = np.repeat(event_times[: len(structure)], structure)
-            inter_reshaped["time"] = interaction_time + inter_reshaped["t"]
         elif self.event_rate == 0:
             log.info("Using event times from provided input file.")
-            if self.file.endswith(".root"):
+            if self.file_type == "root":
                 msg = (
                     "Using event times from root file is not recommended! "
                     "Use a source_rate > 0 instead."
                 )
                 log.warning(msg)
-            inter_reshaped["time"] = inter_reshaped["t"]
+            interactions["time"] = interactions["t"]
+
         else:
             raise ValueError("Source rate cannot be negative!")
 
-        # Remove interactions that happen way after the run ended
-        delay_cut = inter_reshaped["t"] <= self.cut_delayed
-        log.info(
-            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut)/len(delay_cut):.4%}) "
-            f"interactions later than {self.cut_delayed:.2e} ns."
-        )
-        inter_reshaped = inter_reshaped[delay_cut]
+        # Sort interactions by time
+        interaction_time = awkward_to_flat_numpy(interactions["time"])
+        interaction_time = interaction_time.astype(np.int64)
+        interaction_time = interaction_time[delay_cut]
 
-        sort_idx = np.argsort(inter_reshaped["time"])
-        inter_reshaped = inter_reshaped[sort_idx]
+        sort_idx = np.argsort(interaction_time)
+        interaction_time = interaction_time[sort_idx]
 
-        # Group into chunks
         chunk_idx = dynamic_chunking(
-            inter_reshaped["time"], scale=self.separation_scale, n_min=self.n_interactions_per_chunk
+            interaction_time, scale=self.separation_scale, n_min=self.n_interactions_per_chunk
         )
 
-        # Calculate chunk start and end times
+        unique_chunk_index_values = np.unique(chunk_idx)
+
         chunk_start = np.array(
-            [inter_reshaped[chunk_idx == i][0]["time"] for i in np.unique(chunk_idx)]
+            [interaction_time[chunk_idx == i][0] for i in unique_chunk_index_values]
         )
         chunk_end = np.array(
-            [inter_reshaped[chunk_idx == i][-1]["time"] for i in np.unique(chunk_idx)]
+            [interaction_time[chunk_idx == i][-1] for i in unique_chunk_index_values]
         )
 
         if (len(chunk_start) > 1) & (len(chunk_end) > 1):
@@ -355,17 +320,41 @@ class file_loader:
                 chunk_end[0] + self.last_chunk_length,
             ]
 
+        # Process and yield each chunk
         source_done = False
-        unique_chunk_index_values = np.unique(chunk_idx)
         log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
         for c_ix, chunk_left, chunk_right in zip(
             unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]
         ):
+
+            # We do a preselction of the events that have interactions within the chunk
+            # before converting the full array to numpy (which is expensive in terms of memory)
+            m = ak.min(interactions["time"], axis=1) >= chunk_left
+            m = m & (ak.max(interactions["time"], axis=1) <= chunk_right)
+            current_chunk = interactions[m]
+
+            if len(current_chunk) == 0:
+                current_chunk = np.empty(0, dtype=self.dtype)
+
+            else:
+                # Convert the chunk from awkward array to a numpy array
+                current_chunk = full_array_to_numpy(current_chunk, self.dtype)
+
+            # Now we have the chunk of data in numpy format
+            # We can now filter the interactions within the chunk
+            select_times = (current_chunk["time"] >= chunk_left) & (
+                current_chunk["time"] <= chunk_right
+            )
+            current_chunk = current_chunk[select_times]
+
+            # Sorting each chunk by time within the chunk
+            sort_chunk = np.argsort(current_chunk["time"])
+            current_chunk = current_chunk[sort_chunk]
+
             if c_ix == unique_chunk_index_values[-1]:
                 source_done = True
-                log.debug("Last chunk created!")
 
-            yield inter_reshaped[chunk_idx == c_ix], chunk_left, chunk_right, source_done
+            yield current_chunk, chunk_left, chunk_right, source_done
 
     def last_chunk_bounds(self):
         return self.chunk_bounds[-1]
@@ -457,7 +446,7 @@ class file_loader:
 
         # Read in data, convert mm to cm and perform a first cut if specified:
         interactions = ttree.arrays(
-            self.column_names,
+            self.columns,
             self.cut_string,
             aliases=alias,
             entry_start=start_index,
@@ -465,7 +454,7 @@ class file_loader:
         )
         eventids = ttree.arrays("eventid", entry_start=start_index, entry_stop=stop_index)
         eventids = ak.broadcast_arrays(eventids["eventid"], interactions["x"])[0]
-        interactions["evtid"] = eventids
+        interactions["eventid"] = eventids
 
         xyz_pri = ttree.arrays(
             ["x_pri", "y_pri", "z_pri"],
@@ -523,30 +512,32 @@ class file_loader:
 
         log.debug("Load instructions from a csv file!")
 
-        instr_df = pd.read_csv(self.file)
+        df = pd.read_csv(self.file)
 
         # unit conversion similar to root case
-        instr_df["x"] = instr_df["xp"] / 10
-        instr_df["y"] = instr_df["yp"] / 10
-        instr_df["z"] = instr_df["zp"] / 10
-        instr_df["x_pri"] = instr_df["xp_pri"] / 10
-        instr_df["y_pri"] = instr_df["yp_pri"] / 10
-        instr_df["z_pri"] = instr_df["zp_pri"] / 10
-        instr_df["r"] = np.sqrt(instr_df["x"] ** 2 + instr_df["y"] ** 2)
-        instr_df["t"] = instr_df["time"]
+        df["x"] = df["xp"] / 10
+        df["y"] = df["yp"] / 10
+        df["z"] = df["zp"] / 10
+        df["x_pri"] = df["xp_pri"] / 10
+        df["y_pri"] = df["yp_pri"] / 10
+        df["z_pri"] = df["zp_pri"] / 10
+        df["r"] = np.sqrt(df["x"] ** 2 + df["y"] ** 2)
+        df["t"] = df["time"]
+
+        missing_columns = set(self.columns) - set(df.columns)
 
         # Check if all needed columns are in place:
-        if not set(self.column_names).issubset(instr_df.columns):
-            log.warning("Not all needed columns provided!")
+        if missing_columns:
+            raise ValueError(f"Not all needed columns provided! {missing_columns} are missing.")
 
-        n_simulated_events = len(np.unique(instr_df.eventid))
+        n_simulated_events = len(np.unique(df.eventid))
 
         if self.outer_cylinder:
-            instr_df = instr_df.query(self.cut_string)
+            df = df.query(self.cut_string)
 
-        instr_df = instr_df[self.column_names + ["eventid", "x_pri", "y_pri", "z_pri"]]
+        df = df[self.columns + ["eventid", "x_pri", "y_pri", "z_pri"]]
 
-        interactions = self._awkwardify_df(instr_df)
+        interactions = self._awkwardify_df(df)
 
         # Use always all events in the csv file
         start = 0
@@ -582,7 +573,7 @@ class file_loader:
             "parentid": reshape_awkward(df["parentid"].values, evt_offsets),
             "creaproc": reshape_awkward(np.array(df["creaproc"], dtype=str), evt_offsets),
             "edproc": reshape_awkward(np.array(df["edproc"], dtype=str), evt_offsets),
-            "evtid": reshape_awkward(df["eventid"].values, evt_offsets),
+            "eventid": reshape_awkward(df["eventid"].values, evt_offsets),
         }
 
         return ak.Array(dictionary)

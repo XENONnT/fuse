@@ -6,20 +6,22 @@ export, __all__ = strax.exporter()
 
 @export
 class EventTruth(strax.Plugin):
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
 
     depends_on = ("microphysics_summary", "photon_summary", "peak_truth", "event_basics")
     provides = "event_truth"
     data_kind = "events"
 
     dtype = [
+        ("x_truth", np.float32),
+        ("y_truth", np.float32),
+        ("z_truth", np.float32),
         ("x_obs_truth", np.float32),
         ("y_obs_truth", np.float32),
         ("z_obs_truth", np.float32),
         ("energy_of_main_peaks_truth", np.float32),
         ("total_energy_in_event_truth", np.float32),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     def compute(self, interactions_in_roi, propagated_photons, peaks, events):
         peaks_in_event = strax.split_by_containment(peaks, events)
@@ -34,6 +36,15 @@ class EventTruth(strax.Plugin):
         for i, (pic, e) in enumerate(zip(peaks_in_event, events)):
             s1 = pic[e["s1_index"]]
             s2 = pic[e["s2_index"]]
+
+            result["x_truth"][i] = s2["average_x_of_contributing_clusters"]
+            result["y_truth"][i] = s2["average_y_of_contributing_clusters"]
+            result["z_truth"][i] = np.mean(
+                [
+                    s2["average_z_of_contributing_clusters"],
+                    s1["average_z_of_contributing_clusters"],
+                ]
+            )
 
             result["x_obs_truth"][i] = s2["average_x_obs_of_contributing_clusters"]
             result["y_obs_truth"][i] = s2["average_y_obs_of_contributing_clusters"]

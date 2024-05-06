@@ -13,10 +13,19 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.context")
 
 # Plugins to simulate microphysics
-microphysics_plugins = [
+microphysics_plugins_dbscan_clustering = [
     fuse.micro_physics.ChunkInput,
     fuse.micro_physics.FindCluster,
     fuse.micro_physics.MergeCluster,
+]
+
+microphysics_plugins_lineage_clustering = [
+    fuse.micro_physics.ChunkInput,
+    fuse.micro_physics.LineageClustering,
+    fuse.micro_physics.MergeLineage,
+]
+
+remaining_microphysics_plugins = [
     fuse.micro_physics.XENONnT_TPC,
     fuse.micro_physics.XENONnT_BelowCathode,
     fuse.micro_physics.VolumesMerger,
@@ -38,6 +47,27 @@ s2_simulation_plugins = [
     fuse.detector_physics.ElectronTiming,
     fuse.detector_physics.SecondaryScintillation,
     fuse.detector_physics.S2PhotonPropagation,
+]
+
+# Plugins to simulate delayed electrons
+delayed_electron_simulation_plugins = [
+    fuse.detector_physics.delayed_electrons.PhotoIonizationElectrons,
+    fuse.detector_physics.delayed_electrons.DelayedElectronsDrift,
+    fuse.detector_physics.delayed_electrons.DelayedElectronsExtraction,
+    fuse.detector_physics.delayed_electrons.DelayedElectronsTiming,
+    fuse.detector_physics.delayed_electrons.DelayedElectronsSecondaryScintillation,
+    fuse.detector_physics.delayed_electrons.S1PhotonHitsEmpty,
+]
+
+# Plugins to merge delayed and regular electrons
+delayed_electron_merger_plugins = [
+    fuse.detector_physics.delayed_electrons.DriftedElectronsMerger,
+    fuse.detector_physics.delayed_electrons.ExtractedElectronsMerger,
+    fuse.detector_physics.delayed_electrons.ElectronTimingMerger,
+    fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonsMerger,
+    fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonSumMerger,
+    fuse.detector_physics.delayed_electrons.MicrophysicsSummaryMerger,
+    fuse.detector_physics.delayed_electrons.S1PhotonHitsMerger,
 ]
 
 # Plugins to simulate PMTs and DAQ
@@ -74,7 +104,9 @@ def microphysics_context(
     )
 
     # Register microphysics plugins
-    for plugin in microphysics_plugins:
+    for plugin in microphysics_plugins_dbscan_clustering:
+        st.register(plugin)
+    for plugin in remaining_microphysics_plugins:
         st.register(plugin)
 
     set_simulation_config_file(st, simulation_config_file)
@@ -84,6 +116,7 @@ def microphysics_context(
 
 def full_chain_context(
     output_folder="./fuse_data",
+    clustering_method="dbscan",
     corrections_version=None,
     simulation_config_file="fuse_config_nt_sr1_dev.json",
     corrections_run_id="046477",
@@ -119,15 +152,22 @@ def full_chain_context(
     )
 
     st.config.update(
-        dict(
-            # detector='XENONnT',
-            check_raw_record_overlaps=True,
-            **straxen.contexts.xnt_common_config,
+        dict(  # detector='XENONnT',
+            check_raw_record_overlaps=True, **straxen.contexts.xnt_common_config
         )
     )
 
     # Register microphysics plugins
-    for plugin in microphysics_plugins:
+    if clustering_method == "dbscan":
+        for plugin in microphysics_plugins_dbscan_clustering:
+            st.register(plugin)
+    elif clustering_method == "lineage":
+        for plugin in microphysics_plugins_lineage_clustering:
+            st.register(plugin)
+    else:
+        raise ValueError(f"Clustering method {clustering_method} not implemented!")
+
+    for plugin in remaining_microphysics_plugins:
         st.register(plugin)
 
     # Register S1 plugins
@@ -136,6 +176,14 @@ def full_chain_context(
 
     # Register S2 plugins
     for plugin in s2_simulation_plugins:
+        st.register(plugin)
+
+    # Register delayed Electrons plugins
+    for plugin in delayed_electron_simulation_plugins:
+        st.register(plugin)
+
+    # Register merger plugins.
+    for plugin in delayed_electron_merger_plugins:
         st.register(plugin)
 
     # Register PMT and DAQ plugins
@@ -183,9 +231,12 @@ def set_simulation_config_file(context, config_file_name):
         for option_key, option in plugin.takes_config.items():
             if isinstance(option.default, str) and "SIMULATION_CONFIG_FILE.json" in option.default:
                 context.config[option_key] = option.default.replace(
-                    "SIMULATION_CONFIG_FILE.json",
-                    config_file_name,
+                    "SIMULATION_CONFIG_FILE.json", config_file_name
                 )
+
+            # Special case for the photoionization_modifier
+            if option_key == "photoionization_modifier":
+                context.config[option_key] = option.default
 
 
 @URLConfig.register("pattern_map")
@@ -210,18 +261,22 @@ def pattern_map(map_data, pmt_mask, method="WeightedNearestNeighbors"):
 
 
 @URLConfig.register("s2_aft_scaling")
-def modify_s2_pattern_map(s2_pattern_map, s2_mean_area_fraction_top, n_tpc_pmts, n_top_pmts):
+def modify_s2_pattern_map(
+    s2_pattern_map, s2_mean_area_fraction_top, n_tpc_pmts, n_top_pmts, turned_off_pmts
+):
     """Modify the S2 pattern map to match a given input AFT."""
     if s2_mean_area_fraction_top > 0:
         s2map = deepcopy(s2_pattern_map)
-        s2map_topeff_ = s2map.data["map"][..., 0:n_top_pmts].sum(axis=2)
-        s2map_toteff_ = s2map.data["map"].sum(axis=2)
-        orig_aft_ = np.mean((s2map_topeff_ / s2map_toteff_)[s2map_toteff_ > 0.0])
+        # First we need to set turned off pmts before scaling
+        s2map.data["map"][..., turned_off_pmts] = 0
+        s2map_topeff_ = s2map.data["map"][..., :n_top_pmts].sum(axis=2, keepdims=True)
+        s2map_toteff_ = s2map.data["map"].sum(axis=2, keepdims=True)
+        orig_aft_ = np.nanmean(s2map_topeff_ / s2map_toteff_)
         # Getting scales for top/bottom separately to preserve total efficiency
         scale_top_ = s2_mean_area_fraction_top / orig_aft_
         scale_bot_ = (1 - s2_mean_area_fraction_top) / (1 - orig_aft_)
-        s2map.data["map"][:, :, 0:n_top_pmts] *= scale_top_
-        s2map.data["map"][:, :, n_top_pmts:n_tpc_pmts] *= scale_bot_
+        s2map.data["map"][..., :n_top_pmts] *= scale_top_
+        s2map.data["map"][..., n_top_pmts:n_tpc_pmts] *= scale_bot_
         s2_pattern_map.__init__(s2map.data)
     return s2_pattern_map
 

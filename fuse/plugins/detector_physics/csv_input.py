@@ -6,13 +6,29 @@ import pandas as pd
 import strax
 import straxen
 
+from ...dtypes import (
+    cluster_positions_fields,
+    cluster_id_fields,
+    csv_cluster_misc_fields,
+    quanta_fields,
+    electric_fields,
+)
 from ...common import dynamic_chunking
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
+__all__.extend(["microphysics_summary_fields"])
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.detector_physics.csv_input")
+
+
+# In some cases we might want to change dtype of microphysics_summary
+# through microphysics_summary_fields, so do not set microphysics_summary_fields
+# or variable related to it as a static attribute of a class.
+microphysics_summary_fields = (
+    cluster_positions_fields + quanta_fields + electric_fields + cluster_id_fields
+)
 
 
 @export
@@ -29,28 +45,6 @@ class ChunkCsvInput(FuseBasePlugin):
     save_when = strax.SaveWhen.TARGET
 
     source_done = False
-
-    dtype = [
-        (("x position of the cluster [cm]", "x"), np.float32),
-        (("y position of the cluster [cm]", "y"), np.float32),
-        (("z position of the cluster [cm]", "z"), np.float32),
-        (("Number of photons at interaction position", "photons"), np.int32),
-        (("Number of electrons at interaction position", "electrons"), np.int32),
-        (("Number of excitons at interaction position", "excitons"), np.int32),
-        (("Electric field value at the cluster position [V/cm]", "e_field"), np.float32),
-        (("Energy of the cluster [keV]", "ed"), np.float32),
-        (("NEST interaction type", "nestid"), np.int8),
-        (("ID of the cluster", "cluster_id"), np.int32),
-        (
-            ("Time of the interaction [ns]", "t"),
-            np.int64,
-        ),  # Remove them later as they are not in the usual micropyhsics summary
-        (
-            ("Geant4 event ID", "eventid"),
-            np.int32,
-        ),  # Remove them later as they are not in the usual micropyhsics summary
-    ]
-    dtype = dtype + strax.time_fields
 
     # Config options
     input_file = straxen.URLConfig(
@@ -79,6 +73,13 @@ class ChunkCsvInput(FuseBasePlugin):
         help="n_interactions_per_chunk",
     )
 
+    def infer_dtype(self):
+        return microphysics_summary_fields + strax.time_fields
+
+    @staticmethod
+    def needed_csv_input_fields():
+        return microphysics_summary_fields + csv_cluster_misc_fields
+
     def setup(self):
         super().setup()
 
@@ -96,11 +97,13 @@ class ChunkCsvInput(FuseBasePlugin):
         try:
             chunk_data, chunk_left, chunk_right, source_done = next(self.file_reader_iterator)
             chunk_data["endtime"] = chunk_data["time"]
+            data = np.zeros(len(chunk_data), dtype=self.dtype)
+            strax.copy_to_buffer(chunk_data, data, "_bring_data_into_correct_format")
 
             self.source_done = source_done
 
             return self.chunk(
-                start=chunk_left, end=chunk_right, data=chunk_data, data_type="geant4_interactions"
+                start=chunk_left, end=chunk_right, data=data, data_type="geant4_interactions"
             )
 
         except StopIteration:
@@ -146,43 +149,10 @@ class csv_file_loader:
         self.first_chunk_left = np.int64(first_chunk_left)
         self.debug = debug
 
-        self.dtype = [
-            (("x position of the cluster [cm]", "x"), np.float32),
-            (("y position of the cluster [cm]", "y"), np.float32),
-            (("z position of the cluster [cm]", "z"), np.float32),
-            (("Number of photons at interaction position", "photons"), np.int32),
-            (("Number of electrons at interaction position", "electrons"), np.int32),
-            (("Number of excitons at interaction position", "excitons"), np.int32),
-            (("Electric field value at the cluster position [V/cm]", "e_field"), np.float32),
-            (("Energy of the cluster [keV]", "ed"), np.float32),
-            (("NEST interaction type", "nestid"), np.int8),
-            (("ID of the cluster", "cluster_id"), np.int32),
-            (
-                ("Time of the interaction", "t"),
-                np.int64,
-            ),  # Remove them later as they are not in the usual micropyhsics summary
-            (
-                ("Geant4 event ID", "eventid"),
-                np.int32,
-            ),  # Remove them later as they are not in the usual micropyhsics summary
-        ]
-        self.dtype = self.dtype + strax.time_fields
-
         # The csv file needs to have these columns:
-        self.columns = [
-            "x",
-            "y",
-            "z",
-            "photons",
-            "electrons",
-            "excitons",
-            "e_field",
-            "ed",
-            "nestid",
-            "t",
-            "eventid",
-            "cluster_id",
-        ]
+        _fields = ChunkCsvInput.needed_csv_input_fields()
+        self.columns = list(np.dtype(_fields).names)
+        self.dtype = _fields + strax.time_fields
 
     def output_chunk(self):
         instructions, n_simulated_events = self.__load_csv_file()
@@ -249,9 +219,11 @@ class csv_file_loader:
         log.debug("Load detector simulation instructions from a csv file!")
         df = pd.read_csv(self.input_file)
 
+        missing_columns = set(self.columns) - set(df.columns)
+
         # Check if all needed columns are in place:
-        if not set(self.columns).issubset(df.columns):
-            log.warning("Not all needed columns provided!")
+        if missing_columns:
+            raise ValueError(f"Not all needed columns provided! {missing_columns} are missing.")
 
         n_simulated_events = len(np.unique(df.eventid))
 

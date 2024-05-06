@@ -11,6 +11,8 @@ TIMEOUT = 240
 
 
 class TestFullChain(unittest.TestCase):
+    __test__ = True
+
     @classmethod
     def setUpClass(cls):
         cls.temp_dir = tempfile.TemporaryDirectory()
@@ -46,7 +48,7 @@ class TestFullChain(unittest.TestCase):
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="S1PhotonHits timed out")
     def test_S1PhotonHits(self):
-        self.test_context.make(self.run_number, "s1_photons")
+        self.test_context.make(self.run_number, "s1_photon_hits")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="S1PhotonPropagation timed out")
     def test_S1PhotonPropagation(self):
@@ -85,6 +87,15 @@ class TestFullChain(unittest.TestCase):
     @timeout_decorator.timeout(TIMEOUT, exception_message="PMTResponseAndDAQ timed out")
     def test_PMTResponseAndDAQ(self):
         self.test_context.make(self.run_number, "raw_records")
+
+
+class TestChunkedFullChain(TestFullChain):
+    __test__ = True
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.test_context.set_config({"n_interactions_per_chunk": 2})
 
 
 if __name__ == "__main__":

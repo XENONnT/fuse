@@ -33,8 +33,7 @@ class FindCluster(FuseBasePlugin):
 
     dtype = [
         (("Cluster index of the energy deposit", "cluster_ids"), np.int32),
-    ]
-    dtype = dtype + strax.time_fields
+    ] + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
 
