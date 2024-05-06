@@ -92,6 +92,11 @@ class TestMicroPhysicsAlternativePlugins(TestMicroPhysicsBase):
         self.test_context.register(fuse.plugins.output_plugin)
         self.test_context.make(self.run_number, "wfsim_instructions")
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message="GasPhasePlugin timed out")
+    def test_GasPhasePlugin(self):
+        self.test_context.register(fuse.plugins.XENONnT_GasPhase)
+        self.test_context.make(self.run_number, "gas_phase_interactions")
+
 
 if __name__ == "__main__":
     unittest.main()
