@@ -174,7 +174,6 @@ class BetaYields(NestYields):
     """Plugin that calculates the number of photons, electrons and excitons
     produced by energy deposit using nestpy."""
 
-
     __version__ = "0.2.0"
 
     use_recombination_fluctuation = straxen.URLConfig(
