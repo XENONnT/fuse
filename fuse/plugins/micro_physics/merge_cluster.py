@@ -55,6 +55,10 @@ class MergeCluster(FuseBasePlugin):
     )
 
     def compute(self, geant4_interactions):
+
+        # Remove interactions with no energy deposition
+        geant4_interactions = geant4_interactions[geant4_interactions["ed"] > 0]
+
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
@@ -96,7 +100,6 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
         result[i]["A"] = A
         result[i]["Z"] = Z
         result[i]["nestid"] = nestid
-
         result[i]["x_pri"] = cluster["x_pri"][main_interaction_index]
         result[i]["y_pri"] = cluster["y_pri"][main_interaction_index]
         result[i]["z_pri"] = cluster["z_pri"][main_interaction_index]
