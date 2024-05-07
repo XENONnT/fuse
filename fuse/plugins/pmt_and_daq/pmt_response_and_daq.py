@@ -220,6 +220,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
             log.debug("No photons or pulse windows found for chunk!")
 
             yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
+            return  # Exit early
 
         # Split into "sub-chunks"
         pulse_gaps = pulse_windows["time"][1:] - strax.endtime(pulse_windows)[:-1]
