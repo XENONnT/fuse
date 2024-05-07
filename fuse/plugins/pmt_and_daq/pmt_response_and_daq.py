@@ -26,7 +26,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
     length (if needed). Finally the data is saved as raw_records.
     """
 
-    __version__ = "0.1.4"
+    __version__ = "0.1.5"
 
     depends_on = ("photon_summary", "pulse_ids", "pulse_windows")
 
