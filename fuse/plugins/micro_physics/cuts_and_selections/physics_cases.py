@@ -7,7 +7,12 @@ class EnergyCut(strax.CutPlugin):
     """Plugin evaluates if the sum of the events energy is below a
     threshold."""
 
-    depends_on = "clustered_interactions"
+    depends_on = [
+        "clustered_interactions",
+        "tpc_selection",
+        "below_cathode_selection",
+    ]
+
     __version__ = "0.0.1"
 
     provides = "energy_range_cut"
@@ -29,7 +34,14 @@ class EnergyCut(strax.CutPlugin):
 
     def cut_by(self, clustered_interactions):
 
-        energies = build_energies(clustered_interactions)
+        energies = -np.ones(len(clustered_interactions))
+
+        volume_mask = (
+            clustered_interactions["tpc_selection"]
+            | clustered_interactions["below_cathode_selection"]
+        )
+
+        energies[volume_mask] = build_energies(clustered_interactions[volume_mask])
 
         mask = energies < self.max_energy
         mask = mask & (energies > self.min_energy)
