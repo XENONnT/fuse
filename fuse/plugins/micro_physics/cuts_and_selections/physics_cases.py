@@ -39,17 +39,17 @@ class EnergyCut(strax.CutPlugin):
 
 def build_energies(interactions):
 
-    split_energies, event_ids = group_interaction_energies_by_cluster_id(
-        interactions["ed"], interactions["evtid"]
+    split_energies, event_ids = group_interaction_energies_by_event_id(
+        interactions["ed"], interactions["eventid"]
     )
 
     energy_per_event = [np.sum(e) for e in split_energies]
     energy_event_mapping = dict(zip(event_ids, energy_per_event))
-    energies = np.array([energy_event_mapping[event_id] for event_id in interactions["evtid"]])
+    energies = np.array([energy_event_mapping[event_id] for event_id in interactions["eventid"]])
     return energies
 
 
-def group_interaction_energies_by_cluster_id(energy, event_id):
+def group_interaction_energies_by_event_id(energy, event_id):
 
     sort_index = np.argsort(event_id)
 
