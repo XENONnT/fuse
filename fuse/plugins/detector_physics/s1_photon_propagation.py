@@ -265,7 +265,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     """Child plugin to simulate the propagation of S1 photons using optical
     propagation and luminescence timing from nestpy."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     child_plugin = True
 
@@ -286,6 +286,22 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "&method=RegularGridInterpolator",
         cache=True,
         help="Spline for the optical propagation of S1 signals",
+    )
+
+    nest_time_sampling_safety_factor = straxen.URLConfig(
+        default=5,
+        track=False,
+        help="Factor to increase the number of samples for the scintillation time calculation.\n"
+        "This is used to ensure that the number of drawn photon times after truncation is greater"
+        "or equal to the number of photon hits.",
+    )
+
+    nest_time_sampling_max_loops = straxen.URLConfig(
+        default=5,
+        track=False,
+        help="Maximum number of loops in the scintillation time calculation.\n"
+        "This is used to ensure that the number of drawn photon times after truncation is greater"
+        "or equal to the number of photon hits.",
     )
 
     def setup(self):
@@ -335,32 +351,64 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         ).astype(np.int64)
 
         # Scintillation Modeling
+        _photon_timings += self.nest_scintillation_timing(
+            n_photon_hits=n_photon_hits,
+            n_photons_emitted=n_photons_emitted,
+            recoil_type=recoil_type,
+            n_excitons=n_excitons,
+            local_field=local_field,
+            e_dep=e_dep,
+        )
+
+        return _photon_timings
+
+    def nest_scintillation_timing(
+        self, n_photon_hits, n_photons_emitted, recoil_type, n_excitons, local_field, e_dep
+    ):
+
+        assert np.all(
+            n_photon_hits <= n_photons_emitted
+        ), "Number of photon hits must be less than or equal to number of photons emitted"
+
+        scintilation_times = np.zeros(np.sum(n_photon_hits), dtype=np.int64)
+
+        # Scintillation Modeling
         counts_start = 0
         for i, counts in enumerate(n_photon_hits):
-            # Allow overwriting with "override_s1_photon_time_field"
-            # xenon:j_angevaare:wfsim_photon_timing_bug
-            # _local_field = config.get('override_s1_photon_time_field', local_field[i])
-            # _local_field = (_local_field if _local_field >0 else local_field[i])
-            _local_field = local_field[i]
-            scint_time = self.nestpy_calc.GetPhotonTimes(
-                nestpy.INTERACTION_TYPE(recoil_type[i]),
-                n_photons_emitted[i],
-                n_excitons[i],
-                _local_field,
-                e_dep[i],
-            )
 
-            scint_time = np.clip(scint_time, 0, self.maximum_recombination_time)
+            number_of_sampled_photon_times = 0
+            loop_count = 0
+            while number_of_sampled_photon_times < counts:
 
-            # The first part of the scint_time is from exciton only, see
-            # https://github.com/NESTCollaboration/nestpy/blob/fe3d5d7da5d9b33ac56fbea519e02ef55152bc1d/src/nestpy/NEST.cpp#L164-L179
-            _photon_timings[counts_start : counts_start + counts] += self.rng.choice(
+                scint_time = self.nestpy_calc.GetPhotonTimes(
+                    nestpy.INTERACTION_TYPE(recoil_type[i]),
+                    n_photons_emitted[i] * self.nest_time_sampling_safety_factor,
+                    n_excitons[i],
+                    local_field[i],
+                    e_dep[i],
+                )
+
+                # truncate the scintillation times to the maximum recombination time
+                scint_time = np.array(scint_time)
+                scint_time = scint_time[scint_time < self.maximum_recombination_time]
+
+                number_of_sampled_photon_times = len(scint_time)
+
+                if loop_count > self.nest_time_sampling_max_loops:
+                    raise ValueError(
+                        "Maximum number of loops reached in scintillation time calculation without"
+                        " reaching the number of required photon times. This is likely due to a too"
+                        " low maximum recombination time."
+                    )
+                loop_count += 1
+
+            scintilation_times[counts_start : counts_start + counts] += self.rng.choice(
                 scint_time, counts, replace=False
             ).astype(np.int64)
 
             counts_start += counts
 
-        return _photon_timings
+        return scintilation_times
 
     def optical_propagation(self, channels, z_positions):
         """Function gettting times from s1 timing splines:
