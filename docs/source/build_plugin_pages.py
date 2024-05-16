@@ -38,6 +38,9 @@ raw_html_text = """
 """
 
 
+graphs_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "graphs")
+
+
 def add_headline(headline, output, line):
     output += headline + "\n"
     output += line * len(headline) + "\n"
@@ -206,7 +209,7 @@ def create_plugin_documentation_text(st, plugin):
 
     graph_tree = graphviz.Digraph(format="svg")
     add_deps_to_graph_tree(graph_tree, plugin, target)
-    fn = "." + "/graphs/" + target
+    fn = os.path.join(graphs_folder, target)
     graph_tree.render(fn)
     with open(f"{fn}.svg", mode="r") as f:
         svg = add_spaces(f.readlines()[5:])
@@ -250,7 +253,7 @@ def build_all_pages():
         with open(file_name, "w") as f:
             f.write(documentation)
 
-    shutil.rmtree(os.path.dirname(os.path.realpath(__file__)) + "/graphs")
+    shutil.rmtree(graphs_folder)
 
 
 if __name__ == "__main__":
