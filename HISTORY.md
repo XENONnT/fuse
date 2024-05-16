@@ -1,3 +1,10 @@
+1.2.3 / 2024-05-16
+------------------
+* Fix bug when building docs locally (#217)
+* Increase test timeout to 30 minutes (#221)
+* Add missing return to stop plugin in case of empty input (#216)
+* Add more tests (#212)
+
 1.2.2 / 2024-05-03
 ------------------
 * Add Zenodo batch (f08d6ce)
