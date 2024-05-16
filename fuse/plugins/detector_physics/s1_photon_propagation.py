@@ -288,16 +288,8 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         help="Spline for the optical propagation of S1 signals",
     )
 
-    nest_time_sampling_safety_factor = straxen.URLConfig(
-        default=5,
-        track=False,
-        help="Factor to increase the number of samples for the scintillation time calculation.\n"
-        "This is used to ensure that the number of drawn photon times after truncation is greater"
-        "or equal to the number of photon hits.",
-    )
-
     nest_time_sampling_max_loops = straxen.URLConfig(
-        default=5,
+        default=10,
         track=False,
         help="Maximum number of loops in the scintillation time calculation.\n"
         "This is used to ensure that the number of drawn photon times after truncation is greater"
@@ -370,19 +362,22 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
             n_photon_hits <= n_photons_emitted
         ), "Number of photon hits must be less than or equal to number of photons emitted"
 
-        scintilation_times = np.zeros(np.sum(n_photon_hits), dtype=np.int64)
+        # scintilation_times = np.zeros(np.sum(n_photon_hits), dtype=np.int64)
+
+        scintilation_times = np.array([])
 
         # Scintillation Modeling
-        counts_start = 0
         for i, counts in enumerate(n_photon_hits):
 
-            number_of_sampled_photon_times = 0
+            sampled_scintillation_times = np.array([])
+            n_times_to_sample = counts
+
             loop_count = 0
-            while number_of_sampled_photon_times < counts:
+            while n_times_to_sample > 0:
 
                 scint_time = self.nestpy_calc.GetPhotonTimes(
                     nestpy.INTERACTION_TYPE(recoil_type[i]),
-                    n_photons_emitted[i] * self.nest_time_sampling_safety_factor,
+                    n_times_to_sample,
                     n_excitons[i],
                     local_field[i],
                     e_dep[i],
@@ -392,7 +387,11 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                 scint_time = np.array(scint_time)
                 scint_time = scint_time[scint_time < self.maximum_recombination_time]
 
-                number_of_sampled_photon_times = len(scint_time)
+                sampled_scintillation_times = np.concatenate(
+                    [sampled_scintillation_times, scint_time]
+                )
+
+                n_times_to_sample = counts - len(sampled_scintillation_times)
 
                 if loop_count > self.nest_time_sampling_max_loops:
                     raise ValueError(
@@ -402,11 +401,9 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                     )
                 loop_count += 1
 
-            scintilation_times[counts_start : counts_start + counts] += self.rng.choice(
-                scint_time, counts, replace=False
+            scintilation_times = np.concatenate(
+                [scintilation_times, sampled_scintillation_times]
             ).astype(np.int64)
-
-            counts_start += counts
 
         return scintilation_times
 
