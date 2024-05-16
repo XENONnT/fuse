@@ -36,7 +36,7 @@ nestpy = ">=2.0.2"
 numba = ">=0.58.1"
 awkward = ">=2.5.1"
 uproot = ">=5.2.1"
-strax = ">=1.6.0"
+strax = ">=1.6.2"
 straxen = ">=2.2.0"
 
 [build-system]
