@@ -37,7 +37,7 @@ numba = ">=0.58.1"
 awkward = ">=2.5.1"
 uproot = ">=5.2.1"
 strax = ">=1.6.0"
-straxen = ">=2.2.0"
+straxen = ">=2.2.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.8", "setuptools"]
