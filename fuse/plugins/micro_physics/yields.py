@@ -298,6 +298,7 @@ class BetaYields(strax.Plugin):
         return beta_photons, beta_electrons, q_.excitons
 
 
+@export
 class BBFYields(FuseBasePlugin):
     __version__ = "0.1.1"
 
