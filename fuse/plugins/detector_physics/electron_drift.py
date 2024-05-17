@@ -37,6 +37,12 @@ class ElectronDrift(FuseBasePlugin):
             ("Spread of the drift time of the electrons in the cluster [ns]", "drift_time_spread"),
             np.int32,
         ),
+        ####
+        (("[PERP] Mean drift time of the electrons in the cluster [ns]", "drift_time_perp_mean"), np.int32),
+        (("[PERP] Spread of the drift time of the electrons in the cluster [ns]", "drift_time_perp_spread"),
+            np.int32,
+        ),
+        ####
         (("Observed x position of the cluster at liquid-gas interface [cm]", "x_obs"), np.float32),
         (("Observed y position of the cluster at liquid-gas interface [cm]", "y_obs"), np.float32),
         (
@@ -49,6 +55,22 @@ class ElectronDrift(FuseBasePlugin):
 
     # Config options
 
+    drift_time_test = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/home/yongyu/codes_link/fuse_examples/drift_time_test.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+
+    drift_time_spread_test = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/home/yongyu/codes_link/fuse_examples/drift_time_spread_test.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+    
     drift_velocity_liquid = straxen.URLConfig(
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -218,8 +240,17 @@ class ElectronDrift(FuseBasePlugin):
                 return self.diffusion_longitudinal_map_tmp(np.array([r, z]).T, **kwargs)
 
             self.diffusion_longitudinal_map = _rz_map
+        
+            def drift_time_test_tmp(x_rot, y_rot, **kwargs):
+                return self.drift_time_test(np.array([x_rot, y_rot]).T, **kwargs)
+            self.drift_time_map_test = drift_time_test_tmp
 
+            def drift_time_spread_test_tmp(x_rot, y_rot, **kwargs):
+                return self.drift_time_spread_test(np.array([x_rot, y_rot]).T, **kwargs)
+            self.drift_time_spread_map_test = drift_time_spread_test_tmp
+    
     def compute(self, interactions_in_roi):
+
         # Just apply this to clusters with photons
         mask = interactions_in_roi["electrons"] > 0
 
@@ -235,6 +266,14 @@ class ElectronDrift(FuseBasePlugin):
         n_electron = interactions_in_roi[mask]["electrons"].astype(np.int64)
         recoil_type = interactions_in_roi[mask]["nestid"]
         recoil_type = np.where(np.isin(recoil_type, [0, 6, 7, 8, 11]), recoil_type, 8)
+
+        #### test
+        # print(x)
+        # print(z)
+        # xy_int=np.array([x, y]).T
+        # print(xy_int)
+        # print(f'test_drift_time:{self.drift_time_map_test(xy_int)}')
+        # print(f'test_drift_time_spread:{self.drift_time_spread_map_test(xy_int)}')
 
         # Reverse engineering FDC
         if self.field_distortion_model == "inverse_fdc":
@@ -255,7 +294,8 @@ class ElectronDrift(FuseBasePlugin):
 
         # Absorb electrons during the drift
         # Average drift time of the electrons
-        drift_time_mean, drift_time_spread = self.get_s2_drift_time_params(
+        # drift_time_mean, drift_time_spread = self.get_s2_drift_time_params(
+        drift_time_mean, drift_time_spread, drift_time_perp_mean, drift_time_perp_spread = self.get_s2_drift_time_params(
             xy_int=np.array([x, y]).T, z_int=z
         )
 
@@ -276,6 +316,8 @@ class ElectronDrift(FuseBasePlugin):
         result["n_electron_interface"][mask] = n_electron
         result["drift_time_mean"][mask] = drift_time_mean
         result["drift_time_spread"][mask] = drift_time_spread
+        result["drift_time_perp_mean"][mask] = drift_time_perp_mean ####
+        result["drift_time_perp_spread"][mask] = drift_time_perp_spread ####
 
         # These ones are needed later
         result["x_obs"][mask] = positions.T[0]
@@ -380,8 +422,15 @@ class ElectronDrift(FuseBasePlugin):
         drift_time_spread = np.sqrt(
             drift_time_spread_below_gate_squared + drift_time_spread_above_gate_squared
         )
+        # mask_test = (xy_int[:, 0] > 0) ####
+        # drift_time_spread[mask_test] += 10000 ####
+        x_rot = xy_int[:, 0] * np.cos(np.pi/6) - xy_int[:, 1] * np.sin(np.pi/6)
+        y_rot = xy_int[:, 0] * np.cos(np.pi/6) - xy_int[:, 1] * np.sin(np.pi/6)
+        drift_time_perp_mean = self.drift_time_map_test(x_rot, y_rot)*1e3 ####
+        # drift_time_spread += self.drift_time_spread_map_test(x_rot, y_rot)*1e3 ####
+        drift_time_perp_spread = self.drift_time_spread_map_test(x_rot, y_rot)*1e3 ####
 
-        return drift_time_mean, drift_time_spread
+        return drift_time_mean, drift_time_spread, drift_time_perp_mean, drift_time_perp_spread
 
     def get_avg_drift_velocity(self, z, xy):
         """Calculate s2 drift time mean and spread

@@ -56,6 +56,8 @@ class ElectronTiming(FuseBasePlugin):
             interactions_in_roi[mask]["n_electron_extracted"],
             interactions_in_roi[mask]["drift_time_mean"],
             interactions_in_roi[mask]["drift_time_spread"],
+            interactions_in_roi[mask]["drift_time_perp_mean"], #####
+            interactions_in_roi[mask]["drift_time_perp_spread"], #####
         )
 
         x = np.repeat(
@@ -86,12 +88,18 @@ class ElectronTiming(FuseBasePlugin):
         n_electron,
         drift_time_mean,
         drift_time_spread,
+        drift_time_perp_mean,
+        drift_time_perp_spread,
     ):
         time_r = np.repeat(time, n_electron.astype(np.int64))
         drift_time_mean_r = np.repeat(drift_time_mean, n_electron.astype(np.int64))
         drift_time_spread_r = np.repeat(drift_time_spread, n_electron.astype(np.int64))
 
+        drift_time_perp_mean_r = np.repeat(drift_time_perp_mean, n_electron.astype(np.int64)) ####
+        drift_time_perp_spread_r = np.repeat(drift_time_perp_spread, n_electron.astype(np.int64)) ####
+
         timing = self.rng.exponential(self.electron_trapping_time, size=time_r.shape[0])
         timing += self.rng.normal(drift_time_mean_r, drift_time_spread_r, size=time_r.shape[0])
+        timing += self.rng.normal(drift_time_perp_mean_r, drift_time_perp_spread_r, size=time_r.shape[0]) ####
 
         return time_r + timing.astype(np.int64)
