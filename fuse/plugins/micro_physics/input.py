@@ -127,9 +127,7 @@ class ChunkInput(FuseBasePlugin):
 
             self.source_done = source_done
 
-            return self.chunk(
-                start=chunk_left, end=chunk_right, data=chunk_data, data_type="geant4_interactions"
-            )
+            return self.chunk(start=chunk_left, end=chunk_right, data=chunk_data)
 
         except StopIteration:
             raise RuntimeError("Bug in chunk building!")

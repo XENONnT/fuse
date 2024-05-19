@@ -36,7 +36,7 @@ class ChunkCsvInput(FuseBasePlugin):
     """Plugin which reads a CSV file containing instructions for the detector
     physics simulation and returns the data in chunks."""
 
-    __version__ = "0.2.1"
+    __version__ = "0.2.2"
 
     depends_on: Tuple = tuple()
     provides = "microphysics_summary"
@@ -102,9 +102,7 @@ class ChunkCsvInput(FuseBasePlugin):
 
             self.source_done = source_done
 
-            return self.chunk(
-                start=chunk_left, end=chunk_right, data=data, data_type="geant4_interactions"
-            )
+            return self.chunk(start=chunk_left, end=chunk_right, data=data)
 
         except StopIteration:
             raise RuntimeError("Bug in chunk building!")
