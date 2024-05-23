@@ -53,7 +53,7 @@ class TestFullChainwDelayedElectrons(unittest.TestCase):
     @timeout_decorator.timeout(TIMEOUT, exception_message="S1PhotonHits timed out")
     def test_S1PhotonHits(self):
 
-        self.test_context.make(self.run_number, "s1_photons")
+        self.test_context.make(self.run_number, "s1_photon_hits")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="S1PhotonPropagation timed out")
     def test_S1PhotonPropagation(self):
@@ -114,7 +114,7 @@ class TestFullChainwDelayedElectrons(unittest.TestCase):
     )
     def test_DelayedElectronsS1PhotonHitsEmpty(self):
 
-        self.test_context.make(self.run_number, "delayed_s1_photons")
+        self.test_context.make(self.run_number, "delayed_s1_photon_hits")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="S2PhotonPropagation timed out")
     def test_S2PhotonPropagation(self):

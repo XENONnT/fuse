@@ -15,7 +15,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         "photon_summary",
         "peak_basics",
         "merged_microphysics_summary",
-        "merged_s1_photons",
+        "merged_s1_photon_hits",
         "merged_s2_photons_sum",
         "merged_drifted_electrons",
     )
