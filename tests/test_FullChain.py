@@ -10,7 +10,7 @@ from _utils import test_root_file_name
 TIMEOUT = 240
 
 
-class TestFullChain(unittest.TestCase):
+class TestFullChainBase(unittest.TestCase):
     __test__ = True
 
     @classmethod
@@ -45,6 +45,10 @@ class TestFullChain(unittest.TestCase):
         # self.temp_dir.cleanup()
         shutil.rmtree(self.temp_dir.name)
         os.makedirs(self.temp_dir.name)
+
+
+class TestFullChain(TestFullChainBase):
+    __test__ = True
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="S1PhotonHits timed out")
     def test_S1PhotonHits(self):
@@ -87,6 +91,27 @@ class TestFullChain(unittest.TestCase):
     @timeout_decorator.timeout(TIMEOUT, exception_message="PMTResponseAndDAQ timed out")
     def test_PMTResponseAndDAQ(self):
         self.test_context.make(self.run_number, "raw_records")
+
+    @timeout_decorator.timeout(TIMEOUT, exception_message="ElectronDrift_noFDC timed out")
+    def test_ElectronDrift_noFDC(self):
+        self.test_context.set_config({"field_distortion_model": None})
+        self.test_context.make(self.run_number, "drifted_electrons")
+
+    @timeout_decorator.timeout(TIMEOUT, exception_message="ElectronDrift_inverseFDC timed out")
+    def test_ElectronDrift_inverseFDC(self):
+        self.test_context.set_config(
+            {
+                "field_distortion_model": "inverse_fdc",
+                "fdc_map_fuse": "itp_map://resource://XnT_3D_FDC_xyt_dummy_all_zeros_v0.1.json.gz?"
+                "&fmt=json.gz&method=WeightedNearestNeighbors",
+            }
+        )
+        self.test_context.make(self.run_number, "drifted_electrons")
+
+    @timeout_decorator.timeout(TIMEOUT, exception_message="ElectronDrift_comsolFDC timed out")
+    def test_ElectronDrift_comsolFDC(self):
+        self.test_context.set_config({"field_distortion_model": "comsol"})
+        self.test_context.make(self.run_number, "drifted_electrons")
 
 
 class TestChunkedFullChain(TestFullChain):
