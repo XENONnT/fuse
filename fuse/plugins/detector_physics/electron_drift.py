@@ -55,6 +55,14 @@ class ElectronDrift(FuseBasePlugin):
 
     # Config options
 
+    x_position_offset_1d_perp = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/home/yongyu/codes_link/fuse_examples/x_position_offset_1d_perp.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+
     drift_time_test = straxen.URLConfig(
         default="itp_map://resource://"
         "/home/yongyu/codes_link/fuse_examples/drift_time_test.json?&fmt=json"
@@ -66,6 +74,14 @@ class ElectronDrift(FuseBasePlugin):
     drift_time_spread_test = straxen.URLConfig(
         default="itp_map://resource://"
         "/home/yongyu/codes_link/fuse_examples/drift_time_spread_test.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+
+    x_position_test = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/home/yongyu/codes_link/fuse_examples/x_position_test.json?&fmt=json"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
@@ -268,12 +284,34 @@ class ElectronDrift(FuseBasePlugin):
         recoil_type = np.where(np.isin(recoil_type, [0, 6, 7, 8, 11]), recoil_type, 8)
 
         #### test
-        # print(x)
-        # print(z)
-        # xy_int=np.array([x, y]).T
+        # xy_int = np.array([x, y]).T
         # print(xy_int)
-        # print(f'test_drift_time:{self.drift_time_map_test(xy_int)}')
-        # print(f'test_drift_time_spread:{self.drift_time_spread_map_test(xy_int)}')
+        # print(f'test_drift_time:{self.drift_time_1d_perp([[1],[2]])}')
+        # x_rot = x * np.cos(np.pi/6) - y * np.sin(np.pi/6)
+        # x_extend = np.expand_dims(x_rot, axis=1)
+        # print(x_extend)
+        # print(f'test_drift_time:{self.drift_time_1d_perp(x_extend)}')
+        # print(f'test_drift_time_spread:{self.drift_time_spread_map_test([1],[2])}')
+        # print(f'x_position:{self.drift_time_spread_test([[1,2],[2,3],[3,4]])}')
+
+        # x_obs = x
+        # y_obs = y
+
+        # x_rot = x * np.cos(np.pi/6) - y * np.sin(np.pi/6)
+        # y_rot = x * np.sin(np.pi/6) + y * np.cos(np.pi/6)
+        # mask_perp = (np.abs(x_rot) < 22) & (np.abs(x_rot) > 6.5)
+        # x_shifted = self.x_position_test(np.array([x_rot[mask_perp], y_rot[mask_perp]]).T)
+        # y_shifted = y_rot[mask_perp]
+        # x_obs_mask = x_shifted * np.cos(-np.pi/6) - y_shifted * np.sin(-np.pi/6)
+        # y_obs_mask = x_shifted * np.sin(-np.pi/6) + y_shifted * np.cos(-np.pi/6)
+        
+        # x_obs[mask_perp] = x_obs_mask
+        # y_obs[mask_perp] = y_obs_mask
+
+        # print(np.array([x_rot, y_rot]).T)
+        # print(np.array([x_rot[mask_perp], y_rot[mask_perp]]).T)
+        # print(np.array([x_shifted, y_shifted]).T)
+        # print(np.array([x_obs, y_obs]).T)
 
         # Reverse engineering FDC
         if self.field_distortion_model == "inverse_fdc":
@@ -282,7 +320,8 @@ class ElectronDrift(FuseBasePlugin):
         elif self.field_distortion_model == "comsol":
             z_obs, positions = self.field_distortion_comsol(x, y, z)
         else:
-            z_obs, positions = z, np.array([x, y]).T
+            # z_obs, positions = z, np.array([x, y]).T
+            z_obs, positions = self.perp_position(x, y, z)
 
         # Remove electrons from Charge Insensitive Volume
         # interaction_in_civ can either be 0 or 1
@@ -325,6 +364,36 @@ class ElectronDrift(FuseBasePlugin):
         result["z_obs"][mask] = z_obs
 
         return result
+    
+    def perp_position(self, x, y, z):
+        """Field distortion from the COMSOL simulation for the given electrode configuration:
+        Args:
+            x: 1d array of float
+            y: 1d array of float
+            z: 1d array of float
+            resource: instance of resource class
+        Returns:
+            z: 1d array, postions 2d array
+        """
+        x_obs = x
+        y_obs = y
+
+        x_rot = x * np.cos(np.pi/6) - y * np.sin(np.pi/6)
+        y_rot = x * np.sin(np.pi/6) + y * np.cos(np.pi/6)
+        mask_perp = (np.abs(x_rot) < 22) & (np.abs(x_rot) > 6.5)
+        x_shifted = self.x_position_test(np.array([x_rot[mask_perp], y_rot[mask_perp]]).T)
+        # x_rot_mask_extend = np.expand_dims(x_rot[mask_perp], axis=1)
+        # x_shifted = self.x_position_offset_1d_perp(x_rot_mask_extend)
+        print(self.x_position_offset_1d_perp([[13],[15]]))
+        y_shifted = y_rot[mask_perp]
+        x_obs_mask = x_shifted * np.cos(-np.pi/6) - y_shifted * np.sin(-np.pi/6)
+        y_obs_mask = x_shifted * np.sin(-np.pi/6) + y_shifted * np.cos(-np.pi/6)
+        
+        x_obs[mask_perp] = x_obs_mask
+        y_obs[mask_perp] = y_obs_mask
+
+        positions = np.array([x_obs, y_obs]).T
+        return z, positions
 
     def inverse_field_distortion_correction(self, x, y, z):
         """For 1T the pattern map is a data driven one so we need to
@@ -404,7 +473,8 @@ class ElectronDrift(FuseBasePlugin):
         drift_time_below_gate = -z_int / drift_velocity_below_gate
         drift_time_above_gate = self.drift_time_gate
 
-        drift_time_mean = drift_time_below_gate + drift_time_above_gate
+        # drift_time_mean = drift_time_below_gate + drift_time_above_gate
+        drift_time_mean = drift_time_below_gate + drift_time_above_gate - (3.8 / drift_velocity_below_gate)
         drift_time_mean = np.clip(drift_time_mean, 0, np.inf)
 
         drift_time_spread_below_gate_squared = (
@@ -413,22 +483,39 @@ class ElectronDrift(FuseBasePlugin):
             * drift_time_below_gate
             / drift_velocity_below_gate**2
         )
+        
         drift_time_spread_above_gate_squared = (
             2
             * diffusion_constant_longitudinal
             * drift_time_above_gate
             / drift_velocity_above_gate**2
         )
-        drift_time_spread = np.sqrt(
-            drift_time_spread_below_gate_squared + drift_time_spread_above_gate_squared
+        drift_time_spread_38mm = (
+            2
+            * diffusion_constant_longitudinal
+            * (3.8 / drift_velocity_below_gate)
+            / drift_velocity_below_gate**2
         )
+
+        drift_time_spread = np.sqrt(
+            # drift_time_spread_below_gate_squared + drift_time_spread_above_gate_squared
+            drift_time_spread_below_gate_squared + drift_time_spread_above_gate_squared - drift_time_spread_38mm
+        )
+        # print(4 / drift_velocity_below_gate, drift_time_mean)
+        # print(drift_time_spread_40mm, drift_time_spread_below_gate_squared)
+
         # mask_test = (xy_int[:, 0] > 0) ####
         # drift_time_spread[mask_test] += 10000 ####
         x_rot = xy_int[:, 0] * np.cos(np.pi/6) - xy_int[:, 1] * np.sin(np.pi/6)
-        y_rot = xy_int[:, 0] * np.cos(np.pi/6) - xy_int[:, 1] * np.sin(np.pi/6)
-        drift_time_perp_mean = self.drift_time_map_test(x_rot, y_rot)*1e3 ####
-        # drift_time_spread += self.drift_time_spread_map_test(x_rot, y_rot)*1e3 ####
-        drift_time_perp_spread = self.drift_time_spread_map_test(x_rot, y_rot)*1e3 ####
+        y_rot = xy_int[:, 0] * np.sin(np.pi/6) + xy_int[:, 1] * np.cos(np.pi/6)
+        mask_perp = (np.abs(x_rot) < 19.5) & (np.abs(x_rot) > 9.46)
+
+        drift_time_perp_mean = np.full(len(x_rot), 58.5*1e3)
+        drift_time_perp_mean[mask_perp] = self.drift_time_test(np.array([x_rot[mask_perp], 
+                                                                        y_rot[mask_perp]]).T)*1e3 ####
+        drift_time_perp_spread = np.full(len(x_rot), 1.7*1e3)
+        drift_time_perp_spread[mask_perp] = self.drift_time_spread_test(np.array([x_rot[mask_perp], 
+                                                                                 y_rot[mask_perp]]).T)*1e3 ####
 
         return drift_time_mean, drift_time_spread, drift_time_perp_mean, drift_time_perp_spread
 
