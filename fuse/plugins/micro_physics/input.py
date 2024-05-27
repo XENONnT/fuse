@@ -64,6 +64,12 @@ class ChunkInput(FuseBasePlugin):
         "Use source_rate = 0 to use event times from the input file (only for csv input)",
     )
 
+    fixed_event_spacing = straxen.URLConfig(
+        default=False,
+        type=bool,
+        help="If True, the events will be spaced with a fixed time difference of 1/source_rate",
+    )
+
     cut_delayed = straxen.URLConfig(
         default=9e18,
         type=(int, float),
@@ -244,10 +250,21 @@ class file_loader:
 
         # Need to check start and stop again....
         if self.event_rate > 0:
-            event_times = self.rng.uniform(
-                low=start / self.event_rate, high=stop / self.event_rate, size=stop - start
-            ).astype(np.int64)
-            event_times = np.sort(event_times)
+
+            if self.fixed_event_spacing:
+                log.info("Using fixed event spacing.")
+                event_times = (
+                    np.arange(
+                        start=0, stop=(stop - start) / self.event_rate, step=1 / self.event_rate
+                    )
+                    + 1e9
+                )  # ns
+            else:
+                log.info("Using random event times.")
+                event_times = self.rng.uniform(
+                    low=start / self.event_rate, high=stop / self.event_rate, size=stop - start
+                ).astype(np.int64)
+                event_times = np.sort(event_times)
 
             structure = np.unique(inter_reshaped["eventid"], return_counts=True)[1]
 
