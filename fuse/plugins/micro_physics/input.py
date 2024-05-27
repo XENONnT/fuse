@@ -123,6 +123,7 @@ class ChunkInput(FuseBasePlugin):
             entry_stop=self.entry_stop,
             cut_by_eventid=self.cut_by_eventid,
             cut_nr_only=self.nr_only,
+            fixed_event_spacing=self.fixed_event_spacing,
         )
         self.file_reader_iterator = self.file_reader.output_chunk()
 
@@ -174,6 +175,7 @@ class file_loader:
         entry_stop=None,
         cut_by_eventid=False,
         cut_nr_only=False,
+        fixed_event_spacing=False,
     ):
         self.directory = directory
         self.file_name = file_name
@@ -192,6 +194,7 @@ class file_loader:
         self.entry_stop = entry_stop
         self.cut_by_eventid = cut_by_eventid
         self.cut_nr_only = cut_nr_only
+        self.fixed_event_spacing = fixed_event_spacing
 
         self.file = os.path.join(self.directory, self.file_name)
 
