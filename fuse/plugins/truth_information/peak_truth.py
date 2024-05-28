@@ -27,11 +27,41 @@ class PeakTruth(strax.OverlapWindowPlugin):
         (("Number of photons from S2 scintillation in the peak.", "s2_photons_in_peak"), np.int32),
         (("Number of photons from PMT afterpulses in the peak.", "ap_photons_in_peak"), np.int32),
         (("Number of photons from photoionization in the peak.", "pi_photons_in_peak"), np.int32),
-        (("Number of photoelectrons from S1 scintillation in the peak.", "s1_photoelectrons_in_peak"), np.int32),
-        (("Number of photoelectrons from S2 scintillation in the peak.", "s2_photoelectrons_in_peak"), np.int32),
-        (("Number of photoelectrons from PMT afterpulses in the peak.", "ap_photoelectrons_in_peak"), np.int32),
-        (("Number of photoelectrons from photoionization in the peak.", "pi_photoelectrons_in_peak"), np.int32),
-        (("Raw area from the scintillation, i.e. number of photoelectrons from the scintillation", "raw_area_truth"), np.int32),
+        (
+            (
+                "Number of photoelectrons from S1 scintillation in the peak.",
+                "s1_photoelectrons_in_peak",
+            ),
+            np.int32,
+        ),
+        (
+            (
+                "Number of photoelectrons from S2 scintillation in the peak.",
+                "s2_photoelectrons_in_peak",
+            ),
+            np.int32,
+        ),
+        (
+            (
+                "Number of photoelectrons from PMT afterpulses in the peak.",
+                "ap_photoelectrons_in_peak",
+            ),
+            np.int32,
+        ),
+        (
+            (
+                "Number of photoelectrons from photoionization in the peak.",
+                "pi_photoelectrons_in_peak",
+            ),
+            np.int32,
+        ),
+        (
+            (
+                "Raw area from the scintillation, i.e. number of photoelectrons from the scintillation",
+                "raw_area_truth",
+            ),
+            np.int32,
+        ),
         ("observable_energy_truth", np.float32),
         ("number_of_contributing_clusters_s1", np.int16),
         ("number_of_contributing_clusters_s2", np.int16),
@@ -89,7 +119,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         cache=True,
         help="Drift velocity of electrons in the liquid xenon [cm/ns]",
     )
-    
+
     photon_finding_window = straxen.URLConfig(
         default=200,
         type=int,
@@ -142,17 +172,24 @@ class PeakTruth(strax.OverlapWindowPlugin):
                 is_from_type = photons["photon_type"] == photon_type_dict[photon_type]
                 is_from_pi = photons["cluster_id"] < 0
                 has_dpe = photons["dpe"]
-                
+
                 # For S1 S2 AP photons in peak, we want to exclude PI photons and PEs
                 # This is because we want to treat the PI as part of the bias
                 result[photon_type + "_photons_in_peak"][i] = np.sum(~is_from_pi & is_from_type)
-                result[photon_type + "_photoelectrons_in_peak"][i] = result[photon_type + "_photons_in_peak"][i]
-                result[photon_type + "_photoelectrons_in_peak"][i] += np.sum(~is_from_pi & is_from_type & has_dpe)
+                result[photon_type + "_photoelectrons_in_peak"][i] = result[
+                    photon_type + "_photons_in_peak"
+                ][i]
+                result[photon_type + "_photoelectrons_in_peak"][i] += np.sum(
+                    ~is_from_pi & is_from_type & has_dpe
+                )
 
                 # For PI photons they are generated following S2s.
                 if photon_type == "s2":
                     result["pi_photons_in_peak"][i] = np.sum(is_from_pi & is_from_type)
-                    result["pi_photoelectrons_in_peak"][i] = np.sum(is_from_pi & is_from_type & has_dpe) + result["pi_photons_in_peak"][i]
+                    result["pi_photoelectrons_in_peak"][i] = (
+                        np.sum(is_from_pi & is_from_type & has_dpe)
+                        + result["pi_photons_in_peak"][i]
+                    )
 
                 unique_contributing_clusters, photons_per_cluster = np.unique(
                     photons[is_from_type]["cluster_id"], return_counts=True
@@ -176,7 +213,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
                         interactions_in_roi, unique_contributing_clusters
                     )
                     photons_per_cluster_s2 = photons_per_cluster
-            
+
             # The raw area is defined by the number of PEs from the corresponding
             # scintillation. Question: should we care mis-classification here?
             if peak_type == 1:
