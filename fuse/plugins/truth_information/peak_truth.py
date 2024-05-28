@@ -57,7 +57,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         ),
         (
             (
-                "Raw area from the scintillation, i.e. number of photoelectrons from the scintillation",
+                "Raw area from the scintillation, i.e. number of S1(S2) photoelectrons.",
                 "raw_area_truth",
             ),
             np.int32,
