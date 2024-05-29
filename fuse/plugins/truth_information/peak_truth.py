@@ -55,13 +55,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
             ),
             np.int32,
         ),
-        (
-            (
-                "Raw area from the scintillation, i.e. number of S1(S2) photoelectrons.",
-                "raw_area_truth",
-            ),
-            np.int32,
-        ),
+        ("raw_area_truth", np.float32),
         ("observable_energy_truth", np.float32),
         ("number_of_contributing_clusters_s1", np.int16),
         ("number_of_contributing_clusters_s2", np.int16),
@@ -120,11 +114,8 @@ class PeakTruth(strax.OverlapWindowPlugin):
         help="Drift velocity of electrons in the liquid xenon [cm/ns]",
     )
 
-    photon_finding_window = straxen.URLConfig(
-        default=200,
-        type=int,
-        help="Time window [ns] that defines whether a photon is in a peak. "
-        "Peaks' start and end times are extended by this window to find photons in them.",
+    peak_left_extension = straxen.URLConfig(
+        default=30, infer_type=False, help="Include this many ns left of hits in peaks"
     )
 
     def setup(self):
@@ -150,7 +141,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         result["endtime"] = peaks["endtime"]
 
         photons_in_peak = strax.split_touching_windows(
-            propagated_photons, peaks, window=self.photon_finding_window
+            propagated_photons, peaks, window=self.peak_left_extension
         )
 
         photon_type_dict = {
@@ -169,8 +160,8 @@ class PeakTruth(strax.OverlapWindowPlugin):
             peak_type = peaks["type"][i]
 
             for photon_type in photon_type_dict.keys():
-                is_from_type = (photons["photon_type"] == photon_type_dict[photon_type])
-                is_from_pi = (photons["cluster_id"] < 0) & (photon_type == "s2")
+                is_from_type = photons["photon_type"] == photon_type_dict[photon_type]
+                is_from_pi = (photons["cluster_id"] < 0) & (photons["photon_type"] == "s2")
                 has_dpe = photons["dpe"]
 
                 # For S1 S2 AP photons in peak, we want to exclude PI photons and PEs
@@ -187,8 +178,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
                 if photon_type == "s2":
                     result["pi_photons_in_peak"][i] = np.sum(is_from_pi)
                     result["pi_photoelectrons_in_peak"][i] = (
-                        np.sum(is_from_pi & has_dpe)
-                        + result["pi_photons_in_peak"][i]
+                        np.sum(is_from_pi & has_dpe) + result["pi_photons_in_peak"][i]
                     )
 
                 unique_contributing_clusters, photons_per_cluster = np.unique(
@@ -213,13 +203,6 @@ class PeakTruth(strax.OverlapWindowPlugin):
                         interactions_in_roi, unique_contributing_clusters
                     )
                     photons_per_cluster_s2 = photons_per_cluster
-
-            # The raw area is defined by the number of PEs from the corresponding
-            # scintillation. Question: should we care mis-classification here?
-            if peak_type == 1:
-                result["raw_area_truth"][i] = result["s1_photoelectrons_in_peak"][i]
-            elif peak_type == 2:
-                result["raw_area_truth"][i] = result["s2_photoelectrons_in_peak"][i]
 
             if (result["s1_photons_in_peak"][i] + result["s2_photons_in_peak"][i]) > 0:
                 positions_to_evaluate = ["x", "y", "z", "x_obs", "y_obs", "z_obs"]
@@ -253,6 +236,16 @@ class PeakTruth(strax.OverlapWindowPlugin):
                     energy_of_s1_photons_in_peak
                 ) + np.sum(energy_of_s2_photons_in_peak)
 
+                # Calculate the raw area truth
+                # exclude PMT AP photons as well as photons from delayed electrons
+                masked_photons = photons_in_peak[i]
+                masked_photons = masked_photons[
+                    (masked_photons["photon_type"] != 0) & (masked_photons["cluster_id"] > 0)
+                ]
+
+                result["raw_area_truth"][i] = np.sum(
+                    masked_photons["photon_gain"] / self.gains[masked_photons["channel"]]
+                )
         return result
 
 
