@@ -11,3 +11,4 @@ resource_cache
 dist/*
 docs/source/release_notes.rst
 docs/source/plugins/*
+.ipynb_checkpoints
