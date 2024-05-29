@@ -114,10 +114,6 @@ class PeakTruth(strax.OverlapWindowPlugin):
         help="Drift velocity of electrons in the liquid xenon [cm/ns]",
     )
 
-    peak_left_extension = straxen.URLConfig(
-        default=30, infer_type=False, help="Include this many ns left of hits in peaks"
-    )
-
     def setup(self):
         super().setup()
 
@@ -140,9 +136,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         result["time"] = peaks["time"]
         result["endtime"] = peaks["endtime"]
 
-        photons_in_peak = strax.split_touching_windows(
-            propagated_photons, peaks, window=self.peak_left_extension
-        )
+        photons_in_peak = strax.split_by_containment(propagated_photons, peaks)
 
         photon_type_dict = {
             "s1": 1,
