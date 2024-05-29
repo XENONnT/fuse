@@ -327,8 +327,8 @@ class file_loader:
 
             # We do a preselction of the events that have interactions within the chunk
             # before converting the full array to numpy (which is expensive in terms of memory)
-            m = ak.min(interactions["time"], axis=1) >= chunk_left
-            m = m & (ak.max(interactions["time"], axis=1) <= chunk_right)
+            m = ak.to_numpy(ak.min(interactions["time"], axis=1)).astype(np.int64) >= chunk_left
+            m = m & ak.to_numpy(ak.max(interactions["time"], axis=1)).astype(np.int64) <= chunk_right
             current_chunk = interactions[m]
 
             if len(current_chunk) == 0:
