@@ -245,7 +245,6 @@ class file_loader:
         # Get the interaction times into flat numpy array
         interaction_time = awkward_to_flat_numpy(interactions["t"])
 
-
         # Remove interactions that happen way after the run ended
         # we will apply the cut later on the times instead of t
         delay_cut = interaction_time <= self.cut_delayed
