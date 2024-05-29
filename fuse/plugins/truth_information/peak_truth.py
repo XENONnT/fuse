@@ -157,7 +157,6 @@ class PeakTruth(strax.OverlapWindowPlugin):
             photons_per_cluster_s2 = np.zeros(0, dtype=int)
 
             photons = photons_in_peak[i]
-            peak_type = peaks["type"][i]
 
             for photon_type in photon_type_dict.keys():
                 is_from_type = photons["photon_type"] == photon_type_dict[photon_type]
