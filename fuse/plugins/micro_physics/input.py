@@ -245,6 +245,7 @@ class file_loader:
         # Get the interaction times into flat numpy array
         interaction_time = awkward_to_flat_numpy(interactions["t"])
 
+
         # Remove interactions that happen way after the run ended
         # we will apply the cut later on the times instead of t
         delay_cut = interaction_time <= self.cut_delayed
@@ -280,13 +281,16 @@ class file_loader:
         else:
             raise ValueError("Source rate cannot be negative!")
 
-        # Sort interactions by time
+        # Overwrite interaction_time (based on "t") with the new event times
         interaction_time = awkward_to_flat_numpy(interactions["time"])
-        interaction_time = interaction_time.astype(np.int64)
-        interaction_time = interaction_time[delay_cut]
-
+        # First caclulate sort index for the interaction times
         sort_idx = np.argsort(interaction_time)
+        # and now make it an integer for strax time field
+        interaction_time = interaction_time.astype(np.int64)
+        # Sort the interaction times
         interaction_time = interaction_time[sort_idx]
+        # Apply the delay cut
+        interaction_time = interaction_time[delay_cut]
 
         chunk_idx = dynamic_chunking(
             interaction_time, scale=self.separation_scale, n_min=self.n_interactions_per_chunk
