@@ -169,7 +169,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
             peak_type = peaks["type"][i]
 
             for photon_type in photon_type_dict.keys():
-                is_from_type = (photons["photon_type"] == photon_type_dict[photon_type])
+                is_from_type = photons["photon_type"] == photon_type_dict[photon_type]
                 is_from_pi = (photons["cluster_id"] < 0) & (photon_type == "s2")
                 has_dpe = photons["dpe"]
 
@@ -187,8 +187,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
                 if photon_type == "s2":
                     result["pi_photons_in_peak"][i] = np.sum(is_from_pi)
                     result["pi_photoelectrons_in_peak"][i] = (
-                        np.sum(is_from_pi & has_dpe)
-                        + result["pi_photons_in_peak"][i]
+                        np.sum(is_from_pi & has_dpe) + result["pi_photons_in_peak"][i]
                     )
 
                 unique_contributing_clusters, photons_per_cluster = np.unique(
