@@ -1,31 +1,20 @@
 # Script to automatically generate the documentation pages for the plugins
 import fuse
+from straxen import kind_colors
 import os
 import graphviz
 import shutil
+from straxen.docs_utils import add_spaces, add_deps_to_graph_tree
 
-kind_colors = dict(
-    geant4_interactions="#40C4F3",
-    clustered_interactions="#FBCE56",
-    tpc_interactions="#F44E43",
-    below_cathode_interactions="#F44E43",
-    interactions_in_roi="#56C46C",
-    s1_photons="#54E4CF",
-    s2_photons="#54E4CF",
-    ap_photons="#54E4CF",
-    propagated_photons="#54E4CF",
-    pulse_ids="#54E4CF",
-    pulse_windows="#F78C27",
-    raw_records="#0260EF",
-    individual_electrons="#F44E43",
-)
+kind_colors.update(fuse.common.kind_colors)
 
 # List of config options that are not tracked
 config_options_not_tracked = [
     "debug",
     "raw_records_file_size_target",
     "min_records_gap_length_for_splitting",
-    "input_file" "path",
+    "input_file",
+    "path",
     "file_name",
     "propagated_s2_photons_file_size_target",
     "min_electron_gap_length_for_splitting",
@@ -36,6 +25,9 @@ raw_html_text = """
 
 {svg}
 """
+
+
+graphs_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "graphs")
 
 
 def add_headline(headline, output, line):
@@ -121,43 +113,6 @@ def reformat_docstring(docstring):
     return y
 
 
-def add_deps_to_graph_tree(graph_tree, plugin, data_type, _seen=None):
-    """Recursively add nodes to graph base on plugin.deps."""
-    if _seen is None:
-        _seen = []
-    if data_type in _seen:
-        return graph_tree, _seen
-
-    # Add new one
-    graph_tree.node(
-        data_type,
-        style="filled",
-        href="#" + data_type.replace("_", "-"),
-        fillcolor=kind_colors.get(plugin.data_kind_for(data_type), "grey"),
-    )
-    for dep in plugin.depends_on:
-        graph_tree.edge(data_type, dep)
-
-    # Add any of the lower plugins if we have to
-    for lower_data_type, lower_plugin in plugin.deps.items():
-        graph_tree, _seen = add_deps_to_graph_tree(graph_tree, lower_plugin, lower_data_type, _seen)
-    _seen.append(data_type)
-    return graph_tree, _seen
-
-
-def add_spaces(x):
-    """Add four spaces to every line in x.
-
-    This is needed to make html raw blocks in rst format correctly
-    """
-    y = ""
-    if isinstance(x, str):
-        x = x.split("\n")
-    for q in x:
-        y += "    " + q
-    return y
-
-
 def create_plugin_documentation_text(st, plugin):
 
     output = ""
@@ -206,7 +161,7 @@ def create_plugin_documentation_text(st, plugin):
 
     graph_tree = graphviz.Digraph(format="svg")
     add_deps_to_graph_tree(graph_tree, plugin, target)
-    fn = "." + "/graphs/" + target
+    fn = os.path.join(graphs_folder, target)
     graph_tree.render(fn)
     with open(f"{fn}.svg", mode="r") as f:
         svg = add_spaces(f.readlines()[5:])
@@ -250,7 +205,7 @@ def build_all_pages():
         with open(file_name, "w") as f:
             f.write(documentation)
 
-    shutil.rmtree(os.path.dirname(os.path.realpath(__file__)) + "/graphs")
+    shutil.rmtree(graphs_folder)
 
 
 if __name__ == "__main__":

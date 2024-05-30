@@ -26,7 +26,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
     length (if needed). Finally the data is saved as raw_records.
     """
 
-    __version__ = "0.1.4"
+    __version__ = "0.1.5"
 
     depends_on = ("photon_summary", "pulse_ids", "pulse_windows")
 
@@ -220,6 +220,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
             log.debug("No photons or pulse windows found for chunk!")
 
             yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
+            return  # Exit early
 
         # Split into "sub-chunks"
         pulse_gaps = pulse_windows["time"][1:] - strax.endtime(pulse_windows)[:-1]
