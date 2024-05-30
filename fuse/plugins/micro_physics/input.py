@@ -345,8 +345,8 @@ class file_loader:
 
             # Now we have the chunk of data in strax/numpy format
             # We can now filter only the interactions within the chunk
-            select_times  = (current_chunk["time"] >= chunk_left) 
-            select_times &=  (current_chunk["time"] <= chunk_right)
+            select_times = current_chunk["time"] >= chunk_left
+            select_times &= current_chunk["time"] <= chunk_right
             current_chunk = current_chunk[select_times]
 
             # Sorting each chunk by time within the chunk
