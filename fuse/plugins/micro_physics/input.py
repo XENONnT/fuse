@@ -322,6 +322,11 @@ class file_loader:
                 chunk_end[0] + self.last_chunk_length,
             ]
 
+        # We need to get the min and max times for each event
+        # to preselect events with interactions in the chunk bounds
+        times_min = ak.to_numpy(ak.min(interactions["time"], axis=1)).astype(np.int64)
+        times_max = ak.to_numpy(ak.max(interactions["time"], axis=1)).astype(np.int64)
+
         # Process and yield each chunk
         source_done = False
         log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
@@ -331,11 +336,7 @@ class file_loader:
 
             # We do a preselction of the events that have interactions within the chunk
             # before converting the full array to numpy (which is expensive in terms of memory)
-            m = ak.to_numpy(ak.min(interactions["time"], axis=1)).astype(np.int64) >= chunk_left
-            m = (
-                m & ak.to_numpy(ak.max(interactions["time"], axis=1)).astype(np.int64)
-                <= chunk_right
-            )
+            m = (times_min <= chunk_right) & (times_max >= chunk_left)
             current_chunk = interactions[m]
 
             if len(current_chunk) == 0:
@@ -345,11 +346,10 @@ class file_loader:
                 # Convert the chunk from awkward array to a numpy array
                 current_chunk = full_array_to_numpy(current_chunk, self.dtype)
 
-            # Now we have the chunk of data in numpy format
-            # We can now filter the interactions within the chunk
-            select_times = (current_chunk["time"] >= chunk_left) & (
-                current_chunk["time"] <= chunk_right
-            )
+            # Now we have the chunk of data in strax/numpy format
+            # We can now filter only the interactions within the chunk
+            select_times  = (current_chunk["time"] >= chunk_left) 
+            select_times &=  (current_chunk["time"] <= chunk_right)
             current_chunk = current_chunk[select_times]
 
             # Sorting each chunk by time within the chunk
