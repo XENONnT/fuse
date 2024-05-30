@@ -127,9 +127,7 @@ class ChunkInput(FuseBasePlugin):
 
             self.source_done = source_done
 
-            return self.chunk(
-                start=chunk_left, end=chunk_right, data=chunk_data, data_type="geant4_interactions"
-            )
+            return self.chunk(start=chunk_left, end=chunk_right, data=chunk_data)
 
         except StopIteration:
             raise RuntimeError("Bug in chunk building!")
@@ -244,7 +242,6 @@ class file_loader:
 
         # Get the interaction times into flat numpy array
         interaction_time = awkward_to_flat_numpy(interactions["t"])
-
 
         # Remove interactions that happen way after the run ended
         # we will apply the cut later on the times instead of t

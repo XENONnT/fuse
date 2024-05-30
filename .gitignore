@@ -10,3 +10,5 @@ resource_cache
 .DS_Store
 dist/*
 docs/source/release_notes.rst
+docs/source/plugins/*
+.ipynb_checkpoints
