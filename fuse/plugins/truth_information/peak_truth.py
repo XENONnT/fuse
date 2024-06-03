@@ -154,7 +154,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
 
             for photon_type in photon_type_dict.keys():
                 is_from_type = photons["photon_type"] == photon_type_dict[photon_type]
-                is_from_pi = (photons["cluster_id"] < 0) & (photons["photon_type"] == "s2")
+                is_from_pi = (photons["cluster_id"] < 0) & (photons["photon_type"] == 2)
                 has_dpe = photons["dpe"]
 
                 # For S1 S2 AP photons in peak, we want to exclude PI photons and PEs
