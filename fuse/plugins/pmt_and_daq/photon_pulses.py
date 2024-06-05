@@ -22,7 +22,7 @@ class PulseWindow(FuseBasePlugin):
     for each propagated photon to identify the pulse window it belongs to.
     """
 
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     depends_on = "photon_summary"
 
@@ -41,6 +41,8 @@ class PulseWindow(FuseBasePlugin):
     dtype["pulse_ids"] = dtype_pulse_ids
 
     save_when = strax.SaveWhen.TARGET
+
+    pulse_ids_seen = 0
 
     # Config options
     dt = straxen.URLConfig(
@@ -128,14 +130,19 @@ class PulseWindow(FuseBasePlugin):
             start,
             end,
         )
-        photon_pulses = strax.sort_by_time(photon_pulses)
+        photon_pulses["pulse_id"] += self.pulse_ids_seen
 
         pulse_ids = np.zeros(len(photon_id), self.dtype["pulse_ids"])
-        pulse_ids["pulse_id"] = photon_id
+        pulse_ids["pulse_id"] = photon_id + self.pulse_ids_seen
         pulse_ids["time"] = propagated_photons["time"]
         pulse_ids["endtime"] = propagated_photons["endtime"]
 
-        return {"pulse_windows": photon_pulses, "pulse_ids": pulse_ids}
+        self.pulse_ids_seen += photon_id.max()
+
+        return {
+            "pulse_windows": strax.sort_by_time(photon_pulses),
+            "pulse_ids": strax.sort_by_time(pulse_ids),
+        }
 
 
 # Modified code taken from strax:
