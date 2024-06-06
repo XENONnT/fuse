@@ -33,7 +33,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     Note: The timing calculation is defined in the child plugin.
     """
 
-    __version__ = "0.3.4"
+    __version__ = "0.3.5"
 
     depends_on = (
         "merged_electron_time",
