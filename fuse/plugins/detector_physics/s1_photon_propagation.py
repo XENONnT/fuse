@@ -295,6 +295,43 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "This is used to ensure that the number of drawn photon times after truncation is greater"
         "or equal to the number of photon hits.",
     )
+    
+    override_s1_nr_scint_time = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=override_s1_nr_scint_time",
+        type=bool,
+        cache=True,
+        help="Whether we want to override the NEST scintillation delay model in NR simulation",
+    )
+
+    s1_nr_scint_time_ed_override = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=s1_nr_scint_time_ed_override",
+        type=(int, float),
+        cache=True,
+        help="This will only be used in NR scintillation dealy time. In keV unit. Overriding the energy of NEST scintillation delay model for better match to NR data.",
+    )
+    
+    s1_nr_scint_time_nesttype_override = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=s1_nr_scint_time_nesttype_override",
+        type=(int, float),
+        cache=True,
+        help="This will only be used in NR scintillation dealy time. Overriding the NESTtype of NEST scintillation delay model for better match to NR data.",
+    )
+
+    s1_nr_scint_time_excitonfrac_override = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=s1_nr_scint_time_excitonfrac_override",
+        type=(int, float),
+        cache=True,
+        help="This will only be used in NR scintillation dealy time. Overriding the exciton fraction of NEST scintillation delay model for better match to NR data.",
+    )
+    
 
     def setup(self):
         super().setup()
@@ -374,14 +411,23 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
 
             loop_count = 0
             while n_times_to_sample > 0:
-
-                scint_time = self.nestpy_calc.GetPhotonTimes(
-                    nestpy.INTERACTION_TYPE(recoil_type[i]),
-                    n_times_to_sample,
-                    n_excitons[i],
-                    local_field[i],
-                    e_dep[i],
-                )
+                # If NR types, we check if we want to use the effective scintillation delay model
+                if self.override_s1_nr_scint_time and (recoil_type[i] <= 6):
+                    scint_time = self.nestpy_calc.GetPhotonTimes(
+                        nestpy.INTERACTION_TYPE(self.s1_nr_scint_time_nesttype_override),
+                        n_times_to_sample,
+                        int(self.s1_nr_scint_time_excitonfrac_override * n_times_to_sample),
+                        local_field[i],
+                        self.s1_nr_scint_time_ed_override,
+                    )
+                else:
+                    scint_time = self.nestpy_calc.GetPhotonTimes(
+                        nestpy.INTERACTION_TYPE(recoil_type[i]),
+                        n_times_to_sample,
+                        n_excitons[i],
+                        local_field[i],
+                        e_dep[i],
+                    )
 
                 # truncate the scintillation times to the maximum recombination time
                 scint_time = np.array(scint_time)
