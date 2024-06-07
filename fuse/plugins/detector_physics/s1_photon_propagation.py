@@ -295,7 +295,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "This is used to ensure that the number of drawn photon times after truncation is greater"
         "or equal to the number of photon hits.",
     )
-    
+
     override_s1_nr_scint_time = straxen.URLConfig(
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -313,7 +313,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         cache=True,
         help="This will only be used in NR scintillation dealy time. In keV unit. Overriding the energy of NEST scintillation delay model for better match to NR data.",
     )
-    
+
     s1_nr_scint_time_nesttype_override = straxen.URLConfig(
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -331,7 +331,6 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         cache=True,
         help="This will only be used in NR scintillation dealy time. Overriding the exciton fraction of NEST scintillation delay model for better match to NR data.",
     )
-    
 
     def setup(self):
         super().setup()
