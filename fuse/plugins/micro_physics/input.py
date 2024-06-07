@@ -331,7 +331,7 @@ class file_loader:
             unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]
         ):
 
-            # We do a preselction of the events that have interactions within the chunk
+            # We do a preselection of the events that have interactions within the chunk
             # before converting the full array to numpy (which is expensive in terms of memory)
             m = (times_min <= chunk_right) & (times_max >= chunk_left)
             current_chunk = interactions[m]
