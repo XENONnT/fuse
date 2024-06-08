@@ -311,7 +311,8 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "&take=s1_nr_scint_time_ed_override",
         type=(int, float),
         cache=True,
-        help="This will only be used in NR scintillation dealy time. In keV unit. Overriding the energy of NEST scintillation delay model for better match to NR data.",
+        help="This will only be used in NR scintillation dealy time. In keV unit."
+        "Overriding the energy of NEST scintillation delay model for better match to NR data.",
     )
 
     s1_nr_scint_time_nesttype_override = straxen.URLConfig(
@@ -320,7 +321,8 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "&take=s1_nr_scint_time_nesttype_override",
         type=(int, float),
         cache=True,
-        help="This will only be used in NR scintillation dealy time. Overriding the NESTtype of NEST scintillation delay model for better match to NR data.",
+        help="This will only be used in NR scintillation dealy time."
+        "Overriding the NESTtype of NEST scintillation delay model for better match to NR data.",
     )
 
     s1_nr_scint_time_excitonfrac_override = straxen.URLConfig(
@@ -329,7 +331,8 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "&take=s1_nr_scint_time_excitonfrac_override",
         type=(int, float),
         cache=True,
-        help="This will only be used in NR scintillation dealy time. Overriding the exciton fraction of NEST scintillation delay model for better match to NR data.",
+        help="This will only be used in NR scintillation dealy time. Overriding the exciton" 
+        "fraction of NEST scintillation delay model for better match to NR data.",
     )
 
     def setup(self):
