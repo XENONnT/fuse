@@ -304,7 +304,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     )
 
     s1_nr_scint_time_ed_override = straxen.URLConfig(
-        default=10,
+        default=10.0,
         type=(int, float),
         cache=True,
         help="This will only be used in NR scintillation dealy time. In keV unit."
