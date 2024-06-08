@@ -296,6 +296,15 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "or equal to the number of photon hits.",
     )
 
+    override_s1_nr_scint_time = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=override_s1_nr_scint_time",
+        type=bool,
+        cache=True,
+        help="Whether we want to override the NEST scintillation delay model in NR simulation",
+    )
+
     def setup(self):
         super().setup()
 
