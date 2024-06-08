@@ -297,18 +297,14 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     )
 
     override_s1_nr_scint_time = straxen.URLConfig(
-        default="take://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=override_s1_nr_scint_time",
+        default=True,
         type=bool,
         cache=True,
         help="Whether we want to override the NEST scintillation delay model in NR simulation",
     )
 
     s1_nr_scint_time_ed_override = straxen.URLConfig(
-        default="take://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=s1_nr_scint_time_ed_override",
+        default=10,
         type=(int, float),
         cache=True,
         help="This will only be used in NR scintillation dealy time. In keV unit."
@@ -316,9 +312,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     )
 
     s1_nr_scint_time_nesttype_override = straxen.URLConfig(
-        default="take://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=s1_nr_scint_time_nesttype_override",
+        default=8,
         type=(int, float),
         cache=True,
         help="This will only be used in NR scintillation dealy time."
@@ -326,9 +320,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     )
 
     s1_nr_scint_time_excitonfrac_override = straxen.URLConfig(
-        default="take://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=s1_nr_scint_time_excitonfrac_override",
+        default=0.2,
         type=(int, float),
         cache=True,
         help="This will only be used in NR scintillation dealy time. Overriding the exciton"
