@@ -374,14 +374,23 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
 
             loop_count = 0
             while n_times_to_sample > 0:
-
-                scint_time = self.nestpy_calc.GetPhotonTimes(
-                    nestpy.INTERACTION_TYPE(recoil_type[i]),
-                    n_times_to_sample,
-                    n_excitons[i],
-                    local_field[i],
-                    e_dep[i],
-                )
+                # If NR types, we check if we want to use the effective scintillation delay model
+                if self.override_s1_nr_scint_time and (recoil_type[i] <= 6):
+                    scint_time = self.nestpy_calc.GetPhotonTimes(
+                        nestpy.INTERACTION_TYPE(self.s1_nr_scint_time_nesttype_override),
+                        n_times_to_sample,
+                        int(self.s1_nr_scint_time_excitonfrac_override * n_times_to_sample),
+                        local_field[i],
+                        self.s1_nr_scint_time_ed_override,
+                    )
+                else:
+                    scint_time = self.nestpy_calc.GetPhotonTimes(
+                        nestpy.INTERACTION_TYPE(recoil_type[i]),
+                        n_times_to_sample,
+                        n_excitons[i],
+                        local_field[i],
+                        e_dep[i],
+                    )
 
                 # truncate the scintillation times to the maximum recombination time
                 scint_time = np.array(scint_time)
