@@ -418,7 +418,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                     scint_time = self.nestpy_calc.GetPhotonTimes(
                         nestpy.INTERACTION_TYPE(self.s1_nr_scint_time_nesttype_override),
                         n_times_to_sample,
-                        int(self.s1_nr_scint_time_excitonfrac_override * n_times_to_sample),
+                        round(self.s1_nr_scint_time_excitonfrac_override * n_times_to_sample),
                         local_field[i],
                         self.s1_nr_scint_time_ed_override,
                     )
