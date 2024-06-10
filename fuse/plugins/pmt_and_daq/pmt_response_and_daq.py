@@ -158,15 +158,6 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         help="Trigger window",
     )
 
-    samples_to_store_before = straxen.URLConfig(
-        default="take://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=samples_to_store_before",
-        type=(int, float),
-        cache=True,
-        help="Number of samples to store before the pulse center",
-    )
-
     special_thresholds = straxen.URLConfig(
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -211,10 +202,6 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
             if np.int32(key) < self.n_tpc_pmts:
                 self.thresholds[np.int32(key)] = self.digitizer_reference_baseline - value - 1
 
-        self.pulse_left_extension = (
-            +int(self.samples_to_store_before) + self.samples_before_pulse_center
-        )
-
     def compute(self, propagated_photons, pulse_windows, start, end):
         if len(propagated_photons) == 0 or len(pulse_windows) == 0:
             log.debug("No photons or pulse windows found for chunk!")
@@ -237,45 +224,43 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
         n_chunks = len(pulse_window_chunks)
         if n_chunks > 1:
-            log.info("Chunk size exceeding file size target. " f"Downchunking to {n_chunks} chunks")
+            log.info(f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks")
+
+        photon_chunks = []
+        for pulse_groups in pulse_window_chunks:
+            mask = np.isin(propagated_photons["pulse_id"], pulse_groups["pulse_id"])
+            photon_chunks.append(split_photons(propagated_photons[mask]))
 
         last_start = start
+        for i, (pulse_groups, photons) in enumerate(zip(pulse_window_chunks, photon_chunks)):
+            records = self.compute_chunk(photons, pulse_groups)
+            if i < n_chunks - 1:
+                chunk_end = np.max(strax.endtime(records))
+            else:
+                chunk_end = end
+            chunk = self.chunk(start=last_start, end=chunk_end, data=records)
+            last_start = chunk_end
+            yield chunk
 
-        photons, unique_photon_pulse_ids = split_photons(propagated_photons)
-
+    def compute_chunk(self, photons, pulse_groups):
         # convert photons to numba list for njit
         _photons = List()
         [_photons.append(x) for x in photons]
 
-        if n_chunks > 1:
-            for pulse_group in pulse_window_chunks[:-1]:
-                records = self.compute_chunk(_photons, unique_photon_pulse_ids, pulse_group)
-                chunk_end = np.max(strax.endtime(records))
-                chunk = self.chunk(start=last_start, end=chunk_end, data=records)
-                last_start = chunk_end
-                yield chunk
-
-        # And the last chunk
-        records = self.compute_chunk(_photons, unique_photon_pulse_ids, pulse_window_chunks[-1])
-        chunk = self.chunk(start=last_start, end=end, data=records)
-        yield chunk
-
-    def compute_chunk(self, _photons, unique_photon_pulse_ids, pulse_group):
         # use an upper limit for the waveform buffer
         length_waveform_buffer = np.int32(
-            np.sum(np.ceil(pulse_group["length"] / strax.DEFAULT_RECORD_LENGTH))
+            np.sum(np.ceil(pulse_groups["length"] / strax.DEFAULT_RECORD_LENGTH))
         )
         waveform_buffer = np.zeros(length_waveform_buffer, dtype=self.dtype)
 
         buffer_level = build_waveform(
-            pulse_group,
+            pulse_groups,
             _photons,
-            unique_photon_pulse_ids,
             waveform_buffer,
             self.dt,
             self._pmt_current_templates,
             self.current_2_adc,
-            self.noise_data["arr_0"],
+            self.noise_data["arr_0"].T,
             self.enable_noise,
             self.digitizer_reference_baseline,
             self.thresholds,
@@ -352,9 +337,8 @@ def find_split_index(pulses, gaps, file_size_limit, min_gap_length):
 
 @njit(cache=True)
 def build_waveform(
-    photon_pulses,
+    pulse_windows,
     photons,
-    unique_photon_pulse_ids,
     waveform_buffer,
     dt,
     pmt_current_templates,
@@ -368,21 +352,13 @@ def build_waveform(
     buffer_level = 0
 
     # Iterate over all pulses
-    for pulse in photon_pulses:
+    for i, pulse in enumerate(pulse_windows):
         pulse_length = pulse["length"]
         pulse_waveform_buffer = np.zeros(pulse_length)
 
-        # Select the photons that belong to the pulse
-        # The following line is slow, so we have to to it a little different.
-        # The result should be the same.
-        # photons_to_put_into_pulse = photons[photons["pulse_id"] == pulse["pulse_id"]]
-        photons_to_put_into_pulse = photons[
-            np.argwhere(unique_photon_pulse_ids == pulse["pulse_id"])[0][0]
-        ]
-
         add_current(
-            photons_to_put_into_pulse["time"],
-            photons_to_put_into_pulse["photon_gain"],
+            photons[i]["time"],
+            photons[i]["photon_gain"],
             pulse["time"] // dt,
             dt,
             pmt_current_templates,
@@ -394,7 +370,7 @@ def build_waveform(
         if enable_noise:
             # Remember to transpose the noise...
             pulse_waveform_buffer = add_noise(
-                pulse_waveform_buffer, pulse["time"], noise_data.T[pulse["channel"]]
+                pulse_waveform_buffer, pulse["time"], noise_data[pulse["channel"]]
             )
 
         add_baseline(pulse_waveform_buffer, digitizer_reference_baseline)
@@ -590,7 +566,6 @@ def split_photons(propagated_photons):
 
     propagated_photons_sorted = propagated_photons[sort_index]
 
-    unique_photon_pulse_ids, split_position = np.unique(
-        propagated_photons_sorted["pulse_id"], return_index=True
-    )
-    return np.split(propagated_photons_sorted, split_position[1:]), unique_photon_pulse_ids
+    diff = np.diff(propagated_photons_sorted["pulse_id"])
+    split_position = np.argwhere(diff != 0).flatten() + 1
+    return np.split(propagated_photons_sorted, split_position)

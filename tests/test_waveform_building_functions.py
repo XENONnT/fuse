@@ -22,12 +22,11 @@ class TestWaveformBuildingFunctions(unittest.TestCase):
             np.array([(3, 60)], dtype=[("pulse_id", int), ("time", int)]),
         ]
 
-        result, unique_pulse_ids = split_photons(propagated_photons)
+        result = split_photons(propagated_photons)
 
         self.assertEqual(len(result), len(expected_result))
         for i in range(len(result)):
             np.testing.assert_array_equal(result[i], expected_result[i])
-        np.testing.assert_array_equal(unique_pulse_ids, np.array([1, 2, 3]))
 
     def test_add_noise(self):
         # Test the add_noise function

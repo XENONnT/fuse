@@ -33,7 +33,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
     Note: The timing calculation is defined in the child plugin.
     """
 
-    __version__ = "0.3.2"
+    __version__ = "0.3.3"
 
     depends_on = ("microphysics_summary", "s1_photon_hits")
     provides = "propagated_s1_photons"
@@ -265,7 +265,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     """Child plugin to simulate the propagation of S1 photons using optical
     propagation and luminescence timing from nestpy."""
 
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     child_plugin = True
 
@@ -294,6 +294,45 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         help="Maximum number of loops in the scintillation time calculation.\n"
         "This is used to ensure that the number of drawn photon times after truncation is greater"
         "or equal to the number of photon hits.",
+    )
+
+    override_s1_nr_scint_time = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=override_s1_nr_scint_time",
+        type=bool,
+        cache=True,
+        help="Whether to override arguments for NEST scintillation delay model for NRs.",
+    )
+
+    s1_nr_scint_time_ed_override = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=s1_nr_scint_time_ed_override",
+        type=(int, float),
+        cache=True,
+        help="[keV] Used in NR scintillation delay calculation if override_s1_nr_scint_time==true."
+        "Overrides energy of NEST scintillation delay model for better match to NR data.",
+    )
+
+    s1_nr_scint_time_nesttype_override = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=s1_nr_scint_time_nesttype_override",
+        type=(int, float),
+        cache=True,
+        help="Used in NR scintillation delay calculation if override_s1_nr_scint_time==true."
+        "Overrides NESTtype of NEST scintillation delay model for better match to NR data.",
+    )
+
+    s1_nr_scint_time_excitonfrac_override = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=s1_nr_scint_time_excitonfrac_override",
+        type=(int, float),
+        cache=True,
+        help="Used in NR scintillation delay calculation if override_s1_nr_scint_time==true."
+        "Overrides exciton fraction of NEST scintillation delay model for better match to NR data.",
     )
 
     def setup(self):
@@ -374,14 +413,23 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
 
             loop_count = 0
             while n_times_to_sample > 0:
-
-                scint_time = self.nestpy_calc.GetPhotonTimes(
-                    nestpy.INTERACTION_TYPE(recoil_type[i]),
-                    n_times_to_sample,
-                    n_excitons[i],
-                    local_field[i],
-                    e_dep[i],
-                )
+                # If NR types, we check if we want to use the effective scintillation delay model
+                if self.override_s1_nr_scint_time and (recoil_type[i] <= 6):
+                    scint_time = self.nestpy_calc.GetPhotonTimes(
+                        nestpy.INTERACTION_TYPE(self.s1_nr_scint_time_nesttype_override),
+                        n_times_to_sample,
+                        round(self.s1_nr_scint_time_excitonfrac_override * n_times_to_sample),
+                        local_field[i],
+                        self.s1_nr_scint_time_ed_override,
+                    )
+                else:
+                    scint_time = self.nestpy_calc.GetPhotonTimes(
+                        nestpy.INTERACTION_TYPE(recoil_type[i]),
+                        n_times_to_sample,
+                        n_excitons[i],
+                        local_field[i],
+                        e_dep[i],
+                    )
 
                 # truncate the scintillation times to the maximum recombination time
                 scint_time = np.array(scint_time)
