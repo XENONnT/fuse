@@ -12,11 +12,10 @@ TIMEOUT = 60
 
 
 def yields_dummy_func(x):
-    """Dummy function that returns two values for the photon and electron
-    yield.
+    """Dummy function that returns two values for the n_photon and n_electron.
 
-    To be used as a dummy function for the BetaYields plugin. Needs to
-    be defined outside the test class to be picklable.
+    To be used as a dummy function for the BetaYields plugin. 
+    Needs to be defined outside the test class to be picklable.
     """
     return 40, 30
 
