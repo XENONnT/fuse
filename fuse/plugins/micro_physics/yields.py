@@ -157,7 +157,6 @@ class NestYields(FuseBasePlugin):
             **kwargs,
         )
 
-
         event_quanta = nc.GetQuanta(y)  # Density argument is not use in function...
 
         photons = event_quanta.photons

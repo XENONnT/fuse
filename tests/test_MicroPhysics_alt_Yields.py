@@ -51,11 +51,9 @@ class TestAlternativeYields(unittest.TestCase):
         # one for the photon yield and one for the electron yield
         # as a function of energy
         import pickle
+
         yields_dummy_func = lambda x: (40, 30)
-        spline_func_name = os.path.join(
-            self.temp_dir.name, 
-            "beta_quanta_spline.pkl"
-        )
+        spline_func_name = os.path.join(self.temp_dir.name, "beta_quanta_spline.pkl")
         with open(spline_func_name, "wb") as f:
             pickle.dump(yields_dummy_func, f)
         self.test_context.set_config({"beta_quanta_spline": spline_func_name})
