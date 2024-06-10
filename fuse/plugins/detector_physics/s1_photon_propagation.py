@@ -311,7 +311,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "&take=s1_nr_scint_time_ed_override",
         type=(int, float),
         cache=True,
-        help="[keV] Used in NR scintillation delay calculation when override_s1_nr_scint_time==true."
+        help="[keV] Used in NR scintillation delay calculation if override_s1_nr_scint_time==true."
         "Overrides energy of NEST scintillation delay model for better match to NR data.",
     )
 
@@ -321,7 +321,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "&take=s1_nr_scint_time_nesttype_override",
         type=(int, float),
         cache=True,
-        help="Used in NR scintillation delay calculation when override_s1_nr_scint_time==true."
+        help="Used in NR scintillation delay calculation if override_s1_nr_scint_time==true."
         "Overrides NESTtype of NEST scintillation delay model for better match to NR data.",
     )
 
@@ -331,7 +331,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "&take=s1_nr_scint_time_excitonfrac_override",
         type=(int, float),
         cache=True,
-        help="Used in NR scintillation delay calculation when override_s1_nr_scint_time==true."
+        help="Used in NR scintillation delay calculation if override_s1_nr_scint_time==true."
         "Overrides exciton fraction of NEST scintillation delay model for better match to NR data.",
     )
 
