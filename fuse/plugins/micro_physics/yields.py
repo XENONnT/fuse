@@ -157,6 +157,7 @@ class NestYields(FuseBasePlugin):
             **kwargs,
         )
 
+
         event_quanta = nc.GetQuanta(y)  # Density argument is not use in function...
 
         photons = event_quanta.photons
@@ -182,7 +183,7 @@ class BetaYields(NestYields):
     use_recombination_fluctuation = straxen.URLConfig(
         default=True,
         type=bool,
-        help="use_recombination_fluctuation",
+        help="Turn on or off the recombination fluctuation for beta interactions.",
     )
 
     recombination_fluctuation_std_factor = straxen.URLConfig(
@@ -191,19 +192,10 @@ class BetaYields(NestYields):
         help="A factor that is defined to guess the recombination fluctuation",
     )
 
-    g1 = straxen.URLConfig(
-        default="bodega://g1?bodega_version=v2",
-        help="S1 gain in PE / photons produced",
-    )
-
-    g2 = straxen.URLConfig(
-        default="bodega://g2?bodega_version=v2",
-        help="S2 gain in PE / electrons produced",
-    )
-
-    cs1_cs2_spline = straxen.URLConfig(
-        default=None,  # Set the default later....
-        help="cS1 and cS2 from beta spectrum",
+    beta_quanta_spline = straxen.URLConfig(
+        default=None,
+        help="Path to function that gives n_ph and n_e for a given energy, \
+        calculated from beta spectrum. The function should be a pickle file.",
     )
 
     def get_quanta(self, interactions_in_roi):
@@ -233,8 +225,10 @@ class BetaYields(NestYields):
 
     def quanta_from_spline(self, energy):
 
-        beta_photons = self.cs1_cs2_spline(energy, map_name="cs1_map") / self.g1
-        beta_electrons = self.cs1_cs2_spline(energy, map_name="cs2_map") / self.g2
+        with open(self.beta_quanta_spline, "rb") as f:
+            quanta_function = pickle.load(f)
+
+        beta_photons, beta_electrons = quanta_function(energy)
 
         if self.use_recombination_fluctuation:
 
