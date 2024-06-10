@@ -47,7 +47,6 @@ jobs:
           git clone https://github.com/NESTCollaboration/nestpy.git
           cd nestpy
           git submodule update --init --recursive
-          git checkout fb3804e
           pip install .
           cd ..
           rm -rf nestpy
