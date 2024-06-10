@@ -6,9 +6,15 @@ import timeout_decorator
 import fuse
 import straxen
 from _utils import test_root_file_name
+import pickle
 
 TIMEOUT = 60
 
+def yields_dummy_func(x):
+    """Dummy function that returns two values for the photon and electron yield.
+    To be used as a dummy function for the BetaYields plugin.
+    Needs to be defined outside the test class to be picklable."""
+    return 40, 30
 
 class TestAlternativeYields(unittest.TestCase):
     @classmethod
@@ -50,15 +56,16 @@ class TestAlternativeYields(unittest.TestCase):
         # Make a dummy pkl file, a function that returns two values
         # one for the photon yield and one for the electron yield
         # as a function of energy
-        import pickle
-
-        def yields_dummy_func(x):
-            return 40, 30
-
-        spline_func_name = os.path.join(self.temp_dir.name, "beta_quanta_spline.pkl")
+        spline_func_name = os.path.join(
+            self.temp_dir.name, 
+            "beta_quanta_spline.pkl"
+        )
         with open(spline_func_name, "wb") as f:
             pickle.dump(yields_dummy_func, f)
-        self.test_context.set_config({"beta_quanta_spline": spline_func_name})
+
+        self.test_context.set_config(
+            {"beta_quanta_spline": spline_func_name}
+        )
 
         # Make the plugin
         self.test_context.make(self.run_number, "quanta")
