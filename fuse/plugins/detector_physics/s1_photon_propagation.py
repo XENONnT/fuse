@@ -302,7 +302,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "&take=override_s1_nr_scint_time",
         type=bool,
         cache=True,
-        help="Whether we want to override the NEST scintillation delay model in NR simulation",
+        help="Whether to override arguments when calling NEST scintillation delay model in NR simulations.",
     )
 
     s1_nr_scint_time_ed_override = straxen.URLConfig(
@@ -311,8 +311,8 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "&take=s1_nr_scint_time_ed_override",
         type=(int, float),
         cache=True,
-        help="This will only be used in NR scintillation dealy time. In keV unit."
-        "Overriding the energy of NEST scintillation delay model for better match to NR data.",
+        help="[keV] Only used in NR scintillation delay calculation and if override_s1_nr_scint_time == true."
+        "Overrides energy of NEST scintillation delay model for better match to NR data.",
     )
 
     s1_nr_scint_time_nesttype_override = straxen.URLConfig(
@@ -321,8 +321,8 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "&take=s1_nr_scint_time_nesttype_override",
         type=(int, float),
         cache=True,
-        help="This will only be used in NR scintillation dealy time."
-        "Overriding the NESTtype of NEST scintillation delay model for better match to NR data.",
+        help="Only used in NR scintillation delay calculation and if override_s1_nr_scint_time == true."
+        "Overrides NESTtype of NEST scintillation delay model for better match to NR data.",
     )
 
     s1_nr_scint_time_excitonfrac_override = straxen.URLConfig(
@@ -331,8 +331,8 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         "&take=s1_nr_scint_time_excitonfrac_override",
         type=(int, float),
         cache=True,
-        help="This will only be used in NR scintillation dealy time. Overriding the exciton"
-        "fraction of NEST scintillation delay model for better match to NR data.",
+        help="Only used in NR scintillation delay calculation and if override_s1_nr_scint_time == true."
+        "Overrides exciton fraction of NEST scintillation delay model for better match to NR data.",
     )
 
     def setup(self):
