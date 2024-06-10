@@ -3,6 +3,7 @@ import nestpy
 import strax
 import straxen
 import logging
+import pickle
 
 from ...dtypes import quanta_fields
 from ...plugin import FuseBasePlugin

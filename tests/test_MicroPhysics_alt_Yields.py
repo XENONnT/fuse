@@ -52,7 +52,9 @@ class TestAlternativeYields(unittest.TestCase):
         # as a function of energy
         import pickle
 
-        yields_dummy_func = lambda x: (40, 30)
+        def yields_dummy_func(x):
+            return 40, 30
+
         spline_func_name = os.path.join(self.temp_dir.name, "beta_quanta_spline.pkl")
         with open(spline_func_name, "wb") as f:
             pickle.dump(yields_dummy_func, f)
