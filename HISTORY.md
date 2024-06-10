@@ -1,3 +1,17 @@
+1.3.0 / 2024-06-10
+------------------
+* Use straxen documentation building functions to avoid duplicated codes (#218)
+* Replace scintillation time clipping by truncation (#220)
+* Fix `ChunkCsvInput` data_type of chunk (#223)
+* Add descriptions of dtypes in `tagged_clusters` (#227)
+* Modify the definitions in peak truth to be consistent with appletree (#226)
+* Raw Records simulation acceleration in fuse (#228)
+* Fix a small bug in peak truth (#232)
+* Make `pulse_id` continuous in chunks (#233)
+* Keep negative gain photons (#231)
+* Remove unused codes and fix nestpy commit hash (#237)
+* Option to override args for NR scintillation delay (#235)
+
 1.2.3 / 2024-05-16
 ------------------
 * Fix bug when building docs locally (#217)
