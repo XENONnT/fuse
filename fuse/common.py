@@ -8,6 +8,23 @@ from scipy.interpolate import interp1d
 FUSE_PLUGIN_TIMEOUT = 600
 
 
+kind_colors = dict(
+    geant4_interactions="#40C4F3",
+    clustered_interactions="#FBCE56",
+    tpc_interactions="#F44E43",
+    below_cathode_interactions="#F44E43",
+    interactions_in_roi="#56C46C",
+    s1_photons="#54E4CF",
+    s2_photons="#54E4CF",
+    ap_photons="#54E4CF",
+    propagated_photons="#54E4CF",
+    pulse_ids="#54E4CF",
+    pulse_windows="#F78C27",
+    raw_records="#0260EF",
+    individual_electrons="#F44E43",
+)
+
+
 @numba.njit()
 def dynamic_chunking(data, scale, n_min):
     idx_sort = np.argsort(data)
@@ -305,9 +322,6 @@ def build_photon_propagation_output(
     result["dpe"] = _photon_is_dpe
     result["cluster_id"] = _cluster_id
     result["photon_type"] = photon_type
-
-    # Remove photons with photon_gain <= 0
-    result = result[result["photon_gain"] > 0]
 
     return result
 

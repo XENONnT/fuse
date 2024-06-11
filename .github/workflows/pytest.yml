@@ -19,7 +19,7 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       HAVE_ACCESS_TO_SECRETS: ${{ secrets.RUNDB_API_URL }}
     strategy:
@@ -47,6 +47,7 @@ jobs:
           git clone https://github.com/NESTCollaboration/nestpy.git
           cd nestpy
           git submodule update --init --recursive
+          git checkout fb3804e
           pip install .
           cd ..
           rm -rf nestpy

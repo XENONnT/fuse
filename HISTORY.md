@@ -1,3 +1,43 @@
+1.3.0 / 2024-06-10
+------------------
+* Use straxen documentation building functions to avoid duplicated codes (#218)
+* Replace scintillation time clipping by truncation (#220)
+* Fix `ChunkCsvInput` data_type of chunk (#223)
+* Add descriptions of dtypes in `tagged_clusters` (#227)
+* Modify the definitions in peak truth to be consistent with appletree (#226)
+* Raw Records simulation acceleration in fuse (#228)
+* Fix a small bug in peak truth (#232)
+* Make `pulse_id` continuous in chunks (#233)
+* Keep negative gain photons (#231)
+* Remove unused codes and fix nestpy commit hash (#237)
+* Option to override args for NR scintillation delay (#235)
+
+1.2.3 / 2024-05-16
+------------------
+* Fix bug when building docs locally (#217)
+* Increase test timeout to 30 minutes (#221)
+* Add missing return to stop plugin in case of empty input (#216)
+* Add more tests (#212)
+
+1.2.2 / 2024-05-03
+------------------
+* Add Zenodo batch (f08d6ce)
+* pre-commit autoupdate (#205)
+* No photons from electrons outside (#200)
+* Rename s1 photon hits output (#206)
+* Change g4_fields dtype for t (#209)
+* Add x_truth, y_truth, z_truth (#202)
+* Add tight coincidence and peak tagging in `ClusterTagging` (#210)
+
+1.2.1 / 2024-04-24
+------------------
+* pre-commit autoupdate (#191)
+* Fix the `data_kind` of `RecordsTruth` (#194)
+* Test full chain in multiple chunks and clean up input tests (#184)
+* Add a dtypes manager (#195)
+* Add pull_request_template.md (#197)
+* Scale S2 pattern map to correct S2 AFT (#196)
+
 1.2.0 / 2024-04-11
 ------------------
 * Specify lxml version (#185)

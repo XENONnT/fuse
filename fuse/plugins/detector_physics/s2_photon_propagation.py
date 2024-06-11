@@ -33,7 +33,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     Note: The timing calculation is defined in the child plugin.
     """
 
-    __version__ = "0.3.3"
+    __version__ = "0.3.5"
 
     depends_on = (
         "merged_electron_time",
@@ -211,7 +211,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         "&pmt_mask=plugin.pmt_mask"
         "&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top"
         "&n_tpc_pmts=plugin.n_tpc_pmts"
-        "&n_top_pmts=plugin.n_top_pmts",
+        "&n_top_pmts=plugin.n_top_pmts"
+        "&turned_off_pmts=plugin.turned_off_pmts",
         cache=True,
         help="S2 pattern map",
     )
@@ -337,28 +338,23 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         n_chunks = len(electron_chunks)
         if n_chunks > 1:
-            log.info("Chunk size exceeding file size target. " f"Downchunking to {n_chunks} chunks")
+            log.info(f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks")
 
         last_start = start
-        if n_chunks > 1:
-            for electron_group in electron_chunks[:-1]:
-                result = self.compute_chunk(interactions_in_roi, mask, electron_group)
+        for i, electron_group in enumerate(electron_chunks):
+            result = self.compute_chunk(interactions_in_roi, mask, electron_group)
 
-                # Move the chunk bound 90% of the minimal gap length to
-                # the next photon to make space for afterpluses
+            # Move the chunk bound 90% of the minimal gap length to
+            # the next photon to make space for afterpluses
+            if i < n_chunks - 1:
                 chunk_end = np.max(strax.endtime(result)) + np.int64(
                     self.min_electron_gap_length_for_splitting * 0.9
                 )
-                chunk = self.chunk(start=last_start, end=chunk_end, data=result)
-                last_start = chunk_end
-                yield chunk
-
-        # And the last chunk
-        electron_group = electron_chunks[-1]
-        result = self.compute_chunk(interactions_in_roi, mask, electron_group)
-
-        chunk = self.chunk(start=last_start, end=end, data=result)
-        yield chunk
+            else:
+                chunk_end = end
+            chunk = self.chunk(start=last_start, end=chunk_end, data=result)
+            last_start = chunk_end
+            yield chunk
 
     def compute_chunk(self, interactions_in_roi, mask, electron_group):
         unique_clusters_in_group = np.unique(electron_group["cluster_id"])
@@ -423,6 +419,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             photon_type=2,
         )
 
+        # Discard photons associated with negative channel numbers
+        result = result[result["channel"] >= 0]
+
         result = strax.sort_by_time(result)
 
         return result
@@ -443,9 +442,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             pattern = np.pad(
                 pattern, [[0, 0], [0, len(bottom_index)]], "constant", constant_values=1
             )
-
-        # Remove turned off pmts
-        pattern[:, np.in1d(channels, self.turned_off_pmts)] = 0
 
         sum_pat = np.sum(pattern, axis=1).reshape(-1, 1)
         pattern = np.divide(pattern, sum_pat, out=np.zeros_like(pattern), where=sum_pat != 0)
@@ -468,7 +464,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                 pat[top_index] *= _new_aft / _cur_aft
                 pat[bottom_index] *= (1 - _new_aft) / (1 - _cur_aft)
 
-            # Pattern map return zeros
+            # If pattern map return zeros or has NAN values assign negative channel
+            # Photons with negative channel number will be rejected when
+            # building photon propagation output
             if np.isnan(pat).sum() > 0:
                 _photon_channels = np.array([-1] * n_ph)
 
