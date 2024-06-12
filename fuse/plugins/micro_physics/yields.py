@@ -125,20 +125,17 @@ class NestYields(FuseBasePlugin):
         # https://github.com/NESTCollaboration/nestpy/blob/e82c71f864d7362fee87989ed642cd875845ae3e/src/nestpy/helpers.py#L94-L100
         if model == 0 and en > 2e2:
             log.warning(
-                f"Energy deposition of {en} keV beyond NEST validity "
-                "for NR model of 200 keV"
+                f"Energy deposition of {en} keV beyond NEST validity " "for NR model of 200 keV"
             )
 
         if model == 7 and en > 3e3:
             log.warning(
-                f"Energy deposition of {en} keV beyond NEST validity "
-                "for gamma model of 3 MeV"
+                f"Energy deposition of {en} keV beyond NEST validity " "for gamma model of 3 MeV"
             )
 
         if model == 8 and en > 3e3:
             log.warning(
-                f"Energy deposition of {en} keV beyond NEST validity "
-                "for beta model of 3 MeV"
+                f"Energy deposition of {en} keV beyond NEST validity " "for beta model of 3 MeV"
             )
 
         y = nc.GetYields(
