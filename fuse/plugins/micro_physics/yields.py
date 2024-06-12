@@ -126,21 +126,20 @@ class NestYields(FuseBasePlugin):
         if model == 0 and en > 2e2:
             log.warning(
                 f"Energy deposition of {en} keV beyond NEST validity "
-                "for NR model of 200 keV - Remove Interaction"
+                "for NR model of 200 keV"
             )
-            return -1, -1, -1
+
         if model == 7 and en > 3e3:
             log.warning(
                 f"Energy deposition of {en} keV beyond NEST validity "
-                "for gamma model of 3 MeV - Remove Interaction"
+                "for gamma model of 3 MeV"
             )
-            return -1, -1, -1
+
         if model == 8 and en > 3e3:
             log.warning(
                 f"Energy deposition of {en} keV beyond NEST validity "
-                "for beta model of 3 MeV - Remove Interaction"
+                "for beta model of 3 MeV"
             )
-            return -1, -1, -1
 
         y = nc.GetYields(
             interaction=nestpy.INTERACTION_TYPE(model),
