@@ -226,9 +226,10 @@ class BetaYields(NestYields):
     def quanta_from_spline(self, energy):
 
         with open(self.beta_quanta_spline, "rb") as f:
-            quanta_function = pickle.load(f)
+            cs1_poly, cs2_poly = pickle.load(f)
 
-        beta_photons, beta_electrons = quanta_function(energy)
+        beta_photons = cs1_poly(energy)
+        beta_electrons = cs2_poly(energy)
 
         if self.use_recombination_fluctuation:
 
