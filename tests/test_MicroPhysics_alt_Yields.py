@@ -63,7 +63,7 @@ class TestAlternativeYields(unittest.TestCase):
         spline_func_name = os.path.join(self.temp_dir.name, "beta_quanta_spline.pkl")
         with open(spline_func_name, "wb") as f:
             pickle.dump((yields_dummy_func, yields_dummy_func), f)
-    
+
         self.test_context.set_config({"beta_quanta_spline": spline_func_name})
 
         # Make the plugin
