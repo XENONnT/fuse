@@ -242,17 +242,6 @@ class file_loader:
         if self.event_rate > 0:
             interactions["t"] = interactions["t"] - interactions["t"][:, 0]
 
-        # Get the interaction times into flat numpy array
-        interaction_time = awkward_to_flat_numpy(interactions["t"])
-
-        # Remove interactions that happen way after the run ended
-        # we will apply the cut later on the times instead of t
-        delay_cut = interaction_time <= self.cut_delayed
-        log.info(
-            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut) / len(delay_cut):.4%}) "
-            f"interactions later than {self.cut_delayed:.2e} ns."
-        )
-
         # Adjust event times if necessary
         if self.event_rate > 0:
 
@@ -264,6 +253,7 @@ class file_loader:
             ).astype(np.int64)
 
             event_times = np.sort(event_times)
+            
 
             interactions["time"] = interactions["t"] + event_times
 
@@ -280,16 +270,30 @@ class file_loader:
         else:
             raise ValueError("Source rate cannot be negative!")
 
+        # Get the interaction original times ("t") into a numpy array
+        interaction_time = awkward_to_flat_numpy(interactions["t"])
+
+        # Remove interactions that happen way after the run ended
+        # we will apply the cut later on the times instead of t
+        delay_cut = interaction_time <= self.cut_delayed
+        log.info(
+            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut) / len(delay_cut):.4%}) "
+            f"interactions later than {self.cut_delayed:.2e} ns."
+        )
+
         # Overwrite interaction_time (based on "t") with the new event times
         interaction_time = awkward_to_flat_numpy(interactions["time"])
+
+        # Apply the delay cut (before all the other cuts,
+        # as we calculated it on another array)
+        interaction_time = interaction_time[delay_cut]
+
         # First caclulate sort index for the interaction times
         sort_idx = np.argsort(interaction_time)
         # and now make it an integer for strax time field
         interaction_time = interaction_time.astype(np.int64)
         # Sort the interaction times
         interaction_time = interaction_time[sort_idx]
-        # Apply the delay cut
-        interaction_time = interaction_time[delay_cut]
 
         chunk_idx = dynamic_chunking(
             interaction_time, scale=self.separation_scale, n_min=self.n_interactions_per_chunk
