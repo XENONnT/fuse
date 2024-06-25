@@ -253,7 +253,6 @@ class file_loader:
             ).astype(np.int64)
 
             event_times = np.sort(event_times)
-            
 
             interactions["time"] = interactions["t"] + event_times
 
