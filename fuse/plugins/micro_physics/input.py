@@ -270,23 +270,11 @@ class file_loader:
         else:
             raise ValueError("Source rate cannot be negative!")
 
-        # Get the interaction original times ("t") into a numpy array
-        interaction_time = awkward_to_flat_numpy(interactions["t"])
 
-        # Remove interactions that happen way after the run ended
-        # we will apply the cut later on the times instead of t
-        delay_cut = interaction_time <= self.cut_delayed
-        log.info(
-            f"Removing {np.sum(~delay_cut)} ({np.sum(~delay_cut) / len(delay_cut):.4%}) "
-            f"interactions later than {self.cut_delayed:.2e} ns."
-        )
+        interactions = interactions[interactions["t"] < self.cut_delayed]
 
-        # Overwrite interaction_time (based on "t") with the new event times
+        # Make into a flat numpy array
         interaction_time = awkward_to_flat_numpy(interactions["time"])
-
-        # Apply the delay cut (before all the other cuts,
-        # as we calculated it on another array)
-        interaction_time = interaction_time[delay_cut]
 
         # First caclulate sort index for the interaction times
         sort_idx = np.argsort(interaction_time)
