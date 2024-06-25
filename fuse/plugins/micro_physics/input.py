@@ -269,7 +269,6 @@ class file_loader:
         else:
             raise ValueError("Source rate cannot be negative!")
 
-
         interactions = interactions[interactions["t"] < self.cut_delayed]
 
         # Make into a flat numpy array
