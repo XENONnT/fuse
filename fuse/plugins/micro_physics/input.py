@@ -28,7 +28,7 @@ class ChunkInput(FuseBasePlugin):
     and will create multiple chunks of data if needed.
     """
 
-    __version__ = "0.3.3"
+    __version__ = "0.3.4"
 
     depends_on: Tuple = tuple()
     provides = "geant4_interactions"
@@ -62,6 +62,12 @@ class ChunkInput(FuseBasePlugin):
         help="Source rate used to generate event times"
         "Use a value >0 to generate event times in fuse"
         "Use source_rate = 0 to use event times from the input file (only for csv input)",
+    )
+
+    fixed_event_spacing = straxen.URLConfig(
+        default=False,
+        type=bool,
+        help="If True, the events will be spaced with a fixed time difference of 1/source_rate",
     )
 
     cut_delayed = straxen.URLConfig(
@@ -117,6 +123,7 @@ class ChunkInput(FuseBasePlugin):
             entry_stop=self.entry_stop,
             cut_by_eventid=self.cut_by_eventid,
             cut_nr_only=self.nr_only,
+            fixed_event_spacing=self.fixed_event_spacing,
         )
         self.file_reader_iterator = self.file_reader.output_chunk()
 
@@ -168,6 +175,7 @@ class file_loader:
         entry_stop=None,
         cut_by_eventid=False,
         cut_nr_only=False,
+        fixed_event_spacing=False,
     ):
         self.directory = directory
         self.file_name = file_name
@@ -186,6 +194,7 @@ class file_loader:
         self.entry_stop = entry_stop
         self.cut_by_eventid = cut_by_eventid
         self.cut_nr_only = cut_nr_only
+        self.fixed_event_spacing = fixed_event_spacing
 
         self.file = os.path.join(self.directory, self.file_name)
 
@@ -244,15 +253,22 @@ class file_loader:
 
         # Adjust event times if necessary
         if self.event_rate > 0:
-
-            # We need to get the number of interactions in the event,
-            # as we could have empty for TPC but not for other detectors
             num_interactions = len(interactions["t"])
-            event_times = self.rng.uniform(
-                low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
-            ).astype(np.int64)
 
-            event_times = np.sort(event_times)
+            if self.fixed_event_spacing:
+                log.info("Using fixed event spacing.")
+                event_times = (
+                    np.arange(
+                        start=0, stop=num_interactions / self.event_rate, step=1 / self.event_rate
+                    )
+                    + 1e9
+                )  # ns
+            else:
+                log.info("Using random event times.")
+                event_times = self.rng.uniform(
+                    low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
+                ).astype(np.int64)
+                event_times = np.sort(event_times)
 
             interactions["time"] = interactions["t"] + event_times
 
