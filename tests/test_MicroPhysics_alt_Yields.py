@@ -17,7 +17,7 @@ def yields_dummy_func(x):
     To be used as a dummy function for the BetaYields plugin. Needs to
     be defined outside the test class to be picklable.
     """
-    return 40, 30
+    return 20000
 
 
 class TestAlternativeYields(unittest.TestCase):
