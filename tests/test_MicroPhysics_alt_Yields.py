@@ -17,7 +17,7 @@ def yields_dummy_func(x):
     To be used as a dummy function for the BetaYields plugin. Needs to
     be defined outside the test class to be picklable.
     """
-    return 40, 30
+    return 20000
 
 
 class TestAlternativeYields(unittest.TestCase):
@@ -62,7 +62,7 @@ class TestAlternativeYields(unittest.TestCase):
         # as a function of energy
         spline_func_name = os.path.join(self.temp_dir.name, "beta_quanta_spline.pkl")
         with open(spline_func_name, "wb") as f:
-            pickle.dump(yields_dummy_func, f)
+            pickle.dump((yields_dummy_func, yields_dummy_func), f)
 
         self.test_context.set_config({"beta_quanta_spline": spline_func_name})
 
