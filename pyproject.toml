@@ -26,12 +26,13 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-numpy = "*"
+numpy = "<=1.26.0"
 pandas = "*"
 scipy = "*"
 scikit-learn = "*"
 immutabledict = "*"
 timeout_decorator = "*"
+periodictable = "*"
 nestpy = ">=2.0.2"
 numba = ">=0.58.1"
 awkward = ">=2.5.1"
