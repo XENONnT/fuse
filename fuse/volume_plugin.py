@@ -14,6 +14,11 @@ class VolumePlugin(FuseBasePlugin):
     def setup(self):
         super().setup()
 
+    # Forbid rechunking
+    rechunk_on_save = False
+
+    __version__ = "0.0.1"
+
     def in_ROI(self, interactions, min_z, max_z, max_r):
         """Function that evaluates if an interaction is in the ROI."""
         mask = in_cylinder(

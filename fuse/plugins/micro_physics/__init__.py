@@ -21,3 +21,9 @@ from .wfsim_connection import *
 
 from . import detector_volumes
 from .detector_volumes import *
+
+from . import lineage_cluster
+from .lineage_cluster import *
+
+from . import merge_lineage
+from .merge_lineage import *
