@@ -223,6 +223,7 @@ class BetaYields(NestYields):
         # now for the beta interactions we use the beta yields
         photons_beta, electrons_beta = self.quanta_from_spline(
             interactions_in_roi["ed"][mask_beta],
+            interactions_in_roi["create_S2"][mask_beta],
         )
 
         photons[mask_beta] = photons_beta
@@ -230,7 +231,7 @@ class BetaYields(NestYields):
 
         return photons, electrons, excitons
 
-    def quanta_from_spline(self, energy):
+    def quanta_from_spline(self, energy, create_s2):
 
         with open(self.beta_quanta_spline, "rb") as f:
             cs1_poly, cs2_poly = pickle.load(f)
@@ -252,6 +253,9 @@ class BetaYields(NestYields):
             # make sure we don't have negative quanta, so clip at 0
             beta_photons = np.clip(beta_photons, 0, np.inf)
             beta_electrons = np.clip(beta_electrons, 0, np.inf)
+
+        # put electrons to zero if create_s2 is false
+        beta_electrons[~create_s2] = 0
 
         return beta_photons, beta_electrons
 
