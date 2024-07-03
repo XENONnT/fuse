@@ -192,13 +192,6 @@ class BetaYields(NestYields):
     data_kind = "interactions_in_roi"
 
     # Config options
-
-    use_recombination_fluctuation = straxen.URLConfig(
-        default=True,
-        type=bool,
-        help="Turn on or off the recombination fluctuation for beta interactions.",
-    )
-
     recombination_fluctuation_std_factor = straxen.URLConfig(
         default=3,
         type=(int, float),
