@@ -95,13 +95,14 @@ class NestYields(FuseBasePlugin):
             interactions_in_roi["create_S2"],
             self.use_recombination_fluctuation,
             density=interactions_in_roi["xe_density"],
-            
         )
 
         return photons, electrons, excitons
 
     @staticmethod
-    def _quanta_from_NEST(en, model, e_field, A, Z, create_s2, use_recombination_fluctuation, **kwargs):
+    def _quanta_from_NEST(
+        en, model, e_field, A, Z, create_s2, use_recombination_fluctuation, **kwargs
+    ):
         """Function which uses NEST to yield photons and electrons for a given
         set of parameters.
 
@@ -170,13 +171,13 @@ class NestYields(FuseBasePlugin):
         # if we turn off recombination, just use the yield
         if not use_recombination_fluctuation:
             photons = y.PhotonYield
-            
+
         electrons = 0
         if create_s2:
             electrons = event_quanta.electrons
             # if we turn off recombination, just use the yield
             if not use_recombination_fluctuation:
-                electrons = y.ElectronYield        
+                electrons = y.ElectronYield
 
         return photons, electrons, excitons
 
