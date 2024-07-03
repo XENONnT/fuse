@@ -33,6 +33,12 @@ class NestYields(FuseBasePlugin):
 
     save_when = strax.SaveWhen.TARGET
 
+    use_recombination_fluctuation = straxen.URLConfig(
+        default=True,
+        type=bool,
+        help="Turn on or off the recombination fluctuation for beta interactions.",
+    )
+
     def setup(self):
         super().setup()
 
@@ -87,13 +93,15 @@ class NestYields(FuseBasePlugin):
             interactions_in_roi["A"],
             interactions_in_roi["Z"],
             interactions_in_roi["create_S2"],
+            self.use_recombination_fluctuation,
             density=interactions_in_roi["xe_density"],
+            
         )
 
         return photons, electrons, excitons
 
     @staticmethod
-    def _quanta_from_NEST(en, model, e_field, A, Z, create_s2, **kwargs):
+    def _quanta_from_NEST(en, model, e_field, A, Z, create_s2, use_recombination_fluctuation, **kwargs):
         """Function which uses NEST to yield photons and electrons for a given
         set of parameters.
 
@@ -156,11 +164,19 @@ class NestYields(FuseBasePlugin):
 
         event_quanta = nc.GetQuanta(y)  # Density argument is not use in function...
 
-        photons = event_quanta.photons
         excitons = event_quanta.excitons
+
+        photons = event_quanta.photons
+        # if we turn off recombination, just use the yield
+        if not use_recombination_fluctuation:
+            photons = y.PhotonYield
+            
         electrons = 0
         if create_s2:
             electrons = event_quanta.electrons
+            # if we turn off recombination, just use the yield
+            if not use_recombination_fluctuation:
+                electrons = y.ElectronYield        
 
         return photons, electrons, excitons
 
@@ -204,6 +220,7 @@ class BetaYields(NestYields):
             interactions_in_roi["A"],
             interactions_in_roi["Z"],
             interactions_in_roi["create_S2"],
+            self.use_recombination_fluctuation,
             density=interactions_in_roi["xe_density"],
         )
 
