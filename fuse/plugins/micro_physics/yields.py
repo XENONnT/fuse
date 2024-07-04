@@ -218,7 +218,10 @@ class BetaYields(NestYields):
             density=interactions_in_roi["xe_density"],
         )
 
+        # we use the custom beta yields for nestid == 8 (beta)
         mask_beta = interactions_in_roi["nestid"] == 8
+        # and only for clusters of at least 10 kev
+        mask_beta &= interactions_in_roi["ed"] > 10
 
         # now for the beta interactions we use the beta yields
         photons_beta, electrons_beta = self.quanta_from_spline(
