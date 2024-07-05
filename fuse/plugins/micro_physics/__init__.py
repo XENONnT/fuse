@@ -21,3 +21,9 @@ from .wfsim_connection import *
 
 from . import cuts_and_selections
 from .cuts_and_selections import *
+
+from . import lineage_cluster
+from .lineage_cluster import *
+
+from . import merge_lineage
+from .merge_lineage import *

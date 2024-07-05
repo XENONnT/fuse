@@ -233,8 +233,6 @@ class ElectronDrift(FuseBasePlugin):
         y = interactions_in_roi[mask]["y"]
         z = interactions_in_roi[mask]["z"]
         n_electron = interactions_in_roi[mask]["electrons"].astype(np.int64)
-        recoil_type = interactions_in_roi[mask]["nestid"]
-        recoil_type = np.where(np.isin(recoil_type, [0, 6, 7, 8, 11]), recoil_type, 8)
 
         # Reverse engineering FDC
         if self.field_distortion_model == "inverse_fdc":

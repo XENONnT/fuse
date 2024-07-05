@@ -13,10 +13,19 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.context")
 
 # Plugins to simulate microphysics
-microphysics_plugins = [
+microphysics_plugins_dbscan_clustering = [
     fuse.micro_physics.ChunkInput,
     fuse.micro_physics.FindCluster,
     fuse.micro_physics.MergeCluster,
+]
+
+microphysics_plugins_lineage_clustering = [
+    fuse.micro_physics.ChunkInput,
+    fuse.micro_physics.LineageClustering,
+    fuse.micro_physics.MergeLineage,
+]
+
+remaining_microphysics_plugins = [
     fuse.micro_physics.cuts_and_selections.XENONnT_TPC,
     fuse.micro_physics.cuts_and_selections.XENONnT_BelowCathode,
     fuse.micro_physics.cuts_and_selections.DefaultSimulation,
@@ -95,7 +104,9 @@ def microphysics_context(
     )
 
     # Register microphysics plugins
-    for plugin in microphysics_plugins:
+    for plugin in microphysics_plugins_dbscan_clustering:
+        st.register(plugin)
+    for plugin in remaining_microphysics_plugins:
         st.register(plugin)
 
     set_simulation_config_file(st, simulation_config_file)
@@ -105,6 +116,7 @@ def microphysics_context(
 
 def full_chain_context(
     output_folder="./fuse_data",
+    clustering_method="dbscan",
     corrections_version=None,
     simulation_config_file="fuse_config_nt_sr1_dev.json",
     corrections_run_id="046477",
@@ -140,15 +152,22 @@ def full_chain_context(
     )
 
     st.config.update(
-        dict(
-            # detector='XENONnT',
-            check_raw_record_overlaps=True,
-            **straxen.contexts.xnt_common_config,
+        dict(  # detector='XENONnT',
+            check_raw_record_overlaps=True, **straxen.contexts.xnt_common_config
         )
     )
 
     # Register microphysics plugins
-    for plugin in microphysics_plugins:
+    if clustering_method == "dbscan":
+        for plugin in microphysics_plugins_dbscan_clustering:
+            st.register(plugin)
+    elif clustering_method == "lineage":
+        for plugin in microphysics_plugins_lineage_clustering:
+            st.register(plugin)
+    else:
+        raise ValueError(f"Clustering method {clustering_method} not implemented!")
+
+    for plugin in remaining_microphysics_plugins:
         st.register(plugin)
 
     # Register S1 plugins
