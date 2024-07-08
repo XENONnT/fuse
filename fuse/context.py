@@ -26,9 +26,9 @@ microphysics_plugins_lineage_clustering = [
 ]
 
 remaining_microphysics_plugins = [
-    fuse.micro_physics.XENONnT_TPC,
-    fuse.micro_physics.XENONnT_BelowCathode,
-    fuse.micro_physics.VolumesMerger,
+    fuse.micro_physics.cuts_and_selections.XENONnT_TPC,
+    fuse.micro_physics.cuts_and_selections.XENONnT_BelowCathode,
+    fuse.micro_physics.cuts_and_selections.DefaultSimulation,
     fuse.micro_physics.ElectricField,
     fuse.micro_physics.NestYields,
     fuse.micro_physics.MicroPhysicsSummary,
