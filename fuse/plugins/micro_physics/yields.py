@@ -36,7 +36,8 @@ class NestYields(FuseBasePlugin):
     return_yields_only = straxen.URLConfig(
         default=False,
         type=bool,
-        help="Set to True to return the yields model output directly instead of the calculated actual quanta with NEST getQuanta function. Only for testing purposes."
+        help="Set to True to return the yields model output directly instead of the \
+        calculated actual quanta with NEST getQuanta function. Only for testing purposes."
     )
 
     def setup(self):
