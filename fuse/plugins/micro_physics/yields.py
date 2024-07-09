@@ -37,7 +37,7 @@ class NestYields(FuseBasePlugin):
         default=False,
         type=bool,
         help="Set to True to return the yields model output directly instead of the \
-        calculated actual quanta with NEST getQuanta function. Only for testing purposes."
+        calculated actual quanta with NEST getQuanta function. Only for testing purposes.",
     )
 
     def setup(self):
