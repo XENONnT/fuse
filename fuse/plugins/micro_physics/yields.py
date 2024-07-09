@@ -36,7 +36,7 @@ class NestYields(FuseBasePlugin):
     return_yields_only = straxen.URLConfig(
         default=False,
         type=bool,
-        help="Set to True to return the yields model output directly instead of the calculated actual quanta with NEST getQuanta function. Only for testing purposes."
+        help="Set to True to return the yields model output directly instead of the calculated actual quanta with NEST getQuanta function. Only for testing purposes.",
     )
 
     def setup(self):
@@ -77,7 +77,7 @@ class NestYields(FuseBasePlugin):
                 interactions_in_roi["A"],
                 interactions_in_roi["Z"],
                 interactions_in_roi["create_S2"],
-                interactions_in_roi["xe_density"]
+                interactions_in_roi["xe_density"],
             )
             result["photons"] = photons
             result["electrons"] = electrons
@@ -94,14 +94,15 @@ class NestYields(FuseBasePlugin):
 
     def get_quanta(self, en, model, e_field, A, Z, create_s2, density):
         """Function to get quanta for given parameters using NEST."""
-        
+
         y = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
-        
+
         return self.process_yields(y, create_s2)
 
     def get_yields_from_NEST(self, en, model, e_field, A, Z, density):
-        """Function which uses NEST to yield photons and electrons for a given set of parameters."""
-        
+        """Function which uses NEST to yield photons and electrons for a given
+        set of parameters."""
+
         # Fix for Kr83m events
         max_allowed_energy_difference = 1  # keV
         if model == 11:
@@ -112,25 +113,31 @@ class NestYields(FuseBasePlugin):
 
         # Some additions taken from NEST code
         if model == 0 and en > 2e2:
-            log.warning(f"Energy deposition of {en} keV beyond NEST validity for NR model of 200 keV")
+            log.warning(
+                f"Energy deposition of {en} keV beyond NEST validity for NR model of 200 keV"
+            )
         if model == 7 and en > 3e3:
-            log.warning(f"Energy deposition of {en} keV beyond NEST validity for gamma model of 3 MeV")
+            log.warning(
+                f"Energy deposition of {en} keV beyond NEST validity for gamma model of 3 MeV"
+            )
         if model == 8 and en > 3e3:
-            log.warning(f"Energy deposition of {en} keV beyond NEST validity for beta model of 3 MeV")
+            log.warning(
+                f"Energy deposition of {en} keV beyond NEST validity for beta model of 3 MeV"
+            )
 
         yields_result = self.nc.GetYields(
-            interaction=nestpy.INTERACTION_TYPE(model), 
-            energy=en, 
-            drift_field=e_field, 
-            A=A, 
-            Z=Z, 
+            interaction=nestpy.INTERACTION_TYPE(model),
+            energy=en,
+            drift_field=e_field,
+            A=A,
+            Z=Z,
             density=density,
         )
 
         return yields_result
 
     def process_yields(self, y, create_s2):
-        """Process the yields with NEST to get actual quanta. """ 
+        """Process the yields with NEST to get actual quanta."""
 
         event_quanta = self.nc.GetQuanta(y)  # Density argument is not used in function...
 
@@ -149,9 +156,11 @@ class NestYields(FuseBasePlugin):
 
         return photons, electrons, excitons
 
+
 @export
 class BetaYields(NestYields):
-    """Plugin that calculates the number of photons, electrons and excitons produced by energy deposit using nestpy."""
+    """Plugin that calculates the number of photons, electrons and excitons
+    produced by energy deposit using nestpy."""
 
     depends_on = ("interactions_in_roi", "electric_field_values")
     provides = "quanta"
@@ -187,9 +196,9 @@ class BetaYields(NestYields):
         # Get the yields from NEST as default
         yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
 
-        # Modify yields for beta interactions (nest model 8) 
+        # Modify yields for beta interactions (nest model 8)
         # if energy is above threshold for validity of yield model
-        if model == 8 and en > self.beta_yield_threshold: 
+        if model == 8 and en > self.beta_yield_threshold:
             yields_result = self.modify_beta_yields(yields_result, en)
 
         return self.process_yields(yields_result, create_s2)
@@ -210,7 +219,6 @@ class BetaYields(NestYields):
         yields_result.ElectronYield = beta_electrons
 
         return yields_result
-
 
 
 @export
