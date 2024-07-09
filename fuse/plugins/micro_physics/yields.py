@@ -177,9 +177,7 @@ class BetaYields(NestYields):
         default=10,
         help="Threshold in keV above which we apply the beta quanta spline.",
     )
-
-    __version__ = "9.2.6"
-
+    
     def setup(self):
 
         if self.beta_quanta_spline is None:
