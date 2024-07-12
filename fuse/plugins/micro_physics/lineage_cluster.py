@@ -339,14 +339,13 @@ def classify_lineage(particle_interaction):
         elif particle_interaction["edproc"] == "phot":
             # Not sure about this, but was looking for a way to give beta yields
             # to gammas that are coming directly from a radioactive decay
-            # if particle_interaction["creaproc"] == "RadioactiveDecayBase":
-            #     return NEST_BETA
-            # # Need this case for custom geant4 inputs...
-            # elif particle_interaction["creaproc"] == "Null":
-            #     return NEST_BETA
-            # else:
-            return NEST_GAMMA
-            
+            if particle_interaction["creaproc"] == "RadioactiveDecayBase":
+                return NEST_BETA
+            # Need this case for custom geant4 inputs...
+            elif particle_interaction["creaproc"] == "Null":
+                return NEST_BETA
+            else:
+                return NEST_GAMMA
         else:
             # could be rayleigh scattering or something else. Classify it as gamma...
             return NEST_BETA
@@ -407,6 +406,13 @@ def is_lineage_broken(
         parent_position = np.array([parent["x"], parent["y"], parent["z"]])
 
         distance = np.sqrt(np.sum((parent_position - particle_position) ** 2, axis=0))
+
+
+        if (particle["creaproc"] == "phot") and (particle["edproc"] == "phot"):
+            # we do not want to split a photo absorption into two clusters
+            # the second photo absorbtion (that we see) could be x rays
+            # so, do not split if the distance is small
+            return False
 
         if distance > gamma_distance_threshold:
             return True
