@@ -40,6 +40,16 @@ class NestYields(FuseBasePlugin):
         calculated actual quanta with NEST getQuanta function. Only for testing purposes.",
     )
 
+    nest_width_parameters = straxen.URLConfig(
+        default=None,
+        type=dict,
+        help="Set to modify default NEST NRERWidthParameters to match recombination fluctuations. \
+        From NEST code https://github.com/NESTCollaboration/nest/blob/v2.4.0/src/NEST.cpp \
+        and NEST paper https://arxiv.org/abs/2211.10726 \
+        See self.get_nest_width_parameters() for the options and default values. \
+        Example use: {'fano_ER': -0.0015, 'A_ER': 0.096452}",
+    )
+
     def setup(self):
         super().setup()
 
@@ -52,6 +62,38 @@ class NestYields(FuseBasePlugin):
 
         self.nc = nestpy.NESTcalc(nestpy.VDetector())
         self.vectorized_get_quanta = np.vectorize(self.get_quanta)
+
+    def get_nest_width_parameters(self):
+
+        # Get the default NEST NRERWidthsParam
+        free_parameters = self.nc.nc.default_NRERWidthsParam
+
+        # Map the parameters names to the index in the free_parameters list
+        parameters_key_map = {
+            "fano_ions_NR": 0, # Fano factor for NR Ions (default 0.4)
+            "fano_excitons_NR": 1, # Fano factor for NR Excitons (default 0.4)
+            "A_NR": 2, # A' - Amplitude for Recombinnation NR (default 0.04)
+            "xi_NR": 3, # ξ - Center for Recombination NR (default 0.50)
+            "omega_NR": 4, # ω - Width for Recombination NR (default 0.19)
+            "skewness_NR": 5, # Skewness for NR (default 2.25)
+            "fano_ER": 6, # Multiplier for Fano ER, if<0 field dep, else constant. (default 1)
+            "A_ER": 7, # A - Amplitude for Recombination ER, field dependent (default 0.096452)
+            "omega_ER": 8, # ω - Width for Recombination ER (default 0.205)
+            "xi_ER": 9, # ξ - Center for Recombination ER (default 0.45)
+            "alpha_skewness_ER": 10, # Skewness for ER (default -0.2)
+        }
+
+        if self.nest_width_parameters is not None:
+            for key, value in self.nest_width_parameters.items():
+                if key not in parameters_key_map:
+                    raise ValueError(f"Unknown NEST width parameter {key}.\
+                        Available parameters: {parameters_key_map.keys()}")
+                log.debug(f"Updating NEST width parameter {key} to {value}")
+                free_parameters[parameters_key_map[key]] = value
+
+        log.debug(f"Using NEST width parameters: {free_parameters}")
+
+        return free_parameters
 
     def compute(self, interactions_in_roi):
 
@@ -140,7 +182,11 @@ class NestYields(FuseBasePlugin):
     def process_yields(self, y, create_s2):
         """Process the yields with NEST to get actual quanta."""
 
-        event_quanta = self.nc.GetQuanta(y)  # Density argument is not used in function...
+        # Density argument is not used in function...
+        event_quanta = self.nc.GetQuanta(
+            y, 
+            free_parameters=self.get_nest_width_parameters()
+        ) 
 
         excitons = event_quanta.excitons
         photons = event_quanta.photons
@@ -174,16 +220,26 @@ class BetaYields(NestYields):
     )
 
     beta_yield_threshold = straxen.URLConfig(
-        default=10,
-        help="Threshold in keV above which we apply the beta quanta spline.",
+        default=13.5,
+        help="Threshold in keV above which we apply the cutstom beta yields.",
+    )
+
+    fix_beta_yield_field = straxen.URLConfig(
+        default=19,
+        help="Field in V/cm to use for NEST beta yield calculation.",
+    )
+
+    fix_gamma_yield_field = straxen.URLConfig(
+        default=35,
+        help="Field in V/cm to use for NEST gamma yield calculation.",
     )
 
     def setup(self):
 
+        super().setup()
+
         if self.beta_quanta_spline is None:
             raise ValueError("beta_quanta_spline must be set in the context config")
-
-        super().setup()
 
         # Load the spline
         with open(self.beta_quanta_spline, "rb") as f:
@@ -195,12 +251,27 @@ class BetaYields(NestYields):
         # Get the yields from NEST as default
         yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
 
-        # Modify yields for beta interactions (nest model 8)
-        # if energy is above threshold for validity of yield model
-        if model == 8 and en > self.beta_yield_threshold:
-            yields_result = self.modify_beta_yields(yields_result, en)
+        if model == 8: # beta
+            # Low-energy: use NEST
+            if en <= self.beta_yield_threshold: # keV
+                if self.fix_beta_yield_field:
+                    e_field = self.fix_beta_yield_field
+                # Override the yields for betas low-energy
+                yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
 
+            # High-energy: use custom yield
+            else:
+                # Update the yields
+                yields_result = self.modify_beta_yields(yields_result, en)
+
+        if model == 7: # gamma 
+            if self.fix_gamma_yield_field:
+                e_field = self.fix_gamma_yield_field
+            # Override the yields for gammas
+            yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
+        
         return self.process_yields(yields_result, create_s2)
+        
 
     def modify_beta_yields(self, yields_result, en):
         """Modify the yields for beta interactions based on custom spline."""

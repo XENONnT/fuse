@@ -339,13 +339,14 @@ def classify_lineage(particle_interaction):
         elif particle_interaction["edproc"] == "phot":
             # Not sure about this, but was looking for a way to give beta yields
             # to gammas that are coming directly from a radioactive decay
-            if particle_interaction["creaproc"] == "RadioactiveDecayBase":
-                return NEST_BETA
-            # Need this case for custom geant4 inputs...
-            elif particle_interaction["creaproc"] == "Null":
-                return NEST_BETA
-            else:
-                return NEST_GAMMA
+            # if particle_interaction["creaproc"] == "RadioactiveDecayBase":
+            #     return NEST_BETA
+            # # Need this case for custom geant4 inputs...
+            # elif particle_interaction["creaproc"] == "Null":
+            #     return NEST_BETA
+            # else:
+            return NEST_GAMMA
+            
         else:
             # could be rayleigh scattering or something else. Classify it as gamma...
             return NEST_BETA
