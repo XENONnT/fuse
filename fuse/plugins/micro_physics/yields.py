@@ -41,7 +41,7 @@ class NestYields(FuseBasePlugin):
     )
 
     nest_width_parameters = straxen.URLConfig(
-        default=None,
+        default={},
         type=dict,
         help="Set to modify default NEST NRERWidthParameters to match recombination fluctuations. \
         From NEST code https://github.com/NESTCollaboration/nest/blob/v2.4.0/src/NEST.cpp \
