@@ -70,24 +70,26 @@ class NestYields(FuseBasePlugin):
 
         # Map the parameters names to the index in the free_parameters list
         parameters_key_map = {
-            "fano_ions_NR": 0, # Fano factor for NR Ions (default 0.4)
-            "fano_excitons_NR": 1, # Fano factor for NR Excitons (default 0.4)
-            "A_NR": 2, # A' - Amplitude for Recombinnation NR (default 0.04)
-            "xi_NR": 3, # ξ - Center for Recombination NR (default 0.50)
-            "omega_NR": 4, # ω - Width for Recombination NR (default 0.19)
-            "skewness_NR": 5, # Skewness for NR (default 2.25)
-            "fano_ER": 6, # Multiplier for Fano ER, if<0 field dep, else constant. (default 1)
-            "A_ER": 7, # A - Amplitude for Recombination ER, field dependent (default 0.096452)
-            "omega_ER": 8, # ω - Width for Recombination ER (default 0.205)
-            "xi_ER": 9, # ξ - Center for Recombination ER (default 0.45)
-            "alpha_skewness_ER": 10, # Skewness for ER (default -0.2)
+            "fano_ions_NR": 0,  # Fano factor for NR Ions (default 0.4)
+            "fano_excitons_NR": 1,  # Fano factor for NR Excitons (default 0.4)
+            "A_NR": 2,  # A' - Amplitude for Recombinnation NR (default 0.04)
+            "xi_NR": 3,  # ξ - Center for Recombination NR (default 0.50)
+            "omega_NR": 4,  # ω - Width for Recombination NR (default 0.19)
+            "skewness_NR": 5,  # Skewness for NR (default 2.25)
+            "fano_ER": 6,  # Multiplier for Fano ER, if<0 field dep, else constant. (default 1)
+            "A_ER": 7,  # A - Amplitude for Recombination ER, field dependent (default 0.096452)
+            "omega_ER": 8,  # ω - Width for Recombination ER (default 0.205)
+            "xi_ER": 9,  # ξ - Center for Recombination ER (default 0.45)
+            "alpha_skewness_ER": 10,  # Skewness for ER (default -0.2)
         }
 
         if self.nest_width_parameters is not None:
             for key, value in self.nest_width_parameters.items():
                 if key not in parameters_key_map:
-                    raise ValueError(f"Unknown NEST width parameter {key}.\
-                        Available parameters: {parameters_key_map.keys()}")
+                    raise ValueError(
+                        f"Unknown NEST width parameter {key}.\
+                        Available parameters: {parameters_key_map.keys()}"
+                    )
                 log.debug(f"Updating NEST width parameter {key} to {value}")
                 free_parameters[parameters_key_map[key]] = value
 
@@ -183,10 +185,7 @@ class NestYields(FuseBasePlugin):
         """Process the yields with NEST to get actual quanta."""
 
         # Density argument is not used in function...
-        event_quanta = self.nc.GetQuanta(
-            y, 
-            free_parameters=self.get_nest_width_parameters()
-        ) 
+        event_quanta = self.nc.GetQuanta(y, free_parameters=self.get_nest_width_parameters())
 
         excitons = event_quanta.excitons
         photons = event_quanta.photons
@@ -251,9 +250,9 @@ class BetaYields(NestYields):
         # Get the yields from NEST as default
         yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
 
-        if model == 8: # beta
+        if model == 8:  # beta
             # Low-energy: use NEST
-            if en <= self.beta_yield_threshold: # keV
+            if en <= self.beta_yield_threshold:  # keV
                 if self.fix_beta_yield_field:
                     e_field = self.fix_beta_yield_field
                 # Override the yields for betas low-energy
@@ -264,14 +263,13 @@ class BetaYields(NestYields):
                 # Update the yields
                 yields_result = self.modify_beta_yields(yields_result, en)
 
-        if model == 7: # gamma 
+        if model == 7:  # gamma
             if self.fix_gamma_yield_field:
                 e_field = self.fix_gamma_yield_field
             # Override the yields for gammas
             yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
-        
+
         return self.process_yields(yields_result, create_s2)
-        
 
     def modify_beta_yields(self, yields_result, en):
         """Modify the yields for beta interactions based on custom spline."""

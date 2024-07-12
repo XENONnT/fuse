@@ -343,7 +343,6 @@ def classify_lineage(particle_interaction):
             # could be rayleigh scattering or something else. Classify it as gamma...
             return NEST_BETA
 
-
     # Primaries and decay products
     elif (particle_interaction["creaproc"] == "RadioactiveDecayBase") or (
         particle_interaction["parenttype"] == "none"
@@ -400,7 +399,6 @@ def is_lineage_broken(
         parent_position = np.array([parent["x"], parent["y"], parent["z"]])
 
         distance = np.sqrt(np.sum((parent_position - particle_position) ** 2, axis=0))
-
 
         if (particle["creaproc"] == "phot") and (particle["edproc"] == "phot"):
             # we do not want to split a photo absorption into two clusters
