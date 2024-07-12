@@ -66,7 +66,7 @@ class NestYields(FuseBasePlugin):
     def get_nest_width_parameters(self):
 
         # Get the default NEST NRERWidthsParam
-        free_parameters = self.nc.nc.default_NRERWidthsParam
+        free_parameters = self.nc.default_NRERWidthsParam
 
         # Map the parameters names to the index in the free_parameters list
         parameters_key_map = {
