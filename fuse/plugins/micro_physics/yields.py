@@ -50,6 +50,20 @@ class NestYields(FuseBasePlugin):
         Example use: {'fano_ER': -0.0015, 'A_ER': 0.096452}",
     )
 
+    nest_er_yields_parameters = straxen.URLConfig(
+        default=[-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.],
+        type=list,
+        help="Set to modify default NEST ER yields parameters. Use -1 to keep default value. \
+        From NEST code https://github.com/NESTCollaboration/nest/blob/v2.4.0/src/NEST.cpp \
+        Used in the calcuations of BetaYieldsGR."
+    )
+
+    fix_gamma_yield_field = straxen.URLConfig(
+        default=-1.,
+        help="Field in V/cm to use for NEST gamma yield calculation. Only used if set to > 0."
+        type=float,
+    )
+
     def setup(self):
         super().setup()
 
@@ -90,10 +104,10 @@ class NestYields(FuseBasePlugin):
                         f"Unknown NEST width parameter {key}.\
                         Available parameters: {parameters_key_map.keys()}"
                     )
-                log.debug(f"Updating NEST width parameter {key} to {value}")
+                self.log.debug(f"Updating NEST width parameter {key} to {value}")
                 free_parameters[parameters_key_map[key]] = value
 
-        log.debug(f"Using NEST width parameters: {free_parameters}")
+        self.log.debug(f"Using NEST width parameters: {free_parameters}")
 
         return free_parameters
 
@@ -170,6 +184,9 @@ class NestYields(FuseBasePlugin):
                 f"Energy deposition of {en} keV beyond NEST validity for beta model of 3 MeV"
             )
 
+        if model == 7 and self.fix_gamma_yield_field > 0:
+            e_field = self.fix_gamma_yield_field
+
         yields_result = self.nc.GetYields(
             interaction=nestpy.INTERACTION_TYPE(model),
             energy=en,
@@ -177,6 +194,7 @@ class NestYields(FuseBasePlugin):
             A=A,
             Z=Z,
             density=density,
+            ERYieldsParam=self.nest_er_yields_parameters,
         )
 
         return yields_result
@@ -226,11 +244,6 @@ class BetaYields(NestYields):
     fix_beta_yield_field = straxen.URLConfig(
         default=19,
         help="Field in V/cm to use for NEST beta yield calculation.",
-    )
-
-    fix_gamma_yield_field = straxen.URLConfig(
-        default=35,
-        help="Field in V/cm to use for NEST gamma yield calculation.",
     )
 
     def setup(self):
@@ -287,6 +300,7 @@ class BetaYields(NestYields):
         yields_result.ElectronYield = beta_electrons
 
         return yields_result
+
 
 
 @export
