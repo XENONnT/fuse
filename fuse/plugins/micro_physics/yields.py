@@ -76,8 +76,9 @@ class NestYields(FuseBasePlugin):
 
         self.nc = nestpy.NESTcalc(nestpy.VDetector())
         self.vectorized_get_quanta = np.vectorize(self.get_quanta)
+        self.nest_width_parameters = self.update_nest_width_parameters()
 
-    def get_nest_width_parameters(self):
+    def update_nest_width_parameters(self):
 
         # Get the default NEST NRERWidthsParam
         free_parameters = self.nc.default_NRERWidthsParam
@@ -203,7 +204,7 @@ class NestYields(FuseBasePlugin):
         """Process the yields with NEST to get actual quanta."""
 
         # Density argument is not used in function...
-        event_quanta = self.nc.GetQuanta(y, free_parameters=self.get_nest_width_parameters())
+        event_quanta = self.nc.GetQuanta(y, free_parameters=self.nest_width_parameters)
 
         excitons = event_quanta.excitons
         photons = event_quanta.photons
@@ -231,7 +232,6 @@ class BetaYields(NestYields):
     data_kind = "interactions_in_roi"
 
     beta_quanta_spline = straxen.URLConfig(
-        default=None,
         help="Path to function that gives n_ph and n_e for a given energy, \
         calculated from beta spectrum. The function should be a pickle file.",
     )
@@ -249,9 +249,6 @@ class BetaYields(NestYields):
     def setup(self):
 
         super().setup()
-
-        if self.beta_quanta_spline is None:
-            raise ValueError("beta_quanta_spline must be set in the context config")
 
         # Load the spline
         with open(self.beta_quanta_spline, "rb") as f:
