@@ -201,6 +201,7 @@ class BetaYields(NestYields):
             interactions_in_roi["A"],
             interactions_in_roi["Z"],
             interactions_in_roi["create_S2"],
+            log=self.log,
             density=interactions_in_roi["xe_density"],
         )
 
