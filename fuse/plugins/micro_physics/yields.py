@@ -247,15 +247,10 @@ class BetaYields(NestYields):
         help="Threshold in keV above which we apply the cutstom beta yields.",
     )
 
-    fix_beta_yield_field = straxen.URLConfig(
-        default=19,
-        help="Field in V/cm to use for NEST beta yield calculation.",
-    )
-
     def setup(self):
 
         super().setup()
-
+        
         # Load the spline
         with open(self.beta_quanta_spline, "rb") as f:
             self.cs1_poly, self.cs2_poly = pickle.load(f)
@@ -267,25 +262,9 @@ class BetaYields(NestYields):
         # Get the yields from NEST as default
         yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
 
-        if model == 8:  # beta
-            # Low-energy: use NEST
-            if en <= self.beta_yield_threshold:  # keV
-                if self.fix_beta_yield_field:
-                    e_field = self.fix_beta_yield_field
-                # Override the yields for betas low-energy
-                yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
-
-            # High-energy: use custom yield
-            else:
-                # Update the yields
-                yields_result = self.modify_beta_yields(yields_result, en)
-
-        if model == 7:  # gamma
-            if self.fix_gamma_yield_field > 0:
-                e_field = self.fix_gamma_yield_field
-
-            # Override the yields for gammas
-            yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
+        if model == 8 and en >= self.beta_yield_threshold:  # keV
+            # Override the yields for betas with custom spline
+            yields_result = self.modify_beta_yields(yields_result, en)
 
         return self.process_yields(yields_result, create_s2)
 
