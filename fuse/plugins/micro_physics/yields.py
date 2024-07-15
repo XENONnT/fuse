@@ -252,7 +252,7 @@ class BetaYields(NestYields):
     def setup(self):
 
         super().setup()
-        
+
         # Load the spline
         with open(self.beta_quanta_spline, "rb") as f:
             self.cs1_poly, self.cs2_poly = pickle.load(f)
