@@ -1,6 +1,5 @@
 import os
 from typing import Tuple
-import logging
 
 import uproot
 import awkward as ak
