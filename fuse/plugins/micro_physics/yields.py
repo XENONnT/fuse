@@ -51,15 +51,15 @@ class NestYields(FuseBasePlugin):
     )
 
     nest_er_yields_parameters = straxen.URLConfig(
-        default=[-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.],
+        default=[-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
         type=list,
         help="Set to modify default NEST ER yields parameters. Use -1 to keep default value. \
         From NEST code https://github.com/NESTCollaboration/nest/blob/v2.4.0/src/NEST.cpp \
-        Used in the calcuations of BetaYieldsGR."
+        Used in the calcuations of BetaYieldsGR.",
     )
 
     fix_gamma_yield_field = straxen.URLConfig(
-        default=-1.,
+        default=-1.0,
         help="Field in V/cm to use for NEST gamma yield calculation. Only used if set to > 0.",
         type=float,
     )
@@ -300,7 +300,6 @@ class BetaYields(NestYields):
         yields_result.ElectronYield = beta_electrons
 
         return yields_result
-
 
 
 @export
