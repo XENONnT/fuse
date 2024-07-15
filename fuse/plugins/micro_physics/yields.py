@@ -60,7 +60,7 @@ class NestYields(FuseBasePlugin):
 
     fix_gamma_yield_field = straxen.URLConfig(
         default=-1.,
-        help="Field in V/cm to use for NEST gamma yield calculation. Only used if set to > 0."
+        help="Field in V/cm to use for NEST gamma yield calculation. Only used if set to > 0.",
         type=float,
     )
 
