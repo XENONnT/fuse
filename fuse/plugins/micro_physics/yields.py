@@ -232,6 +232,7 @@ class BetaYields(NestYields):
     data_kind = "interactions_in_roi"
 
     beta_quanta_spline = straxen.URLConfig(
+        default=None,
         help="Path to function that gives n_ph and n_e for a given energy, \
         calculated from beta spectrum. The function should be a pickle file.",
     )
