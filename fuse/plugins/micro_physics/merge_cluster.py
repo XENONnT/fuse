@@ -12,6 +12,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class MergeCluster(FuseBasePlugin):
     """Plugin that merges energy deposits with the same cluster index into a

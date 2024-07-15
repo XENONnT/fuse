@@ -13,6 +13,7 @@ export, __all__ = strax.exporter()
 # The seed will be set in the compute method
 nest_rng = nestpy.RandomGen.rndm()
 
+
 @export
 class NestYields(FuseBasePlugin):
     """Plugin that calculates the number of photons, electrons and excitons
@@ -82,14 +83,14 @@ class NestYields(FuseBasePlugin):
             interactions_in_roi["A"],
             interactions_in_roi["Z"],
             interactions_in_roi["create_S2"],
-            log = self.log,
+            log=self.log,
             density=interactions_in_roi["xe_density"],
         )
 
         return photons, electrons, excitons
 
     @staticmethod
-    def _quanta_from_NEST(en, model, e_field, A, Z, create_s2, log,  **kwargs):
+    def _quanta_from_NEST(en, model, e_field, A, Z, create_s2, log, **kwargs):
         """Function which uses NEST to yield photons and electrons for a given
         set of parameters.
 

@@ -4,6 +4,7 @@ from ....vertical_merger_plugin import VerticalMergerPlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class DriftedElectronsMerger(VerticalMergerPlugin):
     """Plugin which concatenates the output of the regular and delayed electron

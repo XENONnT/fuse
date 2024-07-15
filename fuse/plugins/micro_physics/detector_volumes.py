@@ -10,6 +10,7 @@ from ...dtypes import (
 from ...volume_plugin import VolumePlugin
 from ...vertical_merger_plugin import VerticalMergerPlugin
 
+
 class VolumesMerger(VerticalMergerPlugin):
     """Plugin that concatenates the clusters that are in the XENONnT TPC or the
     volume below the cathode."""

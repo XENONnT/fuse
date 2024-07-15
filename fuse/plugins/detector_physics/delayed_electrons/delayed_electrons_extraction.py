@@ -3,6 +3,7 @@ from ..electron_extraction import ElectronExtraction
 
 export, __all__ = strax.exporter()
 
+
 @export
 class DelayedElectronsExtraction(ElectronExtraction):
     """This class is used to simulate the extraction of electrons from the

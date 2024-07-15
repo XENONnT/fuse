@@ -9,6 +9,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class SecondaryScintillation(FuseBasePlugin):
     """Plugin to simulate the secondary scintillation process in the gas

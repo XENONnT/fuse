@@ -11,6 +11,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class MergeLineage(FuseBasePlugin):
     """Plugin that merges energy deposits with the same lineage_index into a

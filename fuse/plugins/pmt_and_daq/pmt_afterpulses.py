@@ -8,6 +8,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class PMTAfterPulses(FuseBasePlugin):
     """Plugin to simulate PMT afterpulses using a precomputed afterpulse

@@ -9,6 +9,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class S1PhotonHits(FuseBasePlugin):
     """Plugin to simulate the number of detected S1 photons using a S1 light

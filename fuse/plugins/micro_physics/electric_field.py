@@ -7,6 +7,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class ElectricField(FuseBasePlugin):
     """Plugin that calculates the electric field values for the cluster
@@ -48,7 +49,9 @@ class ElectricField(FuseBasePlugin):
         # Clip negative values to 0
         n_negative_values = np.sum(electric_field_array["e_field"] < 0)
         if n_negative_values > 0:
-            self.log.warning(f"Found {n_negative_values} negative electric field values. Clipping to 0.")
+            self.log.warning(
+                f"Found {n_negative_values} negative electric field values. Clipping to 0."
+            )
         electric_field_array["e_field"] = np.clip(electric_field_array["e_field"], 0, None)
 
         # Clip NaN values to 0

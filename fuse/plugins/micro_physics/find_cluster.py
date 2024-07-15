@@ -8,6 +8,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class FindCluster(FuseBasePlugin):
     """Plugin to find clusters of energy deposits.

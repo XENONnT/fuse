@@ -4,6 +4,7 @@ from ..electron_drift import ElectronDrift
 
 export, __all__ = strax.exporter()
 
+
 @export
 class DelayedElectronsDrift(ElectronDrift):
     """This class is used to simulate the drift of electrons from the sources

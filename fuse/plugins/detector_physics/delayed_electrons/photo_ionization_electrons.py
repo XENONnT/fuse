@@ -7,6 +7,7 @@ from ....plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class PhotoIonizationElectrons(FuseBasePlugin):
     """Plugin to simulate the emission of delayed electrons from
@@ -157,7 +158,9 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         mask = interactions_in_roi["sum_s2_photons"] > 0
 
         if not self.enable_delayed_electrons or (len(interactions_in_roi[mask]) == 0):
-            self.log.debug("No interactions with S2 photons found or delayed electrons are disabled")
+            self.log.debug(
+                "No interactions with S2 photons found or delayed electrons are disabled"
+            )
             return np.zeros(0, self.dtype)
 
         electrons_per_interaction, unique_cluster_id = group_electrons_by_cluster_id(

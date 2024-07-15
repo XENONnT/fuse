@@ -7,6 +7,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class PulseWindow(FuseBasePlugin):
     """Plugin to compute time intervals (called ``pulse_windows``) in which the

@@ -3,6 +3,7 @@ from ..electron_timing import ElectronTiming
 
 export, __all__ = strax.exporter()
 
+
 @export
 class DelayedElectronsTiming(ElectronTiming):
     """This class is used to simulate the timing of electrons from the sources

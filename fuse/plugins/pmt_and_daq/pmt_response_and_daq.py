@@ -9,6 +9,7 @@ from ...plugin import FuseBaseDownChunkingPlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
     """Plugin to simulate the PMT response and DAQ effects.
@@ -218,7 +219,9 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
         n_chunks = len(pulse_window_chunks)
         if n_chunks > 1:
-            self.log.info(f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks")
+            self.log.info(
+                f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks"
+            )
 
         photon_chunks = []
         for pulse_groups in pulse_window_chunks:

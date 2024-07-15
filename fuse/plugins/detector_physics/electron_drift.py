@@ -6,6 +6,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class ElectronDrift(FuseBasePlugin):
     """Plugin to simulate the drift of electrons from the interaction site to

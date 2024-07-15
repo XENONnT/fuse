@@ -15,6 +15,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 # Remove the path and file name option from the config and do this with the run_number??
 @export
 class ChunkInput(FuseBasePlugin):
@@ -120,7 +121,7 @@ class ChunkInput(FuseBasePlugin):
             cut_by_eventid=self.cut_by_eventid,
             cut_nr_only=self.nr_only,
             fixed_event_spacing=self.fixed_event_spacing,
-            log = self.log
+            log=self.log,
         )
         self.file_reader_iterator = self.file_reader.output_chunk()
 

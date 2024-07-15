@@ -19,6 +19,7 @@ export, __all__ = strax.exporter()
 
 conversion_to_bar = 1 / constants.elementary_charge / 1e1
 
+
 @export
 class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     """Base plugin to simulate the propagation of S2 photons in the detector.
@@ -333,7 +334,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         n_chunks = len(electron_chunks)
         if n_chunks > 1:
-            self.log.info(f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks")
+            self.log.info(
+                f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks"
+            )
 
         last_start = start
         for i, electron_group in enumerate(electron_chunks):

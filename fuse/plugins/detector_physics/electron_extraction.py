@@ -6,6 +6,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class ElectronExtraction(FuseBasePlugin):
     """Plugin to simulate the loss of electrons during the extraction of

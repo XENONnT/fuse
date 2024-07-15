@@ -5,6 +5,7 @@ from ....plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class S1PhotonHitsEmpty(FuseBasePlugin):
     """Plugin to return zeros for all S1 photon hits of delayed electrons."""
