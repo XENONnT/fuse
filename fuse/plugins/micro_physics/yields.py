@@ -76,7 +76,7 @@ class NestYields(FuseBasePlugin):
 
         self.nc = nestpy.NESTcalc(nestpy.VDetector())
         self.vectorized_get_quanta = np.vectorize(self.get_quanta)
-        self.nest_width_parameters = self.update_nest_width_parameters()
+        self.updated_nest_width_parameters = self.update_nest_width_parameters()
 
     def update_nest_width_parameters(self):
 
@@ -204,7 +204,7 @@ class NestYields(FuseBasePlugin):
         """Process the yields with NEST to get actual quanta."""
 
         # Density argument is not used in function...
-        event_quanta = self.nc.GetQuanta(y, free_parameters=self.nest_width_parameters)
+        event_quanta = self.nc.GetQuanta(y, free_parameters=self.updated_nest_width_parameters)
 
         excitons = event_quanta.excitons
         photons = event_quanta.photons
