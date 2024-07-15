@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import numba
 import strax
@@ -9,10 +7,6 @@ from sklearn.cluster import DBSCAN
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.find_cluster")
-
 
 @export
 class FindCluster(FuseBasePlugin):

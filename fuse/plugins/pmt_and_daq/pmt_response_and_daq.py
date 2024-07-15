@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 from numba import njit
 from numba.typed import List
@@ -10,10 +8,6 @@ import straxen
 from ...plugin import FuseBaseDownChunkingPlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.pmt_and_daq.pmt_response_and_daq")
-
 
 @export
 class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
@@ -204,7 +198,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
     def compute(self, propagated_photons, pulse_windows, start, end):
         if len(propagated_photons) == 0 or len(pulse_windows) == 0:
-            log.debug("No photons or pulse windows found for chunk!")
+            self.log.debug("No photons or pulse windows found for chunk!")
 
             yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
             return  # Exit early
@@ -224,7 +218,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
         n_chunks = len(pulse_window_chunks)
         if n_chunks > 1:
-            log.info(f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks")
+            self.log.info(f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks")
 
         photon_chunks = []
         for pulse_groups in pulse_window_chunks:

@@ -1,6 +1,5 @@
 import strax
 import straxen
-import logging
 
 from ...dtypes import (
     primary_positions_fields,
@@ -10,10 +9,6 @@ from ...dtypes import (
 )
 from ...volume_plugin import VolumePlugin
 from ...vertical_merger_plugin import VerticalMergerPlugin
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.detector_volumes")
-
 
 class VolumesMerger(VerticalMergerPlugin):
     """Plugin that concatenates the clusters that are in the XENONnT TPC or the

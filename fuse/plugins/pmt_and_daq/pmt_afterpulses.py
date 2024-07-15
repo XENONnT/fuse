@@ -1,17 +1,12 @@
 import strax
 import numpy as np
 import straxen
-import logging
 
 from ...dtypes import propagated_photons_fields
 from ...common import pmt_gains
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.pmt_and_daq.pmt_afterpulses")
-
 
 @export
 class PMTAfterPulses(FuseBasePlugin):
@@ -175,7 +170,7 @@ class PMTAfterPulses(FuseBasePlugin):
             prob_ap = delaytime_cdf[merged_photon_channels, -1]
             if prob_ap.max() * self.pmt_ap_modifier > 0.5:
                 prob = prob_ap.max() * self.pmt_ap_modifier
-                log.warning(f"PMT after pulse probability is {prob} larger than 0.5?")
+                self.log.warning(f"PMT after pulse probability is {prob} larger than 0.5?")
 
             # Scaling down (up) rU0 effectivly increase (decrease) the ap rate
             rU0 /= self.pmt_ap_modifier

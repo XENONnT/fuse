@@ -1,16 +1,9 @@
 import strax
 import numpy as np
-import logging
 from immutabledict import immutabledict
 from ..secondary_scintillation import SecondaryScintillation
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger(
-    "fuse.detector_physics.delayed_electrons.delayed_electrons_secondary_scintillation"
-)
-
 
 @export
 class DelayedElectronsSecondaryScintillation(SecondaryScintillation):

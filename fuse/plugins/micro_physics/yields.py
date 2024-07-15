@@ -2,7 +2,6 @@ import numpy as np
 import nestpy
 import strax
 import straxen
-import logging
 import pickle
 
 from ...dtypes import quanta_fields
@@ -10,13 +9,9 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.yields")
-
 # Initialize the nestpy random generator
 # The seed will be set in the compute method
 nest_rng = nestpy.RandomGen.rndm()
-
 
 @export
 class NestYields(FuseBasePlugin):
@@ -39,9 +34,9 @@ class NestYields(FuseBasePlugin):
         if self.deterministic_seed or (self.user_defined_random_seed is not None):
             # Dont know but nestpy seems to have a problem with large seeds
             self.short_seed = int(repr(self.seed)[-8:])
-            log.debug(f"Generating nest random numbers starting with seed {self.short_seed}")
+            self.log.debug(f"Generating nest random numbers starting with seed {self.short_seed}")
         else:
-            log.debug("Generating random numbers with seed pulled from OS")
+            self.log.debug("Generating random numbers with seed pulled from OS")
 
         self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
 
@@ -87,13 +82,14 @@ class NestYields(FuseBasePlugin):
             interactions_in_roi["A"],
             interactions_in_roi["Z"],
             interactions_in_roi["create_S2"],
+            log = self.log,
             density=interactions_in_roi["xe_density"],
         )
 
         return photons, electrons, excitons
 
     @staticmethod
-    def _quanta_from_NEST(en, model, e_field, A, Z, create_s2, **kwargs):
+    def _quanta_from_NEST(en, model, e_field, A, Z, create_s2, log,  **kwargs):
         """Function which uses NEST to yield photons and electrons for a given
         set of parameters.
 

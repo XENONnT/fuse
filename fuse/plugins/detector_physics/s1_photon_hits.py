@@ -1,6 +1,5 @@
 import strax
 import straxen
-import logging
 
 import numpy as np
 from copy import deepcopy
@@ -9,10 +8,6 @@ from ...common import pmt_gains
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.s1_photon_hits")
-
 
 @export
 class S1PhotonHits(FuseBasePlugin):

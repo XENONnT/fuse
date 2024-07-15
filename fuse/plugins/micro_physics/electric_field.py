@@ -1,16 +1,11 @@
 import strax
 import numpy as np
-import logging
 import straxen
 
 from ...dtypes import electric_fields
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.electric_field")
-
 
 @export
 class ElectricField(FuseBasePlugin):
@@ -53,13 +48,13 @@ class ElectricField(FuseBasePlugin):
         # Clip negative values to 0
         n_negative_values = np.sum(electric_field_array["e_field"] < 0)
         if n_negative_values > 0:
-            log.warning(f"Found {n_negative_values} negative electric field values. Clipping to 0.")
+            self.log.warning(f"Found {n_negative_values} negative electric field values. Clipping to 0.")
         electric_field_array["e_field"] = np.clip(electric_field_array["e_field"], 0, None)
 
         # Clip NaN values to 0
         n_nan_values = np.sum(np.isnan(electric_field_array["e_field"]))
         if n_nan_values > 0:
-            log.warning(f"Found {n_nan_values} NaN electric field values. Clipping to 0.")
+            self.log.warning(f"Found {n_nan_values} NaN electric field values. Clipping to 0.")
         electric_field_array["e_field"] = np.nan_to_num(electric_field_array["e_field"])
 
         return electric_field_array

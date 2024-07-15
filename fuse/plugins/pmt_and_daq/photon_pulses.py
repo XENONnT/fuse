@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import numba
 import strax
@@ -8,10 +6,6 @@ import straxen
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.pmt_and_daq.photon_pulses")
-
 
 @export
 class PulseWindow(FuseBasePlugin):

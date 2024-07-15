@@ -15,10 +15,6 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.input")
-
-
 # Remove the path and file name option from the config and do this with the run_number??
 @export
 class ChunkInput(FuseBasePlugin):
@@ -124,6 +120,7 @@ class ChunkInput(FuseBasePlugin):
             cut_by_eventid=self.cut_by_eventid,
             cut_nr_only=self.nr_only,
             fixed_event_spacing=self.fixed_event_spacing,
+            log = self.log
         )
         self.file_reader_iterator = self.file_reader.output_chunk()
 
@@ -176,6 +173,7 @@ class file_loader:
         cut_by_eventid=False,
         cut_nr_only=False,
         fixed_event_spacing=False,
+        log=None,
     ):
         self.directory = directory
         self.file_name = file_name
@@ -195,6 +193,7 @@ class file_loader:
         self.cut_by_eventid = cut_by_eventid
         self.cut_nr_only = cut_nr_only
         self.fixed_event_spacing = fixed_event_spacing
+        self.log = log
 
         self.file = os.path.join(self.directory, self.file_name)
 
@@ -230,7 +229,7 @@ class file_loader:
         # m = interactions["ed"] > 0
 
         if self.cut_nr_only:
-            log.info("'nr_only' set to True, keeping only the NR events")
+            self.log.info("'nr_only' set to True, keeping only the NR events")
             m = ((interactions["type"] == "neutron") & (interactions["edproc"] == "hadElastic")) | (
                 interactions["edproc"] == "ionIoni"
             )
@@ -256,7 +255,7 @@ class file_loader:
             num_interactions = len(interactions["t"])
 
             if self.fixed_event_spacing:
-                log.info("Using fixed event spacing.")
+                self.log.info("Using fixed event spacing.")
                 event_times = (
                     np.arange(
                         start=0, stop=num_interactions / self.event_rate, step=1 / self.event_rate
@@ -264,7 +263,7 @@ class file_loader:
                     + 1e9
                 )  # ns
             else:
-                log.info("Using random event times.")
+                self.log.info("Using random event times.")
                 event_times = self.rng.uniform(
                     low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
                 ).astype(np.int64)
@@ -273,13 +272,13 @@ class file_loader:
             interactions["time"] = interactions["t"] + event_times
 
         elif self.event_rate == 0:
-            log.info("Using event times from provided input file.")
+            self.log.info("Using event times from provided input file.")
             if self.file_type == "root":
                 msg = (
                     "Using event times from root file is not recommended! "
                     "Use a source_rate > 0 instead."
                 )
-                log.warning(msg)
+                self.log.warning(msg)
             interactions["time"] = interactions["t"]
 
         else:
@@ -317,7 +316,7 @@ class file_loader:
             self.chunk_bounds = np.append(chunk_start[0] - self.first_chunk_left, chunk_bounds)
 
         else:
-            log.warning(
+            self.log.warning(
                 "Only one Chunk created! Only a few events simulated? "
                 "If no, your chunking parameters might not be optimal. "
                 "Try to decrease the source_rate or decrease the n_interactions_per_chunk."
@@ -334,7 +333,7 @@ class file_loader:
 
         # Process and yield each chunk
         source_done = False
-        log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
+        self.log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
         for c_ix, chunk_left, chunk_right in zip(
             unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]
         ):
@@ -382,15 +381,15 @@ class file_loader:
         ttree, n_simulated_events = self._get_ttree()
 
         if self.arg_debug:
-            log.info(f"Total entries in input file = {ttree.num_entries}")
+            self.log.info(f"Total entries in input file = {ttree.num_entries}")
             cutby_string = "output file entry"
             if self.cut_by_eventid:
                 cutby_string = "g4 eventid"
 
             if self.entry_start is not None:
-                log.debug(f"Starting to read from {cutby_string} {self.entry_start}")
+                self.log.debug(f"Starting to read from {cutby_string} {self.entry_start}")
             if self.entry_stop is not None:
-                log.debug(f"Ending read in at {cutby_string} {self.entry_stop}")
+                self.log.debug(f"Ending read in at {cutby_string} {self.entry_stop}")
 
         if self.entry_start is not None and self.entry_stop is not None:
             if self.entry_start >= self.entry_stop:
@@ -520,7 +519,7 @@ class file_loader:
             stop: Index of the last loaded interaction
         """
 
-        log.debug("Load instructions from a csv file!")
+        self.log.debug("Load instructions from a csv file!")
 
         df = pd.read_csv(self.file)
 

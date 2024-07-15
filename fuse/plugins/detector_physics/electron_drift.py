@@ -1,15 +1,10 @@
 import strax
 import straxen
-import logging
 import numpy as np
 
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.electron_drift")
-
 
 @export
 class ElectronDrift(FuseBasePlugin):
@@ -266,7 +261,7 @@ class ElectronDrift(FuseBasePlugin):
                 n=n_electron.astype(np.int32), p=electron_lifetime_correction
             )
         else:
-            log.debug("No electron lifetime applied")
+            self.log.debug("No electron lifetime applied")
 
         result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         result["time"] = interactions_in_roi["time"]
