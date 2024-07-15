@@ -189,6 +189,10 @@ class NestYields(FuseBasePlugin):
         if model == 7 and self.fix_gamma_yield_field > 0:
             e_field = self.fix_gamma_yield_field
 
+        if e_field < 0:
+            raise ValueError(f"Negative electric field {e_field} V/cm not allowed. \
+                (no error will be raised by NEST).")
+
         yields_result = self.nc.GetYields(
             interaction=nestpy.INTERACTION_TYPE(model),
             energy=en,
