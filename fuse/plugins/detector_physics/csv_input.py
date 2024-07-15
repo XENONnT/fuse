@@ -86,6 +86,7 @@ class ChunkCsvInput(FuseBasePlugin):
             separation_scale=self.separation_scale,
             n_interactions_per_chunk=self.n_interactions_per_chunk,
             debug=self.debug,
+            log=self.log,
         )
         self.file_reader_iterator = self.file_reader.output_chunk()
 
@@ -132,6 +133,7 @@ class csv_file_loader:
         first_chunk_left=1e6,
         last_chunk_length=1e8,
         debug=False,
+        log=None,
     ):
         self.input_file = input_file
         self.rng = random_number_generator
@@ -142,6 +144,7 @@ class csv_file_loader:
         self.last_chunk_length = np.int64(last_chunk_length)
         self.first_chunk_left = np.int64(first_chunk_left)
         self.debug = debug
+        self.log = log
 
         # The csv file needs to have these columns:
         _fields = ChunkCsvInput.needed_csv_input_fields()
