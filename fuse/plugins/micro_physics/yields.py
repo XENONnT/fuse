@@ -130,6 +130,7 @@ class NestYields(FuseBasePlugin):
 
         # Generate quanta:
         if len(interactions_in_roi) > 0:
+
             photons, electrons, excitons = self.vectorized_get_quanta(
                 interactions_in_roi["ed"],
                 interactions_in_roi["nestid"],
@@ -254,6 +255,7 @@ class BetaYields(NestYields):
         # Load the spline
         with open(self.beta_quanta_spline, "rb") as f:
             self.cs1_poly, self.cs2_poly = pickle.load(f)
+            self.log.debug(f"Loaded beta quanta spline from {self.beta_quanta_spline}")
 
     def get_quanta(self, en, model, e_field, A, Z, create_s2, density):
         """Override get_quanta to apply beta-specific modifications."""
@@ -275,8 +277,9 @@ class BetaYields(NestYields):
                 yields_result = self.modify_beta_yields(yields_result, en)
 
         if model == 7:  # gamma
-            if self.fix_gamma_yield_field:
+            if self.fix_gamma_yield_field > 0:
                 e_field = self.fix_gamma_yield_field
+
             # Override the yields for gammas
             yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
 
