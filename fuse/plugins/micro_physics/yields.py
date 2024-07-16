@@ -64,7 +64,9 @@ class NestYields(FuseBasePlugin):
             result["photons"] = photons
             result["electrons"] = electrons
             result["excitons"] = excitons
-            result["exciton_to_photon_ratio"] = excitons / photons
+            result["exciton_to_photon_ratio"] = np.divide(
+                excitons, photons, out=np.zeros_like(photons), where=photons != 0
+            )
         else:
             result["photons"] = np.empty(0)
             result["electrons"] = np.empty(0)
