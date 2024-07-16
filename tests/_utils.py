@@ -15,7 +15,8 @@ def build_random_instructions(n):
 
     df["photons"] = np.random.uniform(100, 5000, n)
     df["electrons"] = np.random.uniform(100, 5000, n)
-    df["excitons"] = np.zeros(n)
+    df["excitons"] = df["photons"]
+    df["exciton_to_photon_ratio"] = np.ones(n)  # Lets use a ratio of 1 for the tests.
 
     df["e_field"] = np.array([23] * n)
     df["nestid"] = np.array([7] * n)
