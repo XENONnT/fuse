@@ -427,7 +427,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                     scint_time = self.nestpy_calc.GetPhotonTimes(
                         nestpy.INTERACTION_TYPE(recoil_type[i]),
                         n_times_to_sample,
-                        exciton_to_photon_ratio[i] * n_times_to_sample,
+                        round(exciton_to_photon_ratio[i] * n_times_to_sample),
                         local_field[i],
                         e_dep[i],
                     )
