@@ -64,10 +64,12 @@ class NestYields(FuseBasePlugin):
             result["photons"] = photons
             result["electrons"] = electrons
             result["excitons"] = excitons
+            result["exciton_to_photon_ratio"] = excitons / photons
         else:
             result["photons"] = np.empty(0)
             result["electrons"] = np.empty(0)
             result["excitons"] = np.empty(0)
+            result["exciton_to_photon_ratio"] = np.empty(0)
 
         # Unlock the nest random generator seed again
         nest_rng.unlock_seed()

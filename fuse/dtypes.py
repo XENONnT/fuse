@@ -61,6 +61,7 @@ quanta_fields = [
     (("Number of photons at interaction position", "photons"), np.int32),
     (("Number of electrons at interaction position", "electrons"), np.int32),
     (("Number of excitons at interaction position", "excitons"), np.int32),
+    (("Ratio of excitons to photons at interaction position", "exciton_to_photon_ratio"), np.int32),
 ]
 
 
