@@ -1,7 +1,6 @@
 import strax
 import straxen
 import numpy as np
-import logging
 
 from numba import njit
 from scipy.stats import skewnorm
@@ -17,9 +16,6 @@ from ...common import (
 from ...plugin import FuseBaseDownChunkingPlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.s2_photon_propagation")
 
 conversion_to_bar = 1 / constants.elementary_charge / 1e1
 
@@ -338,7 +334,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         n_chunks = len(electron_chunks)
         if n_chunks > 1:
-            log.info(f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks")
+            self.log.info(
+                f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks"
+            )
 
         last_start = start
         for i, electron_group in enumerate(electron_chunks):
@@ -601,7 +599,7 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 
     def setup(self):
         super().setup()
-        log.debug(
+        self.log.debug(
             "Using Garfield GasGap luminescence timing and optical propagation "
             f"with plugin version {self.__version__}"
         )
@@ -783,8 +781,8 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
 
     def setup(self):
         super().setup()
-        log.debug("Using simple luminescence timing and optical propagation")
-        log.warn(
+        self.log.debug("Using simple luminescence timing and optical propagation")
+        self.log.warn(
             "This is a legacy option, do you really want to use the simple luminescence model?"
         )
 

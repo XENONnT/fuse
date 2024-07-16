@@ -1,15 +1,11 @@
 import strax
 import straxen
 import numpy as np
-import logging
 from scipy.stats import truncexpon
 
 from ....plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.delayed_electrons.photo_ionization_electrons")
 
 
 @export
@@ -162,7 +158,9 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         mask = interactions_in_roi["sum_s2_photons"] > 0
 
         if not self.enable_delayed_electrons or (len(interactions_in_roi[mask]) == 0):
-            log.debug("No interactions with S2 photons found or delayed electrons are disabled")
+            self.log.debug(
+                "No interactions with S2 photons found or delayed electrons are disabled"
+            )
             return np.zeros(0, self.dtype)
 
         electrons_per_interaction, unique_cluster_id = group_electrons_by_cluster_id(

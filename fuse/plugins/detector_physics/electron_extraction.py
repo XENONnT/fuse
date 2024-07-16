@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import strax
 import straxen
@@ -7,9 +5,6 @@ import straxen
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.electron_extraction")
 
 
 @export

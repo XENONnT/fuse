@@ -1,6 +1,5 @@
 import strax
 import numpy as np
-import logging
 
 from ...dtypes import (
     primary_positions_fields,
@@ -11,9 +10,6 @@ from ...dtypes import (
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.merge_lineage")
 
 
 @export

@@ -1,13 +1,9 @@
 import strax
-import logging
 import numpy as np
 
 from ....plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.delayed_electrons.delayed_electrons_s1photonhits")
 
 
 @export

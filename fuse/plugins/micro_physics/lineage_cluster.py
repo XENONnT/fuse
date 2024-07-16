@@ -1,6 +1,5 @@
 import numpy as np
 import strax
-import logging
 import straxen
 from numba import njit
 
@@ -10,9 +9,6 @@ import periodictable as pt
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.lineage_cluster")
 
 NEST_BETA = (8, 0, 0)
 NEST_GAMMA = (7, 0, 0)
@@ -72,7 +68,7 @@ class LineageClustering(FuseBasePlugin):
             np.ndarray: An array of cluster IDs with corresponding time and endtime values.
         """
 
-        log.debug(f"Building lineages for {len(geant4_interactions)} interactions")
+        self.log.debug(f"Building lineages for {len(geant4_interactions)} interactions")
 
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
