@@ -188,7 +188,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
             positions=positions,
             e_dep=instruction["ed"],
             n_photons_emitted=n_photons,
-            n_excitons=instruction["excitons"].astype(np.int64),
+            exciton_to_photon_ratio=instruction["exciton_to_photon_ratio"],
             local_field=instruction["e_field"],
         )
 
@@ -348,7 +348,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         positions,
         e_dep,
         n_photons_emitted,
-        n_excitons,
+        exciton_to_photon_ratio,
         local_field,
     ):
         """Calculate distribution of photon arrival timnigs
@@ -361,7 +361,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
             positions: nx3 array of true XYZ positions from instruction
             e_dep: energy of the deposit, 1d float array
             n_photons_emitted: number of orignally emitted photons/quanta, 1d int array
-            n_excitons: number of exctions in deposit, 1d int array
+            exciton_to_photon_ratio: Ratio of exctions to photons of the deposit, 1d int array
             local_field: local field in the point of the deposit, 1d array of floats
         Returns:
             photon timing array
@@ -381,7 +381,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
             n_photon_hits=n_photon_hits,
             n_photons_emitted=n_photons_emitted,
             recoil_type=recoil_type,
-            n_excitons=n_excitons,
+            exciton_to_photon_ratio=exciton_to_photon_ratio,
             local_field=local_field,
             e_dep=e_dep,
         )
@@ -389,7 +389,13 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
         return _photon_timings
 
     def nest_scintillation_timing(
-        self, n_photon_hits, n_photons_emitted, recoil_type, n_excitons, local_field, e_dep
+        self,
+        n_photon_hits,
+        n_photons_emitted,
+        recoil_type,
+        exciton_to_photon_ratio,
+        local_field,
+        e_dep,
     ):
 
         assert np.all(
@@ -421,7 +427,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                     scint_time = self.nestpy_calc.GetPhotonTimes(
                         nestpy.INTERACTION_TYPE(recoil_type[i]),
                         n_times_to_sample,
-                        n_excitons[i],
+                        exciton_to_photon_ratio[i] * n_times_to_sample,
                         local_field[i],
                         e_dep[i],
                     )
