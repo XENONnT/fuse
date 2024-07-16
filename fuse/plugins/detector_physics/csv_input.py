@@ -1,4 +1,3 @@
-import logging
 from typing import Tuple
 
 import numpy as np
@@ -18,9 +17,6 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 __all__.extend(["microphysics_summary_fields"])
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.csv_input")
 
 
 # In some cases we might want to change dtype of microphysics_summary
@@ -90,6 +86,7 @@ class ChunkCsvInput(FuseBasePlugin):
             separation_scale=self.separation_scale,
             n_interactions_per_chunk=self.n_interactions_per_chunk,
             debug=self.debug,
+            log=self.log,
         )
         self.file_reader_iterator = self.file_reader.output_chunk()
 
@@ -136,6 +133,7 @@ class csv_file_loader:
         first_chunk_left=1e6,
         last_chunk_length=1e8,
         debug=False,
+        log=None,
     ):
         self.input_file = input_file
         self.rng = random_number_generator
@@ -146,6 +144,7 @@ class csv_file_loader:
         self.last_chunk_length = np.int64(last_chunk_length)
         self.first_chunk_left = np.int64(first_chunk_left)
         self.debug = debug
+        self.log = log
 
         # The csv file needs to have these columns:
         _fields = ChunkCsvInput.needed_csv_input_fields()
@@ -167,7 +166,7 @@ class csv_file_loader:
             instructions["time"] = interaction_time + instructions["t"]
         elif self.event_rate == 0:
             instructions["time"] = instructions["t"]
-            log.debug("Using event times from provided input file.")
+            self.log.debug("Using event times from provided input file.")
         else:
             raise ValueError("Source rate cannot be negative!")
 
@@ -193,7 +192,7 @@ class csv_file_loader:
             chunk_bounds = chunk_end + np.int64(self.chunk_delay_fraction * gap_length)
             self.chunk_bounds = np.append(chunk_start[0] - self.first_chunk_left, chunk_bounds)
         else:
-            log.warning("Only one Chunk! Rate too high?")
+            self.log.warning("Only one Chunk! Rate too high?")
             self.chunk_bounds = [
                 chunk_start[0] - self.first_chunk_left,
                 chunk_end[0] + self.last_chunk_length,
@@ -206,7 +205,7 @@ class csv_file_loader:
         ):
             if c_ix == unique_chunk_index_values[-1]:
                 source_done = True
-                log.debug("Build last chunk.")
+                self.log.debug("Build last chunk.")
 
             yield instructions[chunk_idx == c_ix], chunk_left, chunk_right, source_done
 
@@ -214,7 +213,7 @@ class csv_file_loader:
         return self.chunk_bounds[-1]
 
     def __load_csv_file(self):
-        log.debug("Load detector simulation instructions from a csv file!")
+        self.log.debug("Load detector simulation instructions from a csv file!")
         df = pd.read_csv(self.input_file)
 
         missing_columns = set(self.columns) - set(df.columns)

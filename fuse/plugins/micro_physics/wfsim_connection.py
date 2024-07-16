@@ -1,8 +1,6 @@
 # This plugin can be used to generate output in a shape that can be read by WFSim
 # We can keep this for validation of fuse but it can be removed later on
 
-import logging
-
 import awkward as ak
 import numpy as np
 import strax
@@ -11,9 +9,6 @@ from ...common import offset_range, reshape_awkward
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.output")
 
 
 @export

@@ -2,16 +2,12 @@ import numpy as np
 import nestpy
 import strax
 import straxen
-import logging
 import pickle
 
 from ...dtypes import quanta_fields
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.yields")
 
 # Initialize the nestpy random generator
 # The seed will be set in the compute method
@@ -70,9 +66,9 @@ class NestYields(FuseBasePlugin):
         if self.deterministic_seed or (self.user_defined_random_seed is not None):
             # Dont know but nestpy seems to have a problem with large seeds
             self.short_seed = int(repr(self.seed)[-8:])
-            log.debug(f"Generating nest random numbers starting with seed {self.short_seed}")
+            self.log.debug(f"Generating nest random numbers starting with seed {self.short_seed}")
         else:
-            log.debug("Generating random numbers with seed pulled from OS")
+            self.log.debug("Generating random numbers with seed pulled from OS")
 
         self.nc = nestpy.NESTcalc(nestpy.VDetector())
         self.vectorized_get_quanta = np.vectorize(self.get_quanta)
@@ -174,15 +170,15 @@ class NestYields(FuseBasePlugin):
 
         # Some additions taken from NEST code
         if model == 0 and en > 2e2:
-            log.warning(
+            self.log.warning(
                 f"Energy deposition of {en} keV beyond NEST validity for NR model of 200 keV"
             )
         if model == 7 and en > 3e3:
-            log.warning(
+            self.log.warning(
                 f"Energy deposition of {en} keV beyond NEST validity for gamma model of 3 MeV"
             )
         if model == 8 and en > 3e3:
-            log.warning(
+            self.log.warning(
                 f"Energy deposition of {en} keV beyond NEST validity for beta model of 3 MeV"
             )
 

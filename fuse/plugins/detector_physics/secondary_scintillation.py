@@ -1,4 +1,3 @@
-import logging
 from immutabledict import immutabledict
 
 import numpy as np
@@ -9,9 +8,6 @@ from ...common import pmt_gains
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.secondary_scintillation")
 
 
 @export

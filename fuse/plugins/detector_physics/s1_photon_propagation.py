@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import nestpy
 import strax
@@ -15,9 +13,6 @@ from ...common import (
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.s1_photon_propagation")
 
 # Initialize the nestpy random generator
 # The seed will be set in the compute method
@@ -137,9 +132,9 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         if self.deterministic_seed or (self.user_defined_random_seed is not None):
             # Dont know but nestpy seems to have a problem with large seeds
             self.short_seed = int(repr(self.seed)[-8:])
-            log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
+            self.log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
         else:
-            log.debug("Generating random numbers with seed pulled from OS")
+            self.log.debug("Generating random numbers with seed pulled from OS")
 
         self.gains = pmt_gains(
             self.gain_model_mc,
@@ -338,7 +333,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     def setup(self):
         super().setup()
 
-        log.debug(
+        self.log.debug(
             "Using NEST for scintillation time without set calculator\n"
             "Creating new nestpy calculator"
         )
