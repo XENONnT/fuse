@@ -260,7 +260,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     """Child plugin to simulate the propagation of S1 photons using optical
     propagation and luminescence timing from nestpy."""
 
-    __version__ = "0.3.1"
+    __version__ = "0.3.2"
 
     child_plugin = True
 
