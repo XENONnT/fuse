@@ -260,7 +260,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     """Child plugin to simulate the propagation of S1 photons using optical
     propagation and luminescence timing from nestpy."""
 
-    __version__ = "0.3.1"
+    __version__ = "0.3.2"
 
     child_plugin = True
 
@@ -396,7 +396,13 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
             n_photon_hits <= n_photons_emitted
         ), "Number of photon hits must be less than or equal to number of photons emitted"
 
-        # scintilation_times = np.zeros(np.sum(n_photon_hits), dtype=np.int64)
+        # Calculate the original exciton to photon ratio
+        exciton_to_photon_ratio = np.divide(
+            n_excitons.astype(np.float32),
+            n_photons_emitted.astype(np.float32),
+            out=np.zeros(len(n_photons_emitted), dtype=np.float32),
+            where=n_photons_emitted != 0,
+        ).astype(np.float32)
 
         scintilation_times = np.array([])
 
@@ -421,7 +427,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                     scint_time = self.nestpy_calc.GetPhotonTimes(
                         nestpy.INTERACTION_TYPE(recoil_type[i]),
                         n_times_to_sample,
-                        n_excitons[i],
+                        round(exciton_to_photon_ratio[i] * n_times_to_sample),
                         local_field[i],
                         e_dep[i],
                     )
