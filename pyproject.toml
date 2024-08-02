@@ -8,7 +8,6 @@ authors = [
   "Diego Ramírez García, <diego.ramirez@physik.uzh.ch>",
 ]
 readme = "README.md"
-requires-python = ">=3.9"
 homepage = "https://github.com/XENONnT/fuse"
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -26,6 +25,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
+python = ">=3.9,<4.0"
 numpy = "<=1.26.0"
 pandas = "*"
 scipy = "*"
