@@ -27,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.19"
+    __version__ = "0.0.22"
 
     depends_on = "geant4_interactions"
 
@@ -341,7 +341,9 @@ def classify_lineage(particle_interaction, secondaries=None):
         for secondary in secondaries:
             # there is a seconday that has type gamma and edproc phot, 
             # we classify this lineage as beta because it is most likely a compton scattering
-            if (secondary["type"] == "gamma") and (secondary["edproc"] == "phot"):
+            if (secondary["type"] == "gamma") \
+                and (secondary["edproc"] == "phot") \
+                and (secondary["creaproc"] != "RadioactiveDecayBase"):
                 return NEST_BETA
             # there is a seconday that has edproc transportation,
             # we classify this lineage as beta because it is most likely a compton scattering
@@ -431,9 +433,14 @@ def is_lineage_broken(
 ):
     """Function to check if the lineage is broken."""
 
+
+    if particle["creaproc"] == "RadioactiveDecayBase" \
+        and particle["edproc"] == "RadioactiveDecayBase":
+        # second step of a decay. We want to split the lineage
+        return True
+
     # In the nest code: Lineage is always broken if the parent is a ion
     # But if it's an alpha particle, we want to keep the lineage
-
     if (num_there(parent["type"])) \
         and ("[" not in parent["type"]) \
         and (parent["parenttype"] == "none") \
@@ -449,12 +456,18 @@ def is_lineage_broken(
     # For gamma rays, check the distance between the parent and the particle
     if particle["type"] == "gamma":
 
+        if "[" in particle["parenttype"]:
+            # This is just a secondary gamma. We do not want to split the lineage
+            return False
+
+
         # Break the lineage for these transportation gammas
         # Transportations is a special case. They are not real gammas.
         # They are just used to transport the energy
         # to another volume in the detector (teflon, gas, etc.)
         if parent["edproc"] == "Transportation":
             return True
+
 
         particle_position = np.array([particle["x"], particle["y"], particle["z"]])
         parent_position = np.array([parent["x"], parent["y"], parent["z"]])
