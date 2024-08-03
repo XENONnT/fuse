@@ -336,24 +336,20 @@ def classify_lineage(particle_interaction, secondaries=None):
     """Function to classify a new lineage based on the particle and its parent
     information."""
 
-    # Check if we have secondaries
+    # Check if we passed secondaries
     if secondaries is not None:
-        # if there is a seconday that has
-        # type gamma and edproc phot, we classify the lineage as beta
-
-        print(f"******* Checking secondaries for event {particle_interaction['eventid']}")
-
         for secondary in secondaries:
+            # there is a seconday that has type gamma and edproc phot, 
+            # we classify this lineage as beta because it is most likely a compton scattering
             if (secondary["type"] == "gamma") and (secondary["edproc"] == "phot"):
-                print("Found a secondary gamma with edproc phot. Classifying as beta")
                 return NEST_BETA
-
+            # there is a seconday that has edproc transportation,
+            # we classify this lineage as beta because it is most likely a compton scattering
             if (secondary["edproc"] == "Transportation"):
-                print("Found a secondary gamma with edproc Transportation. Classifying as beta")
                 return NEST_BETA
-
-        print("No secondary gamma with edproc phot found. Classifying as gamma")
-
+        
+        # otherwise we classify the lineage as gamma
+        # because it is most likely a photoabsorption ( we assume only one photoabsorption )
         return NEST_GAMMA
 
     # NR interactions
