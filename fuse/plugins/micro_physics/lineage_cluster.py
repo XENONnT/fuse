@@ -27,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.26"
+    __version__ = "0.0.27"
 
     depends_on = "geant4_interactions"
 
@@ -445,11 +445,15 @@ def is_lineage_broken(
     # For gamma rays, check the distance between the parent and the particle
     if particle["type"] == "gamma":
 
-        if ((particle["creaproc"] == "phot" and particle["edproc"] == "phot") or
-            parent_lineage["lineage_type"] == 7):
+        if (particle["creaproc"] == "phot" and particle["edproc"] == "phot"):
             # We do not want to split a photo absorption into two clusters
             # The second photo absorption (that we see) could be x rays
             # So, do not split if the distance is small
+            return False
+
+        if ((parent_lineage["lineage_type"] == 7) and 
+            not (parent["creaproc"] == "RadioactiveDecayBase" 
+            and parent["edproc"] == "RadioactiveDecayBase")):
             # Same as for the previous case
             # We are already in the middle of a gamma full absorption
             # Let's not split the lineage (gamma rays, etc.)
