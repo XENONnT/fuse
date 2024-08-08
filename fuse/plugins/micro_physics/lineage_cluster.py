@@ -27,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.25"
+    __version__ = "0.0.26"
 
     depends_on = "geant4_interactions"
 
@@ -445,6 +445,16 @@ def is_lineage_broken(
     # For gamma rays, check the distance between the parent and the particle
     if particle["type"] == "gamma":
 
+        if ((particle["creaproc"] == "phot" and particle["edproc"] == "phot") or
+            parent_lineage["lineage_type"] == 7):
+            # We do not want to split a photo absorption into two clusters
+            # The second photo absorption (that we see) could be x rays
+            # So, do not split if the distance is small
+            # Same as for the previous case
+            # We are already in the middle of a gamma full absorption
+            # Let's not split the lineage (gamma rays, etc.)
+            return False
+
         # Break the lineage for these transportation gammas
         # Transportations is a special case. They are not real gammas.
         # They are just used to transport the energy
@@ -455,14 +465,7 @@ def is_lineage_broken(
 
         particle_position = np.array([particle["x"], particle["y"], particle["z"]])
         parent_position = np.array([parent["x"], parent["y"], parent["z"]])
-
         distance = np.sqrt(np.sum((parent_position - particle_position) ** 2, axis=0))
-
-        if (particle["creaproc"] == "phot") and (particle["edproc"] == "phot"):
-            # we do not want to split a photo absorption into two clusters
-            # the second photo absorbtion (that we see) could be x rays
-            # so, do not split if the distance is small
-            return False
 
         if particle["creaproc"] == "eBrem":
             # we do not want to split a bremsstrahlung into two clusters
