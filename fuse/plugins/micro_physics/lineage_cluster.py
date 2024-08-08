@@ -27,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.24"
+    __version__ = "0.0.25"
 
     depends_on = "geant4_interactions"
 
@@ -444,11 +444,6 @@ def is_lineage_broken(
 
     # For gamma rays, check the distance between the parent and the particle
     if particle["type"] == "gamma":
-
-        if "[" in particle["parenttype"]:
-            # This is just a secondary gamma. We do not want to split the lineage
-            return False
-
 
         # Break the lineage for these transportation gammas
         # Transportations is a special case. They are not real gammas.
