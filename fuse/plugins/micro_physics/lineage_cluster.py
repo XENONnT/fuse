@@ -27,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.28"
+    __version__ = "0.0.29"
 
     depends_on = "geant4_interactions"
 
