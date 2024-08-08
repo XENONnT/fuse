@@ -342,8 +342,8 @@ def classify_lineage(particle_interaction, secondaries=None):
             # we classify this lineage as beta because it is most likely a compton scattering
             if (secondary["type"] == "e-"):
                 return NEST_GAMMA
-            else:
-                return NEST_BETA
+            
+        return NEST_BETA
 
     # NR interactions
     if (particle_interaction["parenttype"] == "neutron") & (
