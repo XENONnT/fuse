@@ -27,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.22"
+    __version__ = "0.0.24"
 
     depends_on = "geant4_interactions"
 
@@ -310,11 +310,10 @@ def get_all_particle_secondaries(event_interactions, particle):
     type interaction is found."""
 
     secondaries = []
-    parent_ids = [particle["trackid"], ]
+    parent_id = particle["trackid"]
     for interaction in event_interactions:
-        if interaction["parentid"] in parent_ids:
+        if interaction["parentid"] == parent_id:
             secondaries.append(interaction)
-            parent_ids.append(interaction["trackid"])
 
     return secondaries
 
@@ -341,18 +340,8 @@ def classify_lineage(particle_interaction, secondaries=None):
         for secondary in secondaries:
             # there is a seconday that has type gamma and edproc phot, 
             # we classify this lineage as beta because it is most likely a compton scattering
-            if (secondary["type"] == "gamma") \
-                and (secondary["edproc"] == "phot") \
-                and (secondary["creaproc"] != "RadioactiveDecayBase"):
-                return NEST_BETA
-            # there is a seconday that has edproc transportation,
-            # we classify this lineage as beta because it is most likely a compton scattering
-            if (secondary["edproc"] == "Transportation"):
-                return NEST_BETA
-        
-        # otherwise we classify the lineage as gamma
-        # because it is most likely a photoabsorption ( we assume only one photoabsorption )
-        return NEST_GAMMA
+            if (secondary["type"] == "e-"):
+                return NEST_GAMMA
 
     # NR interactions
     if (particle_interaction["parenttype"] == "neutron") & (
@@ -479,6 +468,12 @@ def is_lineage_broken(
             # the second photo absorbtion (that we see) could be x rays
             # so, do not split if the distance is small
             return False
+
+        if particle["creaproc"] == "eBrem":
+            # we do not want to split a bremsstrahlung into two clusters
+            # if the distance is really small, it is most likely the same interaction
+            if distance < 0.1: # cm
+                return False
 
         if distance > gamma_distance_threshold:
             return True
