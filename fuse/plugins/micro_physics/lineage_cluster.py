@@ -27,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.27"
+    __version__ = "0.0.28"
 
     depends_on = "geant4_interactions"
 
@@ -342,6 +342,8 @@ def classify_lineage(particle_interaction, secondaries=None):
             # we classify this lineage as beta because it is most likely a compton scattering
             if (secondary["type"] == "e-"):
                 return NEST_GAMMA
+            else:
+                return NEST_BETA
 
     # NR interactions
     if (particle_interaction["parenttype"] == "neutron") & (
@@ -399,7 +401,10 @@ def classify_lineage(particle_interaction, secondaries=None):
                 # AHAHA
                 # We should study the secondaries and understand what is going on
                 # Could be comppton or absorption
-                return NEST_GAMMA
+                # return NEST_GAMMA
+                # TODO
+                pass
+
             else:
                 element_number, mass = get_element_and_mass(particle_interaction["type"])
                 return 6, mass, element_number
@@ -451,9 +456,7 @@ def is_lineage_broken(
             # So, do not split if the distance is small
             return False
 
-        if ((parent_lineage["lineage_type"] == 7) and 
-            not (parent["creaproc"] == "RadioactiveDecayBase" 
-            and parent["edproc"] == "RadioactiveDecayBase")):
+        if parent_lineage["lineage_type"] == 7:
             # Same as for the previous case
             # We are already in the middle of a gamma full absorption
             # Let's not split the lineage (gamma rays, etc.)
