@@ -180,7 +180,7 @@ class LineageClustering(FuseBasePlugin):
                         if "[" in particle["type"]:
                             secondaries = get_all_particle_secondaries(event, particle)
                         else:
-                            secondaries = None                        
+                            secondaries = None
 
                         tmp_result = start_new_lineage(
                             particle, tmp_result, i, running_lineage_index, secondaries
@@ -197,7 +197,7 @@ class LineageClustering(FuseBasePlugin):
                     if "[" in particle["type"]:
                         secondaries = get_all_particle_secondaries(event, particle)
                     else:
-                        secondaries = None      
+                        secondaries = None
 
                     tmp_result = start_new_lineage(
                         particle, tmp_result, i, running_lineage_index, secondaries
@@ -222,11 +222,10 @@ class LineageClustering(FuseBasePlugin):
                         # New lineage!
                         running_lineage_index += 1
 
-
                         if "[" in particle["type"]:
                             secondaries = get_all_particle_secondaries(event, particle)
                         else:
-                            secondaries = None      
+                            secondaries = None
 
                         tmp_result = start_new_lineage(
                             particle, tmp_result, i, running_lineage_index, secondaries
@@ -304,10 +303,12 @@ def get_parent(event_interactions, event_lineage, particle):
 
 def get_all_particle_secondaries(event_interactions, particle):
     """Returns all secondaries of the given particle.
-    It iterates over all interactions of the event and checks if the parent id
-    of the interaction is the same as the track id of the particle, and continues
-    down the tree until no more secondaries are found or a RadioactiveDecayBase
-    type interaction is found."""
+
+    It iterates over all interactions of the event and checks if the
+    parent id of the interaction is the same as the track id of the
+    particle, and continues down the tree until no more secondaries are
+    found or a RadioactiveDecayBase type interaction is found.
+    """
 
     secondaries = []
     parent_id = particle["trackid"]
@@ -316,6 +317,7 @@ def get_all_particle_secondaries(event_interactions, particle):
             secondaries.append(interaction)
 
     return secondaries
+
 
 def is_particle_in_lineage(lineage):
     """Function to check if a particle is already in a lineage."""
@@ -338,11 +340,11 @@ def classify_lineage(particle_interaction, secondaries=None):
     # Check if we passed secondaries
     if secondaries is not None:
         for secondary in secondaries:
-            # there is a seconday that has type gamma and edproc phot, 
+            # there is a seconday that has type gamma and edproc phot,
             # we classify this lineage as beta because it is most likely a compton scattering
-            if (secondary["type"] == "e-"):
+            if secondary["type"] == "e-":
                 return NEST_GAMMA
-            
+
         return NEST_BETA
 
     # NR interactions
@@ -427,30 +429,35 @@ def is_lineage_broken(
 ):
     """Function to check if the lineage is broken."""
 
-
-    if particle["creaproc"] == "RadioactiveDecayBase" \
-        and particle["edproc"] == "RadioactiveDecayBase":
+    if (
+        particle["creaproc"] == "RadioactiveDecayBase"
+        and particle["edproc"] == "RadioactiveDecayBase"
+    ):
         # second step of a decay. We want to split the lineage
         return True
 
     # In the nest code: Lineage is always broken if the parent is a ion
     # But if it's an alpha particle, we want to keep the lineage
-    if (num_there(parent["type"])) \
-        and ("[" not in parent["type"]) \
-        and (parent["parenttype"] == "none") \
-        and (particle["type"] != "alpha"):
+    if (
+        (num_there(parent["type"]))
+        and ("[" not in parent["type"])
+        and (parent["parenttype"] == "none")
+        and (particle["type"] != "alpha")
+    ):
         return True
 
-    if (num_there(parent["type"]))      \
-        and ("[" not in parent["type"]) \
-        and (parent["creaproc"] == "RadioactiveDecayBase") \
-        and (particle["type"] != "alpha"):
+    if (
+        (num_there(parent["type"]))
+        and ("[" not in parent["type"])
+        and (parent["creaproc"] == "RadioactiveDecayBase")
+        and (particle["type"] != "alpha")
+    ):
         return True
 
     # For gamma rays, check the distance between the parent and the particle
     if particle["type"] == "gamma":
 
-        if (particle["creaproc"] == "phot" and particle["edproc"] == "phot"):
+        if particle["creaproc"] == "phot" and particle["edproc"] == "phot":
             # We do not want to split a photo absorption into two clusters
             # The second photo absorption (that we see) could be x rays
             # So, do not split if the distance is small
@@ -469,7 +476,6 @@ def is_lineage_broken(
         if parent["edproc"] == "Transportation":
             return True
 
-
         particle_position = np.array([particle["x"], particle["y"], particle["z"]])
         parent_position = np.array([parent["x"], parent["y"], parent["z"]])
         distance = np.sqrt(np.sum((parent_position - particle_position) ** 2, axis=0))
@@ -477,7 +483,7 @@ def is_lineage_broken(
         if particle["creaproc"] == "eBrem":
             # we do not want to split a bremsstrahlung into two clusters
             # if the distance is really small, it is most likely the same interaction
-            if distance < 0.1: # cm
+            if distance < 0.1:  # cm
                 return False
 
         if distance > gamma_distance_threshold:
