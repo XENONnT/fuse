@@ -397,18 +397,8 @@ def classify_lineage(particle_interaction, secondaries=None):
 
         # Ions
         elif num_there(particle_interaction["type"]):
-            if "[" in particle_interaction["type"]:
-                # Most likely a gamma. Classify it as gamma
-                # AHAHA
-                # We should study the secondaries and understand what is going on
-                # Could be comppton or absorption
-                # return NEST_GAMMA
-                # TODO
-                pass
-
-            else:
-                element_number, mass = get_element_and_mass(particle_interaction["type"])
-                return 6, mass, element_number
+            element_number, mass = get_element_and_mass(particle_interaction["type"])
+            return 6, mass, element_number
 
         else:
             # This case should not happen or? Classify it as nontype
