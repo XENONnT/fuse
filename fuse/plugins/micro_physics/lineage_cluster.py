@@ -1,7 +1,6 @@
 import numpy as np
 import strax
 import straxen
-from numba import njit
 
 import re
 import periodictable as pt
@@ -27,7 +26,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.29"
+    __version__ = "0.0.2"
 
     depends_on = "geant4_interactions"
 
