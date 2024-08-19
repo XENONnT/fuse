@@ -47,7 +47,7 @@ class LineageClustering(FuseBasePlugin):
 
     # Config options
     gamma_distance_threshold = straxen.URLConfig(
-        default=0.,
+        default=0.0,
         type=(int, float),
         help="Distance threshold to break lineage for gamma rays [cm]. \
         Do not break if distance is smaller than threshold. \
@@ -313,6 +313,7 @@ def get_parent(event_interactions, event_lineage, particle):
 
 def get_all_particle_secondaries(event_interactions, particle):
     """Returns all secondaries of the given particle.
+
     Only first generation secondaries are returned.
     """
 
@@ -346,7 +347,7 @@ def classify_lineage(particle_interaction, secondaries=None):
     # Check if we passed secondaries: it means that the particle is a nucleus excitation
     if secondaries is not None:
         for secondary in secondaries:
-            # if there is any secondary that is an electron, 
+            # if there is any secondary that is an electron,
             # we classify it as gamma (this is the case for photoabsorption)
             if secondary["type"] == "e-":
                 return NEST_GAMMA
@@ -438,7 +439,7 @@ def is_lineage_broken(
     # In the nest code: Lineage is always broken if the parent is a ion
     # this breaks the lineage for all ions, also for alpha decays (we need it)
     # but if it's via an excited nuclear state, we want to keep the lineage
-    if ((num_there(parent["type"])) and ("[" not in parent["type"])):
+    if (num_there(parent["type"])) and ("[" not in parent["type"]):
         return True
 
     # For gamma rays, check the distance between the parent and the particle
