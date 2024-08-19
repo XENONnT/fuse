@@ -348,7 +348,7 @@ def classify_lineage(particle_interaction, secondaries=None):
     # it means that the particle is a nucleus excitation with a [..] in the name
     if secondaries is not None:
         for secondary in secondaries:
-            # If there is any secondary that is an electron, 
+            # If there is any secondary that is an electron,
             # we classify it as gamma (this is the case for photoabsorption).
             # For high energy gammas, we will have type gamma secondaries
             # either gamma-phot or gamma-compt (or gamma-conv) without any e-.
