@@ -47,9 +47,18 @@ class LineageClustering(FuseBasePlugin):
 
     # Config options
     gamma_distance_threshold = straxen.URLConfig(
-        default=0.9,
+        default=0.,
         type=(int, float),
-        help="Distance threshold to break lineage for gamma rays [cm]. Default from NEST code",
+        help="Distance threshold to break lineage for gamma rays [cm]. \
+        Do not break if distance is smaller than threshold. \
+        Default at 0 means we always break the lineage.",
+    )
+
+    brem_distance_threshold = straxen.URLConfig(
+        default=0.1,
+        type=(int, float),
+        help="Distance threshold to break lineage for bremsstrahlung [cm]. \
+        Do not break if distance is smaller than threshold.",
     )
 
     time_threshold = straxen.URLConfig(
@@ -169,6 +178,7 @@ class LineageClustering(FuseBasePlugin):
                         parent,
                         parent_lineage,
                         self.gamma_distance_threshold,
+                        self.brem_distance_threshold,
                         self.time_threshold,
                     )
 
@@ -215,6 +225,7 @@ class LineageClustering(FuseBasePlugin):
                         last_particle_interaction,
                         last_particle_lineage,
                         self.gamma_distance_threshold,
+                        self.brem_distance_threshold,
                         self.time_threshold,
                     )
                     if broken_lineage:
@@ -302,11 +313,7 @@ def get_parent(event_interactions, event_lineage, particle):
 
 def get_all_particle_secondaries(event_interactions, particle):
     """Returns all secondaries of the given particle.
-
-    It iterates over all interactions of the event and checks if the
-    parent id of the interaction is the same as the track id of the
-    particle, and continues down the tree until no more secondaries are
-    found or a RadioactiveDecayBase type interaction is found.
+    Only first generation secondaries are returned.
     """
 
     secondaries = []
@@ -336,14 +343,16 @@ def classify_lineage(particle_interaction, secondaries=None):
     """Function to classify a new lineage based on the particle and its parent
     information."""
 
-    # Check if we passed secondaries
+    # Check if we passed secondaries: it means that the particle is a nucleus excitation
     if secondaries is not None:
         for secondary in secondaries:
-            # there is a seconday that has type gamma and edproc phot,
-            # we classify this lineage as beta because it is most likely a compton scattering
+            # if there is any secondary that is an electron, 
+            # we classify it as gamma (this is the case for photoabsorption)
             if secondary["type"] == "e-":
                 return NEST_GAMMA
 
+        # If there are no electrons, it's probably compton
+        # starting with a gamma compt interaction
         return NEST_BETA
 
     # NR interactions
@@ -414,6 +423,7 @@ def is_lineage_broken(
     parent,
     parent_lineage,
     gamma_distance_threshold,
+    brem_distance_threshold,
     time_threshold,
 ):
     """Function to check if the lineage is broken."""
@@ -426,21 +436,9 @@ def is_lineage_broken(
         return True
 
     # In the nest code: Lineage is always broken if the parent is a ion
-    # But if it's an alpha particle, we want to keep the lineage
-    if (
-        (num_there(parent["type"]))
-        and ("[" not in parent["type"])
-        and (parent["parenttype"] == "none")
-        and (particle["type"] != "alpha")
-    ):
-        return True
-
-    if (
-        (num_there(parent["type"]))
-        and ("[" not in parent["type"])
-        and (parent["creaproc"] == "RadioactiveDecayBase")
-        and (particle["type"] != "alpha")
-    ):
+    # this breaks the lineage for all ions, also for alpha decays (we need it)
+    # but if it's via an excited nuclear state, we want to keep the lineage
+    if ((num_there(parent["type"])) and ("[" not in parent["type"])):
         return True
 
     # For gamma rays, check the distance between the parent and the particle
@@ -449,7 +447,6 @@ def is_lineage_broken(
         if particle["creaproc"] == "phot" and particle["edproc"] == "phot":
             # We do not want to split a photo absorption into two clusters
             # The second photo absorption (that we see) could be x rays
-            # So, do not split if the distance is small
             return False
 
         if parent_lineage["lineage_type"] == 7:
@@ -472,7 +469,7 @@ def is_lineage_broken(
         if particle["creaproc"] == "eBrem":
             # we do not want to split a bremsstrahlung into two clusters
             # if the distance is really small, it is most likely the same interaction
-            if distance < 0.1:  # cm
+            if distance < brem_distance_threshold:
                 return False
 
         if distance > gamma_distance_threshold:
