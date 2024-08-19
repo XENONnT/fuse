@@ -343,17 +343,16 @@ def classify_lineage(particle_interaction, secondaries=None):
     """Function to classify a new lineage based on the particle and its parent
     information."""
 
-    # Check if we passed secondaries: it means that the particle is a nucleus excitation
+    # Check if we passed secondaries (we treat here a special case):
+    # it means that the particle is a nucleus excitation with a [..] in the name
     if secondaries is not None:
         for secondary in secondaries:
-            # if there is any secondary that is an electron, 
-            # we classify it as gamma (this is the case for photoabsorption)
+            # If there is any secondary that is an electron, 
+            # we classify it as gamma (this is the case for photoabsorption).
+            # For high energy gammas, we will have type gamma secondaries
+            # either gamma-phot or gamma-compt (or gamma-conv) without any e-.
             if secondary["type"] == "e-":
                 return NEST_GAMMA
-
-        # If there are no electrons, it's probably compton
-        # starting with a gamma compt interaction
-        return NEST_BETA
 
     # NR interactions
     if (particle_interaction["parenttype"] == "neutron") & (
