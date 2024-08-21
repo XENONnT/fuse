@@ -198,9 +198,7 @@ class LineageClustering(FuseBasePlugin):
                     # Particle without parent. Start a new lineage
                     running_lineage_index += 1
 
-                    tmp_result = start_new_lineage(
-                        particle, tmp_result, i, running_lineage_index
-                    )
+                    tmp_result = start_new_lineage(particle, tmp_result, i, running_lineage_index)
 
             else:
                 # We have seen this particle before. Now evaluate if we have to break the lineage
