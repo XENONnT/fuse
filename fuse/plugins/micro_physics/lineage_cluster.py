@@ -186,13 +186,8 @@ class LineageClustering(FuseBasePlugin):
                         # The lineage is broken. We can start a new one!
                         running_lineage_index += 1
 
-                        if "[" in particle["type"]:
-                            secondaries = get_all_particle_secondaries(event, particle)
-                        else:
-                            secondaries = None
-
                         tmp_result = start_new_lineage(
-                            particle, tmp_result, i, running_lineage_index, secondaries
+                            particle, tmp_result, i, running_lineage_index
                         )
 
                     else:
@@ -203,13 +198,8 @@ class LineageClustering(FuseBasePlugin):
                     # Particle without parent. Start a new lineage
                     running_lineage_index += 1
 
-                    if "[" in particle["type"]:
-                        secondaries = get_all_particle_secondaries(event, particle)
-                    else:
-                        secondaries = None
-
                     tmp_result = start_new_lineage(
-                        particle, tmp_result, i, running_lineage_index, secondaries
+                        particle, tmp_result, i, running_lineage_index
                     )
 
             else:
@@ -232,13 +222,8 @@ class LineageClustering(FuseBasePlugin):
                         # New lineage!
                         running_lineage_index += 1
 
-                        if "[" in particle["type"]:
-                            secondaries = get_all_particle_secondaries(event, particle)
-                        else:
-                            secondaries = None
-
                         tmp_result = start_new_lineage(
-                            particle, tmp_result, i, running_lineage_index, secondaries
+                            particle, tmp_result, i, running_lineage_index
                         )
 
                     else:
@@ -311,21 +296,6 @@ def get_parent(event_interactions, event_lineage, particle):
     return possible_parents[-1], possible_parents_lineages[-1]
 
 
-def get_all_particle_secondaries(event_interactions, particle):
-    """Returns all secondaries of the given particle.
-
-    Only first generation secondaries are returned.
-    """
-
-    secondaries = []
-    parent_id = particle["trackid"]
-    for interaction in event_interactions:
-        if interaction["parentid"] == parent_id:
-            secondaries.append(interaction)
-
-    return secondaries
-
-
 def is_particle_in_lineage(lineage):
     """Function to check if a particle is already in a lineage."""
 
@@ -340,20 +310,9 @@ def num_there(s):
     return any(i.isdigit() for i in s)
 
 
-def classify_lineage(particle_interaction, secondaries=None):
+def classify_lineage(particle_interaction):
     """Function to classify a new lineage based on the particle and its parent
     information."""
-
-    # Check if we passed secondaries (we treat here a special case):
-    # it means that the particle is a nucleus excitation with a [..] in the name
-    if secondaries is not None:
-        for secondary in secondaries:
-            # If there is any secondary that is an electron, 
-            # we classify it as gamma (this is the case for photoabsorption).
-            # For high energy gammas, we will have type gamma secondaries
-            # either gamma-phot or gamma-compt (or gamma-conv) without any e-.
-            if secondary["type"] == "e-":
-                return NEST_GAMMA
 
     # NR interactions
     if (particle_interaction["parenttype"] == "neutron") & (
@@ -399,6 +358,11 @@ def classify_lineage(particle_interaction, secondaries=None):
     elif (particle_interaction["creaproc"] == "RadioactiveDecayBase") or (
         particle_interaction["parenttype"] == "none"
     ):
+
+        # If [ in type, it is a nucleus excitation
+        # we give it a beta for the possible conversion electrons
+        if "[" in particle_interaction["type"]:
+            return NEST_BETA
 
         # Alpha particles
         if particle_interaction["type"] == "alpha":
@@ -447,12 +411,6 @@ def is_lineage_broken(
         if particle["creaproc"] == "phot" and particle["edproc"] == "phot":
             # We do not want to split a photo absorption into two clusters
             # The second photo absorption (that we see) could be x rays
-            return False
-
-        if parent_lineage["lineage_type"] == 7:
-            # Same as for the previous case
-            # We are already in the middle of a gamma full absorption
-            # Let's not split the lineage (gamma rays, etc.)
             return False
 
         # Break the lineage for these transportation gammas
@@ -566,9 +524,9 @@ def assign_main_cluster_type_to_event(event):
     return main_cluster_types
 
 
-def start_new_lineage(particle, tmp_result, i, running_lineage_index, secondaries=None):
+def start_new_lineage(particle, tmp_result, i, running_lineage_index):
 
-    lineage_class, lineage_A, lineage_Z = classify_lineage(particle, secondaries)
+    lineage_class, lineage_A, lineage_Z = classify_lineage(particle)
     tmp_result[i]["lineage_index"] = running_lineage_index
     tmp_result[i]["lineage_type"] = lineage_class
     tmp_result[i]["lineage_A"] = lineage_A
