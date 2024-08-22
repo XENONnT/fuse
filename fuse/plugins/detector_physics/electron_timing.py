@@ -120,14 +120,21 @@ class ElectronTiming(FuseBasePlugin):
         y_obs
     ):
         time_r = np.repeat(time, n_electron.astype(np.int64))
+        print(len(time_r), time_r)
+        print(len(x_obs), x_obs)
         drift_time_mean_r = np.repeat(drift_time_mean, n_electron.astype(np.int64))
         drift_time_spread_r = np.repeat(drift_time_spread, n_electron.astype(np.int64))
 
         timing = np.zeros(time_r.shape[0], dtype=np.int64)
         mask_near_wires = self.perp_wire_region(x_obs, y_obs)
+        print(len(mask_near_wires))
         # For non-wire region, use diffusion constant map
-        timing[~mask_near_wires] = self.rng.exponential(self.electron_trapping_time, size=time_r.shape[0])
-        timing[~mask_near_wires] += self.rng.normal(drift_time_mean_r, drift_time_spread_r, size=time_r.shape[0])
+        # timing[~mask_near_wires] = self.rng.exponential(self.electron_trapping_time, size=time_r.shape[0])
+        # timing[~mask_near_wires] += self.rng.normal(drift_time_mean_r, drift_time_spread_r, size=time_r.shape[0])
+
+        timing = self.rng.exponential(self.electron_trapping_time, size=time_r.shape[0])
+        timing += self.rng.normal(drift_time_mean_r, drift_time_spread_r, size=time_r.shape[0])
+
         # For wire region, use data-driven TF model
         # TODO: Add sampling from the TF model
         # 1. inputting (rot_x, rot_y, distance to the wire, drift time [ns]) to the TF model, get (time grid, PDF) as output
