@@ -190,6 +190,7 @@ class ElectronTiming(FuseBasePlugin):
 
         timing = self.rng.exponential(self.electron_trapping_time, size=time_r.shape[0])
         timing += self.rng.normal(drift_time_mean_r, drift_time_spread_r, size=time_r.shape[0])
+        # print(drift_time_mean_r, drift_time_spread_r)
         timing += perp_time
 
         return time_r + timing.astype(np.int64)
