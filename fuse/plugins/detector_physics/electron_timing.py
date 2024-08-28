@@ -43,8 +43,8 @@ class ElectronTiming(FuseBasePlugin):
 
     tf_electron_timing_near_wire_model = straxen.URLConfig(
         default="tf://"
-        "/home/yongyu/analysiscode_link/S2_shape_width/near_wire_model/Data_driven/"
-        "wired_model_temp_new.tar.gz",
+        "/project2/lgrandi/yongyu/analysiscode/S2_shape_width/near_wire_model/Data_driven/"
+        "s2_width_wired_model_temp.tar.gz",
         cache=True,
         help="test",
     )
@@ -143,7 +143,6 @@ class ElectronTiming(FuseBasePlugin):
         x_rot_r = np.repeat(rot_x, n_electron.astype(np.int64))
         y_rot_r = np.repeat(rot_y, n_electron.astype(np.int64))
         diff_wire_r = np.repeat(diff_wire, n_electron.astype(np.int64))
-        # print(x_rot_r, y_rot_r, diff_wire_r)
 
         drift_time_mean_r = np.repeat(drift_time_mean, n_electron.astype(np.int64))
         drift_time_spread_r = np.repeat(drift_time_spread, n_electron.astype(np.int64))
@@ -162,7 +161,6 @@ class ElectronTiming(FuseBasePlugin):
         drift_time_temp = self.electron_trapping_time + drift_time_mean
         drift_time_temp_r = np.repeat(drift_time_temp, n_electron.astype(np.int64))
 
-        # print(drift_time_temp)
         self.model = self.tf_electron_timing_near_wire_model
         input_model = np.column_stack((x_obs_r[mask_near_wires], 
                                       y_obs_r[mask_near_wires], 
@@ -189,10 +187,10 @@ class ElectronTiming(FuseBasePlugin):
 
     def distance_to_wire(self, x_obs, y_obs):
         x_rot, y_rot = self.rotate_axis(x_obs, y_obs)
-        return np.abs(np.abs(x_rot) - self.perp_wire_x_pos)
+        return np.abs(x_rot) - self.perp_wire_x_pos
     
     def perp_wire_region(self, x_obs, y_obs):
         distance_cm = 5
-        mask_near_wires = self.distance_to_wire(x_obs, y_obs) < distance_cm
+        mask_near_wires = np.abs(self.distance_to_wire(x_obs, y_obs)) < distance_cm
         return mask_near_wires
 
