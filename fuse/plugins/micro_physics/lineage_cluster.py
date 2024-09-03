@@ -1,7 +1,6 @@
 import numpy as np
 import strax
 import straxen
-from numba import njit
 
 import re
 import periodictable as pt
@@ -48,9 +47,18 @@ class LineageClustering(FuseBasePlugin):
 
     # Config options
     gamma_distance_threshold = straxen.URLConfig(
-        default=0.9,
+        default=0.0,
         type=(int, float),
-        help="Distance threshold to break lineage for gamma rays [cm]. Default from NEST code",
+        help="Distance threshold to break lineage for gamma rays [cm]. \
+        Do not break if distance is smaller than threshold. \
+        Default at 0 means we always break the lineage.",
+    )
+
+    brem_distance_threshold = straxen.URLConfig(
+        default=0.1,
+        type=(int, float),
+        help="Distance threshold to break lineage for bremsstrahlung [cm]. \
+        Do not break if distance is smaller than threshold.",
     )
 
     time_threshold = straxen.URLConfig(
@@ -170,12 +178,14 @@ class LineageClustering(FuseBasePlugin):
                         parent,
                         parent_lineage,
                         self.gamma_distance_threshold,
+                        self.brem_distance_threshold,
                         self.time_threshold,
                     )
 
                     if broken_lineage:
                         # The lineage is broken. We can start a new one!
                         running_lineage_index += 1
+
                         tmp_result = start_new_lineage(
                             particle, tmp_result, i, running_lineage_index
                         )
@@ -187,6 +197,7 @@ class LineageClustering(FuseBasePlugin):
                 else:
                     # Particle without parent. Start a new lineage
                     running_lineage_index += 1
+
                     tmp_result = start_new_lineage(particle, tmp_result, i, running_lineage_index)
 
             else:
@@ -202,11 +213,13 @@ class LineageClustering(FuseBasePlugin):
                         last_particle_interaction,
                         last_particle_lineage,
                         self.gamma_distance_threshold,
+                        self.brem_distance_threshold,
                         self.time_threshold,
                     )
                     if broken_lineage:
                         # New lineage!
                         running_lineage_index += 1
+
                         tmp_result = start_new_lineage(
                             particle, tmp_result, i, running_lineage_index
                         )
@@ -344,6 +357,11 @@ def classify_lineage(particle_interaction):
         particle_interaction["parenttype"] == "none"
     ):
 
+        # If [ in type, it is a nucleus excitation
+        # we give it a beta for the possible conversion electrons
+        if "[" in particle_interaction["type"]:
+            return NEST_BETA
+
         # Alpha particles
         if particle_interaction["type"] == "alpha":
             return NEST_ALPHA
@@ -362,27 +380,36 @@ def classify_lineage(particle_interaction):
         return NEST_NONE
 
 
-@njit()
 def is_lineage_broken(
     particle,
     parent,
     parent_lineage,
     gamma_distance_threshold,
+    brem_distance_threshold,
     time_threshold,
 ):
     """Function to check if the lineage is broken."""
 
-    # In the nest code: Lineage is always broken if the parent is a ion
-    # But if it's an alpha particle, we want to keep the lineage
-    break_for_ion = parent_lineage["lineage_type"] == 6
-    break_for_ion &= parent["type"] != "alpha"
-    break_for_ion &= particle["creaproc"] != "eIoni"
+    if (
+        particle["creaproc"] == "RadioactiveDecayBase"
+        and particle["edproc"] == "RadioactiveDecayBase"
+    ):
+        # second step of a decay. We want to split the lineage
+        return True
 
-    if break_for_ion:
+    # In the nest code: Lineage is always broken if the parent is a ion
+    # this breaks the lineage for all ions, also for alpha decays (we need it)
+    # but if it's via an excited nuclear state, we want to keep the lineage
+    if (num_there(parent["type"])) and ("[" not in parent["type"]):
         return True
 
     # For gamma rays, check the distance between the parent and the particle
     if particle["type"] == "gamma":
+
+        if particle["creaproc"] == "phot" and particle["edproc"] == "phot":
+            # We do not want to split a photo absorption into two clusters
+            # The second photo absorption (that we see) could be x rays
+            return False
 
         # Break the lineage for these transportation gammas
         # Transportations is a special case. They are not real gammas.
@@ -393,14 +420,13 @@ def is_lineage_broken(
 
         particle_position = np.array([particle["x"], particle["y"], particle["z"]])
         parent_position = np.array([parent["x"], parent["y"], parent["z"]])
-
         distance = np.sqrt(np.sum((parent_position - particle_position) ** 2, axis=0))
 
-        if (particle["creaproc"] == "phot") and (particle["edproc"] == "phot"):
-            # we do not want to split a photo absorption into two clusters
-            # the second photo absorbtion (that we see) could be x rays
-            # so, do not split if the distance is small
-            return False
+        if particle["creaproc"] == "eBrem":
+            # we do not want to split a bremsstrahlung into two clusters
+            # if the distance is really small, it is most likely the same interaction
+            if distance < brem_distance_threshold:
+                return False
 
         if distance > gamma_distance_threshold:
             return True
