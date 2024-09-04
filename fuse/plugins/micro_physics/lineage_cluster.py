@@ -200,8 +200,12 @@ class LineageClustering(FuseBasePlugin):
                         running_lineage_index += 1
 
                         tmp_result = start_new_lineage(
-                            particle, tmp_result, i, running_lineage_index, 
-                            self.classify_ic_as_gamma, self.classify_phot_as_beta
+                            particle,
+                            tmp_result,
+                            i,
+                            running_lineage_index,
+                            self.classify_ic_as_gamma,
+                            self.classify_phot_as_beta,
                         )
 
                     else:
@@ -213,8 +217,12 @@ class LineageClustering(FuseBasePlugin):
                     running_lineage_index += 1
 
                     tmp_result = start_new_lineage(
-                        particle, tmp_result, i, running_lineage_index,
-                        self.classify_ic_as_gamma, self.classify_phot_as_beta
+                        particle,
+                        tmp_result,
+                        i,
+                        running_lineage_index,
+                        self.classify_ic_as_gamma,
+                        self.classify_phot_as_beta,
                     )
 
             else:
@@ -238,8 +246,12 @@ class LineageClustering(FuseBasePlugin):
                         running_lineage_index += 1
 
                         tmp_result = start_new_lineage(
-                            particle, tmp_result, i, running_lineage_index,
-                            self.classify_ic_as_gamma, self.classify_phot_as_beta
+                            particle,
+                            tmp_result,
+                            i,
+                            running_lineage_index,
+                            self.classify_ic_as_gamma,
+                            self.classify_phot_as_beta,
                         )
 
                     else:
@@ -547,9 +559,11 @@ def assign_main_cluster_type_to_event(event):
 
 def start_new_lineage(
     particle, tmp_result, i, running_lineage_index, classify_ic_as_gamma, classify_phot_as_beta
-    ):
+):
 
-    lineage_class, lineage_A, lineage_Z = classify_lineage(particle, classify_ic_as_gamma, classify_phot_as_beta)
+    lineage_class, lineage_A, lineage_Z = classify_lineage(
+        particle, classify_ic_as_gamma, classify_phot_as_beta
+    )
     tmp_result[i]["lineage_index"] = running_lineage_index
     tmp_result[i]["lineage_type"] = lineage_class
     tmp_result[i]["lineage_A"] = lineage_A
