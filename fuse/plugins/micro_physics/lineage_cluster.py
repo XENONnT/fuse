@@ -67,6 +67,19 @@ class LineageClustering(FuseBasePlugin):
         help="Time threshold to break the lineage [ns]",
     )
 
+    classify_ic_as_gamma = straxen.URLConfig(
+        default=True,
+        type=bool,
+        help="Classify internal conversion electrons as gamma particles",
+    )
+
+    classify_phot_as_beta = straxen.URLConfig(
+        default=True,
+        type=bool,
+        help="Classify photoabsorption electrons as beta particles \
+        (if False, classify as gamma particles)",
+    )
+
     def compute(self, geant4_interactions):
         """
         Args:
@@ -187,7 +200,8 @@ class LineageClustering(FuseBasePlugin):
                         running_lineage_index += 1
 
                         tmp_result = start_new_lineage(
-                            particle, tmp_result, i, running_lineage_index
+                            particle, tmp_result, i, running_lineage_index, 
+                            self.classify_ic_as_gamma, self.classify_phot_as_beta
                         )
 
                     else:
@@ -198,7 +212,10 @@ class LineageClustering(FuseBasePlugin):
                     # Particle without parent. Start a new lineage
                     running_lineage_index += 1
 
-                    tmp_result = start_new_lineage(particle, tmp_result, i, running_lineage_index)
+                    tmp_result = start_new_lineage(
+                        particle, tmp_result, i, running_lineage_index,
+                        self.classify_ic_as_gamma, self.classify_phot_as_beta
+                    )
 
             else:
                 # We have seen this particle before. Now evaluate if we have to break the lineage
@@ -221,7 +238,8 @@ class LineageClustering(FuseBasePlugin):
                         running_lineage_index += 1
 
                         tmp_result = start_new_lineage(
-                            particle, tmp_result, i, running_lineage_index
+                            particle, tmp_result, i, running_lineage_index,
+                            self.classify_ic_as_gamma, self.classify_phot_as_beta
                         )
 
                     else:
@@ -308,9 +326,14 @@ def num_there(s):
     return any(i.isdigit() for i in s)
 
 
-def classify_lineage(particle_interaction):
+def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_as_beta):
     """Function to classify a new lineage based on the particle and its parent
     information."""
+
+    # Excited states of nuclei, decaying electromagnetically
+    # this will become the lineage of internal conversion electrons
+    if "[" in particle_interaction["type"]:
+        return NEST_GAMMA if classify_ic_as_gamma else NEST_BETA
 
     # NR interactions
     if (particle_interaction["parenttype"] == "neutron") & (
@@ -330,7 +353,7 @@ def classify_lineage(particle_interaction):
         elif particle_interaction["creaproc"] == "conv":
             return NEST_BETA
         elif particle_interaction["creaproc"] == "phot":
-            return NEST_GAMMA
+            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
         else:
             # This case should not happen or? Classify it as nontype
             return NEST_NONE
@@ -347,7 +370,7 @@ def classify_lineage(particle_interaction):
             return NEST_BETA
         elif particle_interaction["edproc"] == "phot":
             # This is gamma photoabsorption. Return gamma
-            return NEST_GAMMA
+            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
         else:
             # could be rayleigh scattering or something else. Classify it as gamma...
             return NEST_BETA
@@ -522,9 +545,11 @@ def assign_main_cluster_type_to_event(event):
     return main_cluster_types
 
 
-def start_new_lineage(particle, tmp_result, i, running_lineage_index):
+def start_new_lineage(
+    particle, tmp_result, i, running_lineage_index, classify_ic_as_gamma, classify_phot_as_beta
+    ):
 
-    lineage_class, lineage_A, lineage_Z = classify_lineage(particle)
+    lineage_class, lineage_A, lineage_Z = classify_lineage(particle, classify_ic_as_gamma, classify_phot_as_beta)
     tmp_result[i]["lineage_index"] = running_lineage_index
     tmp_result[i]["lineage_type"] = lineage_class
     tmp_result[i]["lineage_A"] = lineage_A
