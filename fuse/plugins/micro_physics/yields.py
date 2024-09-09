@@ -2,7 +2,6 @@ import numpy as np
 import nestpy
 import strax
 import straxen
-import pickle
 
 from ...dtypes import quanta_fields
 from ...plugin import FuseBasePlugin
@@ -19,7 +18,7 @@ class NestYields(FuseBasePlugin):
     """Plugin that calculates the number of photons, electrons and excitons
     produced by energy deposit using nestpy."""
 
-    __version__ = "0.2.2"
+    __version__ = "0.2.3"
 
     depends_on = ("interactions_in_roi", "electric_field_values")
     provides = "quanta"
@@ -28,6 +27,37 @@ class NestYields(FuseBasePlugin):
     dtype = quanta_fields + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
+
+    return_yields_only = straxen.URLConfig(
+        default=False,
+        type=bool,
+        help="Set to True to return the yields model output directly instead of the \
+        calculated actual quanta with NEST getQuanta function. Only for testing purposes.",
+    )
+
+    nest_width_parameters = straxen.URLConfig(
+        default={},
+        type=dict,
+        help="Set to modify default NEST NRERWidthParameters to match recombination fluctuations. \
+        From NEST code https://github.com/NESTCollaboration/nest/blob/v2.4.0/src/NEST.cpp \
+        and NEST paper https://arxiv.org/abs/2211.10726 \
+        See self.get_nest_width_parameters() for the options and default values. \
+        Example use: {'fano_ER': -0.0015, 'A_ER': 0.096452}",
+    )
+
+    nest_er_yields_parameters = straxen.URLConfig(
+        default=[-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
+        type=list,
+        help="Set to modify default NEST ER yields parameters. Use -1 to keep default value. \
+        From NEST code https://github.com/NESTCollaboration/nest/blob/v2.4.0/src/NEST.cpp \
+        Used in the calcuations of BetaYieldsGR.",
+    )
+
+    fix_gamma_yield_field = straxen.URLConfig(
+        default=-1.0,
+        help="Field in V/cm to use for NEST gamma yield calculation. Only used if set to > 0.",
+        type=float,
+    )
 
     def setup(self):
         super().setup()
@@ -39,7 +69,43 @@ class NestYields(FuseBasePlugin):
         else:
             self.log.debug("Generating random numbers with seed pulled from OS")
 
-        self.quanta_from_NEST = np.vectorize(self._quanta_from_NEST)
+        self.nc = nestpy.NESTcalc(nestpy.VDetector())
+        self.vectorized_get_quanta = np.vectorize(self.get_quanta)
+        self.updated_nest_width_parameters = self.update_nest_width_parameters()
+
+    def update_nest_width_parameters(self):
+
+        # Get the default NEST NRERWidthsParam
+        free_parameters = self.nc.default_NRERWidthsParam
+
+        # Map the parameters names to the index in the free_parameters list
+        parameters_key_map = {
+            "fano_ions_NR": 0,  # Fano factor for NR Ions (default 0.4)
+            "fano_excitons_NR": 1,  # Fano factor for NR Excitons (default 0.4)
+            "A_NR": 2,  # A' - Amplitude for Recombinnation NR (default 0.04)
+            "xi_NR": 3,  # ξ - Center for Recombination NR (default 0.50)
+            "omega_NR": 4,  # ω - Width for Recombination NR (default 0.19)
+            "skewness_NR": 5,  # Skewness for NR (default 2.25)
+            "fano_ER": 6,  # Multiplier for Fano ER, if<0 field dep, else constant. (default 1)
+            "A_ER": 7,  # A - Amplitude for Recombination ER, field dependent (default 0.096452)
+            "omega_ER": 8,  # ω - Width for Recombination ER (default 0.205)
+            "xi_ER": 9,  # ξ - Center for Recombination ER (default 0.45)
+            "alpha_skewness_ER": 10,  # Skewness for ER (default -0.2)
+        }
+
+        if self.nest_width_parameters is not None:
+            for key, value in self.nest_width_parameters.items():
+                if key not in parameters_key_map:
+                    raise ValueError(
+                        f"Unknown NEST width parameter {key}.\
+                        Available parameters: {parameters_key_map.keys()}"
+                    )
+                self.log.debug(f"Updating NEST width parameter {key} to {value}")
+                free_parameters[parameters_key_map[key]] = value
+
+        self.log.debug(f"Using NEST width parameters: {free_parameters}")
+
+        return free_parameters
 
     def compute(self, interactions_in_roi):
 
@@ -60,7 +126,15 @@ class NestYields(FuseBasePlugin):
         # Generate quanta:
         if len(interactions_in_roi) > 0:
 
-            photons, electrons, excitons = self.get_quanta(interactions_in_roi)
+            photons, electrons, excitons = self.vectorized_get_quanta(
+                interactions_in_roi["ed"],
+                interactions_in_roi["nestid"],
+                interactions_in_roi["e_field"],
+                interactions_in_roi["A"],
+                interactions_in_roi["Z"],
+                interactions_in_roi["create_S2"],
+                interactions_in_roi["xe_density"],
+            )
             result["photons"] = photons
             result["electrons"] = electrons
             result["excitons"] = excitons
@@ -74,50 +148,18 @@ class NestYields(FuseBasePlugin):
 
         return result
 
-    def get_quanta(self, interactions_in_roi):
+    def get_quanta(self, en, model, e_field, A, Z, create_s2, density):
+        """Function to get quanta for given parameters using NEST."""
 
-        photons, electrons, excitons = self.quanta_from_NEST(
-            interactions_in_roi["ed"],
-            interactions_in_roi["nestid"],
-            interactions_in_roi["e_field"],
-            interactions_in_roi["A"],
-            interactions_in_roi["Z"],
-            interactions_in_roi["create_S2"],
-            log=self.log,
-            density=interactions_in_roi["xe_density"],
-        )
+        yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
 
-        return photons, electrons, excitons
+        return self.process_yields(yields_result, create_s2)
 
-    @staticmethod
-    def _quanta_from_NEST(en, model, e_field, A, Z, create_s2, log, **kwargs):
+    def get_yields_from_NEST(self, en, model, e_field, A, Z, density):
         """Function which uses NEST to yield photons and electrons for a given
-        set of parameters.
+        set of parameters."""
 
-        Note:
-            In case the energy deposit is outside of the range of NEST a -1
-            is returned.
-        Args:
-            en (numpy.array): Energy deposit of the interaction [keV]
-            model (numpy.array): Nest Id for qunata generation (integers)
-            e_field (numpy.array): Field value in the interaction site [V/cm]
-            A (numpy.array): Atomic mass number
-            Z (numpy.array): Atomic number
-            create_s2 (bool): Specifies if S2 can be produced by interaction,
-                in this case electrons are generated.
-            kwargs: Additional keyword arguments which can be taken by
-                GetYields e.g. density.
-        Returns:
-            photons (numpy.array): Number of generated photons
-            electrons (numpy.array): Number of generated electrons
-            excitons (numpy.array): Number of generated excitons
-        """
-        nc = nestpy.NESTcalc(nestpy.VDetector())
-
-        # Fix for Kr83m events.
-        # Energies have to be very close to 32.1 keV or 9.4 keV
-        # See: https://github.com/NESTCollaboration/nest/blob/master/src/NEST.cpp#L567
-        # and: https://github.com/NESTCollaboration/nest/blob/master/src/NEST.cpp#L585
+        # Fix for Kr83m events
         max_allowed_energy_difference = 1  # keV
         if model == 11:
             if abs(en - 32.1) < max_allowed_energy_difference:
@@ -125,122 +167,63 @@ class NestYields(FuseBasePlugin):
             if abs(en - 9.4) < max_allowed_energy_difference:
                 en = 9.4
 
-        # Some addition taken from
-        # https://github.com/NESTCollaboration/nestpy/blob/e82c71f864d7362fee87989ed642cd875845ae3e/src/nestpy/helpers.py#L94-L100
+        # Some additions taken from NEST code
         if model == 0 and en > 2e2:
-            log.warning(
-                f"Energy deposition of {en} keV beyond NEST validity " "for NR model of 200 keV"
+            self.log.warning(
+                f"Energy deposition of {en} keV beyond NEST validity for NR model of 200 keV"
             )
-
         if model == 7 and en > 3e3:
-            log.warning(
-                f"Energy deposition of {en} keV beyond NEST validity " "for gamma model of 3 MeV"
+            self.log.warning(
+                f"Energy deposition of {en} keV beyond NEST validity for gamma model of 3 MeV"
             )
-
         if model == 8 and en > 3e3:
-            log.warning(
-                f"Energy deposition of {en} keV beyond NEST validity " "for beta model of 3 MeV"
+            self.log.warning(
+                f"Energy deposition of {en} keV beyond NEST validity for beta model of 3 MeV"
             )
 
-        y = nc.GetYields(
+        if model == 7 and self.fix_gamma_yield_field > 0:
+            e_field = self.fix_gamma_yield_field
+
+        if e_field < 0:
+            raise ValueError(
+                f"Negative electric field {e_field} V/cm not allowed. \
+                (no error will be raised by NEST)."
+            )
+
+        yields_result = self.nc.GetYields(
             interaction=nestpy.INTERACTION_TYPE(model),
             energy=en,
             drift_field=e_field,
             A=A,
             Z=Z,
-            **kwargs,
+            density=density,
+            ERYieldsParam=self.nest_er_yields_parameters,
         )
 
-        event_quanta = nc.GetQuanta(y)  # Density argument is not use in function...
+        return yields_result
 
-        photons = event_quanta.photons
+    def process_yields(self, yields_result, create_s2):
+        """Process the yields with NEST to get actual quanta."""
+
+        # Density argument is not used in function...
+        event_quanta = self.nc.GetQuanta(
+            yields_result, free_parameters=self.updated_nest_width_parameters
+        )
+
         excitons = event_quanta.excitons
-        electrons = 0
-        if create_s2:
-            electrons = event_quanta.electrons
+        photons = event_quanta.photons
+        electrons = event_quanta.electrons
+
+        # Only for testing purposes, return the yields directly
+        if self.return_yields_only:
+            photons = yields_result.PhotonYield
+            electrons = yields_result.ElectronYield
+
+        # If we don't want to create S2, set electrons to 0
+        if not create_s2:
+            electrons = 0
 
         return photons, electrons, excitons
-
-
-@export
-class BetaYields(NestYields):
-    """Plugin that calculates the number of photons, electrons and excitons
-    produced by energy deposit using nestpy."""
-
-    depends_on = ("interactions_in_roi", "electric_field_values")
-    provides = "quanta"
-    data_kind = "interactions_in_roi"
-
-    # Config options
-
-    use_recombination_fluctuation = straxen.URLConfig(
-        default=True,
-        type=bool,
-        help="Turn on or off the recombination fluctuation for beta interactions.",
-    )
-
-    recombination_fluctuation_std_factor = straxen.URLConfig(
-        default=3,
-        type=(int, float),
-        help="A factor that is defined to guess the recombination fluctuation",
-    )
-
-    beta_quanta_spline = straxen.URLConfig(
-        default=None,
-        help="Path to function that gives n_ph and n_e for a given energy, \
-        calculated from beta spectrum. The function should be a pickle file.",
-    )
-
-    def get_quanta(self, interactions_in_roi):
-
-        # for the non beta interactions we use the nestpy yields
-        photons, electrons, excitons = self.quanta_from_NEST(
-            interactions_in_roi["ed"],
-            interactions_in_roi["nestid"],
-            interactions_in_roi["e_field"],
-            interactions_in_roi["A"],
-            interactions_in_roi["Z"],
-            interactions_in_roi["create_S2"],
-            log=self.log,
-            density=interactions_in_roi["xe_density"],
-        )
-
-        mask_beta = interactions_in_roi["nestid"] == 8
-
-        # now for the beta interactions we use the beta yields
-        photons_beta, electrons_beta = self.quanta_from_spline(
-            interactions_in_roi["ed"][mask_beta],
-        )
-
-        photons[mask_beta] = photons_beta
-        electrons[mask_beta] = electrons_beta
-
-        return photons, electrons, excitons
-
-    def quanta_from_spline(self, energy):
-
-        with open(self.beta_quanta_spline, "rb") as f:
-            cs1_poly, cs2_poly = pickle.load(f)
-
-        beta_photons = cs1_poly(energy)
-        beta_electrons = cs2_poly(energy)
-
-        if self.use_recombination_fluctuation:
-
-            factor = self.recombination_fluctuation_std_factor
-            rf = self.rng.normal(0, energy * factor, len(energy))
-            beta_photons += rf
-            beta_electrons -= rf
-
-            # make integer quanta
-            beta_photons = np.round(beta_photons).astype(int)
-            beta_electrons = np.round(beta_electrons).astype(int)
-
-            # make sure we don't have negative quanta, so clip at 0
-            beta_photons = np.clip(beta_photons, 0, np.inf)
-            beta_electrons = np.clip(beta_electrons, 0, np.inf)
-
-        return beta_photons, beta_electrons
 
 
 @export
