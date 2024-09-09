@@ -2,7 +2,6 @@ import numpy as np
 import nestpy
 import strax
 import straxen
-import pickle
 
 from ...dtypes import quanta_fields
 from ...plugin import FuseBasePlugin
@@ -223,65 +222,6 @@ class NestYields(FuseBasePlugin):
             electrons = 0
 
         return photons, electrons, excitons
-
-
-@export
-class BetaYields(NestYields):
-    """Plugin that calculates the number of photons, electrons and excitons
-    produced by energy deposit using nestpy."""
-
-    depends_on = ("interactions_in_roi", "electric_field_values")
-    provides = "quanta"
-    data_kind = "interactions_in_roi"
-
-    beta_quanta_spline = straxen.URLConfig(
-        default=None,
-        help="Path to function that gives n_ph and n_e for a given energy, \
-        calculated from beta spectrum. The function should be a pickle file.",
-    )
-
-    beta_yield_threshold = straxen.URLConfig(
-        default=13.5,
-        help="Threshold in keV above which we apply the cutstom beta yields.",
-    )
-
-    def setup(self):
-
-        super().setup()
-
-        # Load the spline
-        with open(self.beta_quanta_spline, "rb") as f:
-            self.cs1_poly, self.cs2_poly = pickle.load(f)
-            self.log.debug(f"Loaded beta quanta spline from {self.beta_quanta_spline}")
-
-    def get_quanta(self, en, model, e_field, A, Z, create_s2, density):
-        """Override get_quanta to apply beta-specific modifications."""
-
-        # Get the yields from NEST as default
-        yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
-
-        if model == 8 and en >= self.beta_yield_threshold:  # keV
-            # Override the yields for betas with custom spline
-            yields_result = self.modify_beta_yields(yields_result, en)
-
-        return self.process_yields(yields_result, create_s2)
-
-    def modify_beta_yields(self, yields_result, en):
-        """Modify the yields for beta interactions based on custom spline."""
-
-        # Get the quanta from the functions
-        beta_photons = self.cs1_poly(en)
-        beta_electrons = self.cs2_poly(en)
-
-        # Make sure we don't have negative quanta, so clip at 0
-        beta_photons = np.clip(beta_photons, 0, np.inf)
-        beta_electrons = np.clip(beta_electrons, 0, np.inf)
-
-        # Set the yields to the new values
-        yields_result.PhotonYield = beta_photons
-        yields_result.ElectronYield = beta_electrons
-
-        return yields_result
 
 
 @export
