@@ -36,7 +36,9 @@ class NestYields(FuseBasePlugin):
     )
 
     nest_width_parameters = straxen.URLConfig(
-        default={},
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=nest_width_parameters",
         type=dict,
         help="Set to modify default NEST NRERWidthParameters to match recombination fluctuations. \
         From NEST code https://github.com/NESTCollaboration/nest/blob/v2.4.0/src/NEST.cpp \
@@ -46,7 +48,9 @@ class NestYields(FuseBasePlugin):
     )
 
     nest_er_yields_parameters = straxen.URLConfig(
-        default=[-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=nest_er_yields_parameters",
         type=list,
         help="Set to modify default NEST ER yields parameters. Use -1 to keep default value. \
         From NEST code https://github.com/NESTCollaboration/nest/blob/v2.4.0/src/NEST.cpp \
