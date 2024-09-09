@@ -151,9 +151,9 @@ class NestYields(FuseBasePlugin):
     def get_quanta(self, en, model, e_field, A, Z, create_s2, density):
         """Function to get quanta for given parameters using NEST."""
 
-        y = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
+        yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
 
-        return self.process_yields(y, create_s2)
+        return self.process_yields(yields_result, create_s2)
 
     def get_yields_from_NEST(self, en, model, e_field, A, Z, density):
         """Function which uses NEST to yield photons and electrons for a given
@@ -202,11 +202,13 @@ class NestYields(FuseBasePlugin):
 
         return yields_result
 
-    def process_yields(self, y, create_s2):
+    def process_yields(self, yields_result, create_s2):
         """Process the yields with NEST to get actual quanta."""
 
         # Density argument is not used in function...
-        event_quanta = self.nc.GetQuanta(y, free_parameters=self.updated_nest_width_parameters)
+        event_quanta = self.nc.GetQuanta(
+            yields_result, free_parameters=self.updated_nest_width_parameters
+        )
 
         excitons = event_quanta.excitons
         photons = event_quanta.photons
@@ -214,8 +216,8 @@ class NestYields(FuseBasePlugin):
 
         # Only for testing purposes, return the yields directly
         if self.return_yields_only:
-            photons = y.PhotonYield
-            electrons = y.ElectronYield
+            photons = yields_result.PhotonYield
+            electrons = yields_result.ElectronYield
 
         # If we don't want to create S2, set electrons to 0
         if not create_s2:
