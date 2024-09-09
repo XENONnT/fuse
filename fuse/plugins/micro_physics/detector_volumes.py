@@ -72,7 +72,9 @@ class XENONnT_TPC(VolumePlugin):
     )
 
     xenon_density_tpc = straxen.URLConfig(
-        default=2.862,
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=xenon_density_tpc",
         type=(int, float),
         help="Density of xenon in the TPC volume [g/cm3]",
     )
@@ -143,7 +145,9 @@ class XENONnT_BelowCathode(VolumePlugin):
     )
 
     xenon_density_below_cathode = straxen.URLConfig(
-        default=2.862,
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=xenon_density_tpc",
         type=(int, float),
         help="Density of xenon in the below-cathode-volume [g/cm3]",
     )
