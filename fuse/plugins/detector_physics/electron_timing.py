@@ -44,21 +44,21 @@ class ElectronTiming(FuseBasePlugin):
     tf_electron_timing_near_wire_model = straxen.URLConfig(
         default="tf://"
         "/project2/lgrandi/yongyu/analysiscode/S2_shape_width/near_wire_model/Data_driven/"
-        "s2_width_wired_model_temp.tar.gz",
+        "s2_width_wired_model_v2.tar.gz",
         cache=True,
         help="test",
     )
 
     model_train_mean = straxen.URLConfig(
         default="take://resource://"
-        "/project2/lgrandi/yongyu/data/data_v14/tf_model_input/x_train_mean_v1.npy?&fmt=npy",
+        "/project2/lgrandi/yongyu/data/data_v14/tf_model_input/x_train_mean_v2.npy?&fmt=npy",
         cache=True,
         help="test",
     )
 
     model_train_std = straxen.URLConfig(
         default="take://resource://"
-        "/project2/lgrandi/yongyu/data/data_v14/tf_model_input/x_train_std_v1.npy?&fmt=npy",
+        "/project2/lgrandi/yongyu/data/data_v14/tf_model_input/x_train_std_v2.npy?&fmt=npy",
         cache=True,
         help="test",
     )
@@ -190,7 +190,6 @@ class ElectronTiming(FuseBasePlugin):
         return np.abs(x_rot) - self.perp_wire_x_pos
     
     def perp_wire_region(self, x_obs, y_obs):
-        distance_cm = 5
-        mask_near_wires = np.abs(self.distance_to_wire(x_obs, y_obs)) < distance_cm
+        mask_near_wires = np.abs(self.distance_to_wire(x_obs, y_obs)) < self.perp_wires_cut_distance
         return mask_near_wires
 
