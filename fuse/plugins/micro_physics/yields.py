@@ -77,6 +77,10 @@ class NestYields(FuseBasePlugin):
         self.vectorized_get_quanta = np.vectorize(self.get_quanta)
         self.updated_nest_width_parameters = self.update_nest_width_parameters()
 
+        assert np.all(
+            [isinstance(element, float) for element in self.nest_er_yields_parameters]
+        ), f"ER Yields parameters need be floats, but got {self.nest_er_yields_parameters}!"
+
     def update_nest_width_parameters(self):
 
         # Get the default NEST NRERWidthsParam
