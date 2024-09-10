@@ -1,3 +1,25 @@
+1.4.0 / 2024-09-10
+------------------
+* Efficient memory chunking in input plugin (#207)
+* fix numpy version (#243)
+* [pre-commit.ci] pre-commit autoupdate (#242)
+* Add lineage clustering algorithm (#190)
+* Keep interactions even if outside NEST validity (#241)
+* Update BetaYields (#192)
+* Add option to distribute Geant4 events with fixed timing (#225)
+* [pre-commit.ci] pre-commit autoupdate (#244)
+* Update mass and charge dtypes to int16 (#246)
+* Fix plugin warning/debug/info logging (#248)
+* [pre-commit.ci] pre-commit autoupdate (#250)
+* Exciton ratio fix (#251)
+* Poetry does not understand `requires-python` (#252)
+* [pre-commit.ci] pre-commit autoupdate (#253)
+* [pre-commit.ci] pre-commit autoupdate (#255)
+* [pre-commit.ci] pre-commit autoupdate (#256)
+* Update yields and clustering (#245)
+* Take yield and width parameters from config file (#257)
+* Faster lineage clustering (#258)
+
 1.3.0 / 2024-06-10
 ------------------
 * Use straxen documentation building functions to avoid duplicated codes (#218)
