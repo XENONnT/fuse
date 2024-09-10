@@ -55,7 +55,7 @@ class LineageClustering(FuseBasePlugin):
     )
 
     brem_distance_threshold = straxen.URLConfig(
-        default=0.1,
+        default=0,
         type=(int, float),
         help="Distance threshold to break lineage for bremsstrahlung [cm]. \
         Do not break if distance is smaller than threshold.",
