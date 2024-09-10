@@ -143,7 +143,7 @@ class LineageClustering(FuseBasePlugin):
                 self.brem_distance_threshold,
                 self.time_threshold,
                 self.classify_ic_as_gamma,
-                self.classify_phot_as_beta
+                self.classify_phot_as_beta,
             )[undo_sort_index]
 
             all_lineag_ids.append(lineage["lineage_index"] + self.lineages_build)
@@ -164,13 +164,13 @@ class LineageClustering(FuseBasePlugin):
 
     @staticmethod
     def build_lineage_for_event(
-            event, 
-            gamma_distance_threshold,
-            brem_distance_threshold,
-            time_threshold,
-            classify_ic_as_gamma,
-            classify_phot_as_beta,
-        ):
+        event,
+        gamma_distance_threshold,
+        brem_distance_threshold,
+        time_threshold,
+        classify_ic_as_gamma,
+        classify_phot_as_beta,
+    ):
 
         tmp_dtype = [
             ("lineage_index", np.int32),
@@ -287,7 +287,6 @@ class LineageClustering(FuseBasePlugin):
         return tmp_result
 
 
-
 def precompute_particle_lookup(event):
     """Precompute a lookup dictionary for particles by their trackid."""
     trackid_to_idx = {}
@@ -297,6 +296,7 @@ def precompute_particle_lookup(event):
         trackid_to_idx[trackid].append(idx)
     return trackid_to_idx
 
+
 def get_particle(event_interactions, event_lineage, index, trackid_lookup):
     """Returns the particle at the index and the lineage of all interactions of
     the same particle."""
@@ -304,11 +304,15 @@ def get_particle(event_interactions, event_lineage, index, trackid_lookup):
     particle_indices = trackid_lookup[event["trackid"]]
     return event, event_lineage[particle_indices]
 
+
 def get_last_particle_interaction(event_interactions, particle, particle_lineage):
-    """Returns the last (previous in time) interaction of the particle that is in the lineage."""
-    
+    """Returns the last (previous in time) interaction of the particle that is
+    in the lineage."""
+
     # Get all interactions for the given particle
-    all_particle_interactions = event_interactions[event_interactions["trackid"] == particle["trackid"]]
+    all_particle_interactions = event_interactions[
+        event_interactions["trackid"] == particle["trackid"]
+    ]
 
     # Find the last interaction already in the lineage
     index_of_last_interaction = np.nonzero(particle_lineage)[0][-1]
@@ -317,6 +321,7 @@ def get_last_particle_interaction(event_interactions, particle, particle_lineage
         all_particle_interactions[index_of_last_interaction],
         particle_lineage[index_of_last_interaction],
     )
+
 
 def precompute_parent_lookup(event):
     """Precompute a lookup dictionary for parent relationships."""
@@ -345,7 +350,10 @@ def get_parent(event_interactions, event_lineage, particle, parent_lookup):
         parent_to_return = np.argmin(abs(parent_interactions["t"] - particle["t"]))
         return parent_interactions[parent_to_return], parent_lineages[parent_to_return]
 
-    return parent_interactions[parent_interactions_time_cut][-1], parent_lineages[parent_interactions_time_cut][-1]
+    return (
+        parent_interactions[parent_interactions_time_cut][-1],
+        parent_lineages[parent_interactions_time_cut][-1],
+    )
 
 
 def is_particle_in_lineage(lineage):
