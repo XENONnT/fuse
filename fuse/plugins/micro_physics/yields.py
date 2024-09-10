@@ -77,9 +77,10 @@ class NestYields(FuseBasePlugin):
         self.vectorized_get_quanta = np.vectorize(self.get_quanta)
         self.updated_nest_width_parameters = self.update_nest_width_parameters()
 
-        assert np.all(
-            [isinstance(element, float) for element in self.nest_er_yields_parameters]
-        ), f"ER Yields parameters need be floats, but got {self.nest_er_yields_parameters}!"
+        # Set the elements of the list so we do not run into problems with the vectorized function
+        self.nest_er_yields_parameters_list = [
+            float(element) for element in self.nest_er_yields_parameters
+        ]
 
     def update_nest_width_parameters(self):
 
@@ -205,7 +206,7 @@ class NestYields(FuseBasePlugin):
             A=A,
             Z=Z,
             density=density,
-            ERYieldsParam=self.nest_er_yields_parameters,
+            ERYieldsParam=self.nest_er_yields_parameters_list,
         )
 
         return yields_result
