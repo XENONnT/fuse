@@ -137,7 +137,14 @@ class LineageClustering(FuseBasePlugin):
             undo_sort_index = np.argsort(track_id_sort)
             event = event[track_id_sort]
 
-            lineage = self.build_lineage_for_event(event)[undo_sort_index]
+            lineage = self.build_lineage_for_event(
+                event,
+                self.gamma_distance_threshold,
+                self.brem_distance_threshold,
+                self.time_threshold,
+                self.classify_ic_as_gamma,
+                self.classify_phot_as_beta,
+            )[undo_sort_index]
 
             all_lineag_ids.append(lineage["lineage_index"] + self.lineages_build)
             all_lineage_types.append(lineage["lineage_type"])
@@ -155,7 +162,15 @@ class LineageClustering(FuseBasePlugin):
             np.concatenate(all_main_cluster_types),
         )
 
-    def build_lineage_for_event(self, event):
+    @staticmethod
+    def build_lineage_for_event(
+        event,
+        gamma_distance_threshold,
+        brem_distance_threshold,
+        time_threshold,
+        classify_ic_as_gamma,
+        classify_phot_as_beta,
+    ):
 
         tmp_dtype = [
             ("lineage_index", np.int32),
@@ -169,19 +184,22 @@ class LineageClustering(FuseBasePlugin):
 
         main_cluster_type = assign_main_cluster_type_to_event(event)
 
+        trackid_lookup = precompute_particle_lookup(event)
+        parent_lookup = precompute_parent_lookup(event)
+
         # Now iterate all interactions
         running_lineage_index = 0
         for i in range(len(event)):
 
             # Get the particle information
-            particle, particle_lineage = get_particle(event, tmp_result, i)
+            particle, particle_lineage = get_particle(event, tmp_result, i, trackid_lookup)
             # Is the particle already in a lineage?
             particle_already_in_lineage = is_particle_in_lineage(particle_lineage)
             # If the particle is not in a lineage, create a new lineage
             if not particle_already_in_lineage:
                 # It is the first time we see this particle! Now we need to check if
                 # there is a parent particle.
-                parent, parent_lineage = get_parent(event, tmp_result, particle)
+                parent, parent_lineage = get_parent(event, tmp_result, particle, parent_lookup)
                 # If there is a parent:
                 if parent is not None:
 
@@ -189,10 +207,9 @@ class LineageClustering(FuseBasePlugin):
                     broken_lineage = is_lineage_broken(
                         particle,
                         parent,
-                        parent_lineage,
-                        self.gamma_distance_threshold,
-                        self.brem_distance_threshold,
-                        self.time_threshold,
+                        gamma_distance_threshold,
+                        brem_distance_threshold,
+                        time_threshold,
                     )
 
                     if broken_lineage:
@@ -204,8 +221,8 @@ class LineageClustering(FuseBasePlugin):
                             tmp_result,
                             i,
                             running_lineage_index,
-                            self.classify_ic_as_gamma,
-                            self.classify_phot_as_beta,
+                            classify_ic_as_gamma,
+                            classify_phot_as_beta,
                         )
 
                     else:
@@ -221,8 +238,8 @@ class LineageClustering(FuseBasePlugin):
                         tmp_result,
                         i,
                         running_lineage_index,
-                        self.classify_ic_as_gamma,
-                        self.classify_phot_as_beta,
+                        classify_ic_as_gamma,
+                        classify_phot_as_beta,
                     )
 
             else:
@@ -236,10 +253,9 @@ class LineageClustering(FuseBasePlugin):
                     broken_lineage = is_lineage_broken(
                         particle,
                         last_particle_interaction,
-                        last_particle_lineage,
-                        self.gamma_distance_threshold,
-                        self.brem_distance_threshold,
-                        self.time_threshold,
+                        gamma_distance_threshold,
+                        brem_distance_threshold,
+                        time_threshold,
                     )
                     if broken_lineage:
                         # New lineage!
@@ -250,8 +266,8 @@ class LineageClustering(FuseBasePlugin):
                             tmp_result,
                             i,
                             running_lineage_index,
-                            self.classify_ic_as_gamma,
-                            self.classify_phot_as_beta,
+                            classify_ic_as_gamma,
+                            classify_phot_as_beta,
                         )
 
                     else:
@@ -271,57 +287,73 @@ class LineageClustering(FuseBasePlugin):
         return tmp_result
 
 
-def get_particle(event_interactions, event_lineage, index):
+def precompute_particle_lookup(event):
+    """Precompute a lookup dictionary for particles by their trackid."""
+    trackid_to_idx = {}
+    for idx, trackid in enumerate(event["trackid"]):
+        if trackid not in trackid_to_idx:
+            trackid_to_idx[trackid] = []
+        trackid_to_idx[trackid].append(idx)
+    return trackid_to_idx
+
+
+def get_particle(event_interactions, event_lineage, index, trackid_lookup):
     """Returns the particle at the index and the lineage of all interactions of
     the same particle."""
-
     event = event_interactions[index]
-
-    return event, event_lineage[event_interactions["trackid"] == event["trackid"]]
+    particle_indices = trackid_lookup[event["trackid"]]
+    return event, event_lineage[particle_indices]
 
 
 def get_last_particle_interaction(event_interactions, particle, particle_lineage):
-    """Function to get the last (the previous in time) interaction of the
-    particle (that is in the lineage)."""
+    """Returns the last (previous in time) interaction of the particle that is
+    in the lineage."""
 
+    # Get all interactions for the given particle
     all_particle_interactions = event_interactions[
         event_interactions["trackid"] == particle["trackid"]
     ]
 
-    # the last interaction is already in a lineage! Use that:
+    # Find the last interaction already in the lineage
     index_of_last_interaction = np.nonzero(particle_lineage)[0][-1]
+
     return (
         all_particle_interactions[index_of_last_interaction],
         particle_lineage[index_of_last_interaction],
     )
 
 
-def get_parent(event_interactions, event_lineage, particle):
-    """Returns the parent particle and its lineage of the given particle."""
+def precompute_parent_lookup(event):
+    """Precompute a lookup dictionary for parent relationships."""
+    parent_lookup = {}
+    for idx, (trackid, parentid) in enumerate(zip(event["trackid"], event["parentid"])):
+        parent_lookup[trackid] = parentid
+    return parent_lookup
 
-    index_of_parent_particle = np.where(event_interactions["trackid"] == particle["parentid"])[
-        0
-    ]  # [0]
-    if len(index_of_parent_particle) == 0:  # There is no parent particle
+
+def get_parent(event_interactions, event_lineage, particle, parent_lookup):
+    """Returns the parent particle and its lineage of the given particle."""
+    parent_id = parent_lookup.get(particle["trackid"], None)
+    if parent_id is None:
         return None, None
 
-    parent_interactions = event_interactions[index_of_parent_particle]
-    parent_lineages = event_lineage[index_of_parent_particle]
+    parent_indices = np.where(event_interactions["trackid"] == parent_id)[0]
+    if len(parent_indices) == 0:
+        return None, None
 
-    # Sometimes we can have parents that are after the particle. This makes no sense.
+    parent_interactions = event_interactions[parent_indices]
+    parent_lineages = event_lineage[parent_indices]
+
     parent_interactions_time_cut = parent_interactions["t"] <= particle["t"]
 
     if np.sum(parent_interactions_time_cut) == 0:
-        # there is no parent particle interaction before the particle. Why is this happening?
-        # lets return the parent closest in time..
         parent_to_return = np.argmin(abs(parent_interactions["t"] - particle["t"]))
         return parent_interactions[parent_to_return], parent_lineages[parent_to_return]
 
-    # If there are multiple parent interactions before the particle, we need to take the last one
-    possible_parents = parent_interactions[parent_interactions_time_cut]
-    possible_parents_lineages = parent_lineages[parent_interactions_time_cut]
-
-    return possible_parents[-1], possible_parents_lineages[-1]
+    return (
+        parent_interactions[parent_interactions_time_cut][-1],
+        parent_lineages[parent_interactions_time_cut][-1],
+    )
 
 
 def is_particle_in_lineage(lineage):
@@ -418,7 +450,6 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
 def is_lineage_broken(
     particle,
     parent,
-    parent_lineage,
     gamma_distance_threshold,
     brem_distance_threshold,
     time_threshold,
