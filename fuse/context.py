@@ -87,6 +87,13 @@ truth_information_plugins = [
     fuse.truth_information.ClusterTagging,
 ]
 
+fastsim_plugins = [
+    fuse.fastsim.MacroClusters,
+    fuse.fastsim.S1Areas,
+    fuse.fastsim.S2Areas,
+    fuse.fastsim.FastsimEventsUncorrected
+]
+
 
 def microphysics_context(
     output_folder="./fuse_data", simulation_config_file="fuse_config_nt_sr1_dev.json"
@@ -188,6 +195,104 @@ def full_chain_context(
 
     # Register PMT and DAQ plugins
     for plugin in pmt_and_daq_plugins:
+        st.register(plugin)
+
+    # Register truth plugins
+    for plugin in truth_information_plugins:
+        st.register(plugin)
+
+    if corrections_version is not None:
+        st.apply_xedocs_configs(version=corrections_version)
+
+    set_simulation_config_file(st, simulation_config_file)
+
+    local_versions = st.config
+    for config_name, url_config in local_versions.items():
+        if isinstance(url_config, str):
+            if "run_id" in url_config:
+                local_versions[config_name] = straxen.URLConfig.format_url_kwargs(
+                    url_config, run_id=corrections_run_id
+                )
+    st.config = local_versions
+
+    # Update some run specific config
+    for mc_config, processing_config in run_id_specific_config.items():
+        if processing_config in st.config:
+            st.config[mc_config] = st.config[processing_config]
+        else:
+            print(f"Warning! {processing_config} not in context config, skipping...")
+
+    # No blinding in simulations
+    st.config["event_info_function"] = "disabled"
+
+    # Deregister plugins with missing dependencies
+    st.deregister_plugins_with_missing_dependencies()
+
+    return st
+
+
+def fastsim_context(
+    output_folder="./fuse_data",
+    clustering_method="dbscan",
+    corrections_version=None,
+    simulation_config_file="fuse_config_nt_sr1_dev.json",
+    corrections_run_id="046477",
+    run_id_specific_config={
+        "gain_model_mc": "gain_model",
+        "electron_lifetime_liquid": "elife",
+        "drift_velocity_liquid": "electron_drift_velocity",
+        "drift_time_gate": "electron_drift_time_gate",
+    },
+    run_without_proper_corrections=False,
+
+
+):
+    """Function to create a fuse fastsim context."""
+
+    if corrections_run_id is None:
+        raise ValueError("Specify a corrections_run_id to load the corrections")
+    if (corrections_version is None) & (not run_without_proper_corrections):
+        raise ValueError(
+            "Specify a corrections_version. If you want to run without proper "
+            "corrections for testing or just trying out fuse, "
+            "set run_without_proper_corrections to True"
+        )
+    if simulation_config_file is None:
+        raise ValueError("Specify a simulation configuration file")
+
+    if run_without_proper_corrections:
+        log.warning(
+            "Running without proper correction version. This is not recommended for production use."
+            "Take the context defined in cutax if you want to run XENONnT simulations."
+        )
+
+    st = strax.Context(
+        storage=strax.DataDirectory(output_folder), **straxen.contexts.xnt_common_opts
+    )
+
+    # Register microphysics plugins
+    if clustering_method == "dbscan":
+        for plugin in microphysics_plugins_dbscan_clustering:
+            st.register(plugin)
+    elif clustering_method == "lineage":
+        for plugin in microphysics_plugins_lineage_clustering:
+            st.register(plugin)
+    else:
+        raise ValueError(f"Clustering method {clustering_method} not implemented!")
+
+    for plugin in remaining_microphysics_plugins:
+        st.register(plugin)
+
+    # Register S1 plugins
+    for plugin in s1_simulation_plugins:
+        st.register(plugin)
+
+    # Register S2 plugins
+    for plugin in s2_simulation_plugins:
+        st.register(plugin)
+
+    # Register fastsim plugins
+    for plugin in fastsim_plugins:
         st.register(plugin)
 
     # Register truth plugins
