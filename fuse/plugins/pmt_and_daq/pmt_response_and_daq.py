@@ -283,7 +283,10 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
         # Interpolate on cdf ensures that each spe pulse would sum up to 1 pe*sample duration^-1
         pe_pulse_function = interp1d(
-            self.pe_pulse_ts, np.cumsum(self.pe_pulse_ys), bounds_error=False, fill_value=(0, 1)
+            self.pe_pulse_ts,
+            np.cumsum(self.pe_pulse_ys) / np.sum(self.pe_pulse_ys),
+            bounds_error=False,
+            fill_value=(0, 1),
         )
 
         # Samples are always multiples of sample_duration
