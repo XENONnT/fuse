@@ -296,10 +296,9 @@ def from_config(config_name, key):
 
 
 class DummyMap:
-    """Return constant results
-        the length match the length of input
-        but from the second dimensions the shape is user defined input
-    """
+    """Return constant results the length match the length of input but from
+    the second dimensions the shape is user defined input."""
+
     def __init__(self, const, shape=()):
         self.const = float(const)
         self.shape = shape
@@ -309,15 +308,16 @@ class DummyMap:
         return np.ones(shape) * self.const
 
     def reduce_last_dim(self):
-        assert len(self.shape) >= 1, 'Need at least 1 dim to reduce further'
+        assert len(self.shape) >= 1, "Need at least 1 dim to reduce further"
         const = self.const * self.shape[-1]
         shape = list(self.shape)
         shape[-1] = 1
 
         return DummyMap(const, shape)
-    
+
+
 @URLConfig.register("constant_dummy_map")
 def get_dummy(const, shape=()):
-    """Make an Dummy Map"""
+    """Make an Dummy Map."""
     itp_map = DummyMap(const, shape)
     return itp_map
