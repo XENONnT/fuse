@@ -174,9 +174,10 @@ class SecondaryScintillation(FuseBasePlugin):
         self.pmt_mask = np.array(self.gains)
 
     def compute(self, individual_electrons, interactions_in_roi):
+        
         # Just apply this to clusters with electrons
-        # We should better use the number of extracted electrons here but we do not have this yet
-        mask = interactions_in_roi["n_electron_interface"] > 0
+        clusters_with_extracted_electrons = np.unique(individual_electrons['cluster_id'])
+        mask = np.in1d(interactions_in_roi["cluster_id"], clusters_with_extracted_electrons)
 
         if len(interactions_in_roi[mask]) == 0:
             empty_result = np.zeros(
