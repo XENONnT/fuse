@@ -14,48 +14,53 @@ log = logging.getLogger("fuse.fastsim.fastsim_s1")
 
 @export
 class FastsimEventsUncorrected(FuseBasePlugin):
-    """
-    Plugin to simulate S1 and (alt) S2 areas from photon hits and electrons extracted
+    """Plugin to simulate S1 and (alt) S2 areas from photon hits and electrons
+    extracted."""
 
-    """
     __version__ = "0.0.1"
 
     depends_on = ("fastsim_macro_clusters",)
     provides = "fastsim_events_uncorrected"
     data_kind = "fastsim_events"
     dtype = [
-                (("S1 area, uncorrected [PE]", "s1_area"), np.float32),
-                (("S2 area, uncorrected [PE]", "s2_area"), np.float32),
-                (("Alternate S2 area, uncorrected [PE]", "alt_s2_area"), np.float32),
-                (("Sum of S2 areas in event, uncorrected [PE]", "s2_sum"), np.float32),
-                (("Number of S2s in event", "multiplicity"), np.int32),
-                (("Drift time between main S1 and S2 [ns]", "drift_time"), np.float32),
-                (("Drift time using alternate S2 [ns]", "alt_s2_interaction_drift_time"), np.float32),
-                (("Main S2 reconstructed X position, uncorrected [cm]", "s2_x"), np.float32),
-                (("Main S2 reconstructed Y position, uncorrected [cm]", "s2_y"), np.float32),
-                (("Alternate S2 reconstructed X position, uncorrected [cm]", "alt_s2_x"), np.float32),
-                (("Alternate S2 reconstructed Y position, uncorrected [cm]", "alt_s2_y"), np.float32),
-                (("Main interaction r-position with observed position [cm]", "r_naive"), np.float32),
-                (("Alternate interaction r-position with observed position [cm]", "alt_s2_r_naive"), np.float32),
-                (("Main interaction z-position with observed position [cm]", "z_naive"), np.float32),
-                (("Alternate interaction z-position with observed position [cm]", "alt_s2_z_naive"), np.float32),
-            ] + strax.time_fields
+        (("S1 area, uncorrected [PE]", "s1_area"), np.float32),
+        (("S2 area, uncorrected [PE]", "s2_area"), np.float32),
+        (("Alternate S2 area, uncorrected [PE]", "alt_s2_area"), np.float32),
+        (("Sum of S2 areas in event, uncorrected [PE]", "s2_sum"), np.float32),
+        (("Number of S2s in event", "multiplicity"), np.int32),
+        (("Drift time between main S1 and S2 [ns]", "drift_time"), np.float32),
+        (("Drift time using alternate S2 [ns]", "alt_s2_interaction_drift_time"), np.float32),
+        (("Main S2 reconstructed X position, uncorrected [cm]", "s2_x"), np.float32),
+        (("Main S2 reconstructed Y position, uncorrected [cm]", "s2_y"), np.float32),
+        (("Alternate S2 reconstructed X position, uncorrected [cm]", "alt_s2_x"), np.float32),
+        (("Alternate S2 reconstructed Y position, uncorrected [cm]", "alt_s2_y"), np.float32),
+        (("Main interaction r-position with observed position [cm]", "r_naive"), np.float32),
+        (
+            ("Alternate interaction r-position with observed position [cm]", "alt_s2_r_naive"),
+            np.float32,
+        ),
+        (("Main interaction z-position with observed position [cm]", "z_naive"), np.float32),
+        (
+            ("Alternate interaction z-position with observed position [cm]", "alt_s2_z_naive"),
+            np.float32,
+        ),
+    ] + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
 
     photon_area_distribution = straxen.URLConfig(
         default="simple_load://resource://simulation_config://"
-                "SIMULATION_CONFIG_FILE.json?"
-                "&key=photon_area_distribution"
-                "&fmt=csv",
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=photon_area_distribution"
+        "&fmt=csv",
         cache=True,
         help="Photon area distribution",
     )
 
     s2_secondary_sc_gain_mc = straxen.URLConfig(
         default="take://resource://"
-                "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                "&take=s2_secondary_sc_gain",
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
         help="Secondary scintillation gain [PE/e-]",
@@ -63,34 +68,34 @@ class FastsimEventsUncorrected(FuseBasePlugin):
 
     se_gain_from_map = straxen.URLConfig(
         default="take://resource://"
-                "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                "&take=se_gain_from_map",
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=se_gain_from_map",
         cache=True,
         help="Boolean indication if the secondary scintillation gain is taken from a map",
     )
 
     se_gain_map = straxen.URLConfig(
         default="itp_map://resource://simulation_config://"
-                "SIMULATION_CONFIG_FILE.json?"
-                "&key=se_gain_map"
-                "&fmt=json",
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=se_gain_map"
+        "&fmt=json",
         cache=True,
         help="Map of the single electron gain",
     )
 
     s2_correction_map = straxen.URLConfig(
         default="itp_map://resource://simulation_config://"
-                "SIMULATION_CONFIG_FILE.json?"
-                "&key=s2_correction_map"
-                "&fmt=json",
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=s2_correction_map"
+        "&fmt=json",
         cache=True,
         help="S2 correction map",
     )
 
     p_double_pe_emission = straxen.URLConfig(
         default="take://resource://"
-                "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                "&take=p_double_pe_emision",
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=p_double_pe_emision",
         type=(int, float),
         cache=True,
         help="Probability of double photo-electron emission",
@@ -126,8 +131,8 @@ class FastsimEventsUncorrected(FuseBasePlugin):
     @staticmethod
     def get_s1_area_with_spe(spe_dist, num_photons):
         """
-            :params: spe_distribution, the spe distribution to draw photon areas from
-            :params: num_photons, number of photons to draw from spe distribution
+        :params: spe_distribution, the spe distribution to draw photon areas from
+        :params: num_photons, number of photons to draw from spe distribution
         """
         return np.sum(spe_dist[(np.random.random(num_photons) * len(spe_dist)).astype(np.int64)])
 
@@ -138,8 +143,9 @@ class FastsimEventsUncorrected(FuseBasePlugin):
             if np.issubdtype(result.dtype[name], np.floating):
                 result[name].fill(np.nan)
         mean_photon_area_distribution = self.average_spe_distribution(self.photon_area_distribution)
+
         for i, eventid in enumerate(eventids):
-            these_clusters = fastsim_macro_clusters[fastsim_macro_clusters['eventid'] == eventid]
+            these_clusters = fastsim_macro_clusters[fastsim_macro_clusters["eventid"] == eventid]
 
             result[i]["time"] = these_clusters[0]["time"]
             result[i]["endtime"] = these_clusters[0]["endtime"]
@@ -158,19 +164,21 @@ class FastsimEventsUncorrected(FuseBasePlugin):
             # Assign the highest and second-highest s2_area and drift time values
             if len(cluster_info_sorted) > 0:
                 s2_areas = [info[0] for info in cluster_info_sorted]
-                result[i]['s2_sum'] = np.sum(s2_areas)
-                result[i]['s2_area'] = cluster_info_sorted[0][0]
-                result[i]['drift_time'] = cluster_info_sorted[0][1]['drift_time_mean']
-                result[i]['s2_x'] = cluster_info_sorted[0][1]['x_obs']
-                result[i]['s2_y'] = cluster_info_sorted[0][1]['y_obs']
-                result[i]['z_naive'] = cluster_info_sorted[0][1]['z_obs']
+                result[i]["s2_sum"] = np.sum(s2_areas)
+                result[i]["s2_area"] = cluster_info_sorted[0][0]
+                result[i]["drift_time"] = cluster_info_sorted[0][1]["drift_time_mean"]
+                result[i]["s2_x"] = cluster_info_sorted[0][1]["x_obs"]
+                result[i]["s2_y"] = cluster_info_sorted[0][1]["y_obs"]
+                result[i]["z_naive"] = cluster_info_sorted[0][1]["z_obs"]
 
             if len(cluster_info_sorted) > 1:
-                result[i]['alt_s2_area'] = cluster_info_sorted[1][0]
-                result[i]['alt_s2_interaction_drift_time'] = cluster_info_sorted[1][1]['drift_time_mean']
-                result[i]['alt_s2_x'] = cluster_info_sorted[1][1]['x_obs']
-                result[i]['alt_s2_y'] = cluster_info_sorted[1][1]['y_obs']
-                result[i]['alt_s2_z_naive'] = cluster_info_sorted[1][1]['z_obs']
+                result[i]["alt_s2_area"] = cluster_info_sorted[1][0]
+                result[i]["alt_s2_interaction_drift_time"] = cluster_info_sorted[1][1][
+                    "drift_time_mean"
+                ]
+                result[i]["alt_s2_x"] = cluster_info_sorted[1][1]["x_obs"]
+                result[i]["alt_s2_y"] = cluster_info_sorted[1][1]["y_obs"]
+                result[i]["alt_s2_z_naive"] = cluster_info_sorted[1][1]["z_obs"]
 
             result[i]["multiplicity"] = len(cluster_info_sorted)
 

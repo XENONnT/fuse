@@ -244,8 +244,6 @@ def fastsim_context(
         "drift_time_gate": "electron_drift_time_gate",
     },
     run_without_proper_corrections=False,
-
-
 ):
     """Function to create a fuse fastsim context."""
 

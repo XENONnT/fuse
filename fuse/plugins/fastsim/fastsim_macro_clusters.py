@@ -34,12 +34,16 @@ def get_nn_prediction(inp, w0, w1, w2, w3, w4, w5, w6, w7, w8, w9):
 
 @export
 class MacroClusters(FuseBasePlugin):
-    """Plugin to simulate macro clusters for fastsim
+    """Plugin to simulate macro clusters for fastsim."""
 
-    """
     __version__ = "0.0.1"
 
-    depends_on = ("drifted_electrons", "s2_photons_sum", "microphysics_summary", "s1_photon_hits")
+    depends_on = (
+        "drifted_electrons",
+        "extracted_electrons",
+        "microphysics_summary",
+        "s1_photon_hits",
+    )
     provides = "fastsim_macro_clusters"
     data_kind = "fastsim_macro_clusters"
 
@@ -67,7 +71,7 @@ class MacroClusters(FuseBasePlugin):
     def compute(self, interactions_in_roi):
         for ix1, _ in enumerate(interactions_in_roi):
             for ix2 in range(1, len(interactions_in_roi[ix1:])):
-                if interactions_in_roi[ix1]['eventid'] != interactions_in_roi[ix1 + ix2]['eventid']:
+                if interactions_in_roi[ix1]["eventid"] != interactions_in_roi[ix1 + ix2]["eventid"]:
                     break
                 if self.merge_these_clusters(interactions_in_roi[ix1], interactions_in_roi[ix1 + ix2]):
                     s2_photons_1 = interactions_in_roi[ix1]['sum_s2_photons']
@@ -76,12 +80,22 @@ class MacroClusters(FuseBasePlugin):
                     interactions_in_roi[ix1 + ix2]['sum_s2_photons'] = s2_photons
                     interactions_in_roi[ix1]['sum_s2_photons'] = -1  # flag to throw this instruction away later
 
-                    for quantity in ['photons', 'electrons', 'excitons', 'ed', 'n_electron_interface',
-                                     'n_s1_photon_hits']:
-                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][quantity]
+                    for quantity in [
+                        "photons",
+                        "electrons",
+                        "excitons",
+                        "ed",
+                        "n_electron_interface",
+                        "n_s1_photon_hits",
+                    ]:
+                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][
+                            quantity
+                        ]
 
-                    for quantity in ['drift_time_mean', 'drift_time_spread']:
-                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][quantity]
+                    for quantity in ["drift_time_mean", "drift_time_spread"]:
+                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][
+                            quantity
+                        ]
                         interactions_in_roi[ix1 + ix2][quantity] /= 2
 
                     if s2_photons > 0:
@@ -91,9 +105,10 @@ class MacroClusters(FuseBasePlugin):
                                     (interactions_in_roi[ix1][f'{coord}{obs}'] * s2_photons_1 +
                                      interactions_in_roi[ix1 + ix2][f'{coord}{obs}'] * s2_photons_2) / s2_photons
 
-                    interactions_in_roi[ix1 + ix2]['x_pri'] = interactions_in_roi[ix1]['x_pri']
-                    interactions_in_roi[ix1 + ix2]['y_pri'] = interactions_in_roi[ix1]['y_pri']
-                    interactions_in_roi[ix1 + ix2]['z_pri'] = interactions_in_roi[ix1]['z_pri']
+
+                    interactions_in_roi[ix1 + ix2]["x_pri"] = interactions_in_roi[ix1]["x_pri"]
+                    interactions_in_roi[ix1 + ix2]["y_pri"] = interactions_in_roi[ix1]["y_pri"]
+                    interactions_in_roi[ix1 + ix2]["z_pri"] = interactions_in_roi[ix1]["z_pri"]
 
                     break
 
@@ -121,3 +136,4 @@ class MacroClusters(FuseBasePlugin):
         X = np.array((sum_area, main_width, alt_width, delta_t), dtype=np.float32)
         y = get_nn_prediction(X, w0, w1, w2, w3, w4, w5, w6, w7, w8, w9)
         return y > 0.5
+
