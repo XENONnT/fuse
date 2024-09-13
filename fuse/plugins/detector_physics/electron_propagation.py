@@ -7,9 +7,11 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class ElectronPropagation(FuseBasePlugin):
-    """Plugin to simulate the propagation of electrons in the TPC to the gas interface"""
+    """Plugin to simulate the propagation of electrons in the TPC to the gas
+    interface."""
 
     __version__ = "0.0.0"
 
@@ -17,7 +19,7 @@ class ElectronPropagation(FuseBasePlugin):
     provides = "electrons_at_interface"
     data_kind = "individual_electrons"
 
-    save_when = strax.SaveWhen.TARGET #?
+    save_when = strax.SaveWhen.TARGET  # ?
 
     dtype = [
         (("x position of the electron at the interface [cm]", "x_interface"), np.float32),
@@ -72,7 +74,7 @@ class ElectronPropagation(FuseBasePlugin):
 
         if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, dtype=self.dtype)
-        
+
         electron_drift_time = drift_time_in_tpc(
             interactions_in_roi[mask]["n_electron_interface"],
             interactions_in_roi[mask]["drift_time_mean"],
@@ -109,38 +111,39 @@ class ElectronPropagation(FuseBasePlugin):
             self.rng,
         )
 
-        positions_shifted = np.repeat(
-            positions, interactions_in_roi[mask]["n_electron_interface"], axis=0
-        ) + hdiff
+        positions_shifted = (
+            np.repeat(positions, interactions_in_roi[mask]["n_electron_interface"], axis=0) + hdiff
+        )
 
         # Now we have the positions of the electrons at the top of the LXe
         # Simulation of wire effects go in here -> time shift + position shift
 
-
         cluster_id = np.repeat(
-            interactions_in_roi[mask]["cluster_id"], interactions_in_roi[mask]["n_electron_interface"], axis=0
+            interactions_in_roi[mask]["cluster_id"],
+            interactions_in_roi[mask]["n_electron_interface"],
+            axis=0,
         )
 
-        electron_times = np.repeat(
-            interactions_in_roi[mask]["time"], interactions_in_roi[mask]["n_electron_interface"], axis=0
-        ) + electron_drift_time 
+        electron_times = (
+            np.repeat(
+                interactions_in_roi[mask]["time"],
+                interactions_in_roi[mask]["n_electron_interface"],
+                axis=0,
+            )
+            + electron_drift_time
+        )
 
         result = np.zeros(electron_drift_time.shape[0], dtype=self.dtype)
         result["time"] = electron_times
         result["endtime"] = result["time"]
-        result["x_interface"] = positions_shifted[:,0]
-        result["y_interface"] = positions_shifted[:,1]
+        result["x_interface"] = positions_shifted[:, 0]
+        result["y_interface"] = positions_shifted[:, 1]
         result["cluster_id"] = cluster_id
 
         return result
 
 
-def drift_time_in_tpc(
-    n_electron,
-    drift_time_mean,
-    drift_time_spread,
-    rng
-):
+def drift_time_in_tpc(n_electron, drift_time_mean, drift_time_spread, rng):
     n_electrons = np.sum(n_electron).astype(np.int64)
     drift_time_mean_r = np.repeat(drift_time_mean, n_electron.astype(np.int64))
     drift_time_spread_r = np.repeat(drift_time_spread, n_electron.astype(np.int64))
@@ -148,6 +151,7 @@ def drift_time_in_tpc(
     timing = rng.normal(drift_time_mean_r, drift_time_spread_r, size=n_electrons)
 
     return timing.astype(np.int64)
+
 
 @njit()
 def simulate_horizontal_shift(
@@ -181,6 +185,7 @@ def simulate_horizontal_shift(
         result[start_idx[i] : stop_idx[i]] = np.ascontiguousarray(split_hdiff[i]) @ matrix[i]
 
     return result
+
 
 @njit()
 def build_rotation_matrix(sin_theta, cos_theta):

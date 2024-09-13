@@ -398,12 +398,12 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         top_index = np.arange(self.n_top_pmts)
         bottom_index = np.arange(self.n_top_pmts, self.n_tpc_pmts)
 
-        #if self.diffusion_constant_transverse > 0:
+        # if self.diffusion_constant_transverse > 0:
         #    pattern = self.s2_pattern_map_diffuse(
         #        n_electron, z_obs, positions, drift_time_mean
         #    )  # [position, pmt]
-        #else:
-            #pattern = self.s2_pattern_map(positions)  # [position, pmt]
+        # else:
+        # pattern = self.s2_pattern_map(positions)  # [position, pmt]
         pattern = self.s2_pattern_map(positions)  # [position, pmt]
 
         if pattern.shape[1] - 1 not in bottom_index:

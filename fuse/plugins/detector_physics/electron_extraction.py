@@ -6,6 +6,7 @@ from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class ElectronExtraction(FuseBasePlugin):
     """Plugin to simulate the loss of electrons during the extraction of
@@ -13,7 +14,7 @@ class ElectronExtraction(FuseBasePlugin):
 
     __version__ = "0.3.0"
 
-    depends_on = ("electrons_at_interface")
+    depends_on = "electrons_at_interface"
     provides = "extracted_electrons"
     data_kind = "individual_electrons"
 
@@ -99,7 +100,7 @@ class ElectronExtraction(FuseBasePlugin):
     def compute(self, individual_electrons):
 
         position = np.array(
-            [individual_electrons['x_interface'], individual_electrons['y_interface']]
+            [individual_electrons["x_interface"], individual_electrons["y_interface"]]
         ).T
 
         if self.ext_eff_from_map:
@@ -119,7 +120,7 @@ class ElectronExtraction(FuseBasePlugin):
         else:
             cy = self.electron_extraction_yield
 
-        extraction_mask = self.rng.binomial(1, p=cy, size = position.shape[0]).astype(bool)
+        extraction_mask = self.rng.binomial(1, p=cy, size=position.shape[0]).astype(bool)
 
         result = np.zeros(np.sum(extraction_mask), dtype=self.dtype)
         result["time"] = self.extraction_delay(individual_electrons[extraction_mask]["time"])

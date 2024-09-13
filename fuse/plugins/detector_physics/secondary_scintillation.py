@@ -20,11 +20,7 @@ class SecondaryScintillation(FuseBasePlugin):
     result_name_photons = "s2_photons"
     result_name_photons_sum = "s2_photons_sum"
 
-    depends_on = (
-        "microphysics_summary",
-        "drifted_electrons",
-        "extracted_electrons"
-    )
+    depends_on = ("microphysics_summary", "drifted_electrons", "extracted_electrons")
     provides = (result_name_photons, result_name_photons_sum)
     data_kind = {
         result_name_photons: "individual_electrons",
@@ -191,7 +187,9 @@ class SecondaryScintillation(FuseBasePlugin):
                 self.result_name_photons_sum: empty_result,
             }
 
-        positions = np.array([individual_electrons["x_interface"], individual_electrons["y_interface"]]).T
+        positions = np.array(
+            [individual_electrons["x_interface"], individual_electrons["y_interface"]]
+        ).T
 
         electron_gains = self.get_s2_light_yield(positions=positions)
 

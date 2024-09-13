@@ -16,6 +16,7 @@ class DriftedElectronsMerger(VerticalMergerPlugin):
     data_kind = "interactions_in_roi"
     __version__ = "0.0.1"
 
+
 @export
 class PropagatedElectronsMerger(VerticalMergerPlugin):
     """Plugin which concatenates the output of the regular and delayed electron

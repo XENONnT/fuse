@@ -7,6 +7,7 @@ from ....plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
+
 @export
 class PhotoIonizationElectrons(FuseBasePlugin):
     """Plugin to simulate the emission of delayed electrons from
