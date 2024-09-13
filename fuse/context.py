@@ -43,8 +43,8 @@ s1_simulation_plugins = [
 # Plugins to simulate S2 signals
 s2_simulation_plugins = [
     fuse.detector_physics.ElectronDrift,
+    fuse.detector_physics.ElectronPropagation,
     fuse.detector_physics.ElectronExtraction,
-    fuse.detector_physics.ElectronTiming,
     fuse.detector_physics.SecondaryScintillation,
     fuse.detector_physics.S2PhotonPropagation,
 ]
@@ -53,8 +53,8 @@ s2_simulation_plugins = [
 delayed_electron_simulation_plugins = [
     fuse.detector_physics.delayed_electrons.PhotoIonizationElectrons,
     fuse.detector_physics.delayed_electrons.DelayedElectronsDrift,
+    fuse.detector_physics.delayed_electrons.DelayedElectronPropagation,
     fuse.detector_physics.delayed_electrons.DelayedElectronsExtraction,
-    fuse.detector_physics.delayed_electrons.DelayedElectronsTiming,
     fuse.detector_physics.delayed_electrons.DelayedElectronsSecondaryScintillation,
     fuse.detector_physics.delayed_electrons.S1PhotonHitsEmpty,
 ]
@@ -62,8 +62,8 @@ delayed_electron_simulation_plugins = [
 # Plugins to merge delayed and regular electrons
 delayed_electron_merger_plugins = [
     fuse.detector_physics.delayed_electrons.DriftedElectronsMerger,
+    fuse.detector_physics.delayed_electrons.PropagatedElectronsMerger,
     fuse.detector_physics.delayed_electrons.ExtractedElectronsMerger,
-    fuse.detector_physics.delayed_electrons.ElectronTimingMerger,
     fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonsMerger,
     fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonSumMerger,
     fuse.detector_physics.delayed_electrons.MicrophysicsSummaryMerger,

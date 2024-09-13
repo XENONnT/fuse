@@ -1,11 +1,11 @@
 from . import electron_drift
 from .electron_drift import *
 
+from . import electron_propagation
+from .electron_propagation import *
+
 from . import electron_extraction
 from .electron_extraction import *
-
-from . import electron_timing
-from .electron_timing import *
 
 from . import s1_photon_hits
 from .s1_photon_hits import *

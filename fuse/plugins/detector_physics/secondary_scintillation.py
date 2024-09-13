@@ -15,7 +15,7 @@ class SecondaryScintillation(FuseBasePlugin):
     """Plugin to simulate the secondary scintillation process in the gas
     phase."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     result_name_photons = "s2_photons"
     result_name_photons_sum = "s2_photons_sum"
@@ -23,8 +23,7 @@ class SecondaryScintillation(FuseBasePlugin):
     depends_on = (
         "microphysics_summary",
         "drifted_electrons",
-        "extracted_electrons",
-        "electron_time",
+        "extracted_electrons"
     )
     provides = (result_name_photons, result_name_photons_sum)
     data_kind = {
@@ -174,9 +173,10 @@ class SecondaryScintillation(FuseBasePlugin):
 
         self.pmt_mask = np.array(self.gains)
 
-    def compute(self, interactions_in_roi, individual_electrons):
+    def compute(self, individual_electrons, interactions_in_roi):
         # Just apply this to clusters with electrons
-        mask = interactions_in_roi["n_electron_extracted"] > 0
+        # We should better use the number of extracted electrons here but we do not have this yet
+        mask = interactions_in_roi["n_electron_interface"] > 0
 
         if len(interactions_in_roi[mask]) == 0:
             empty_result = np.zeros(
@@ -190,7 +190,7 @@ class SecondaryScintillation(FuseBasePlugin):
                 self.result_name_photons_sum: empty_result,
             }
 
-        positions = np.array([individual_electrons["x"], individual_electrons["y"]]).T
+        positions = np.array([individual_electrons["x_interface"], individual_electrons["y_interface"]]).T
 
         electron_gains = self.get_s2_light_yield(positions=positions)
 
@@ -207,6 +207,7 @@ class SecondaryScintillation(FuseBasePlugin):
         grouped_result_photons, unique_cluster_id = group_result_photons_by_cluster_id(
             result_photons, individual_electrons["cluster_id"]
         )
+
         sum_photons_per_interaction = np.array(
             [np.sum(element["n_s2_photons"]) for element in grouped_result_photons]
         )
