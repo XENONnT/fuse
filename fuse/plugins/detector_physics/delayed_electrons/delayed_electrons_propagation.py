@@ -13,7 +13,7 @@ class DelayedElectronPropagation(ElectronPropagation):
 
     child_plugin = True
 
-    depends_on = ('photo_ionization_electrons',"drifted_delayed_electrons")
+    depends_on = ("photo_ionization_electrons", "drifted_delayed_electrons")
     provides = "delayed_electrons_at_interface"
     data_kind = "delayed_individual_electrons"
 
