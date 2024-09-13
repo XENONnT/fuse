@@ -13,27 +13,27 @@ log = logging.getLogger("fuse.fastsim.fastsim_s2")
 
 @export
 class S2Areas(FuseBasePlugin):
-    """Plugin to simulate S2 areas from electrons extracted for fastsim
+    """Plugin to simulate S2 areas from electrons extracted for fastsim."""
 
-    """
     __version__ = "0.0.1"
 
     depends_on = ("fastsim_macro_clusters",)
     provides = "fastsim_s2"
     data_kind = "fastsim_events"
 
-    dtype = [(("S2 area, uncorrected [PE]", "s2_area"), np.float32),
-             (("Alternate S2 area, uncorrected [PE]", "alt_s2_area"), np.float32),
-             (("Sum of S2 areas in event, uncorrected [PE]", "s2_sum"), np.float32),
-             (("Number of S2s in event", "multiplicity"), np.int32)
-             ] + strax.time_fields
+    dtype = [
+        (("S2 area, uncorrected [PE]", "s2_area"), np.float32),
+        (("Alternate S2 area, uncorrected [PE]", "alt_s2_area"), np.float32),
+        (("Sum of S2 areas in event, uncorrected [PE]", "s2_sum"), np.float32),
+        (("Number of S2s in event", "multiplicity"), np.int32),
+    ] + strax.time_fields
 
     save_when = strax.SaveWhen.ALWAYS
 
     s2_secondary_sc_gain_mc = straxen.URLConfig(
         default="take://resource://"
-                "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                "&take=s2_secondary_sc_gain",
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
         help="Secondary scintillation gain [PE/e-]",
@@ -41,41 +41,41 @@ class S2Areas(FuseBasePlugin):
 
     se_gain_from_map = straxen.URLConfig(
         default="take://resource://"
-                "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                "&take=se_gain_from_map",
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=se_gain_from_map",
         cache=True,
         help="Boolean indication if the secondary scintillation gain is taken from a map",
     )
 
     se_gain_map = straxen.URLConfig(
         default="itp_map://resource://simulation_config://"
-                "SIMULATION_CONFIG_FILE.json?"
-                "&key=se_gain_map"
-                "&fmt=json",
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=se_gain_map"
+        "&fmt=json",
         cache=True,
         help="Map of the single electron gain",
     )
 
     s2_correction_map = straxen.URLConfig(
         default="itp_map://resource://simulation_config://"
-                "SIMULATION_CONFIG_FILE.json?"
-                "&key=s2_correction_map"
-                "&fmt=json",
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=s2_correction_map"
+        "&fmt=json",
         cache=True,
         help="S2 correction map",
     )
 
     p_double_pe_emision = straxen.URLConfig(
         default="take://resource://"
-                "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                "&take=p_double_pe_emision",
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=p_double_pe_emision",
         type=(int, float),
         cache=True,
         help="Probability of double photo-electron emission",
     )
 
     def compute(self, fastsim_macro_clusters):
-        eventids = np.unique(fastsim_macro_clusters['eventid'])
+        eventids = np.unique(fastsim_macro_clusters["eventid"])
         result = np.zeros(len(eventids), dtype=self.dtype)
         result["time"] = fastsim_macro_clusters["time"]
         result["endtime"] = fastsim_macro_clusters["endtime"]
@@ -85,7 +85,7 @@ class S2Areas(FuseBasePlugin):
             for cluster in clusters:
                 pos = np.array([cluster["x"], cluster["y"]]).T  # TODO: check if correct positions
                 ly = self.get_s2_light_yield(pos)[0]
-                area = ly * cluster['n_electron_extracted']
+                area = ly * cluster["n_electron_extracted"]
                 if area > 0:
                     s2_areas.append(area)
             if len(s2_areas):

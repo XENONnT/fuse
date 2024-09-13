@@ -91,7 +91,7 @@ fastsim_plugins = [
     fuse.fastsim.MacroClusters,
     fuse.fastsim.S1Areas,
     fuse.fastsim.S2Areas,
-    fuse.fastsim.FastsimEventsUncorrected
+    fuse.fastsim.FastsimEventsUncorrected,
 ]
 
 
@@ -244,8 +244,6 @@ def fastsim_context(
         "drift_time_gate": "electron_drift_time_gate",
     },
     run_without_proper_corrections=False,
-
-
 ):
     """Function to create a fuse fastsim context."""
 
