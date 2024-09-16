@@ -4,7 +4,7 @@ import strax
 import straxen
 import pickle
 
-from ...dtypes import quanta_fields
+from ...dtypes import quanta_fields, cluster_id_fields
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -25,7 +25,7 @@ class NestYields(FuseBasePlugin):
     provides = "quanta"
     data_kind = "interactions_in_roi"
 
-    dtype = quanta_fields + strax.time_fields
+    dtype = strax.time_fields + cluster_id_fields + quanta_fields
 
     save_when = strax.SaveWhen.TARGET
 
@@ -56,6 +56,9 @@ class NestYields(FuseBasePlugin):
         result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         result["time"] = interactions_in_roi["time"]
         result["endtime"] = interactions_in_roi["endtime"]
+        result["cluster_id"] = interactions_in_roi["cluster_id"]
+        result["ed"] = interactions_in_roi["ed"]
+        result["nestid"] = interactions_in_roi["nestid"]
 
         # Generate quanta:
         if len(interactions_in_roi) > 0:
