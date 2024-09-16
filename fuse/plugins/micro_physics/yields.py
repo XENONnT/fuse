@@ -451,3 +451,269 @@ class BBF_quanta_generator:
         Ne = self.rng.binomial(Ni, 1.0 - recomb)
         Nph = Ni + Nex - Ne
         return Nph, Ne, Nex
+
+
+class MigdalYields(NestYields): 
+    __version__ = '0.0.1-alpha'
+    child_plugin = True
+
+    provides = ("quanta", "migdal_truth")
+    
+    common_dtypes = strax.time_fields + cluster_id_fields
+    quanta_dtypes = common_dtypes + quanta_fields
+    truth_dtype = common_dtypes + [
+        (("This cluster contains a Migdal effect", "has_migdal"), np.bool_),
+        (("Number of photons at interaction position caused by Migdal effect", "migdal_photons"), np.int32),
+        (("Number of electrons at interaction position caused by Migdal effect", "migdal_electrons"), np.int32),
+        (("Number of excitons at interaction position caused by Migdal effect", "migdal_excitons"), np.int32),
+        (("Energy of Migdal electron", "migdal_energy"), np.float32),
+        (("Orbital of Migdal electron", "migdal_orbital"), ">U3"),
+    ] 
+
+    dtype = {
+        "quanta": quanta_dtypes,
+        "migdal_truth": truth_dtype,
+    }
+
+    data_kind = {data_type: "interactions_in_roi" for data_type in provides}
+
+    xenon_mass = straxen.URLConfig(
+        default="simple_load://simulation_config://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=xenon_mass",
+        type=(int, float),
+        help="Standard atomic weight of Xenon atom in keV",
+    )
+
+    binding_energies = straxen.URLConfig(
+        default="simple_load://simulation_config://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=xenon_binding_energies",
+        type=dict,
+        help="Binding energies corresponding to Xenon atomic orbitals in keV. "
+        "From https://journals.aps.org/prd/abstract/10.1103/PhysRevD.107.035032",
+    )
+
+    orbitals = straxen.URLConfig(
+        default="simple_load://simulation_config://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=considered_orbitals",
+        type=list,
+        help="List of orbitals to allow Migdal events from.",
+    )
+
+    distribution_manager = straxen.URLConfig(
+        default = "simple_load://resource://"
+        "Migdal_probability_distribution_interpolators.pkl?"
+        "&fmt=pkl",
+        help="Interpolators for the Migdal distribution functions. " 
+        "Migdal class instance from https://github.com/petercox/Migdal/blob/v1.0.0/Migdal.py .\n",
+    )
+
+    def compute(self, interactions_in_roi):
+
+        return_empty = len(interactions_in_roi) == 0
+        
+        results = {}
+        for data_type in self.provides:
+            if return_empty:
+                result = np.zeros(0, dtype=self.dtype[data_type])
+            else:
+                result = np.zeros(len(interactions_in_roi), dtype=self.dtype[data_type])
+                result["time"] = interactions_in_roi["time"]
+                result["endtime"] = interactions_in_roi["endtime"]
+                result["cluster_id"] = interactions_in_roi["cluster_id"]
+                result["ed"] = interactions_in_roi["ed"]
+                result["nestid"] = interactions_in_roi["nestid"]
+            
+            results[data_type] = result
+
+        if return_empty:
+            return results
+        
+        # set the global nest random generator with self.short_seed
+        nest_rng.set_seed(self.short_seed)
+        # Now lock the seed during the computation
+        nest_rng.lock_seed()
+        # increment the seed. Next chunk we will use the modified seed to generate random numbers
+        self.short_seed += 1
+
+        # Generate quanta:
+        if len(interactions_in_roi) > 0:
+
+            (photons,
+             electrons,
+             excitons,
+             has_migdal,
+             migdal_photons,
+             migdal_electrons,
+             migdal_excitons,
+             migdal_energy,
+             migdal_orbital
+             ) = self.vectorized_get_quanta(
+                interactions_in_roi["ed"],
+                interactions_in_roi["nestid"],
+                interactions_in_roi["e_field"],
+                interactions_in_roi["A"],
+                interactions_in_roi["Z"],
+                interactions_in_roi["create_S2"],
+                interactions_in_roi["xe_density"],
+            )
+            results["quanta"]["photons"] = photons
+            results["quanta"]["electrons"] = electrons
+            results["quanta"]["excitons"] = excitons
+
+            results["migdal_truth"]["has_migdal"] = has_migdal
+            results["migdal_truth"]["migdal_photons"] = migdal_photons
+            results["migdal_truth"]["migdal_electrons"] = migdal_electrons
+            results["migdal_truth"]["migdal_excitons"] = migdal_excitons
+            results["migdal_truth"]["migdal_energy"] = migdal_energy
+            results["migdal_truth"]["migdal_orbital"] = migdal_orbital
+        else:
+            results["quanta"]["photons"] = np.empty(0)
+            results["quanta"]["electrons"] = np.empty(0)
+            results["quanta"]["excitons"] = np.empty(0)
+
+            results["migdal_truth"]["has_migdal"] = np.empty(0)
+            results["migdal_truth"]["migdal_photons"] = np.empty(0)
+            results["migdal_truth"]["migdal_electrons"] = np.empty(0)
+            results["migdal_truth"]["migdal_excitons"] = np.empty(0)
+            results["migdal_truth"]["migdal_energy"] = np.empty(0)
+            results["migdal_truth"]["migdal_orbital"] = np.empty(0)
+
+        # Unlock the nest random generator seed again
+        nest_rng.unlock_seed()
+
+        return results
+
+    def get_quanta(self, en, model, e_field, A, Z, create_s2, density):
+            
+        photons, electrons, excitons = super().get_quanta(en, model, e_field, A, Z, create_s2, density)
+        
+        # Initialise Truth variables
+        has_migdal = False
+        m_photons = m_electrons = m_excitons =  em_energy = 0
+        orbital = None
+
+        # If the event is a NR, add migdal
+        if model == 0:
+            
+            erec = en 
+            v = np.sqrt(2 * erec / self.xenon_mass)
+    
+            has_migdal, orbital = self.get_orbital(v)
+            
+            if has_migdal:
+
+                binding_e = self.binding_energies[orbital]
+                electron_energy = self.get_electron_energy(v, orbital)
+
+                # TODO: Currently assuming that all of the binding energy is released as beta radiation.
+                # Auger electrons and X-rays might disagree
+                em_energy = electron_energy + binding_e
+
+                m_photons, m_excitons, m_electrons = super().get_quanta(em_energy, 8, e_field, A, Z, create_s2, density)
+                
+                photons += m_photons
+                excitons += m_excitons
+                if create_s2:
+                    electrons += m_electrons
+
+        return photons, electrons, excitons, has_migdal, m_photons, m_electrons, m_excitons, em_energy, orbital
+
+    def get_electron_energy(self, v, orbital):
+        """
+        Compute the energy of a Migdal electron based on the nucleus speed and orbital.
+
+        This method uses the provided nucleus speed `v` and the specified orbital to 
+        generate the energy of the electron by sampling from a probability distribution. 
+        The probability distribution function (PDF) is computed and normalized, and 
+        the inverted cumulative distribution function (CDF) is used to obtain the 
+        electron energy.
+
+        Parameters:
+        - v (float): Speed of the recoiling nucleus.
+        - orbital (str): Orbital shell from which the electron is ionized (e.g., '3s', '4p-').
+
+        Returns:
+        - float: Energy of the ionized electron.
+        """
+        es = np.logspace(1e-4, 20, 10000)
+        vs = np.repeat(v, len(es))
+        
+        points = self.pairwise_log_transform(es.copy(), vs)
+        pdf = self.distribution_manager.dpI1(points, orbital)
+        
+        cdf = pdf.cumsum() # Not yet normalised
+        cdf /= cdf[-1] # Normalised
+
+        random_n = self.rng.uniform()
+
+        inverted_cdf_value = np.interp(random_n, cdf, es)
+
+        return inverted_cdf_value
+
+    def get_orbital(self, v):
+        """
+        Determine the orbital shell from which an electron is ionized, if any, based on the nucleus speed.
+
+        This method calculates the probabilities for each orbital shell based on the nucleus 
+        speed `v`. A random number is used to sample from these probabilities and determine 
+        whether an electron is ionized and, if so, from which orbital shell.
+
+        Parameters:
+        - v (float): Speed of the recoiling nucleus.
+
+        Returns:
+        - Tuple[bool, str or None]: A tuple where the first element is a boolean indicating 
+        whether an electron was ionized, and the second element is the orbital shell 
+        ('3s', '4p', etc.) if an electron was ionized, or `None` if no electron was 
+        ionized.
+        """
+        total_probability = 0
+        probabilities = {}
+        for orbital in self.orbitals:
+            _probability = self.distribution_manager.pI1(np.log(v), orbital)
+            total_probability += _probability
+            probabilities[orbital] = _probability
+
+        random_n = self.rng.uniform()
+        if random_n > total_probability:
+            return False, None
+        
+        probabilities = pd.DataFrame(
+            probabilities.values(),
+            index=probabilities.keys(),
+            columns=["probability"])
+        probabilities['norm_probability'] = probabilities.probability / total_probability
+        probabilities = probabilities.sort_values("norm_probability")
+        
+        random_n = self.rng.uniform()
+        for orbital, probability in probabilities.norm_probability.cumsum().items():
+            if random_n < probability:
+                return True, orbital
+
+    @staticmethod
+    def pairwise_log_transform(a, b):
+        """
+        Applies a logarithmic transformation to two input arrays or values.
+
+        Reshapes and concatenates the inputs into a 2D array, then computes the natural logarithm
+        of each element. This ensures compatibility with functions requiring a 2D array with two columns.
+
+        Parameters
+        ----------
+        a : array-like or float
+            First input array or single float value.
+        b : array-like or float
+            Second input array or single float value.
+
+        Returns
+        -------
+        numpy.ndarray
+            A 2D array where each element is the natural logarithm of the input values.
+        """
+        a = np.atleast_1d(a).reshape(-1, 1)
+        b = np.atleast_1d(b).reshape(-1, 1)
+        arr = np.concatenate((a, b), axis=1)
+        return np.log(arr)
