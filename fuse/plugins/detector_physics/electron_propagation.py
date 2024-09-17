@@ -13,7 +13,7 @@ class ElectronPropagation(FuseBasePlugin):
     """Plugin to simulate the propagation of electrons in the TPC to the gas
     interface."""
 
-    __version__ = "0.0.0"
+    __version__ = "0.0.2"
 
     depends_on = ("drifted_electrons", "microphysics_summary")
     provides = "electrons_at_interface"
@@ -55,6 +55,34 @@ class ElectronPropagation(FuseBasePlugin):
         cache=True,
         help="Map for the electric field dependencies",
     )
+
+    x_position_offset_1d_mean_left = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/home/yongyu/codes_link/fuse_examples/x_position_offset_1d_mean_left.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+
+    x_position_offset_1d_mean_right = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/home/yongyu/codes_link/fuse_examples/x_position_offset_1d_mean_right.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+
+    perp_wires_cut_distance = straxen.URLConfig(
+        default=4.45,
+        help=(
+            "Distance in x to apply exception from the center of the gate perpendicular wires [cm]"
+        ),
+    )
+
+    perp_wire_x_pos = 13.06  # cm
+    perp_wire_angle = np.deg2rad(30)
+
+    position_correction_pp_wire_shift = 12.76  # cm
 
     def setup(self):
         super().setup()
@@ -117,7 +145,28 @@ class ElectronPropagation(FuseBasePlugin):
 
         # Now we have the positions of the electrons at the top of the LXe
         # Simulation of wire effects go in here -> time shift + position shift
+        
+        x_rot, y_rot = rotate_axis(self, positions_shifted[:, 0], positions_shifted[:, 1], self.perp_wire_angle)
 
+        x_diff = np.zeros(positions_shifted.shape[0], dtype=positions_shifted.dtype)
+        mask_near_wires = get_near_wires_mask(self, positions_shifted)
+        mask_near_wires_left = mask_near_wires & (np.abs(x_rot) < self.position_correction_pp_wire_shift)
+        mask_near_wires_right = mask_near_wires & (np.abs(x_rot) >= self.position_correction_pp_wire_shift)
+        
+        x_rot = np.expand_dims(x_rot, axis=1)
+        x_rot_left = x_rot[mask_near_wires_left]
+        x_rot_right = x_rot[mask_near_wires_right]
+
+        x_diff[mask_near_wires_left] = self.x_position_offset_1d_mean_left(x_rot_left)
+        x_diff[mask_near_wires_right] = self.x_position_offset_1d_mean_right(x_rot_right)
+
+        x_diff = np.expand_dims(x_diff, axis=1)
+        x_rot_shifted = x_rot + x_diff
+
+        # inverse rotation
+        x_obs_shifted, y_obs_shifted = rotate_axis(self, x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle)
+        positions_shifted = np.column_stack([x_obs_shifted, y_obs_shifted])
+        
         cluster_id = np.repeat(
             interactions_in_roi[mask]["cluster_id"],
             interactions_in_roi[mask]["n_electron_interface"],
@@ -151,6 +200,23 @@ def drift_time_in_tpc(n_electron, drift_time_mean, drift_time_spread, rng):
     timing = rng.normal(drift_time_mean_r, drift_time_spread_r, size=n_electrons)
 
     return timing.astype(np.int64)
+
+def rotate_axis(self, x_obs, y_obs, angle):
+    x_rot = np.cos(angle) * x_obs - np.sin(angle) * y_obs
+    y_rot = np.sin(angle) * x_obs + np.cos(angle) * y_obs
+    return x_rot, y_rot
+
+def get_near_wires_mask(self, positions):
+    """Returns a mask selecting the events near the perpendicular wires."""
+    x_rot, y_rot = rotate_axis(self, positions[:,0], positions[:,1], self.perp_wire_angle)
+    mask_near_wires = np.abs(np.abs(x_rot) - self.perp_wire_x_pos) < self.perp_wires_cut_distance
+    return mask_near_wires
+    
+def position_correction_pp_wire(self, positions):
+    x_interface = positions[:, 0]
+    y_interface = positions[:, 1]
+    x_inter_rotate, y_inter_rotate = rotate_axis(self, x_interface, y_interface, self.perp_wire_angle)
+    return x_inter_rotate, y_inter_rotate
 
 
 @njit()
