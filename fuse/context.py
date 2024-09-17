@@ -296,8 +296,8 @@ def from_config(config_name, key):
 
 
 class DummyMap:
-    """Return constant results the length match the length of input but from
-    the second dimensions the shape is user defined input."""
+    """Return constant results with length equal to that of the input and
+    second dimensions (constand correction) user-defined."""
 
     def __init__(self, const, shape=()):
         self.const = float(const)
