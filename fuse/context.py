@@ -293,3 +293,31 @@ def from_config(config_name, key):
     """Return a value from a json config file."""
     config = straxen.get_resource(config_name, fmt="json")
     return config[key]
+
+
+class DummyMap:
+    """Return constant results with length equal to that of the input and
+    second dimensions (constand correction) user-defined."""
+
+    def __init__(self, const, shape=()):
+        self.const = float(const)
+        self.shape = shape
+
+    def __call__(self, x, **kwargs):
+        shape = [len(x)] + list(self.shape)
+        return np.ones(shape) * self.const
+
+    def reduce_last_dim(self):
+        assert len(self.shape) >= 1, "Need at least 1 dim to reduce further"
+        const = self.const * self.shape[-1]
+        shape = list(self.shape)
+        shape[-1] = 1
+
+        return DummyMap(const, shape)
+
+
+@URLConfig.register("constant_dummy_map")
+def get_dummy(const, shape=()):
+    """Make an Dummy Map."""
+    itp_map = DummyMap(const, shape)
+    return itp_map
