@@ -218,7 +218,7 @@ def rotate_axis(self, x_obs, y_obs, angle):
 
 def get_near_wires_mask(self, positions):
     """Returns a mask selecting the events near the perpendicular wires."""
-    x_rot, y_rot = rotate_axis(self, positions[:,0], positions[:,1], self.perp_wire_angle)
+    x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle)
     mask_near_wires = np.abs(x_rot) - self.perp_wire_x_pos < self.perp_wires_cut_distance[1]
     mask_near_wires &= np.abs(x_rot) - self.perp_wire_x_pos > -self.perp_wires_cut_distance[0]
     return mask_near_wires
