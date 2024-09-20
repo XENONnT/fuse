@@ -145,14 +145,20 @@ class ElectronPropagation(FuseBasePlugin):
 
         # Now we have the positions of the electrons at the top of the LXe
         # Simulation of wire effects go in here -> time shift + position shift
-        
-        x_rot, y_rot = rotate_axis(self, positions_shifted[:, 0], positions_shifted[:, 1], self.perp_wire_angle)
+
+        x_rot, y_rot = rotate_axis(
+            self, positions_shifted[:, 0], positions_shifted[:, 1], self.perp_wire_angle
+        )
 
         x_diff = np.zeros(positions_shifted.shape[0], dtype=positions_shifted.dtype)
         mask_near_wires = get_near_wires_mask(self, positions_shifted)
-        mask_near_wires_left = mask_near_wires & (np.abs(x_rot) < self.position_correction_pp_wire_shift)
-        mask_near_wires_right = mask_near_wires & (np.abs(x_rot) >= self.position_correction_pp_wire_shift)
-        
+        mask_near_wires_left = mask_near_wires & (
+            np.abs(x_rot) < self.position_correction_pp_wire_shift
+        )
+        mask_near_wires_right = mask_near_wires & (
+            np.abs(x_rot) >= self.position_correction_pp_wire_shift
+        )
+
         x_rot = np.expand_dims(x_rot, axis=1)
         x_rot_left = x_rot[mask_near_wires_left]
         x_rot_right = x_rot[mask_near_wires_right]
@@ -164,9 +170,11 @@ class ElectronPropagation(FuseBasePlugin):
         x_rot_shifted = x_rot + x_diff
 
         # inverse rotation
-        x_obs_shifted, y_obs_shifted = rotate_axis(self, x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle)
+        x_obs_shifted, y_obs_shifted = rotate_axis(
+            self, x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle
+        )
         positions_shifted = np.column_stack([x_obs_shifted, y_obs_shifted])
-        
+
         cluster_id = np.repeat(
             interactions_in_roi[mask]["cluster_id"],
             interactions_in_roi[mask]["n_electron_interface"],
@@ -201,10 +209,12 @@ def drift_time_in_tpc(n_electron, drift_time_mean, drift_time_spread, rng):
 
     return timing.astype(np.int64)
 
+
 def rotate_axis(self, x_obs, y_obs, angle):
     x_rot = np.cos(angle) * x_obs - np.sin(angle) * y_obs
     y_rot = np.sin(angle) * x_obs + np.cos(angle) * y_obs
     return x_rot, y_rot
+
 
 def get_near_wires_mask(self, positions):
     """Returns a mask selecting the events near the perpendicular wires."""
@@ -212,11 +222,14 @@ def get_near_wires_mask(self, positions):
     mask_near_wires = np.abs(x_rot) - self.perp_wire_x_pos < self.perp_wires_cut_distance[1]
     mask_near_wires &= np.abs(x_rot) - self.perp_wire_x_pos > -self.perp_wires_cut_distance[0]
     return mask_near_wires
-    
+
+
 def position_correction_pp_wire(self, positions):
     x_interface = positions[:, 0]
     y_interface = positions[:, 1]
-    x_inter_rotate, y_inter_rotate = rotate_axis(self, x_interface, y_interface, self.perp_wire_angle)
+    x_inter_rotate, y_inter_rotate = rotate_axis(
+        self, x_interface, y_interface, self.perp_wire_angle
+    )
     return x_inter_rotate, y_inter_rotate
 
 
