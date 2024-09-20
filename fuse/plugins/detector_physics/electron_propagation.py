@@ -72,16 +72,16 @@ class ElectronPropagation(FuseBasePlugin):
         help="test",
     )
 
-    perp_wires_cut_distance = straxen.URLConfig(
-        default=4.45,
-        help=(
-            "Distance in x to apply exception from the center of the gate perpendicular wires [cm]"
-        ),
-    )
+    # perp_wires_cut_distance = straxen.URLConfig(
+    #     default=4.45,
+    #     help=(
+    #         "Distance in x to apply exception from the center of the gate perpendicular wires [cm]"
+    #     ),
+    # )
 
     perp_wire_x_pos = 13.06  # cm
     perp_wire_angle = np.deg2rad(30)
-
+    perp_wires_cut_distance = [8.5, 11.3]
     position_correction_pp_wire_shift = 12.76  # cm
 
     def setup(self):
@@ -209,7 +209,8 @@ def rotate_axis(self, x_obs, y_obs, angle):
 def get_near_wires_mask(self, positions):
     """Returns a mask selecting the events near the perpendicular wires."""
     x_rot, y_rot = rotate_axis(self, positions[:,0], positions[:,1], self.perp_wire_angle)
-    mask_near_wires = np.abs(np.abs(x_rot) - self.perp_wire_x_pos) < self.perp_wires_cut_distance
+    mask_near_wires = np.abs(x_rot) - self.perp_wire_x_pos < self.perp_wires_cut_distance[1]
+    mask_near_wires &= np.abs(x_rot) - self.perp_wire_x_pos > -self.perp_wires_cut_distance[0]
     return mask_near_wires
     
 def position_correction_pp_wire(self, positions):
