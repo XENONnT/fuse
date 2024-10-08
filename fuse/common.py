@@ -204,25 +204,6 @@ def ak_num(array, **kwargs):
     return ak.num(array, **kwargs)
 
 
-@numba.njit
-def offset_range(offsets):
-    """Computes range of constant event ids while in same offset. E.g. for an
-    array [1], [1,2,3], [5] this function yields [0, 1, 1, 1, 2].
-
-    Args:
-        offsets (ak.array): jagged array offsets.
-
-    Returns:
-        np.array: Indicies.
-    """
-    res = np.zeros(np.sum(offsets), dtype=np.int32)
-    i = 0
-    for ind, o in enumerate(offsets):
-        res[i : i + o] = ind
-        i += o
-    return res
-
-
 # Code shared between S1 and S2 photon propagation
 def init_spe_scaling_factor_distributions(spe_shapes):
     # Create a converter array from uniform random numbers to SPE gains
