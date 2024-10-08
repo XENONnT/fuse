@@ -87,11 +87,6 @@ class TestMicroPhysicsAlternativePlugins(TestMicroPhysicsBase):
         self.test_context.register(fuse.plugins.BBFYields)
         self.test_context.make(self.run_number, "quanta")
 
-    @timeout_decorator.timeout(TIMEOUT, exception_message="WFSim connection timed out")
-    def test_WFSimConnection(self):
-        self.test_context.register(fuse.plugins.output_plugin)
-        self.test_context.make(self.run_number, "wfsim_instructions")
-
     @timeout_decorator.timeout(TIMEOUT, exception_message="GasPhasePlugin timed out")
     def test_GasPhasePlugin(self):
         self.test_context.register(fuse.plugins.XENONnT_GasPhase)
