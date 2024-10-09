@@ -342,9 +342,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         # Repeat for n photons per electron # Should this be before adding delays?
         _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
 
-        _cluster_id = np.repeat(
-            electron_group["cluster_id"], electron_group["n_s2_photons"]
-        )
+        _cluster_id = np.repeat(electron_group["cluster_id"], electron_group["n_s2_photons"])
 
         # Do i want to save both -> timings with and without pmt transit time spread?
         # Correct for PMT Transit Time Spread
