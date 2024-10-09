@@ -29,15 +29,11 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     Note: The timing calculation is defined in the child plugin.
     """
 
-    __version__ = "0.3.5"
+    __version__ = "0.4.1"
 
     depends_on = (
-        "merged_electron_time",
         "merged_s2_photons",
         "merged_extracted_electrons",
-        "merged_drifted_electrons",
-        "merged_s2_photons_sum",
-        "merged_microphysics_summary",
     )
 
     provides = "propagated_s2_photons"
@@ -145,15 +141,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         help="Radius of the XENONnT TPC [cm]",
     )
 
-    diffusion_constant_transverse = straxen.URLConfig(
-        default="take://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=diffusion_constant_transverse",
-        type=(int, float),
-        cache=True,
-        help="Transverse diffusion constant [cm^2/ns]",
-    )
-
     s2_aft_skewness = straxen.URLConfig(
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
@@ -168,15 +155,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         type=(int, float),
         cache=True,
         help="Width of the S2 area fraction top",
-    )
-
-    enable_diffusion_transverse_map = straxen.URLConfig(
-        default="take://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=enable_diffusion_transverse_map",
-        type=bool,
-        cache=True,
-        help="Use transverse diffusion map from field_dependencies_map_tmp",
     )
 
     # stupid naming problem...
@@ -301,18 +279,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             self.photon_area_distribution
         )
 
-        # Field dependencies
-        if self.enable_diffusion_transverse_map:
-
-            def rz_map(z, xy, **kwargs):
-                r = np.sqrt(xy[:, 0] ** 2 + xy[:, 1] ** 2)
-                return self.field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
-
-            self.field_dependencies_map = rz_map
-
-    def compute(self, interactions_in_roi, individual_electrons, start, end):
-        # Just apply this to clusters with photons
-        mask = interactions_in_roi["n_electron_extracted"] > 0
+    def compute(self, individual_electrons, start, end):
 
         if len(individual_electrons) == 0:
             yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
@@ -340,7 +307,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         last_start = start
         for i, electron_group in enumerate(electron_chunks):
-            result = self.compute_chunk(interactions_in_roi, mask, electron_group)
+            result = self.compute_chunk(electron_group)
 
             # Move the chunk bound 90% of the minimal gap length to
             # the next photon to make space for afterpluses
@@ -354,41 +321,28 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             last_start = chunk_end
             yield chunk
 
-    def compute_chunk(self, interactions_in_roi, mask, electron_group):
-        unique_clusters_in_group = np.unique(electron_group["cluster_id"])
-        interactions_chunk = interactions_in_roi[mask][
-            np.isin(interactions_in_roi["cluster_id"][mask], unique_clusters_in_group)
-        ]
+    def compute_chunk(self, electron_group):
 
-        # Sort both the interactions and the electrons by cluster_id
-        # We will later sort by time again when yielding the data.
-        sort_index_ic = np.argsort(interactions_chunk["cluster_id"])
         sort_index_eg = np.argsort(electron_group["cluster_id"])
-        interactions_chunk = interactions_chunk[sort_index_ic]
         electron_group = electron_group[sort_index_eg]
 
-        positions = np.array([interactions_chunk["x_obs"], interactions_chunk["y_obs"]]).T
+        positions = np.array([electron_group["x_interface"], electron_group["y_interface"]]).T
 
         _photon_channels = self.photon_channels(
-            interactions_chunk["n_electron_extracted"],
-            interactions_chunk["z_obs"],
             positions,
-            interactions_chunk["drift_time_mean"],
-            interactions_chunk["sum_s2_photons"],
+            electron_group["n_s2_photons"],
         )
 
         _photon_timings = self.photon_timings(
             positions,
-            interactions_chunk["sum_s2_photons"],
+            electron_group["n_s2_photons"],
             _photon_channels,
         ).astype(np.int64)
 
         # Repeat for n photons per electron # Should this be before adding delays?
         _photon_timings += np.repeat(electron_group["time"], electron_group["n_s2_photons"])
 
-        _cluster_id = np.repeat(
-            interactions_chunk["cluster_id"], interactions_chunk["sum_s2_photons"]
-        )
+        _cluster_id = np.repeat(electron_group["cluster_id"], electron_group["n_s2_photons"])
 
         # Do i want to save both -> timings with and without pmt transit time spread?
         # Correct for PMT Transit Time Spread
@@ -424,17 +378,12 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         return result
 
-    def photon_channels(self, n_electron, z_obs, positions, drift_time_mean, n_photons):
+    def photon_channels(self, positions, n_photons):
         channels = np.arange(self.n_tpc_pmts).astype(np.int64)
         top_index = np.arange(self.n_top_pmts)
         bottom_index = np.arange(self.n_top_pmts, self.n_tpc_pmts)
 
-        if self.diffusion_constant_transverse > 0:
-            pattern = self.s2_pattern_map_diffuse(
-                n_electron, z_obs, positions, drift_time_mean
-            )  # [position, pmt]
-        else:
-            pattern = self.s2_pattern_map(positions)  # [position, pmt]
+        pattern = self.s2_pattern_map(positions)  # [position, pmt]
 
         if pattern.shape[1] - 1 not in bottom_index:
             pattern = np.pad(
@@ -476,65 +425,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         _photon_channels = np.concatenate(_buffer_photon_channels)
 
         return _photon_channels.astype(np.int64)
-
-    def s2_pattern_map_diffuse(self, n_electron, z, xy, drift_time_mean):
-        """Returns an array of pattern of shape [n interaction, n PMTs] pattern
-        of each interaction is an average of n_electron patterns evaluated at
-        diffused position near xy.
-
-        The diffused positions sample from 2d symmetric gaussian with
-        spread scale with sqrt of drift time.
-        Args:
-            n_electron: a 1d int array
-            z: a 1d float array
-            xy: a 2d float array of shape [n interaction, 2]
-            config: dict of the wfsim config
-            resource: instance of the resource class
-        """
-        assert all(z < 0), "All S2 in liquid should have z < 0"
-
-        if self.enable_diffusion_transverse_map:
-            diffusion_constant_radial = self.field_dependencies_map(
-                z, xy, map_name="diffusion_radial_map"
-            )  # cm²/s
-            diffusion_constant_azimuthal = self.field_dependencies_map(
-                z, xy, map_name="diffusion_azimuthal_map"
-            )  # cm²/s
-            diffusion_constant_radial *= 1e-9  # cm²/ns
-            diffusion_constant_azimuthal *= 1e-9  # cm²/ns
-        else:
-            diffusion_constant_radial = self.diffusion_constant_transverse
-            diffusion_constant_azimuthal = self.diffusion_constant_transverse
-
-        hdiff = np.zeros((np.sum(n_electron), 2))
-        hdiff = simulate_horizontal_shift(
-            n_electron,
-            drift_time_mean,
-            xy,
-            diffusion_constant_radial,
-            diffusion_constant_azimuthal,
-            hdiff,
-            self.rng,
-        )
-
-        # Should we also output this xy position in truth?
-        xy_multi = np.repeat(xy, n_electron, axis=0) + hdiff  # One entry xy per electron
-        # Remove points outside tpc, and the pattern will be the average inside tpc
-        # TODO: Should be done naturally with the s2 pattern map, however,
-        # there's some bug there, so we apply this hard cut
-        mask = np.sum(xy_multi**2, axis=1) <= self.tpc_radius**2
-
-        output_dim = self.s2_pattern_map.data["map"].shape[-1]
-
-        pattern = np.zeros((len(n_electron), output_dim))
-        n0 = 0
-        # Average over electrons for each s2
-        for ix, ne in enumerate(n_electron):
-            s = slice(n0, n0 + ne)
-            pattern[ix, :] = np.average(self.s2_pattern_map(xy_multi[s][mask[s]]), axis=0)
-            n0 += ne
-
-        return pattern
 
     def singlet_triplet_delays(self, size, singlet_ratio):
         """Given the amount of the excimer, return time between excimer decay.
@@ -938,50 +828,6 @@ def _luminescence_timings_simple(
         ci += npho
 
     return emission_time
-
-
-@njit()
-def simulate_horizontal_shift(
-    n_electron,
-    drift_time_mean,
-    xy,
-    diffusion_constant_radial,
-    diffusion_constant_azimuthal,
-    result,
-    rng,
-):
-    hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_mean)
-    hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_mean)
-    hdiff_radial = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(hdiff_stdev_radial, n_electron)
-    hdiff_azimuthal = rng.normal(0, 1, np.sum(n_electron)) * np.repeat(
-        hdiff_stdev_azimuthal, n_electron
-    )
-    hdiff = np.column_stack((hdiff_radial, hdiff_azimuthal))
-    theta = np.arctan2(xy[:, 1], xy[:, 0])
-
-    sin_theta = np.sin(theta)
-    cos_theta = np.cos(theta)
-    matrix = build_rotation_matrix(sin_theta, cos_theta)
-
-    split_hdiff = np.split(hdiff, np.cumsum(n_electron))[:-1]
-
-    start_idx = np.append([0], np.cumsum(n_electron)[:-1])
-    stop_idx = np.cumsum(n_electron)
-
-    for i in range(len(matrix)):
-        result[start_idx[i] : stop_idx[i]] = np.ascontiguousarray(split_hdiff[i]) @ matrix[i]
-
-    return result
-
-
-@njit()
-def build_rotation_matrix(sin_theta, cos_theta):
-    matrix = np.zeros((len(sin_theta), 2, 2))
-    matrix[:, 0, 0] = cos_theta
-    matrix[:, 0, 1] = sin_theta
-    matrix[:, 1, 0] = -sin_theta
-    matrix[:, 1, 1] = cos_theta
-    return matrix
 
 
 @njit()
