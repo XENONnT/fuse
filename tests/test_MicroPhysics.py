@@ -15,7 +15,10 @@ class TestMicroPhysicsBase(unittest.TestCase):
     def setUpClass(cls):
         cls.temp_dir = tempfile.TemporaryDirectory()
 
-        cls.test_context = fuse.context.microphysics_context(cls.temp_dir.name)
+        cls.test_context = fuse.context.full_chain_context(
+            output_folder=cls.temp_dir.name,
+            run_without_proper_corrections=True,
+        )
 
         cls.test_context.set_config(
             {
