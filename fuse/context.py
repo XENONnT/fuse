@@ -135,6 +135,9 @@ def full_chain_context(
 ):
     """Function to create a fuse full chain simulation context."""
 
+    # Lets go for info level logging when working with fuse
+    log.setLevel("INFO")
+
     if corrections_run_id is None:
         raise ValueError("Specify a corrections_run_id to load the corrections")
     if (corrections_version is None) & (not run_without_proper_corrections):
