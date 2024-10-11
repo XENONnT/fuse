@@ -87,6 +87,11 @@ truth_information_plugins = [
     fuse.truth_information.ClusterTagging,
 ]
 
+# Plugins to override the default processing plugins in straxen
+processing_plugins = [
+    fuse.processing.CorrectedAreasMC,
+]
+
 
 def microphysics_context(
     output_folder="./fuse_data", simulation_config_file="fuse_config_nt_sr1_dev.json"
@@ -194,6 +199,12 @@ def full_chain_context(
     for plugin in truth_information_plugins:
         st.register(plugin)
 
+    # Register processing plugins
+    log.info("Overriding processing plugins:")
+    for plugin in processing_plugins:
+        log.info(f"Registering {plugin}")
+        st.register(plugin)
+
     if corrections_version is not None:
         st.apply_xedocs_configs(version=corrections_version)
 
@@ -220,6 +231,9 @@ def full_chain_context(
 
     # Deregister plugins with missing dependencies
     st.deregister_plugins_with_missing_dependencies()
+
+    # Purge unused configs
+    st.purge_unused_configs()
 
     return st
 
