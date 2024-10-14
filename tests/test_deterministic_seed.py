@@ -3,7 +3,7 @@ import unittest
 import tempfile
 import timeout_decorator
 import fuse
-import straxen
+import utilix
 from numpy.testing import assert_array_equal, assert_raises
 from _utils import test_root_file_name
 
@@ -16,7 +16,7 @@ class TestDeterministicSeed(unittest.TestCase):
         self.temp_dir_1 = tempfile.TemporaryDirectory()
 
         for temp_dir in [self.temp_dir_0, self.temp_dir_1]:
-            downloader = straxen.MongoDownloader(store_files_at=(temp_dir.name,))
+            downloader = utilix.mongo_storage.MongoDownloader(store_files_at=(temp_dir.name,))
             downloader.download_single(test_root_file_name, human_readable_file_name=True)
             assert os.path.exists(os.path.join(temp_dir.name, test_root_file_name))
 
