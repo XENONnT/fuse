@@ -39,6 +39,7 @@ awkward = ">=2.5.1"
 uproot = ">=5.2.1"
 strax = ">=1.6.0"
 straxen = ">=2.2.3"
+utilix = ">=0.11.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.8", "setuptools"]

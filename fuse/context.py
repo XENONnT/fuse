@@ -87,6 +87,11 @@ truth_information_plugins = [
     fuse.truth_information.ClusterTagging,
 ]
 
+# Plugins to override the default processing plugins in straxen
+processing_plugins = [
+    fuse.processing.CorrectedAreasMC,
+]
+
 
 def full_chain_context(
     output_folder="./fuse_data",
@@ -103,6 +108,9 @@ def full_chain_context(
     run_without_proper_corrections=False,
 ):
     """Function to create a fuse full chain simulation context."""
+
+    # Lets go for info level logging when working with fuse
+    log.setLevel("INFO")
 
     if corrections_run_id is None:
         raise ValueError("Specify a corrections_run_id to load the corrections")
@@ -168,6 +176,12 @@ def full_chain_context(
     for plugin in truth_information_plugins:
         st.register(plugin)
 
+    # Register processing plugins
+    log.info("Overriding processing plugins:")
+    for plugin in processing_plugins:
+        log.info(f"Registering {plugin}")
+        st.register(plugin)
+
     if corrections_version is not None:
         st.apply_xedocs_configs(version=corrections_version)
 
@@ -194,6 +208,9 @@ def full_chain_context(
 
     # Deregister plugins with missing dependencies
     st.deregister_plugins_with_missing_dependencies()
+
+    # Purge unused configs
+    st.purge_unused_configs()
 
     return st
 
