@@ -276,7 +276,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
     min_electron_gap_length_for_splitting = straxen.URLConfig(
         type=(int, float),
-        default=1e5,
+        default=2e6,
         track=False,
         help="Chunk can not be split if gap between photons is smaller than this value given in ns",
     )
