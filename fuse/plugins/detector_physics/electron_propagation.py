@@ -153,7 +153,7 @@ class ElectronPropagation(FuseBasePlugin):
             hdiff,
             self.rng,
         )
-        
+
         positions_shifted = (
             np.repeat(positions, interactions_in_roi[mask]["n_electron_interface"], axis=0) + hdiff
         )
@@ -218,8 +218,7 @@ def get_near_wires_mask(self, positions):
 
 def position_correction_pp_wire(self, positions):
 
-    x_rot, y_rot = rotate_axis(
-        self, positions[:, 0], positions[:, 1], self.perp_wire_angle)
+    x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle)
 
     x_diff = np.zeros(positions.shape[0], dtype=positions.dtype)
     mask_near_wires = get_near_wires_mask(self, positions)
@@ -245,22 +244,20 @@ def position_correction_pp_wire(self, positions):
         self, x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle
     )
     positions = np.column_stack([x_obs_shifted, y_obs_shifted])
-    
+
     return positions
 
+
 def time_correction_pp_wire(self, time, positions):
-    x_rot, y_rot = rotate_axis( self, 
-                                positions[:, 0], 
-                                positions[:, 1], 
-                                self.perp_wire_angle)
+    x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle)
 
     x_extend = np.expand_dims(x_rot, axis=1)
     drift_time_perp_mean_r = self.drift_time_1d_perp(x_extend)
     drift_time_perp_spread_r = self.drift_time_spread_1d_perp(x_extend)
 
-    perp_time = self.rng.normal(drift_time_perp_mean_r*1e3, 
-                                drift_time_perp_spread_r*1e3, 
-                                size=time.shape[0])
+    perp_time = self.rng.normal(
+        drift_time_perp_mean_r * 1e3, drift_time_perp_spread_r * 1e3, size=time.shape[0]
+    )
     return time + perp_time
 
 
