@@ -71,6 +71,21 @@ class ElectronPropagation(FuseBasePlugin):
         cache=True,
         help="test",
     )
+    drift_time_1d_perp = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/home/yongyu/codes_link/fuse_examples/drift_time_1d_perp.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+
+    drift_time_spread_1d_perp = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/home/yongyu/codes_link/fuse_examples/drift_time_spread_1d_perp.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
 
     # perp_wires_cut_distance = straxen.URLConfig(
     #     default=4.45,
@@ -138,7 +153,7 @@ class ElectronPropagation(FuseBasePlugin):
             hdiff,
             self.rng,
         )
-
+        
         positions_shifted = (
             np.repeat(positions, interactions_in_roi[mask]["n_electron_interface"], axis=0) + hdiff
         )
@@ -146,34 +161,8 @@ class ElectronPropagation(FuseBasePlugin):
         # Now we have the positions of the electrons at the top of the LXe
         # Simulation of wire effects go in here -> time shift + position shift
 
-        x_rot, y_rot = rotate_axis(
-            self, positions_shifted[:, 0], positions_shifted[:, 1], self.perp_wire_angle
-        )
-
-        x_diff = np.zeros(positions_shifted.shape[0], dtype=positions_shifted.dtype)
-        mask_near_wires = get_near_wires_mask(self, positions_shifted)
-        mask_near_wires_left = mask_near_wires & (
-            np.abs(x_rot) < self.position_correction_pp_wire_shift
-        )
-        mask_near_wires_right = mask_near_wires & (
-            np.abs(x_rot) >= self.position_correction_pp_wire_shift
-        )
-
-        x_rot = np.expand_dims(x_rot, axis=1)
-        x_rot_left = x_rot[mask_near_wires_left]
-        x_rot_right = x_rot[mask_near_wires_right]
-
-        x_diff[mask_near_wires_left] = self.x_position_offset_1d_mean_left(x_rot_left)
-        x_diff[mask_near_wires_right] = self.x_position_offset_1d_mean_right(x_rot_right)
-
-        x_diff = np.expand_dims(x_diff, axis=1)
-        x_rot_shifted = x_rot + x_diff
-
-        # inverse rotation
-        x_obs_shifted, y_obs_shifted = rotate_axis(
-            self, x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle
-        )
-        positions_shifted = np.column_stack([x_obs_shifted, y_obs_shifted])
+        # position shift due to perpendicular wire effect
+        positions_shifted = position_correction_pp_wire(self, positions_shifted)
 
         cluster_id = np.repeat(
             interactions_in_roi[mask]["cluster_id"],
@@ -190,8 +179,11 @@ class ElectronPropagation(FuseBasePlugin):
             + electron_drift_time
         )
 
+        # time shift due to perpendicular wire effect
+        electron_times = time_correction_pp_wire(self, electron_times, positions_shifted)
+
         result = np.zeros(electron_drift_time.shape[0], dtype=self.dtype)
-        result["time"] = electron_times
+        result["time"] = electron_times.astype(np.int64)
         result["endtime"] = result["time"]
         result["x_interface"] = positions_shifted[:, 0]
         result["y_interface"] = positions_shifted[:, 1]
@@ -225,12 +217,51 @@ def get_near_wires_mask(self, positions):
 
 
 def position_correction_pp_wire(self, positions):
-    x_interface = positions[:, 0]
-    y_interface = positions[:, 1]
-    x_inter_rotate, y_inter_rotate = rotate_axis(
-        self, x_interface, y_interface, self.perp_wire_angle
+
+    x_rot, y_rot = rotate_axis(
+        self, positions[:, 0], positions[:, 1], self.perp_wire_angle)
+
+    x_diff = np.zeros(positions.shape[0], dtype=positions.dtype)
+    mask_near_wires = get_near_wires_mask(self, positions)
+    mask_near_wires_left = mask_near_wires & (
+        np.abs(x_rot) < self.position_correction_pp_wire_shift
     )
-    return x_inter_rotate, y_inter_rotate
+    mask_near_wires_right = mask_near_wires & (
+        np.abs(x_rot) >= self.position_correction_pp_wire_shift
+    )
+
+    x_rot = np.expand_dims(x_rot, axis=1)
+    x_rot_left = x_rot[mask_near_wires_left]
+    x_rot_right = x_rot[mask_near_wires_right]
+
+    x_diff[mask_near_wires_left] = self.x_position_offset_1d_mean_left(x_rot_left)
+    x_diff[mask_near_wires_right] = self.x_position_offset_1d_mean_right(x_rot_right)
+
+    x_diff = np.expand_dims(x_diff, axis=1)
+    x_rot_shifted = x_rot + x_diff
+
+    # inverse rotation
+    x_obs_shifted, y_obs_shifted = rotate_axis(
+        self, x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle
+    )
+    positions = np.column_stack([x_obs_shifted, y_obs_shifted])
+    
+    return positions
+
+def time_correction_pp_wire(self, time, positions):
+    x_rot, y_rot = rotate_axis( self, 
+                                positions[:, 0], 
+                                positions[:, 1], 
+                                self.perp_wire_angle)
+
+    x_extend = np.expand_dims(x_rot, axis=1)
+    drift_time_perp_mean_r = self.drift_time_1d_perp(x_extend)
+    drift_time_perp_spread_r = self.drift_time_spread_1d_perp(x_extend)
+
+    perp_time = self.rng.normal(drift_time_perp_mean_r*1e3, 
+                                drift_time_perp_spread_r*1e3, 
+                                size=time.shape[0])
+    return time + perp_time
 
 
 @njit()
