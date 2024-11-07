@@ -161,15 +161,6 @@ class ElectronPropagation(FuseBasePlugin):
         # Now we have the positions of the electrons at the top of the LXe
         # Simulation of wire effects go in here -> time shift + position shift
 
-        # position shift due to perpendicular wire effect
-        positions_shifted = position_correction_pp_wire(self, positions_shifted)
-
-        cluster_id = np.repeat(
-            interactions_in_roi[mask]["cluster_id"],
-            interactions_in_roi[mask]["n_electron_interface"],
-            axis=0,
-        )
-
         electron_times = (
             np.repeat(
                 interactions_in_roi[mask]["time"],
@@ -181,6 +172,15 @@ class ElectronPropagation(FuseBasePlugin):
 
         # time shift due to perpendicular wire effect
         electron_times = time_correction_pp_wire(self, electron_times, positions_shifted)
+
+        # position shift due to perpendicular wire effect
+        positions_shifted = position_correction_pp_wire(self, positions_shifted)
+
+        cluster_id = np.repeat(
+            interactions_in_roi[mask]["cluster_id"],
+            interactions_in_roi[mask]["n_electron_interface"],
+            axis=0,
+        )
 
         result = np.zeros(electron_drift_time.shape[0], dtype=self.dtype)
         result["time"] = electron_times.astype(np.int64)
