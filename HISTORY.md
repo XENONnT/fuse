@@ -1,3 +1,17 @@
+1.4.2 / 2024-10-16
+------------------
+* utilix>0.9 compatibility (https://github.com/XENONnT/fuse/pull/267)
+* [pre-commit.ci] pre-commit autoupdate (https://github.com/XENONnT/fuse/pull/266)
+* Import MongoDownloader from utilix (https://github.com/XENONnT/fuse/pull/271)
+* Remove WFSim connection (https://github.com/XENONnT/fuse/pull/268)
+* Area correction override (https://github.com/XENONnT/fuse/pull/269)
+
+1.4.1 / 2024-09-17
+------------------
+* pulse_id type casting inconsistency (#260)
+* Make sure CDF goes to 1 smoothly (#261)
+* Option to replace maps by constant dummy map (#262)
+
 1.4.0 / 2024-09-10
 ------------------
 * Efficient memory chunking in input plugin (#207)

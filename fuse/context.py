@@ -87,6 +87,11 @@ truth_information_plugins = [
     fuse.truth_information.ClusterTagging,
 ]
 
+# Plugins to override the default processing plugins in straxen
+processing_plugins = [
+    fuse.processing.CorrectedAreasMC,
+]
+
 
 def microphysics_context(
     output_folder="./fuse_data", simulation_config_file="fuse_config_nt_sr1_dev.json"
@@ -129,6 +134,9 @@ def full_chain_context(
     run_without_proper_corrections=False,
 ):
     """Function to create a fuse full chain simulation context."""
+
+    # Lets go for info level logging when working with fuse
+    log.setLevel("INFO")
 
     if corrections_run_id is None:
         raise ValueError("Specify a corrections_run_id to load the corrections")
@@ -194,6 +202,12 @@ def full_chain_context(
     for plugin in truth_information_plugins:
         st.register(plugin)
 
+    # Register processing plugins
+    log.info("Overriding processing plugins:")
+    for plugin in processing_plugins:
+        log.info(f"Registering {plugin}")
+        st.register(plugin)
+
     if corrections_version is not None:
         st.apply_xedocs_configs(version=corrections_version)
 
@@ -220,6 +234,9 @@ def full_chain_context(
 
     # Deregister plugins with missing dependencies
     st.deregister_plugins_with_missing_dependencies()
+
+    # Purge unused configs
+    st.purge_unused_configs()
 
     return st
 
@@ -293,3 +310,31 @@ def from_config(config_name, key):
     """Return a value from a json config file."""
     config = straxen.get_resource(config_name, fmt="json")
     return config[key]
+
+
+class DummyMap:
+    """Return constant results with length equal to that of the input and
+    second dimensions (constand correction) user-defined."""
+
+    def __init__(self, const, shape=()):
+        self.const = float(const)
+        self.shape = shape
+
+    def __call__(self, x, **kwargs):
+        shape = [len(x)] + list(self.shape)
+        return np.ones(shape) * self.const
+
+    def reduce_last_dim(self):
+        assert len(self.shape) >= 1, "Need at least 1 dim to reduce further"
+        const = self.const * self.shape[-1]
+        shape = list(self.shape)
+        shape[-1] = 1
+
+        return DummyMap(const, shape)
+
+
+@URLConfig.register("constant_dummy_map")
+def get_dummy(const, shape=()):
+    """Make an Dummy Map."""
+    itp_map = DummyMap(const, shape)
+    return itp_map
