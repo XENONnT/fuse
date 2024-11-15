@@ -670,10 +670,17 @@ class MigdalYields(NestYields):
         ('3s', '4p', etc.) if an electron was ionized, or `None` if no electron was 
         ionized.
         """
+
         total_probability = 0
         probabilities = {}
         for orbital in self.orbitals:
-            _probability = self.distribution_manager.pI1(np.log(v), orbital)
+            _probability = self.distribution_manager.pI1(np.log(v), orbital)            
+            _probability = np.where(
+                np.isnan(_probability),
+                0,
+                _probability,
+            )
+            
             total_probability += _probability
             probabilities[orbital] = _probability
 
