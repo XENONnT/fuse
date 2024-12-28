@@ -98,14 +98,10 @@ def microphysics_context(
 ):
     """Function to create a fuse microphysics simulation context."""
 
-    st = strax.Context(
-        storage=strax.DataDirectory(output_folder), **straxen.contexts.xnt_common_opts
-    )
+    st = strax.Context(storage=strax.DataDirectory(output_folder), **straxen.contexts.common_opts)
 
     st.config.update(
-        dict(
-            detector="XENONnT", check_raw_record_overlaps=True, **straxen.contexts.xnt_common_config
-        )
+        dict(detector="XENONnT", check_raw_record_overlaps=True, **straxen.contexts.common_config)
     )
 
     # Register microphysics plugins
@@ -155,13 +151,11 @@ def full_chain_context(
             "Take the context defined in cutax if you want to run XENONnT simulations."
         )
 
-    st = strax.Context(
-        storage=strax.DataDirectory(output_folder), **straxen.contexts.xnt_common_opts
-    )
+    st = strax.Context(storage=strax.DataDirectory(output_folder), **straxen.contexts.common_opts)
 
     st.config.update(
         dict(  # detector='XENONnT',
-            check_raw_record_overlaps=True, **straxen.contexts.xnt_common_config
+            check_raw_record_overlaps=True, **straxen.contexts.common_config
         )
     )
 
