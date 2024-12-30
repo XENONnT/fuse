@@ -152,6 +152,7 @@ def full_chain_context(
         )
 
     st = strax.Context(storage=strax.DataDirectory(output_folder), **straxen.contexts.common_opts)
+    st.simulation_config_file = simulation_config_file
     st.corrections_run_id = corrections_run_id
 
     st.config.update(
