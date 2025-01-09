@@ -338,3 +338,13 @@ def get_dummy(const, shape=()):
     """Make an Dummy Map."""
     itp_map = DummyMap(const, shape)
     return itp_map
+
+
+@URLConfig.register("lce_from_pattern_map")
+def lce_from_pattern_map(map, pmt_mask):
+    """Build a S1 lce correction map from a S1 pattern map."""
+
+    lcemap = deepcopy(map)
+    lcemap.data["map"] = np.sum(lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=pmt_mask)
+    lcemap.__init__(lcemap.data)
+    return lcemap
