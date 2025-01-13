@@ -1,3 +1,11 @@
+1.4.3 / 2025-01-13
+------------------
+* Little bugfix for CSV generators (https://github.com/XENONnT/fuse/pull/273)
+* Constraint strax(en) to be less than 2.0.0(3.0.0) (https://github.com/XENONnT/fuse/pull/276)
+* Use master for docformatter (https://github.com/XENONnT/fuse/pull/277)
+* Fix chunk ends late issue (https://github.com/XENONnT/fuse/pull/275)
+* [pre-commit.ci] pre-commit autoupdate (https://github.com/XENONnT/fuse/pull/274)
+
 1.4.2 / 2024-10-16
 ------------------
 * utilix>0.9 compatibility (https://github.com/XENONnT/fuse/pull/267)

@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "xenon-fuse"
-version = "1.4.2"
+version = "1.4.3"
 description = "XENON Framework for Unified Simulations of Events"
 authors = [
   "Henning Schulze Eißing, <h_schu55@uni-muenster.de>",
