@@ -26,7 +26,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
-numpy = "<=1.26.0"
+numpy = "*"
 pandas = "*"
 scipy = "*"
 scikit-learn = "*"
@@ -37,8 +37,8 @@ nestpy = ">=2.0.2"
 numba = ">=0.58.1"
 awkward = ">=2.5.1"
 uproot = ">=5.2.1"
-strax = ">=2.0.0"
-straxen = ">=3.0.1"
+strax = ">=2.0.5"
+straxen = ">=3.0.3"
 utilix = ">=0.11.0"
 
 [build-system]
