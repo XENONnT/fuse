@@ -1,3 +1,9 @@
+1.4.4 / 2025-01-25
+------------------
+* Be compatible with straxen >= 3 (https://github.com/XENONnT/fuse/pull/282)
+* Remove CMT URLs, drop python 3.9 (https://github.com/XENONnT/fuse/pull/285)
+
+
 1.4.3 / 2025-01-13
 ------------------
 * Little bugfix for CSV generators (https://github.com/XENONnT/fuse/pull/273)
