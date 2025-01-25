@@ -102,7 +102,7 @@ class TestPluginRandomSeeds(unittest.TestCase):
                     raise AssertionError(f"Plugin {key} has no seed")
 
     @timeout_decorator.timeout(
-        TIMEOUT * 2, exception_message="test_if_run_number_changes_deterministic_seed timed out"
+        TIMEOUT, exception_message="test_if_run_number_changes_deterministic_seed timed out"
     )
     def test_if_run_number_changes_deterministic_seed(self):
 
