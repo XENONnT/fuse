@@ -223,11 +223,12 @@ class NeutronVetoHitlets(strax.Plugin):
         default=True, type=bool,
         help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
     )
-    def __init__(self):
-        self.path = '/home/layos/env_starter/fuse/private_nt_aux_files/sim_files/'#Have to put here the correct paths....
+    def __init__(self, sr=0):
+        self.path = '/home/digangi/private_nt_aux_files/sim_files/' #pietro #Have to put here the correct paths....
         self.QE_value = QE_nVeto(self.path+'nveto_pmt_qe.json')
-        self.SPE_nVeto = SPE_parameters(self.path+'SPE_SR0.npy')
+        self.SPE_nVeto = SPE_parameters(self.path+'SPE_SR'+str(sr)+'.npy') #pietro
         self.dtype=dtype
+
     #Get Quantum efficiency
     def QE_E(self,E,ID):
         WL= energytowavelenght(E)
@@ -238,6 +239,7 @@ class NeutronVetoHitlets(strax.Plugin):
     def get_acceptance(self,ID):
         acc=self.SPE_nVeto[self.SPE_nVeto['pmtID']==ID]['acceptance']
         return acc
+
     #Get acceptance threshold
     def get_threshold_acc(self,ID):
         ind=ID-2000
@@ -269,19 +271,27 @@ class NeutronVetoHitlets(strax.Plugin):
 
 
         #1. First step PHOTON to first dinode
+        # awkward array with 'evtid', 'pmthitTime', 'pmthitEnergy', 'pmthitID'
         pmthits=ak.Array(pmthits)
+        # select NV PMTs (need to exclude MV PMTs?)
         mask=pmthits['pmthitID']>=2000
         pmthits=pmthits[mask]
+        
         print("Applying QE and CE")
-        qe = 1e-2*np.vectorize(self.QE_E)(pmthits['pmthitEnergy'],pmthits['pmthitID'])#Applying Quantum efficiency for each pmt
-        qe *= CE_Scaling #Applying collection efficiency
-        qe = qe*np.vectorize(self.get_acceptance)(pmthits['pmthitID'])#Applying acceptance: for the approach in which SPE PDF has already applied a threshold for low charges
+        # Applying Quantum efficiency for each pmt
+        qe = 1e-2*np.vectorize(self.QE_E)(pmthits['pmthitEnergy'],pmthits['pmthitID'])
+        # Applying effective collection efficiency
+        qe *= CE_Scaling 
+        # Applying acceptance per pmt: for the approach in which SPE PDF has already applied a threshold for low charges
+        qe = qe*np.vectorize(self.get_acceptance)(pmthits['pmthitID'])
+        # Generate a photoelectron based on (binomial) conversion probability qe*eCE*spe_acc
         pe = np.array([np.random.binomial(1, j, 1)[0] for j in qe])
+        # Discard pmthits which do not generate a pe
         print("Loading hit survive")
         maks_qe = pe>0
         pmthits=pmthits[maks_qe]
         
-        #2. Sampling charge from SPE
+        #2. Sampling charge from SPE for each pmthit with a generated pe
         print("Sampling hitlets charge pe")
         pmthits['pe_area'] = np.vectorize(self.pe_charge_N)(pmthits['pmthitID'])
         dtypes=[]
