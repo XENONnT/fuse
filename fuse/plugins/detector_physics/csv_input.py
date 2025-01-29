@@ -69,6 +69,18 @@ class ChunkCsvInput(FuseBasePlugin):
         help="n_interactions_per_chunk",
     )
 
+    first_chunk_left = straxen.URLConfig(
+        default=1e6,
+        type=(int, float),
+        help="Time left of the first chunk",
+    )
+
+    last_chunk_length = straxen.URLConfig(
+        default=1e8,
+        type=(int, float),
+        help="Time length of the last chunk",
+    )
+
     def infer_dtype(self):
         return microphysics_summary_fields + strax.time_fields
 
@@ -85,6 +97,8 @@ class ChunkCsvInput(FuseBasePlugin):
             event_rate=self.source_rate,
             separation_scale=self.separation_scale,
             n_interactions_per_chunk=self.n_interactions_per_chunk,
+            first_chunk_left=self.first_chunk_left,
+            last_chunk_length=self.last_chunk_length,
             debug=self.debug,
             log=self.log,
         )
