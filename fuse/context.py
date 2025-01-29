@@ -128,6 +128,7 @@ def full_chain_context(
         "drift_time_gate": "electron_drift_time_gate",
     },
     run_without_proper_corrections=False,
+    extra_plugins=[],
 ):
     """Function to create a fuse full chain simulation context."""
 
@@ -203,6 +204,14 @@ def full_chain_context(
     for plugin in processing_plugins:
         log.info(f"Registering {plugin}")
         st.register(plugin)
+
+    # Register extra plugins
+    n_extra = len(extra_plugins)
+    if n_extra > 0:
+        log.info(f"Registering {n_extra} extra plugins:")
+        for plugin in extra_plugins:
+            log.info(f"{plugin}")
+            st.register(plugin)
 
     if corrections_version is not None:
         st.apply_xedocs_configs(version=corrections_version)
@@ -315,6 +324,7 @@ class DummyMap:
     def __init__(self, const, shape=()):
         self.const = float(const)
         self.shape = shape
+        self.data = {"map": np.ones(shape)}
 
     def __call__(self, x, **kwargs):
         shape = [len(x)] + list(self.shape)
@@ -334,3 +344,13 @@ def get_dummy(const, shape=()):
     """Make an Dummy Map."""
     itp_map = DummyMap(const, shape)
     return itp_map
+
+
+@URLConfig.register("lce_from_pattern_map")
+def lce_from_pattern_map(map, pmt_mask):
+    """Build a S1 lce correction map from a S1 pattern map."""
+
+    lcemap = deepcopy(map)
+    lcemap.data["map"] = np.sum(lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=pmt_mask)
+    lcemap.__init__(lcemap.data)
+    return lcemap
