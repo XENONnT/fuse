@@ -246,6 +246,120 @@ def full_chain_context(
     return st
 
 
+def public_config_context(
+    output_folder="./fuse_data",
+    extra_plugins=[fuse.plugins.S2PhotonPropagationSimple],
+    simulation_config_file="XENONnT_design_config.json",
+):
+    """Function to create a fuse full chain simulation context."""
+
+    # Lets go for info level logging when working with fuse
+    log.setLevel("INFO")
+
+    if simulation_config_file is None:
+        raise ValueError("Specify a simulation configuration file")
+
+    st = strax.Context(storage=strax.DataDirectory(output_folder), **straxen.contexts.common_opts)
+    st.simulation_config_file = simulation_config_file
+    st.config.update(dict(check_raw_record_overlaps=True, **straxen.contexts.common_config))
+
+    # Register microphysics plugins
+    for plugin in microphysics_plugins_dbscan_clustering:
+        st.register(plugin)
+
+    for plugin in remaining_microphysics_plugins:
+        st.register(plugin)
+
+    # Register S1 plugins
+    for plugin in s1_simulation_plugins:
+        st.register(plugin)
+
+    # Register S2 plugins
+    for plugin in s2_simulation_plugins:
+        st.register(plugin)
+
+    # Register delayed Electrons plugins
+    for plugin in delayed_electron_simulation_plugins:
+        st.register(plugin)
+
+    # Register merger plugins.
+    for plugin in delayed_electron_merger_plugins:
+        st.register(plugin)
+
+    # Register PMT and DAQ plugins
+    for plugin in pmt_and_daq_plugins:
+        st.register(plugin)
+
+    # Register truth plugins
+    for plugin in truth_information_plugins:
+        st.register(plugin)
+
+    # Register processing plugins
+    log.info("Overriding processing plugins:")
+    for plugin in processing_plugins:
+        log.info(f"Registering {plugin}")
+        st.register(plugin)
+
+    # Register extra plugins
+    n_extra = len(extra_plugins)
+    if n_extra > 0:
+        log.info(f"Registering {n_extra} extra plugins:")
+        for plugin in extra_plugins:
+            log.info(f"{plugin}")
+            st.register(plugin)
+
+    set_simulation_config_file(st, simulation_config_file)
+
+    # Lets override some resource files with the ones from the simulation config
+    config = straxen.get_resource(simulation_config_file, fmt="json")
+    overwrite_map_from_config(st, config)
+
+    # And finally some hardcoded configs
+    st.set_config({"s1_lce_correction_map": "constant_dummy_map://1"})
+    st.set_config(
+        {
+            "gain_model_mc": "simple_load://resource://./files/fake_to_pe.npy?&fmt=npy",
+        }
+    )
+
+    # No blinding in simulations
+    st.config["event_info_function"] = "disabled"
+
+    # Deregister plugins with missing dependencies
+    st.deregister_plugins_with_missing_dependencies()
+
+    # Purge unused configs
+    st.purge_unused_configs()
+
+    return st
+
+
+def overwrite_map_from_config(
+    context,
+    config,
+    resource_keys=[
+        "efield_map",
+        "s1_time_spline",
+        "s1_pattern_map",
+        "s2_time_spline",
+        "s2_pattern_map",
+        "s2_correction_map",
+        "photon_area_distribution",
+        "photon_ap_cdfs",
+        "noise_file",
+        "gas_gap_map",
+    ],
+):
+    for key, value in context.config.items():
+        if isinstance(value, str):
+            matching_keys = np.array(
+                ["=" + resource_key in value for resource_key in resource_keys]
+            )
+
+            if any(matching_keys):
+                context.set_config({key: config[resource_keys[np.argwhere(matching_keys)[0][0]]]})
+
+
 def set_simulation_config_file(context, config_file_name):
     """Function to loop over the plugin config and replace
     SIMULATION_CONFIG_FILE with the actual file name."""
