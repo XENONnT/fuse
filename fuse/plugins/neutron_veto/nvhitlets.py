@@ -290,7 +290,7 @@ class NeutronVetoHitlets(strax.Plugin):
         pmthits = pmthits_extended
 
         # select NV PMTs (need to exclude MV PMTs?)
-        mask=pmthits['pmthitID']>=2000
+        mask=(pmthits['pmthitID']>=2000)&(pmthits['pmthitID']<2121)
         pmthits=pmthits[mask]
 
         #1. First step PHOTON to first dinode
