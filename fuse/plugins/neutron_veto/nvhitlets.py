@@ -95,19 +95,23 @@ def channel_cluster_nv(t):
     t_val=np.array(t)
     clusters=np.array(db_cluster.fit_predict(t_val.reshape(-1, 1)))
     return clusters
+    
 def get_clusters_arrays(arr,typ):
     arr_nv_c=np.zeros(1, dtype=typ)
     arr_nv_c['n_clusters_hits']= len(arr)
-    for i in arr.fields:
-        if (i=='time') or (i=='pmthitTime') or (i=='cluster_times_ns'):
+
+    for i in arr.dtype.names:  # <-- CORRETTO: usare dtype.names invece di fields
+        if i in ['time', 'pmthitTime', 'cluster_times_ns']:
             arr_nv_c[i] = np.min(arr[i])
-        elif i== 'endtime':
-            arr_nv_c[i]= np.max(arr[i])
-        elif (i == 'pe_area') or (i=='pmthitEnergy'):
-            arr_nv_c[i]= np.sum(arr[i])
-        elif (i=='evtid') or (i=='pmthitID') or (i=='labels') : 
-            arr_nv_c[i]= np.unique(arr[i])
+        elif i == 'endtime':
+            arr_nv_c[i] = np.max(arr[i])
+        elif i in ['pe_area', 'pmthitEnergy']:
+            arr_nv_c[i] = np.sum(arr[i])
+        elif i in ['evtid', 'pmthitID', 'labels']:
+            arr_nv_c[i] = np.unique(arr[i])
+
     return arr_nv_c    
+
 #Function to use in pivot_table module (clearly something we can optimize)
 def recover_value(x):
     m_size= np.array(x).size
@@ -133,7 +137,6 @@ def time_hitlets_nv(time,ids,freq):
         ret=time
     return ret + freq*ids*1e9
     
-#Fonction to transform a hitlet dataframe output into 'hitlets_nv' ndarray
 #Fonction to transform a hitlet dataframe output into 'hitlets_nv' ndarray
 dtype = [('area', np.float64),
              ('amplitude', np.float64),
@@ -254,7 +257,7 @@ class NeutronVetoHitlets(strax.Plugin):
 
     #--------------------------- Hitlet function ------------------------------------------------------------#
 
-    def _nv_hitlets(self,pmthits, CE_Scaling=0.75, Stacked='No', period = 1.):
+    def _nv_hitlets(self, pmthits, CE_Scaling=0.75, Stacked='No', period = 1.):
         
     #-------------------------------------------------Arguments---------------------------------------------------#
     #QE_Scaling corrrespond to collection efficiency, no study has been done on the CE of muon Veto we use a default value close to the nVeto see https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:mancuso:hitletsimulator:collection_efficiency
@@ -270,13 +273,27 @@ class NeutronVetoHitlets(strax.Plugin):
         #0.---------------Load GEANT output-------------------#
 
 
-        #1. First step PHOTON to first dinode
-        # awkward array with 'evtid', 'pmthitTime', 'pmthitEnergy', 'pmthitID'
-        pmthits=ak.Array(pmthits)
+        
+        # Adding extra fields to pmthits np.array
+        extra_fields = [
+            ('pe_area', '<f4'),
+            ('cluster_times_ns', '<f4'),
+            ('labels', '<i4'),
+            ('n_clusters_hits', '<i4')
+        ]
+        new_dtype = pmthits.dtype.descr + extra_fields
+        pmthits_extended = np.zeros(pmthits.shape, dtype=new_dtype)
+        for field in pmthits.dtype.names:
+            pmthits_extended[field] = pmthits[field]
+        for field, dtype in extra_fields:
+            pmthits_extended[field] = np.zeros(pmthits_extended.shape, dtype=dtype)
+        pmthits = pmthits_extended
+
         # select NV PMTs (need to exclude MV PMTs?)
         mask=pmthits['pmthitID']>=2000
         pmthits=pmthits[mask]
-        
+
+        #1. First step PHOTON to first dinode
         print("Applying QE and CE")
         # Applying Quantum efficiency for each pmt
         qe = 1e-2*np.vectorize(self.QE_E)(pmthits['pmthitEnergy'],pmthits['pmthitID'])
@@ -294,28 +311,24 @@ class NeutronVetoHitlets(strax.Plugin):
         #2. Sampling charge from SPE for each pmthit with a generated pe
         print("Sampling hitlets charge pe")
         pmthits['pe_area'] = np.vectorize(self.pe_charge_N)(pmthits['pmthitID'])
-        dtypes=[]
-        for i in pmthits.fields + ['labels','n_clusters_hits']:
-            if (i=='evtid') or (i=='time') or (i=='pmthitID') or (i=='endtime'):
-                dtypes.append((i,np.int64))
-            else:
-                dtypes.append((i,np.float64))
                 
         #3. Creating hitlet times       
         print('Getting time hitlets')
         times=[]
-        for i in (np.unique(pmthits.evtid)):
-            mask= pmthits.evtid==i
-            pmthits_evt=pmthits[mask]
-            cluster_times_ns = pmthits_evt.pmthitTime - min(pmthits_evt.pmthitTime)
+        for i in np.unique(pmthits['evtid']):
+            mask = pmthits['evtid'] == i
+            pmthits_evt = pmthits[mask]
+            cluster_times_ns = pmthits_evt['pmthitTime'] - min(pmthits_evt['pmthitTime'])
             times.append(cluster_times_ns)
-        pmthits['cluster_times_ns'] = np.vectorize(time_hitlets_nv)(flat_list(times),pmthits['evtid'],period)
-        dtypes=dtypes + [('cluster_times_ns', np.float64)]
+        pmthits['cluster_times_ns'] = np.concatenate(times)
+        
         if Stacked=='No':
-            nv_arrays= pmthits
+            return pmthits
+
+        #3.1 Stacked hitlets: this correspond to hitlets in the same pmt with a time difference below some estimated time response of the Channel (8 ns, i.e. 4 samples).        
         elif Stacked =='yes':
-            #3.1 Stacked hitlets: this correspond to hitlets in the same pmt with a time difference below some estimated time response of the Channel (8 ns, i.e. 4 samples).        
-            print('Looking for stacket hitlets')
+            
+            print('Looking for stacked hitlets')
             #Here we set times related to the first hit, we only use that for stacket hitlets
             arr_c_evt=[]
             for i in tq.tqdm(np.unique(pmthits['evtid'])):
@@ -325,11 +338,12 @@ class NeutronVetoHitlets(strax.Plugin):
                     arr_pmt = arr_evt[arr_evt['pmthitID']==j]
                     labels = channel_cluster_nv(arr_pmt['cluster_times_ns'])
                     arr_pmt['labels'] = labels
-                    arr_c =np.concatenate([get_clusters_arrays(arr_pmt[arr_pmt['labels']==l],dtypes) for l in np.unique(labels)])
+                    arr_c = np.concatenate([get_clusters_arrays(arr_pmt[arr_pmt['labels'] == l], new_dtype) for l in np.unique(labels)])
+                    #arr_c =np.concatenate([get_clusters_arrays(arr_pmt[arr_pmt['labels']==l],dtypes) for l in np.unique(labels)])
                     arr_c_pmt.append(arr_c)
                 arr_c_evt.append(np.concatenate(arr_c_pmt))
-            nv_arrays = np.concatenate(arr_c_evt)
-        return nv_arrays
+
+            return np.concatenate(arr_c_evt)
         
     def setup(self):
 
