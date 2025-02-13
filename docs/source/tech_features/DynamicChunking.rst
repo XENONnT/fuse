@@ -3,9 +3,8 @@ Dynamic Chunking
 ================
 
 In strax all data is processed in chunks. Chunks are time intervals containing some data.
-As fuse is build on the strax framework we need to follow the `basic rules of chunking <https://strax.readthedocs.io/en/latest/advanced/chunking.html>`_. 
-The main takeaways for fuse are that chunks are independent and continous in time. 
-
+As fuse is build on the strax framework we need to follow the `basic rules of chunking <https://strax.readthedocs.io/en/latest/advanced/chunking.html>`_.
+The main takeaways for fuse are that chunks are independent and continous in time.
 
 Input Chunking
 ==============

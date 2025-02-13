@@ -1,15 +1,12 @@
 Microphysics Simulation
 =======================
 
-
-.. image:: figures/MicrophysicsSimulationStructure.pdf
-    :width: 400
-
+The microphysics simulation is performed in 9 plugins. These are listed below.
 
 .. toctree::
    :maxdepth: 1
    :caption: Microphysics Plugins
-   
+
    plugins/micro_physics/ChunkInput
    plugins/micro_physics/FindCluster
    plugins/micro_physics/MergeCluster
@@ -18,4 +15,7 @@ Microphysics Simulation
    plugins/micro_physics/VolumesMerger
    plugins/micro_physics/ElectricField
    plugins/micro_physics/NestYields
-   plugins/micro_physics/MicrophysicsSummary
+   plugins/micro_physics/MicroPhysicsSummary
+
+.. image:: figures/MicrophysicsSimulationStructure.pdf
+    :width: 400

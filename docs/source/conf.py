@@ -6,30 +6,56 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'XENON fuse'
-copyright = '2023, Henning Schulze Eißing'
-author = 'Henning Schulze Eißing'
-release = '0.0.0'
+import fuse
+
+project = "XENON fuse"
+copyright = "2024, fuse contributors, the XENON collaboration"
+
+release = fuse.__version__
+version = fuse.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.viewcode',
-    'nbsphinx',
-    ]
+    "sphinx.ext.autodoc",
+    "sphinx.ext.viewcode",
+    "nbsphinx",
+]
 
-templates_path = ['_templates']
-exclude_patterns = []
+templates_path = ["_templates"]
+exclude_patterns = []  # type: ignore
 
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
-html_static_path = ['_static']
+# -- Options for HTML output
 
-#Lets disable notebook execution for now
+html_theme = "sphinx_rtd_theme"
+# html_static_path = ['_static']
+
+# Lets disable notebook execution for now
 nbsphinx_allow_errors = True
-nbsphinx_execute = 'never'
+nbsphinx_execute = "never"
+
+
+def setup(app):
+    # app.add_css_file('css/custom.css')
+    # Hack to import something from this dir. Apparently we're in a weird
+    # situation where you get a __name__  is not in globals KeyError
+    # if you just try to do a relative import...
+    import os
+    import sys
+
+    sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+    from build_release_notes import convert_release_notes
+    from build_plugin_pages import build_all_pages
+
+    this_dir = os.path.dirname(os.path.realpath(__file__))
+    notes = os.path.join(this_dir, "..", "..", "HISTORY.md")
+    target = os.path.join(this_dir, "release_notes.rst")
+    pull_url = "https://github.com/XENONnT/fuse/pull"
+
+    convert_release_notes(notes, target, pull_url)
+    build_all_pages()

@@ -1,119 +1,93 @@
 import strax
 import numpy as np
 import straxen
-import logging
 
-from ...common import FUSE_PLUGIN_TIMEOUT
+from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger('fuse.detector_physics.electron_timing')
 
 @export
-class ElectronTiming(strax.Plugin):
-    
-    __version__ = "0.1.1"
-    
-    depends_on = ("drifted_electrons", "extracted_electrons")
+class ElectronTiming(FuseBasePlugin):
+    """Plugin to simulate the arrival times of electrons extracted from the
+    liquid phase.
+
+    It includes both the drift time and the time needed for the
+    extraction.
+    """
+
+    __version__ = "0.2.1"
+
+    depends_on = ("microphysics_summary", "drifted_electrons", "extracted_electrons")
     provides = "electron_time"
     data_kind = "individual_electrons"
-    
-    #Forbid rechunking
-    rechunk_on_save = False
 
     save_when = strax.SaveWhen.TARGET
 
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-    
-    data_kind = "individual_electrons"
-    
-    dtype = [('x', np.float32),
-             ('y', np.float32),
-             ('order_index', np.int32),
-            ]
-    dtype = dtype + strax.time_fields
-    
-    #Config options
-    debug = straxen.URLConfig(
-        default=False, type=bool,track=False,
-        help='Show debug informations',
-    )
+    dtype = [
+        (("x position of the electron [cm]", "x"), np.float32),
+        (("y position of the electron [cm]", "y"), np.float32),
+        (("ID of the cluster creating the electron", "cluster_id"), np.int32),
+    ] + strax.time_fields
 
+    # Config options
     electron_trapping_time = straxen.URLConfig(
-        default = "take://resource://"
-                  "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                  "&take=electron_trapping_time",
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=electron_trapping_time",
         type=(int, float),
         cache=True,
-        help='Time scale electrons are trapped at the liquid gas interface',
+        help="Time scale electrons are trapped at the liquid gas interface",
     )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True, type=bool,
-        help='Set the random seed from lineage and run_id, or pull the seed from the OS.',
-    )
-    
-    def setup(self):
-        
-        if self.debug:
-            log.setLevel('DEBUG')
-            log.debug(f"Running ElectronTiming version {self.__version__} in debug mode")
-        else: 
-            log.setLevel('INFO')
-
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed = seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else: 
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
 
     def compute(self, interactions_in_roi):
-
-        #Just apply this to clusters with photons
+        # Just apply this to clusters with photons
         mask = interactions_in_roi["n_electron_extracted"] > 0
-        
+
         if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        timing = self.electron_timing(interactions_in_roi[mask]["time"],
-                                      interactions_in_roi[mask]["n_electron_extracted"],
-                                      interactions_in_roi[mask]["drift_time_mean"],
-                                      interactions_in_roi[mask]["drift_time_spread"]
-                                     )
-        
-        
-        x = np.repeat(interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["n_electron_extracted"])
-        y = np.repeat(interactions_in_roi[mask]["y_obs"], interactions_in_roi[mask]["n_electron_extracted"])
-        
-        result = np.zeros(len(timing), dtype = self.dtype)
+        timing = self.electron_timing(
+            interactions_in_roi[mask]["time"],
+            interactions_in_roi[mask]["n_electron_extracted"],
+            interactions_in_roi[mask]["drift_time_mean"],
+            interactions_in_roi[mask]["drift_time_spread"],
+        )
+
+        x = np.repeat(
+            interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["n_electron_extracted"]
+        )
+        y = np.repeat(
+            interactions_in_roi[mask]["y_obs"], interactions_in_roi[mask]["n_electron_extracted"]
+        )
+
+        result = np.zeros(len(timing), dtype=self.dtype)
         result["time"] = timing
         result["endtime"] = result["time"]
         result["x"] = x
         result["y"] = y
 
-        #result["order_index"] = np.arange(len(timing))
-        result["order_index"] = np.repeat(np.arange(len(interactions_in_roi[mask])), interactions_in_roi[mask]["n_electron_extracted"])
+        result["cluster_id"] = np.repeat(
+            interactions_in_roi[mask]["cluster_id"],
+            interactions_in_roi[mask]["n_electron_extracted"],
+        )
+
         result = strax.sort_by_time(result)
 
         return result
-        
-    
-    def electron_timing(self,
-                        time,
-                        n_electron,
-                        drift_time_mean,
-                        drift_time_spread,
-                        ):
 
+    def electron_timing(
+        self,
+        time,
+        n_electron,
+        drift_time_mean,
+        drift_time_spread,
+    ):
         time_r = np.repeat(time, n_electron.astype(np.int64))
         drift_time_mean_r = np.repeat(drift_time_mean, n_electron.astype(np.int64))
         drift_time_spread_r = np.repeat(drift_time_spread, n_electron.astype(np.int64))
 
-        timing = self.rng.exponential(self.electron_trapping_time, size = time_r.shape[0])
-        timing += self.rng.normal(drift_time_mean_r, drift_time_spread_r, size = time_r.shape[0])
+        timing = self.rng.exponential(self.electron_trapping_time, size=time_r.shape[0])
+        timing += self.rng.normal(drift_time_mean_r, drift_time_spread_r, size=time_r.shape[0])
 
         return time_r + timing.astype(np.int64)

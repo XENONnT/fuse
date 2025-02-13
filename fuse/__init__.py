@@ -1,9 +1,12 @@
-__version__ = "0.2.5"
+__version__ = "1.4.4"
+
+from . import dtypes
+from .dtypes import *
 
 from . import plugins
 from .plugins import *
 
-from .context import *
-
 from .vertical_merger_plugin import *
 from .volume_plugin import *
+
+from .context import *
