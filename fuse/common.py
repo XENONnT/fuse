@@ -26,11 +26,12 @@ kind_colors = dict(
 
 
 @numba.njit(cache=True)
-def dynamic_chunking(time_gaps,
-                     file_size_limit,
-                     min_gap_length,
-                     n_bytes_per_interaction,
-                     ):
+def dynamic_chunking(
+    time_gaps,
+    file_size_limit,
+    min_gap_length,
+    n_bytes_per_interaction,
+):
 
     data_size_mb = 0
     clusters_index = []
@@ -38,7 +39,7 @@ def dynamic_chunking(time_gaps,
     running_index = 0
 
     for g in time_gaps:
-        
+
         data_size_mb += n_bytes_per_interaction / 1e6
 
         if data_size_mb < file_size_limit:
@@ -51,19 +52,21 @@ def dynamic_chunking(time_gaps,
             clusters_index.append(running_index)
         else:
             clusters_index.append(running_index)
-    
+
     return np.array(clusters_index)
 
 
 @numba.njit(cache=True)
-def dynamic_chunking_two_outputs(combined_time_gaps,
-                                 combined_types,
-                                 file_size_limit,
-                                 min_gap_length,
-                                 n_bytes_per_interaction_TPC,
-                                 n_bytes_per_interaction_NV,
-                                 ):
-    """Function to split the TPC and NV data into chunks based on the time gaps between the interactions"""
+def dynamic_chunking_two_outputs(
+    combined_time_gaps,
+    combined_types,
+    file_size_limit,
+    min_gap_length,
+    n_bytes_per_interaction_TPC,
+    n_bytes_per_interaction_NV,
+):
+    """Function to split the TPC and NV data into chunks based on the time gaps
+    between the interactions."""
 
     data_size_mb_tpc = 0
     data_size_mb_nv = 0
@@ -72,7 +75,7 @@ def dynamic_chunking_two_outputs(combined_time_gaps,
     running_index = 0
 
     for i, (interaction_type, delta_t) in enumerate(zip(combined_types, combined_time_gaps)):
-        
+
         if interaction_type == 0:
             # TPC interaction
             data_size_mb_tpc += n_bytes_per_interaction_TPC / 1e6

@@ -11,7 +11,13 @@ import straxen
 from numba import njit
 
 from ...dtypes import g4_fields, primary_positions_fields, deposit_positions_fields
-from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, awkward_to_flat_numpy, dynamic_chunking_two_outputs
+from ...common import (
+    full_array_to_numpy,
+    reshape_awkward,
+    dynamic_chunking,
+    awkward_to_flat_numpy,
+    dynamic_chunking_two_outputs,
+)
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -20,11 +26,11 @@ export, __all__ = strax.exporter()
 # Remove the path and file name option from the config and do this with the run_number??
 @export
 class ChunkInput(FuseBasePlugin):
-    """Plugin to read XENONnT Geant4 root or csv files for the TPC and NV detector.
+    """Plugin to read XENONnT Geant4 root or csv files for the TPC and NV
+    detector.
 
     The plugin can distribute the events in time based on a source rate
     and will create multiple chunks of data if needed.
-
     """
 
     __version__ = "0.4.0"
@@ -34,20 +40,19 @@ class ChunkInput(FuseBasePlugin):
 
     dtype_tpc = deposit_positions_fields + g4_fields + primary_positions_fields + strax.time_fields
 
-    dtype_nv = [('pmthitEnergy', np.float32),
-                ('pmthitTime', np.float32),
-                ('pmthitID', np.int16),
-                ('evtid', np.int32),
-                ]
+    dtype_nv = [
+        ("pmthitEnergy", np.float32),
+        ("pmthitTime", np.float32),
+        ("pmthitID", np.int16),
+        ("evtid", np.int32),
+    ]
     dtype_nv = dtype_nv + strax.time_fields
 
     dtype = dict()
     dtype["geant4_interactions"] = dtype_tpc
     dtype["nv_pmthits"] = dtype_nv
 
-    data_kind = {"geant4_interactions": "geant4_interactions",
-                 "nv_pmthits" : "nv_pmthits"
-                }
+    data_kind = {"geant4_interactions": "geant4_interactions", "nv_pmthits": "nv_pmthits"}
 
     save_when = strax.SaveWhen.TARGET
 
@@ -91,8 +96,9 @@ class ChunkInput(FuseBasePlugin):
     )
 
     file_size_limit = straxen.URLConfig(
-        default=500, type=(int, float),
-        help='Target file size limit in MB',
+        default=500,
+        type=(int, float),
+        help="Target file size limit in MB",
     )
 
     entry_start = straxen.URLConfig(
@@ -132,8 +138,9 @@ class ChunkInput(FuseBasePlugin):
     )
 
     nv_output = straxen.URLConfig(
-        default=True, type=bool,
-        help='Decide if you want to have NV output or not',
+        default=True,
+        type=bool,
+        help="Decide if you want to have NV output or not",
     )
 
     def setup(self):
@@ -157,7 +164,7 @@ class ChunkInput(FuseBasePlugin):
             cut_nr_only=self.nr_only,
             fixed_event_spacing=self.fixed_event_spacing,
             log=self.log,
-            neutron_veto_output = self.nv_output
+            neutron_veto_output=self.nv_output,
         )
         self.file_reader_iterator = self.file_reader.output_chunk()
 
@@ -165,10 +172,11 @@ class ChunkInput(FuseBasePlugin):
         try:
 
             if self.nv_output:
-                chunk_data, chunk_left, chunk_right, source_done, nv_chunk_data = next(self.file_reader_iterator)
+                chunk_data, chunk_left, chunk_right, source_done, nv_chunk_data = next(
+                    self.file_reader_iterator
+                )
                 chunk_data["endtime"] = chunk_data["time"]
                 nv_chunk_data["endtime"] = nv_chunk_data["time"]
-
 
             else:
                 chunk_data, chunk_left, chunk_right, source_done = next(self.file_reader_iterator)
@@ -178,18 +186,15 @@ class ChunkInput(FuseBasePlugin):
             self.source_done = source_done
 
             result = {
-                "geant4_interactions" : self.chunk(
+                "geant4_interactions": self.chunk(
                     start=chunk_left,
                     end=chunk_right,
                     data=chunk_data,
-                    data_type = "geant4_interactions"
-                    ),
-                "nv_pmthits" : self.chunk(
-                    start=chunk_left,
-                    end=chunk_right,
-                    data=nv_chunk_data,
-                    data_type = "nv_pmthits"
-                    )
+                    data_type="geant4_interactions",
+                ),
+                "nv_pmthits": self.chunk(
+                    start=chunk_left, end=chunk_right, data=nv_chunk_data, data_type="nv_pmthits"
+                ),
             }
             return result
 
@@ -209,6 +214,8 @@ class ChunkInput(FuseBasePlugin):
             self.ready = False
         self.ready ^= True  # Flip
         return self.ready
+
+
 class file_loader:
     """Load the complete root file and return interactions in chunks."""
 
@@ -265,14 +272,15 @@ class file_loader:
 
         # Set the nveto dtype -> move to dtype file later!!!!
         if self.neutron_veto_output:
-            self.nv_dtype = [('pmthitEnergy', np.float32),
-                             ('pmthitTime', np.float32),
-                             ('pmthitID', np.int16),
-                             ('evtid', np.int32),
-                            ]
+            self.nv_dtype = [
+                ("pmthitEnergy", np.float32),
+                ("pmthitTime", np.float32),
+                ("pmthitID", np.int16),
+                ("evtid", np.int32),
+            ]
             self.nv_dtype = self.nv_dtype + strax.time_fields
 
-            self.neutron_veto_column_names = ['pmthitEnergy','pmthitTime','pmthitID']
+            self.neutron_veto_column_names = ["pmthitEnergy", "pmthitTime", "pmthitID"]
 
         # Prepare cut for root and csv case
         if self.outer_cylinder:
@@ -289,7 +297,9 @@ class file_loader:
 
         if self.file_type == "root":
             if self.neutron_veto_output:
-                interactions, n_simulated_events, start, stop, nv_interactions = self._load_root_file()
+                interactions, n_simulated_events, start, stop, nv_interactions = (
+                    self._load_root_file()
+                )
             else:
                 interactions, n_simulated_events, start, stop = self._load_root_file()
         elif self.file_type == "csv":
@@ -300,27 +310,26 @@ class file_loader:
             )
 
         # Find the global start time of the interactions to keep TPC and NV in sync
-        min_time_TPC = ak.min(interactions['t'], axis=1)
+        min_time_TPC = ak.min(interactions["t"], axis=1)
         if self.neutron_veto_output:
-            min_time_NV = ak.min(nv_interactions['pmthitTime'], axis=1)
+            min_time_NV = ak.min(nv_interactions["pmthitTime"], axis=1)
             global_min_time = ak.min([min_time_TPC, min_time_NV], axis=0)
         else:
             global_min_time = min_time_TPC
 
-         # Sort interactions in events by time and subtract time of the first interaction
+        # Sort interactions in events by time and subtract time of the first interaction
         interactions = interactions[ak.argsort(interactions["t"])]
 
         # Remove the global min time from the interactions
         if self.event_rate > 0:
-            interactions['t'] = interactions['t'] - global_min_time
-            
+            interactions["t"] = interactions["t"] - global_min_time
+
             if self.neutron_veto_output:
-                nv_interactions = nv_interactions[ak.argsort(nv_interactions['pmthitTime'])]
-                nv_interactions['pmthitTime'] = nv_interactions['pmthitTime'] - global_min_time
+                nv_interactions = nv_interactions[ak.argsort(nv_interactions["pmthitTime"])]
+                nv_interactions["pmthitTime"] = nv_interactions["pmthitTime"] - global_min_time
 
-            # Now lets distribute the interactions in time making sure that the 
+            # Now lets distribute the interactions in time making sure that the
             # detectors stay in sync with each other
-
 
             # Right now this only works if there are TPC interactions. For NV only we have to update this part...
 
@@ -363,7 +372,6 @@ class file_loader:
         else:
             raise ValueError("Source rate cannot be negative!")
 
-
         # Now that all events are distributed in time and the two detectors are still in sync
         # we can apply some cuts to the data
 
@@ -390,7 +398,6 @@ class file_loader:
             # Add all NV specific cuts here, I will just start with the delay cut for now
             nv_interactions = nv_interactions[nv_interactions["pmthitTime"] < self.cut_delayed]
 
-
         # Make into a flat numpy array
         interaction_time = awkward_to_flat_numpy(interactions["time"])
         # First caclulate sort index for the interaction times
@@ -407,24 +414,24 @@ class file_loader:
             nv_interaction_time = nv_interaction_time.astype(np.int64)
             nv_interaction_time = nv_interaction_time[nv_sort_idx]
 
-
         # Chunking the data!
 
-        #Move this somewhere else? Is this correct?
-        n_bytes_per_interaction_TPC = 6*8 + 5*4 + 2*2 + 4*40
-        n_bytes_per_interaction_NV = 2*8 + 3*4 + 1*2
+        # Move this somewhere else? Is this correct?
+        n_bytes_per_interaction_TPC = 6 * 8 + 5 * 4 + 2 * 2 + 4 * 40
+        n_bytes_per_interaction_NV = 2 * 8 + 3 * 4 + 1 * 2
 
         if not self.neutron_veto_output:
-            #Start with the TPC only case
+            # Start with the TPC only case
 
             time_gaps = interaction_time[1:] - interaction_time[:-1]
-            time_gaps = np.append(time_gaps, 0) #Add last gap
+            time_gaps = np.append(time_gaps, 0)  # Add last gap
 
-            chunk_idx = dynamic_chunking(time_gaps,
-                                           self.file_size_limit,
-                                           self.separation_scale,
-                                           n_bytes_per_interaction_TPC,
-                                           )
+            chunk_idx = dynamic_chunking(
+                time_gaps,
+                self.file_size_limit,
+                self.separation_scale,
+                n_bytes_per_interaction_TPC,
+            )
             unique_chunk_index_values = np.unique(chunk_idx)
 
             chunk_start = np.array(
@@ -495,13 +502,15 @@ class file_loader:
 
             # We need to combine the times of TPC and NV interactions so they always end up in the same chunk
             combined_times = np.append(interaction_time, nv_interaction_time)
-            combined_types = np.append(np.zeros(len(interaction_time)), np.ones(len(nv_interaction_time)))
+            combined_types = np.append(
+                np.zeros(len(interaction_time)), np.ones(len(nv_interaction_time))
+            )
 
             sort_idx = np.argsort(combined_times)
             combined_times = combined_times[sort_idx]
             combined_types = combined_types[sort_idx]
             combined_time_gaps = combined_times[1:] - combined_times[:-1]
-            combined_time_gaps = np.append(combined_time_gaps, 0) #Add last gap
+            combined_time_gaps = np.append(combined_time_gaps, 0)  # Add last gap
 
             combined_chunk_index = dynamic_chunking_two_outputs(
                 combined_time_gaps,
@@ -515,10 +524,16 @@ class file_loader:
             unique_combined_chunk_index_values = np.unique(combined_chunk_index)
 
             chunk_start = np.array(
-                [combined_times[combined_chunk_index == i][0] for i in unique_combined_chunk_index_values]
+                [
+                    combined_times[combined_chunk_index == i][0]
+                    for i in unique_combined_chunk_index_values
+                ]
             )
             chunk_end = np.array(
-                [combined_times[combined_chunk_index == i][-1] for i in unique_combined_chunk_index_values]
+                [
+                    combined_times[combined_chunk_index == i][-1]
+                    for i in unique_combined_chunk_index_values
+                ]
             )
 
             if (len(chunk_start) > 1) & (len(chunk_end) > 1):
@@ -701,25 +716,26 @@ class file_loader:
         interactions["y_pri"] = ak.broadcast_arrays(xyz_pri["y_pri"], interactions["x"])[0]
         interactions["z_pri"] = ak.broadcast_arrays(xyz_pri["z_pri"], interactions["x"])[0]
 
-
         if self.neutron_veto_output:
             nv_interactions = ttree.arrays(
                 self.neutron_veto_column_names,
                 entry_start=start_index,
                 entry_stop=stop_index,
             )
-            
-            # Time conversion to ns
-            nv_interactions['pmthitTime'] = nv_interactions['pmthitTime']*10**9
 
-            # Add event numbers       
+            # Time conversion to ns
+            nv_interactions["pmthitTime"] = nv_interactions["pmthitTime"] * 10**9
+
+            # Add event numbers
             nv_eventids = ttree.arrays(
-                'eventid',
+                "eventid",
                 entry_start=start_index,
                 entry_stop=stop_index,
             )
-            nv_eventids = ak.broadcast_arrays(nv_eventids['eventid'], nv_interactions['pmthitTime'])[0]
-            nv_interactions['evtid'] = nv_eventids
+            nv_eventids = ak.broadcast_arrays(
+                nv_eventids["eventid"], nv_interactions["pmthitTime"]
+            )[0]
+            nv_interactions["evtid"] = nv_eventids
 
             return interactions, n_simulated_events, start_index, stop_index, nv_interactions
 
@@ -835,4 +851,3 @@ class file_loader:
         }
 
         return ak.Array(dictionary)
-
