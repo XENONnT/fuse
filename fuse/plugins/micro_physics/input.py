@@ -11,7 +11,7 @@ import straxen
 from numba import njit
 
 from ...dtypes import g4_fields, primary_positions_fields, deposit_positions_fields
-from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, awkward_to_flat_numpy
+from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, awkward_to_flat_numpy, dynamic_chunking_two_outputs
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -836,69 +836,3 @@ class file_loader:
 
         return ak.Array(dictionary)
 
-@njit(cache=True)
-def dynamic_chunking(time_gaps,
-                     file_size_limit,
-                     min_gap_length,
-                     n_bytes_per_interaction,
-                     ):
-
-    data_size_mb = 0
-    clusters_index = []
-
-    running_index = 0
-
-    for g in time_gaps:
-        
-        data_size_mb += n_bytes_per_interaction / 1e6
-
-        if data_size_mb < file_size_limit:
-            clusters_index.append(running_index)
-            continue
-
-        if g >= min_gap_length:
-            running_index += 1
-            data_size_mb = 0
-            clusters_index.append(running_index)
-        else:
-            clusters_index.append(running_index)
-    
-    return np.array(clusters_index)
-
-
-@njit(cache=True)
-def dynamic_chunking_two_outputs(combined_time_gaps,
-                                 combined_types,
-                                 file_size_limit,
-                                 min_gap_length,
-                                 n_bytes_per_interaction_TPC,
-                                 n_bytes_per_interaction_NV,
-                                 ):
-    """Function to split the TPC and NV data into chunks based on the time gaps between the interactions"""
-
-    data_size_mb_tpc = 0
-    data_size_mb_nv = 0
-
-    combined_cluster_index = []
-    running_index = 0
-
-    for i, (interaction_type, delta_t) in enumerate(zip(combined_types, combined_time_gaps)):
-        
-        if interaction_type == 0:
-            # TPC interaction
-            data_size_mb_tpc += n_bytes_per_interaction_TPC / 1e6
-        elif interaction_type == 1:
-            # NV interaction
-            data_size_mb_nv += n_bytes_per_interaction_NV / 1e6
-
-        if (data_size_mb_tpc < file_size_limit) & (data_size_mb_nv < file_size_limit):
-            combined_cluster_index.append(running_index)
-            continue
-
-        if delta_t >= min_gap_length:
-            running_index += 1
-            data_size_mb_tpc = data_size_mb_nv = 0
-            combined_cluster_index.append(running_index)
-        else:
-            combined_cluster_index.append(running_index)
-    return np.array(combined_cluster_index)

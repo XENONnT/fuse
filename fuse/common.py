@@ -25,34 +25,72 @@ kind_colors = dict(
 )
 
 
-@numba.njit()
-def dynamic_chunking(data, scale, n_min):
-    idx_sort = np.argsort(data)
-    idx_undo_sort = np.argsort(idx_sort)
+@numba.njit(cache=True)
+def dynamic_chunking(time_gaps,
+                     file_size_limit,
+                     min_gap_length,
+                     n_bytes_per_interaction,
+                     ):
 
-    data_sorted = data[idx_sort]
+    data_size_mb = 0
+    clusters_index = []
 
-    diff = data_sorted[1:] - data_sorted[:-1]
+    running_index = 0
 
-    clusters = [0]
-    c = 0
-    n_cluster = 0
-    for value in diff:
-        if value <= scale:
-            clusters.append(c)
-            n_cluster += 1
-        elif n_cluster + 1 < n_min:
-            clusters.append(c)
-            n_cluster += 1
-        elif value > scale:
-            c = c + 1
-            clusters.append(c)
-            n_cluster = 0
+    for g in time_gaps:
+        
+        data_size_mb += n_bytes_per_interaction / 1e6
 
-    clusters = np.array(clusters)
-    clusters_undo_sort = clusters[idx_undo_sort]
+        if data_size_mb < file_size_limit:
+            clusters_index.append(running_index)
+            continue
 
-    return clusters_undo_sort
+        if g >= min_gap_length:
+            running_index += 1
+            data_size_mb = 0
+            clusters_index.append(running_index)
+        else:
+            clusters_index.append(running_index)
+    
+    return np.array(clusters_index)
+
+
+@numba.njit(cache=True)
+def dynamic_chunking_two_outputs(combined_time_gaps,
+                                 combined_types,
+                                 file_size_limit,
+                                 min_gap_length,
+                                 n_bytes_per_interaction_TPC,
+                                 n_bytes_per_interaction_NV,
+                                 ):
+    """Function to split the TPC and NV data into chunks based on the time gaps between the interactions"""
+
+    data_size_mb_tpc = 0
+    data_size_mb_nv = 0
+
+    combined_cluster_index = []
+    running_index = 0
+
+    for i, (interaction_type, delta_t) in enumerate(zip(combined_types, combined_time_gaps)):
+        
+        if interaction_type == 0:
+            # TPC interaction
+            data_size_mb_tpc += n_bytes_per_interaction_TPC / 1e6
+        elif interaction_type == 1:
+            # NV interaction
+            data_size_mb_nv += n_bytes_per_interaction_NV / 1e6
+
+        if (data_size_mb_tpc < file_size_limit) & (data_size_mb_nv < file_size_limit):
+            combined_cluster_index.append(running_index)
+            continue
+
+        if delta_t >= min_gap_length:
+            running_index += 1
+            data_size_mb_tpc = data_size_mb_nv = 0
+            combined_cluster_index.append(running_index)
+        else:
+            combined_cluster_index.append(running_index)
+    return np.array(combined_cluster_index)
 
 
 def full_array_to_numpy(array, dtype):
