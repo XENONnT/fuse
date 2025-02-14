@@ -258,8 +258,18 @@ class NeutronVetoHitlets(strax.Plugin):
         help="Set the random seed from lineage and run_id, or pull the seed from the OS.",
     )
 
+    nveto_pmt_qe = straxen.URLConfig(
+        default="nveto_pmt_qe://resource://simulation_config://"
+        "SIMULATION_CONFIG_FILE.json?&key=nveto_pmt_qe",
+        help="Quantum efficiency of NV PMTs"
+
+    nveto_spe_sr1 = straxen.URLConfig(
+        default="nveto_spe_sr1://resource://simulation_config://"
+        "SIMULATION_CONFIG_FILE.json?&key=nveto_spe_sr1",
+        help="SR1 SPE model of NV PMTs"
+
     def __init__(self, sr=0):
-        self.path = "/home/digangi/private_nt_aux_files/sim_files/"  # pietro #Have to put here the correct paths....
+        self.path = "/home/digangi/private_nt_aux_files/sim_files/"  # pietro - need to modify this to work with urlconfig
         self.QE_value = QE_nVeto(self.path + "nveto_pmt_qe.json")
         self.SPE_nVeto = SPE_parameters(self.path+'nveto_spe_sr'+str(sr)+'.json')
         self.dtype = dtype
