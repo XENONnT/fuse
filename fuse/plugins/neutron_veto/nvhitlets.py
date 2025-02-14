@@ -57,20 +57,22 @@ def create_SPE_file(path, sr="0"):
 
 # SPE parameters: ID, pe, SPE, acceptance
 def SPE_parameters(file_spe_model):
-    data_spe = np.load(file_spe_model, allow_pickle=True) #pietro del.
-    ''' Pietro add. json spe input
-    with open(file_spe_model, 'r') as f:
-        data_spe = json.load(f)
-    data_dict = {entry['pmtID']: entry for entry in data_spe}
-    '''
-    
+    data_spe = np.load(file_spe_model, allow_pickle=True)  # pietro del.
+    """Pietro add.
+
+    json spe input with open(file_spe_model, 'r') as f:     data_spe =
+    json.load(f) data_dict = {entry['pmtID']: entry for entry in
+    data_spe}
+    """
+
     # SPE_ch= pd.DataFrame(columns=['pmtID','pe','SPE','acceptance'])
     # SPE_ch['pmtID'],SPE_ch['pe'], SPE_ch['SPE'],SPE_ch['acceptance']=data_spe['pmtID'],data_spe['charge'],data_spe['SPE_values'],data_spe['acceptance']
     # acceptance_ch= [threshold_acc(SPE_ch,i) for i in np.arange(2000,2120)]
     # SPE_ch['threshold_pe']=acceptance_ch
-    
-    return data_spe # pietro del
-    #return data_dict # pietro add
+
+    return data_spe  # pietro del
+    # return data_dict # pietro add
+
 
 def threshold_acc(SPE_df, ID):
     SPE_ID = pd.DataFrame()
@@ -266,7 +268,7 @@ class NeutronVetoHitlets(strax.Plugin):
         self.path = "/home/digangi/private_nt_aux_files/sim_files/"  # pietro #Have to put here the correct paths....
         self.QE_value = QE_nVeto(self.path + "nveto_pmt_qe.json")
         self.SPE_nVeto = SPE_parameters(self.path + "SPE_SR" + str(sr) + ".npy")  # pietro del.
-        #self.SPE_nVeto = SPE_parameters(self.path+'nveto_spe_sr'+str(sr)+'.json') # pietro add. json spe input
+        # self.SPE_nVeto = SPE_parameters(self.path+'nveto_spe_sr'+str(sr)+'.json') # pietro add. json spe input
         self.dtype = dtype
 
     # Get Quantum efficiency
@@ -277,8 +279,8 @@ class NeutronVetoHitlets(strax.Plugin):
         return qe
 
     def get_acceptance(self, ID):
-        acc = self.SPE_nVeto[self.SPE_nVeto["pmtID"] == ID]["acceptance"] # pietro del.
-        #acc = self.SPE_nVeto.get(ID)['acceptance'] # pietro add. json spe input
+        acc = self.SPE_nVeto[self.SPE_nVeto["pmtID"] == ID]["acceptance"]  # pietro del.
+        # acc = self.SPE_nVeto.get(ID)['acceptance'] # pietro add. json spe input
         return acc
 
     # Get acceptance threshold
@@ -289,12 +291,14 @@ class NeutronVetoHitlets(strax.Plugin):
 
     # Sampling charge from SPE
     def pe_charge_N(self, pmt_id):
-        SPE_channel = self.SPE_nVeto[self.SPE_nVeto.pmtID == pmt_id] # pietro del.
-        charge = rd.choices(SPE_channel["pe"][0], SPE_channel["SPE_values"][0], k=1)[0] # pietro del.
+        SPE_channel = self.SPE_nVeto[self.SPE_nVeto.pmtID == pmt_id]  # pietro del.
+        charge = rd.choices(SPE_channel["pe"][0], SPE_channel["SPE_values"][0], k=1)[
+            0
+        ]  # pietro del.
 
-        #SPE_channel = self.SPE_nVeto.get(pmt_id) # pietro add. json spe input
-        #charge=rd.choices(SPE_channel['pe'],SPE_channel['SPE_values'],k=1)[0] #pietro add. json spe input
-        
+        # SPE_channel = self.SPE_nVeto.get(pmt_id) # pietro add. json spe input
+        # charge=rd.choices(SPE_channel['pe'],SPE_channel['SPE_values'],k=1)[0] #pietro add. json spe input
+
         return charge
 
     # --------------------------- Hitlet function ------------------------------------------------------------#
