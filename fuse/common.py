@@ -97,13 +97,12 @@ def dynamic_chunking_two_outputs(
 
 
 def full_array_to_numpy(array, dtype):
-    len_output = len(awkward_to_flat_numpy(array["x"]))
+    len_output = len(awkward_to_flat_numpy(array[array.fields[0]]))
 
     numpy_data = np.zeros(len_output, dtype=dtype)
 
     for field in array.fields:
         numpy_data[field] = awkward_to_flat_numpy(array[field])
-
     return numpy_data
 
 
