@@ -311,7 +311,7 @@ def nveto_pmt_qe_dict(data):
 
 
 @URLConfig.register("nveto_spe_sr1")
-def nveto_pmt_qe_dict(data_spe):
+def nveto_spe_sr1_dict(data_spe):
     """Get dictionary with NV SPE parameters."""
     #with open(file_spe_model, 'r') as f:     
     #    data_spe = json.load(f) 
