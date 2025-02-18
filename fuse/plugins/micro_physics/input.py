@@ -271,10 +271,12 @@ class file_loader:
             if self.fixed_event_spacing:
                 self.log.info("Using fixed event spacing.")
                 event_times = (
-                    np.arange(
-                        start=0, stop=num_interactions / self.event_rate, step=1 / self.event_rate
+                    np.linspace(
+                        start=0, stop=num_interactions / self.event_rate, num=num_interactions
                     )
                     + 1e9
+                ).astype(
+                    np.int64
                 )  # ns
             else:
                 self.log.info("Using random event times.")
