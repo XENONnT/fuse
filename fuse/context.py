@@ -249,7 +249,7 @@ def full_chain_context(
 def public_config_context(
     output_folder="./fuse_data",
     extra_plugins=[fuse.plugins.S2PhotonPropagationSimple],
-    simulation_config_file="XENONnT_design_config.json",
+    simulation_config_file="./files/XENONnT_public_config.json",
 ):
     """Function to create a fuse full chain simulation context."""
 
@@ -347,7 +347,6 @@ def overwrite_map_from_config(
         "photon_area_distribution",
         "photon_ap_cdfs",
         "noise_file",
-        "gas_gap_map",
     ],
 ):
     for key, value in context.config.items():
