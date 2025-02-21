@@ -9,7 +9,7 @@
     "enable_pmt_afterpulses": false,                       # Enables PMT afterpulses, sampled from the 'photon_ap_cdfs' config
     "enable_delayed_electrons": false,                     # Enables photoionization, sampled from the 'delaytime_pmf_hist' config
     "enable_noise": false,                                 # Enables electronic noise, sampled from the 'noise_file' config
-    "field_distortion_model": "none",                      
+    "field_distortion_model": "none",
     "enable_survival_probability_map": false,              # If true, comsol-driven map removes electrons which follow field lines ending in the walls
     "enable_drift_velocity_map": false,                    # If true, comsol-driven map overrides 'drift_velocity_liquid' (or xedocs) to set avg integrated drift velocity for given position
     "norm_drift_velocity": false,                          # If true, will normalize drift velocity map to match cathode-gate drift time for R=0 to 'drift_velocity_liquid'
@@ -49,11 +49,11 @@
     "drift_velocity_liquid": 0.0001335,                    # cm/ns
 
     // Yields
-    "xenon_density_tpc": 2.81, 
+    "xenon_density_tpc": 2.81,
 
     "nest_width_parameters": {},
 
-    "nest_er_yields_parameters": 
+    "nest_er_yields_parameters":
     [-1.0,
     -1.0,
     -1.0,
@@ -89,7 +89,7 @@
     "s2_mean_area_fraction_top": 0.63,                     # Mean AFT
     "s2_aft_sigma": 0.0,                                   # Additional smearing to the AFT from maps using skewed gaussian
     "s2_aft_skewness": 0.0,                                # See above
-    "s2_secondary_sc_gain": 21.3,                          # PE/e-; 
+    "s2_secondary_sc_gain": 21.3,                          # PE/e-;
     "g2_mean": 16.85,                                      # PE/e-
 
     // Delayed electrons
