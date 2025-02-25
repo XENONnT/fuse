@@ -261,12 +261,14 @@ class NeutronVetoHitlets(strax.Plugin):
     nveto_pmt_qe = straxen.URLConfig(
         default="nveto_pmt_qe://resource://simulation_config://"
         "SIMULATION_CONFIG_FILE.json?&key=nveto_pmt_qe",
-        help="Quantum efficiency of NV PMTs"
+        help="Quantum efficiency of NV PMTs",
+    )
 
     nveto_spe_sr1 = straxen.URLConfig(
         default="nveto_spe_sr1://resource://simulation_config://"
         "SIMULATION_CONFIG_FILE.json?&key=nveto_spe_sr1",
-        help="SR1 SPE model of NV PMTs"
+        help="SR1 SPE model of NV PMTs",
+    )
 
     def __init__(self, sr=0):
         self.path = "/home/digangi/private_nt_aux_files/sim_files/"  # pietro - need to modify this to work with urlconfig
