@@ -319,9 +319,6 @@ class S1PhotonPropagationBase(FuseBasePlugin):
 
         result = strax.sort_by_time(result)
 
-
-        result = strax.sort_by_time(result)
-
         # Unlock the nest random generator seed again
         nest_rng.unlock_seed()
 
