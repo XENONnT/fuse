@@ -9,10 +9,11 @@ export, __all__ = strax.exporter()
 
 @export
 class PeakTruth(strax.OverlapWindowPlugin):
-    __version__ = "0.0.6"
+    __version__ = "0.0.14"
 
     depends_on = (
         "photon_summary",
+        "pi_absorbed_summary",
         "peak_basics",
         "merged_microphysics_summary",
         "merged_s1_photon_hits",
@@ -27,6 +28,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         (("Number of photons from S2 scintillation in the peak.", "s2_photons_in_peak"), np.int32),
         (("Number of photons from PMT afterpulses in the peak.", "ap_photons_in_peak"), np.int32),
         (("Number of photons from photoionization in the peak.", "pi_photons_in_peak"), np.int32),
+        (("Number of photons lost due to photoionisation", "pi_absorbed_photons_from_peak"), np.int32),
         (
             (
                 "Number of photoelectrons from S1 scintillation in the peak.",
@@ -54,6 +56,13 @@ class PeakTruth(strax.OverlapWindowPlugin):
                 "pi_photoelectrons_in_peak",
             ),
             np.int32,
+        ),
+        (
+            (
+                "Potential raw area lost due to photons absorbed by photoionization", 
+                "raw_area_lost_due_to_pi"
+            ), 
+            np.float32
         ),
         ("raw_area_truth", np.float32),
         ("observable_energy_truth", np.float32),
@@ -129,7 +138,21 @@ class PeakTruth(strax.OverlapWindowPlugin):
 
         return drift_time_max * 20
 
-    def compute(self, interactions_in_roi, propagated_photons, peaks):
+    # def compute(self, interactions_in_roi, propagated_photons, non_propagated_photons, peaks):
+    def compute(
+        self, 
+        interactions_in_roi, 
+        non_propagated_photons, 
+        propagated_photons, 
+        peaks
+    ):
+
+        print("Computing peak truth information")
+        print(f"Number of peaks: {len(peaks)}")
+        print(f"Number of interactions: {len(interactions_in_roi)}")
+        print(f"Number of propagated photons: {len(propagated_photons)}")
+        print(f"Number of non-propagated photons: {len(non_propagated_photons)}")
+
         n_peaks = len(peaks)
 
         result = np.zeros(n_peaks, dtype=self.dtype)
@@ -137,6 +160,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         result["endtime"] = peaks["endtime"]
 
         photons_in_peak = strax.split_by_containment(propagated_photons, peaks)
+        # pi_absorbed_photons_in_peak = strax.split_by_containment(non_propagated_photons, peaks)
 
         photon_type_dict = {
             "s1": 1,
@@ -151,6 +175,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
             photons_per_cluster_s2 = np.zeros(0, dtype=int)
 
             photons = photons_in_peak[i]
+            # pi_absorbed_photons = pi_absorbed_photons_in_peak[i]
 
             for photon_type in photon_type_dict.keys():
                 is_from_type = photons["photon_type"] == photon_type_dict[photon_type]
@@ -239,6 +264,15 @@ class PeakTruth(strax.OverlapWindowPlugin):
                 result["raw_area_truth"][i] = np.sum(
                     masked_photons["photon_gain"] / self.gains[masked_photons["channel"]]
                 )
+            
+                # Calculate the number of absorbed photons due to photoionization
+                # if len(pi_absorbed_photons) > 0:
+                #     result["pi_absorbed_photons_from_peak"][i] = len(pi_absorbed_photons)
+                #     result["raw_area_lost_due_to_pi"][i] = np.sum(
+                #         pi_absorbed_photons["photon_gain"] / self.gains[pi_absorbed_photons["channel"]]
+                #     )
+
+
         return result
 
 

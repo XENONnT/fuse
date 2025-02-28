@@ -117,6 +117,10 @@ class PMTAfterPulses(FuseBasePlugin):
         if not self.enable_pmt_afterpulses or (len(s1_photons) == 0 and len(s2_photons) == 0):
             return np.zeros(0, dtype=self.dtype)
 
+        # remove the photons that have pi_absorbed True
+        s1_photons = s1_photons[~s1_photons["pi_absorbed"]]
+        s2_photons = s2_photons[~s2_photons["pi_absorbed"]]
+
         merged_photons = np.concatenate([s1_photons, s2_photons])
         s1_photons = None
         s2_photons = None

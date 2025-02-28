@@ -228,6 +228,8 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
             mask = np.isin(propagated_photons["pulse_id"], pulse_groups["pulse_id"])
             photon_chunks.append(split_photons(propagated_photons[mask]))
 
+
+
         last_start = start
         for i, (pulse_groups, photons) in enumerate(zip(pulse_window_chunks, photon_chunks)):
             records = self.compute_chunk(photons, pulse_groups)
@@ -243,7 +245,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         # convert photons to numba list for njit
         _photons = List()
         [_photons.append(x) for x in photons]
-
+        
         # use an upper limit for the waveform buffer
         length_waveform_buffer = np.int32(
             np.sum(np.ceil(pulse_groups["length"] / strax.DEFAULT_RECORD_LENGTH))

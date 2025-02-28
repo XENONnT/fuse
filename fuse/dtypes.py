@@ -75,4 +75,5 @@ propagated_photons_fields = [
     (("Sampled PMT gain for the photon", "photon_gain"), np.int32),
     (("ID of the cluster creating the photon", "cluster_id"), np.int32),
     (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)", "photon_type"), np.int8),
+    (("Photon absorbed by PhotoIonisation, we will kill it", "pi_absorbed"), np.bool_)
 ]

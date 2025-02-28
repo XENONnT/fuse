@@ -294,6 +294,7 @@ def build_photon_propagation_output(
     _photon_is_dpe,
     _cluster_id,
     photon_type,
+    pi_absorbed,
 ):
     result = np.zeros(_photon_channels.shape[0], dtype=dtype)
     result["time"] = _photon_timings
@@ -303,6 +304,7 @@ def build_photon_propagation_output(
     result["dpe"] = _photon_is_dpe
     result["cluster_id"] = _cluster_id
     result["photon_type"] = photon_type
+    result["pi_absorbed"] = pi_absorbed
 
     return result
 

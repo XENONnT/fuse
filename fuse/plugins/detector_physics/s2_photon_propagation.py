@@ -479,6 +479,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             _photon_is_dpe=_photon_is_dpe,
             _cluster_id=_cluster_id,
             photon_type=2,
+            pi_absorbed=False
         )
 
         # Discard photons associated with negative channel numbers
@@ -496,7 +497,10 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             p_survival = self.photoionization_modifier / self.photoionization_scaling
             keep_bottom = bottom_random > p_survival
             keep_mask[is_bottom] = keep_bottom
-            result = result[keep_mask]
+            # this way we remove the photons
+            # result = result[keep_mask]
+            # now we do it another way, we assign pi_absorbed True
+            result["pi_absorbed"][~keep_mask] = True
 
         result = strax.sort_by_time(result)
 
