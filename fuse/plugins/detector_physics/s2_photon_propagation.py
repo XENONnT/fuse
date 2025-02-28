@@ -5,6 +5,7 @@ import numpy as np
 from numba import njit
 from scipy.stats import skewnorm
 from scipy import constants
+from scipy.stats import expon, truncexpon
 
 from ...dtypes import propagated_photons_fields
 from ...common import pmt_gains, build_photon_propagation_output
@@ -281,6 +282,58 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         help="Chunk can not be split if gap between photons is smaller than this value given in ns",
     )
 
+    enable_delayed_electrons = straxen.URLConfig(
+        default=False,
+        type=bool,
+        track=True,
+        help="Decide if you want to to enable delayed electrons from photoionization",
+    )
+
+    # Calculate this from TPC dimenstions and drift velocity
+    photoionization_time_cutoff_modeling = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=photoionization_time_cutoff",
+        type=(int, float),
+        cache=True,
+        help="Time window after a S2 where photoionization is modeled in [ns]",
+    )
+
+    photoionization_time_cutoff_mc = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=photoionization_time_cutoff",
+        type=(int, float),
+        cache=True,
+        help="Time window after a S2 where photoionization is simulated in [ns]",
+    )
+
+    # Add this to our simulation config
+    photoionization_time_constant = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=photoionization_time_constant",
+        type=(int, float),
+        cache=True,
+        help="Timeconstant for photoionization in [ns]",
+    )
+
+    photoionization_modifier = straxen.URLConfig(
+        default="xedocs://photoionization_strengths?version=v2&run_id=plugin.run_id&attr=value",
+        type=(int, float),
+        cache=True,
+        help="Photoionization modifier",
+    )
+
+    electron_extraction_yield = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=electron_extraction_yield",
+        type=(int, float),
+        cache=True,
+        help="Electron extraction yield",
+    )
+
     def setup(self):
         super().setup()
 
@@ -309,6 +362,17 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                 return self.field_dependencies_map_tmp(np.array([r, z]).T, **kwargs)
 
             self.field_dependencies_map = rz_map
+
+        self.photoionization_scaling = (
+            self.s2_secondary_sc_gain_mc * self.electron_extraction_yield
+        ) / (1 + self.p_double_pe_emision)
+
+        ratio = expon.cdf(
+            self.photoionization_time_cutoff_mc, scale=self.photoionization_time_constant
+        ) / expon.cdf(
+            self.photoionization_time_cutoff_modeling, scale=self.photoionization_time_constant
+        )
+        self.photoionization_scaling /= ratio
 
     def compute(self, interactions_in_roi, individual_electrons, start, end):
         # Just apply this to clusters with photons
@@ -419,6 +483,20 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         # Discard photons associated with negative channel numbers
         result = result[result["channel"] >= 0]
+
+        # --- New thinning step for PhotoIonisation ---
+        # TODO: THIS NOW GETS OUT A PERCENTAGE OF THE PHOTONS IN BOTTOM ARRAY
+        # BUT WE NEED TO SCALE IT SOMEHOW
+        # BECAUSE FOR ELECTRONS WE DO PERCENTAGE OF THE FULL PHOTONS TOP AND BOTTOM
+        # LATER WELL DO IT EITHER HERE OR THERE
+        if self.enable_delayed_electrons:
+            is_bottom = result["channel"] >= self.n_top_pmts
+            keep_mask = np.ones(len(result), dtype=bool)
+            bottom_random = self.rng.random(np.count_nonzero(is_bottom))
+            p_survival = self.photoionization_modifier / self.photoionization_scaling
+            keep_bottom = bottom_random > p_survival
+            keep_mask[is_bottom] = keep_bottom
+            result = result[keep_mask]
 
         result = strax.sort_by_time(result)
 
