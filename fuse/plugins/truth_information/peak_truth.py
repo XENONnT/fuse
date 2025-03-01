@@ -9,7 +9,7 @@ export, __all__ = strax.exporter()
 
 @export
 class PeakTruth(strax.OverlapWindowPlugin):
-    __version__ = "0.0.14"
+    __version__ = "0.0.15"
 
     depends_on = (
         "photon_summary",
