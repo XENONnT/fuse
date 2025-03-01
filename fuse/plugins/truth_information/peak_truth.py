@@ -138,7 +138,6 @@ class PeakTruth(strax.OverlapWindowPlugin):
 
         return drift_time_max * 20
 
-    # def compute(self, interactions_in_roi, propagated_photons, non_propagated_photons, peaks):
     def compute(
         self, 
         interactions_in_roi, 
@@ -147,12 +146,6 @@ class PeakTruth(strax.OverlapWindowPlugin):
         peaks
     ):
 
-        print("Computing peak truth information")
-        print(f"Number of peaks: {len(peaks)}")
-        print(f"Number of interactions: {len(interactions_in_roi)}")
-        print(f"Number of propagated photons: {len(propagated_photons)}")
-        print(f"Number of non-propagated photons: {len(non_propagated_photons)}")
-
         n_peaks = len(peaks)
 
         result = np.zeros(n_peaks, dtype=self.dtype)
@@ -160,7 +153,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
         result["endtime"] = peaks["endtime"]
 
         photons_in_peak = strax.split_by_containment(propagated_photons, peaks)
-        # pi_absorbed_photons_in_peak = strax.split_by_containment(non_propagated_photons, peaks)
+        pi_absorbed_photons_in_peak = strax.split_by_containment(non_propagated_photons, peaks)
 
         photon_type_dict = {
             "s1": 1,
@@ -175,7 +168,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
             photons_per_cluster_s2 = np.zeros(0, dtype=int)
 
             photons = photons_in_peak[i]
-            # pi_absorbed_photons = pi_absorbed_photons_in_peak[i]
+            pi_absorbed_photons = pi_absorbed_photons_in_peak[i]
 
             for photon_type in photon_type_dict.keys():
                 is_from_type = photons["photon_type"] == photon_type_dict[photon_type]
@@ -266,11 +259,11 @@ class PeakTruth(strax.OverlapWindowPlugin):
                 )
             
                 # Calculate the number of absorbed photons due to photoionization
-                # if len(pi_absorbed_photons) > 0:
-                #     result["pi_absorbed_photons_from_peak"][i] = len(pi_absorbed_photons)
-                #     result["raw_area_lost_due_to_pi"][i] = np.sum(
-                #         pi_absorbed_photons["photon_gain"] / self.gains[pi_absorbed_photons["channel"]]
-                #     )
+                if len(pi_absorbed_photons) > 0:
+                    result["pi_absorbed_photons_from_peak"][i] = len(pi_absorbed_photons)
+                    result["raw_area_lost_due_to_pi"][i] = np.sum(
+                        pi_absorbed_photons["photon_gain"] / self.gains[pi_absorbed_photons["channel"]]
+                    )
 
 
         return result
