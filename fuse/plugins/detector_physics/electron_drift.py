@@ -321,7 +321,7 @@ class ElectronDrift(FuseBasePlugin):
 
         # Do not drift electrons at the very top.
         # The FDC is valid until z = -1 cm, then it is extrapolating.
-        valid_zs = (z < -1.)
+        valid_zs = z < -1.0
 
         r_obs = r_naive.copy()
         r_obs[valid_zs] = self.fdc_map_fuse(positions[valid_zs], map_name="r_distortion_map")
