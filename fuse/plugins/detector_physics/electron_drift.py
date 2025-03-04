@@ -315,9 +315,16 @@ class ElectronDrift(FuseBasePlugin):
         Returns:
             z: 1d array, postions 2d array
         """
-        positions = np.array([np.sqrt(x**2 + y**2), z]).T
+        r_naive = np.sqrt(x**2 + y**2)
+        positions = np.array([r_naive, z]).T
         theta = np.arctan2(y, x)
-        r_obs = self.fdc_map_fuse(positions, map_name="r_distortion_map")
+
+        # Do not drift electrons at the very top.
+        # The FDC is valid until z = -1 cm, then it is extrapolating.
+        valid_zs = (z < -1.)
+
+        r_obs = r_naive.copy()
+        r_obs[valid_zs] = self.fdc_map_fuse(positions[valid_zs], map_name="r_distortion_map")
         x_obs = r_obs * np.cos(theta)
         y_obs = r_obs * np.sin(theta)
 
