@@ -244,6 +244,9 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         _photons = List()
         [_photons.append(x) for x in photons]
 
+        # sort pulse groups by pulse id same as photons
+        pulse_groups = strax.stable_sort(pulse_groups, order='pulse_id')
+
         # use an upper limit for the waveform buffer
         length_waveform_buffer = np.int32(
             np.sum(np.ceil(pulse_groups["length"] / strax.DEFAULT_RECORD_LENGTH))
@@ -562,7 +565,7 @@ def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
 
 
 def split_photons(propagated_photons):
-    sort_index = np.argsort(propagated_photons["pulse_id"])
+    sort_index = strax.stable_sort(propagated_photons, order="pulse_id")
 
     propagated_photons_sorted = propagated_photons[sort_index]
 
