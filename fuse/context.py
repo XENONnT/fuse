@@ -12,6 +12,17 @@ import fuse
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.context")
 
+# Determine which config names to use (backward compatibility)
+if hasattr(straxen.contexts, "xnt_common_opts"):
+    # This is for straxen <=2
+    common_opts = straxen.contexts.xnt_common_opts
+    common_config = straxen.contexts.xnt_common_config
+else:
+    # This is for straxen >=3, variable names changed    
+    common_opts = straxen.contexts.common_opts
+    common_config = common_config
+
+
 # Plugins to simulate microphysics
 microphysics_plugins_dbscan_clustering = [
     fuse.micro_physics.ChunkInput,
@@ -98,10 +109,10 @@ def microphysics_context(
 ):
     """Function to create a fuse microphysics simulation context."""
 
-    st = strax.Context(storage=strax.DataDirectory(output_folder), **straxen.contexts.common_opts)
+    st = strax.Context(storage=strax.DataDirectory(output_folder), **common_opts)
 
     st.config.update(
-        dict(detector="XENONnT", check_raw_record_overlaps=True, **straxen.contexts.common_config)
+        dict(detector="XENONnT", check_raw_record_overlaps=True, **common_config)
     )
 
     # Register microphysics plugins
@@ -151,13 +162,13 @@ def full_chain_context(
             "Take the context defined in cutax if you want to run XENONnT simulations."
         )
 
-    st = strax.Context(storage=strax.DataDirectory(output_folder), **straxen.contexts.common_opts)
+    st = strax.Context(storage=strax.DataDirectory(output_folder), **common_opts)
     st.simulation_config_file = simulation_config_file
     st.corrections_run_id = corrections_run_id
 
     st.config.update(
         dict(  # detector='XENONnT',
-            check_raw_record_overlaps=True, **straxen.contexts.common_config
+            check_raw_record_overlaps=True, **common_config
         )
     )
 
