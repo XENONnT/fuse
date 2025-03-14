@@ -20,7 +20,7 @@ if hasattr(straxen.contexts, "xnt_common_opts"):
 else:
     # This is for straxen >=3, variable names changed
     common_opts = straxen.contexts.common_opts
-    common_config = common_config
+    common_config = straxen.contexts.common_config
 
 
 # Plugins to simulate microphysics
