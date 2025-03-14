@@ -18,7 +18,7 @@ if hasattr(straxen.contexts, "xnt_common_opts"):
     common_opts = straxen.contexts.xnt_common_opts
     common_config = straxen.contexts.xnt_common_config
 else:
-    # This is for straxen >=3, variable names changed    
+    # This is for straxen >=3, variable names changed
     common_opts = straxen.contexts.common_opts
     common_config = common_config
 
@@ -111,9 +111,7 @@ def microphysics_context(
 
     st = strax.Context(storage=strax.DataDirectory(output_folder), **common_opts)
 
-    st.config.update(
-        dict(detector="XENONnT", check_raw_record_overlaps=True, **common_config)
-    )
+    st.config.update(dict(detector="XENONnT", check_raw_record_overlaps=True, **common_config))
 
     # Register microphysics plugins
     for plugin in microphysics_plugins_dbscan_clustering:
@@ -166,11 +164,7 @@ def full_chain_context(
     st.simulation_config_file = simulation_config_file
     st.corrections_run_id = corrections_run_id
 
-    st.config.update(
-        dict(  # detector='XENONnT',
-            check_raw_record_overlaps=True, **common_config
-        )
-    )
+    st.config.update(dict(check_raw_record_overlaps=True, **common_config))  # detector='XENONnT',
 
     # Register microphysics plugins
     if clustering_method == "dbscan":
