@@ -236,8 +236,11 @@ def full_chain_context(
     # Deregister plugins with missing dependencies
     st.deregister_plugins_with_missing_dependencies()
 
-    # Purge unused configs
-    st.purge_unused_configs()
+    # Purge unused configs (only for newer strax)
+    try:
+        st.purge_unused_configs()
+    except:
+        pass
 
     return st
 
