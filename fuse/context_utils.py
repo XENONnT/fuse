@@ -4,9 +4,10 @@ import straxen
 from straxen import URLConfig
 from copy import deepcopy
 
+
 def write_sr_information_to_config(context, corrections_run_id):
     """Function to loop over the plugin config write the cutax sr information
-    to the context config"""
+    to the context config."""
     for data_type, plugin in context._plugin_class_registry.items():
         for option_key, option in plugin.takes_config.items():
             if isinstance(option.default, str) and "science_run://" in option.default:
@@ -15,12 +16,11 @@ def write_sr_information_to_config(context, corrections_run_id):
                     corrections_run_id,
                 )
 
+
 def old_xedocs_versions_patch(xedocs_version):
-    """
-    To ensure backward compatibility for global version < 15
-    If a user still assigns global_v14 or smaller,
-    the avg_se_gain, g1, and g2 are taken from BODEGA
-    """
+    """To ensure backward compatibility for global version < 15 If a user still
+    assigns global_v14 or smaller, the avg_se_gain, g1, and g2 are taken from
+    BODEGA."""
     if int(xedocs_version.replace("global_v", "")) < 15:
         return {
             "avg_se_gain": "bodega://se_gain?bodega_version=v1",

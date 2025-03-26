@@ -8,7 +8,7 @@ import fuse
 from .context_utils import (
     write_sr_information_to_config,
     set_simulation_config_file,
-    old_xedocs_versions_patch
+    old_xedocs_versions_patch,
 )
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
@@ -18,15 +18,12 @@ DEFAULT_XEDOCS_VERSION = "global_v16"
 DEFAULT_SIMULATION_VERSION = "sr1_dev"
 
 # This we could easily find a way to move it to the simulation config file
-SCIENCE_RUN_DEFAULT_RUN_ID = {
-    "sr0": "026000",
-    "sr1": "046477"
-}
+SCIENCE_RUN_DEFAULT_RUN_ID = {"sr0": "026000", "sr1": "046477"}
 
 # This we could easily find a way to move it to the simulation config file
 SCIENCE_RUN_MC_FDC = {
     "sr0": "XnT_3D_FDC_xyz_24_Jun_2022_MC.json.gz",
-    "sr1": "XnT_3D_FDC_xyz_SR1_15_Mar_2024_MC.json.gz"
+    "sr1": "XnT_3D_FDC_xyz_SR1_15_Mar_2024_MC.json.gz",
 }
 
 # Determine which config names to use (backward compatibility)
@@ -119,6 +116,7 @@ truth_information_plugins = [
 processing_plugins = [
     fuse.processing.CorrectedAreasMC,
 ]
+
 
 def microphysics_context(
     output_folder="./fuse_data", simulation_config_file="fuse_config_nt_sr1_dev.json"
@@ -263,15 +261,16 @@ def xenonnt_fuse_full_chain_simulation(
     output_folder="./fuse_data",
     corrections_version=DEFAULT_XEDOCS_VERSION,
     simulation_config=DEFAULT_SIMULATION_VERSION,
-    corrections_run_id=None, 
+    corrections_run_id=None,
     fdc_map_mc=None,
     cut_list=None,
     **kwargs,
 ):
-    """Function to create a fuse full chain simulation context
-    with the proper settings for XENONnT simulations.
-    It takes the general full_chain_context and sets the
-    proper corrections and configuration files for XENONnT.
+    """Function to create a fuse full chain simulation context with the proper
+    settings for XENONnT simulations.
+
+    It takes the general full_chain_context and sets the proper
+    corrections and configuration files for XENONnT.
     """
 
     import fuse
@@ -289,7 +288,7 @@ def xenonnt_fuse_full_chain_simulation(
                 Please specify a corrections_run_id or a simulation_config_file that \
                 starts with srX_ where X is the science run number."
             )
-        
+
     st = fuse.full_chain_context(
         output_folder=output_folder,
         corrections_version=corrections_version,
@@ -299,7 +298,6 @@ def xenonnt_fuse_full_chain_simulation(
     )
     st.set_config(old_xedocs_versions_patch(corrections_version))
 
-
     if fdc_map_mc is None:
         fdc_map_mc = SCIENCE_RUN_MC_FDC.get(simulation_config.split("_")[0], None)
         if fdc_map_mc is None:
@@ -308,7 +306,7 @@ def xenonnt_fuse_full_chain_simulation(
                 Please specify a fdc_map_mc or a simulation_config_file that \
                 starts with srX_ where X is the science run number."
             )
-    
+
     if fdc_map_mc:
         fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
         fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
@@ -316,8 +314,6 @@ def xenonnt_fuse_full_chain_simulation(
 
     if cut_list is not None:
         st.register_cut_list(cut_list)
-        
+
     write_sr_information_to_config(st, corrections_run_id)
     return st
-
-
