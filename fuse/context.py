@@ -237,10 +237,8 @@ def full_chain_context(
     st.deregister_plugins_with_missing_dependencies()
 
     # Purge unused configs (only for newer strax)
-    try:
+    if hasattr(st, "purge_unused_configs"):
         st.purge_unused_configs()
-    except:
-        pass
 
     return st
 
