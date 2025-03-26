@@ -1,11 +1,8 @@
 # mypy: ignore-errors
-from copy import deepcopy
 import logging
 
-import numpy as np
 import strax
 import straxen
-from straxen import URLConfig
 import fuse
 
 from .context_utils import (

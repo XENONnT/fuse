@@ -2,7 +2,7 @@ import numpy as np
 import strax
 import straxen
 from straxen import URLConfig
-import fuse
+from copy import deepcopy
 
 def write_sr_information_to_config(context, corrections_run_id):
     """Function to loop over the plugin config write the cutax sr information
