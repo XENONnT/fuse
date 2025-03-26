@@ -5,7 +5,6 @@ from straxen import URLConfig
 from copy import deepcopy
 
 
-
 def write_sr_information_to_config(context, corrections_run_id):
     """Function to loop over the plugin config write the cutax sr information
     to the context config."""
