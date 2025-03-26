@@ -253,6 +253,7 @@ def xenonnt_fuse_full_chain_simulation(
     corrections_version=DEFAULT_XEDOCS_VERSION,
     simulation_config=DEFAULT_SIMULATION_VERSION,
     corrections_run_id=None,
+    clustering_method="dbscan",
     fdc_map_mc=None,
     cut_list=None,
     **kwargs,
@@ -281,6 +282,7 @@ def xenonnt_fuse_full_chain_simulation(
         corrections_version=corrections_version,
         simulation_config_file=simulation_config_file,
         corrections_run_id=corrections_run_id,
+        clustering_method=clustering_method,
         **kwargs,
     )
     st.set_config(old_xedocs_versions_patch(corrections_version))

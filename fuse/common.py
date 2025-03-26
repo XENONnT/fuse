@@ -3,7 +3,6 @@ import awkward as ak
 import numba
 
 from scipy.interpolate import interp1d
-from straxen import get_resource
 
 # Lets wait 10 minutes for the plugin to finish
 FUSE_PLUGIN_TIMEOUT = 600
