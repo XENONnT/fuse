@@ -287,9 +287,7 @@ def xenonnt_fuse_full_chain_simulation(
     )
     st.set_config(old_xedocs_versions_patch(corrections_version))
 
-    fdc_map_mc = fdc_map_mc or fuse.from_config(
-        simulation_config_file, "fdc_map_mc"
-    )
+    fdc_map_mc = fdc_map_mc or fuse.from_config(simulation_config_file, "fdc_map_mc")
     fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
     fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
     st.set_config({"fdc_map": fdc_conf})

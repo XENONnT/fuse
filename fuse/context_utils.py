@@ -5,6 +5,7 @@ from straxen import URLConfig
 from copy import deepcopy
 
 
+
 def write_sr_information_to_config(context, corrections_run_id):
     """Function to loop over the plugin config write the cutax sr information
     to the context config."""
@@ -94,6 +95,7 @@ def load(data):
     """Some Documentation."""
     return data
 
+
 @URLConfig.register("simulation_config")
 def from_config(config_name, key):
     """Load a key from a simulation config file."""
@@ -103,11 +105,12 @@ def from_config(config_name, key):
         cached_name = straxen.common._cache_name(config_name, "json")
         if cached_name in straxen.common._resource_cache.keys():
             straxen.common._resource_cache.pop(cached_name)
-    
+
     config = straxen.get_resource(config_name, fmt="json")
     if key not in config:
         raise ValueError(f"Key {key} not found in {config_name}")
     return config[key]
+
 
 class DummyMap:
     """Return constant results with length equal to that of the input and
