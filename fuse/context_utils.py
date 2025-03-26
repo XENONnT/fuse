@@ -96,9 +96,18 @@ def load(data):
 
 @URLConfig.register("simulation_config")
 def from_config(config_name, key):
-    """Return a value from a json config file."""
-    return fuse.from_config(config_name, key)
-
+    """Load a key from a simulation config file."""
+    # if the config_name is a local path, we want to be more flexible
+    # so we better clear the cache to get the latest version
+    if config_name.startswith("/"):
+        cached_name = straxen.common._cache_name(config_name, "json")
+        if cached_name in straxen.common._resource_cache.keys():
+            straxen.common._resource_cache.pop(cached_name)
+    
+    config = straxen.get_resource(config_name, fmt="json")
+    if key not in config:
+        raise ValueError(f"Key {key} not found in {config_name}")
+    return config[key]
 
 class DummyMap:
     """Return constant results with length equal to that of the input and

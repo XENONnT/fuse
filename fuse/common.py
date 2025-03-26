@@ -320,11 +320,3 @@ def pmt_gains(to_pe, digitizer_voltage_range, digitizer_bits, pmt_circuit_load_r
         where=to_pe != 0,
     )
     return gains
-
-
-def from_config(config_name, key):
-    """Return a value from a json config file."""
-    config = get_resource(config_name, fmt="json")
-    if key not in config:
-        raise ValueError(f"Key {key} not found in {config_name}")
-    return config[key]

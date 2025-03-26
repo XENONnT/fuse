@@ -17,15 +17,6 @@ log = logging.getLogger("fuse.context")
 DEFAULT_XEDOCS_VERSION = "global_v16"
 DEFAULT_SIMULATION_VERSION = "sr1_dev"
 
-# This we could easily find a way to move it to the simulation config file
-SCIENCE_RUN_DEFAULT_RUN_ID = {"sr0": "026000", "sr1": "046477"}
-
-# This we could easily find a way to move it to the simulation config file
-SCIENCE_RUN_MC_FDC = {
-    "sr0": "XnT_3D_FDC_xyz_24_Jun_2022_MC.json.gz",
-    "sr1": "XnT_3D_FDC_xyz_SR1_15_Mar_2024_MC.json.gz",
-}
-
 # Determine which config names to use (backward compatibility)
 if hasattr(straxen.contexts, "xnt_common_opts"):
     # This is for straxen <=2
@@ -280,14 +271,10 @@ def xenonnt_fuse_full_chain_simulation(
     else:
         simulation_config_file = "fuse_config_nt_{:s}.json".format(simulation_config)
 
-    if corrections_run_id is None:
-        corrections_run_id = SCIENCE_RUN_DEFAULT_RUN_ID.get(simulation_config.split("_")[0], None)
-        if corrections_run_id is None:
-            raise ValueError(
-                f"The automatic run_id for {simulation_config} is not known. \
-                Please specify a corrections_run_id or a simulation_config_file that \
-                starts with srX_ where X is the science run number."
-            )
+    corrections_run_id = corrections_run_id or fuse.from_config(
+        simulation_config_file, "default_corrections_run_id"
+    )
+    log.info(f"Using corrections_run_id: {corrections_run_id}")
 
     st = fuse.full_chain_context(
         output_folder=output_folder,
@@ -298,19 +285,12 @@ def xenonnt_fuse_full_chain_simulation(
     )
     st.set_config(old_xedocs_versions_patch(corrections_version))
 
-    if fdc_map_mc is None:
-        fdc_map_mc = SCIENCE_RUN_MC_FDC.get(simulation_config.split("_")[0], None)
-        if fdc_map_mc is None:
-            raise ValueError(
-                f"The automatic fdc_map_mc for {simulation_config} is not known. \
-                Please specify a fdc_map_mc or a simulation_config_file that \
-                starts with srX_ where X is the science run number."
-            )
-
-    if fdc_map_mc:
-        fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
-        fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
-        st.set_config({"fdc_map": fdc_conf})
+    fdc_map_mc = fdc_map_mc or fuse.from_config(
+        simulation_config_file, "fdc_map_mc"
+    )
+    fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
+    fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
+    st.set_config({"fdc_map": fdc_conf})
 
     if cut_list is not None:
         st.register_cut_list(cut_list)
