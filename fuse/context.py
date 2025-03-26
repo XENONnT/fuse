@@ -261,7 +261,7 @@ def xenonnt_fuse_full_chain_simulation(
     """Function to create a fuse full chain simulation context with the proper
     settings for XENONnT simulations.
 
-    It takes the general full_chain_context and sets the proper 
+    It takes the general full_chain_context and sets the proper
     corrections and configuration files for XENONnT.
     """
 
