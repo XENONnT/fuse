@@ -93,16 +93,30 @@ processing_plugins = [
 ]
 
 
+if hasattr(straxen.contexts, "common_config"):
+    common_config = straxen.contexts.common_config
+elif hasattr(straxen.contexts, "xnt_common_config"):
+    common_config = straxen.contexts.xnt_common_config
+else:
+    raise ValueError("No common config found in straxen.contexts")
+
+
+if hasattr(straxen.contexts, "common_opts"):
+    common_opts = straxen.contexts.common_opts
+elif hasattr(straxen.contexts, "xnt_common_opts"):
+    common_opts = straxen.contexts.xnt_common_opts
+else:
+    raise ValueError("No common opts found in straxen.contexts")
+
+
 def microphysics_context(
     output_folder="./fuse_data", simulation_config_file="fuse_config_nt_sr1_dev.json"
 ):
     """Function to create a fuse microphysics simulation context."""
 
-    st = strax.Context(storage=strax.DataDirectory(output_folder), **straxen.contexts.common_opts)
+    st = strax.Context(storage=strax.DataDirectory(output_folder), **common_opts)
 
-    st.config.update(
-        dict(detector="XENONnT", check_raw_record_overlaps=True, **straxen.contexts.common_config)
-    )
+    st.config.update(dict(detector="XENONnT", check_raw_record_overlaps=True, **common_config))
 
     # Register microphysics plugins
     for plugin in microphysics_plugins_dbscan_clustering:
@@ -151,15 +165,11 @@ def full_chain_context(
             "Take the context defined in cutax if you want to run XENONnT simulations."
         )
 
-    st = strax.Context(storage=strax.DataDirectory(output_folder), **straxen.contexts.common_opts)
+    st = strax.Context(storage=strax.DataDirectory(output_folder), **common_opts)
     st.simulation_config_file = simulation_config_file
     st.corrections_run_id = corrections_run_id
 
-    st.config.update(
-        dict(  # detector='XENONnT',
-            check_raw_record_overlaps=True, **straxen.contexts.common_config
-        )
-    )
+    st.config.update(dict(check_raw_record_overlaps=True, **common_config))
 
     # Register microphysics plugins
     if clustering_method == "dbscan":
