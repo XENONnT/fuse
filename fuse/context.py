@@ -284,7 +284,7 @@ def xenonnt_fuse_full_chain_simulation(
     # Get the fdc_map_mc from argument or from config file
     fdc_map_mc = fdc_map_mc or fuse.from_config(simulation_config_file, "fdc_map_mc")
 
-    # Get clustering method
+    # Get clustering method 
     # if it is specified as an argument, use that
     # if it is not specified, try to get it from the config file
     # if it is not in the config file, use dbscan
