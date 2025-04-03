@@ -295,7 +295,7 @@ def xenonnt_fuse_full_chain_simulation(
             clustering_method = fuse.from_config(
                 simulation_config_file, "clustering_method"
             )
-        except:
+        except ValueError:
             clustering_method = "dbscan"
     
 
