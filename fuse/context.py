@@ -290,15 +290,10 @@ def xenonnt_fuse_full_chain_simulation(
     # if it is not in the config file, use dbscan
     if clustering_method is None:
         try:
-<<<<<<< HEAD
             clustering_method = fuse.from_config(
                 simulation_config_file, "clustering_method"
             )
         except ValueError:
-=======
-            clustering_method = fuse.from_config(simulation_config_file, "clustering_method")
-        except:
->>>>>>> ba63b5c6dd32367df626e45ae958df858a2faf31
             clustering_method = "dbscan"
 
     st = fuse.full_chain_context(
