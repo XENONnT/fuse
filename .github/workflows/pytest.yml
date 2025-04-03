@@ -51,6 +51,7 @@ jobs:
 
           # Patch the CMakeLists.txt file to use a newer version of cmake
           sed -i 's/cmake_minimum_required(VERSION 2.8.12)/cmake_minimum_required(VERSION 3.12)/' CMakeLists.txt
+          sed -i 's/cmake_minimum_required(VERSION 2.8.12)/cmake_minimum_required(VERSION 3.12)/' lib/pybind11/CMakeLists.txt
 
           pip install .
           cd ..
