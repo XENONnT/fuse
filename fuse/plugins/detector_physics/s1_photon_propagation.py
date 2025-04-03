@@ -102,7 +102,11 @@ class S1PhotonPropagationBase(FuseBasePlugin):
     )
 
     gain_model_mc = straxen.URLConfig(
-        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        default=(
+            "list-to-array://xedocs://pmt_area_to_pes"
+            "?as_list=True&sort=pmt&detector=tpc"
+            "&run_id=plugin.run_id&version=ONLINE&attr=value"
+        ),
         infer_type=False,
         help="PMT gain model",
     )
@@ -143,7 +147,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
             pmt_circuit_load_resistor=self.pmt_circuit_load_resistor,
         )
 
-        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
+        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from xedocs by default)
         self.turned_off_pmts = np.nonzero(np.array(self.gains) == 0)[0]
 
         self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(
