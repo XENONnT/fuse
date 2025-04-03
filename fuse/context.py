@@ -253,7 +253,7 @@ def xenonnt_fuse_full_chain_simulation(
     corrections_version=DEFAULT_XEDOCS_VERSION,
     simulation_config=DEFAULT_SIMULATION_VERSION,
     corrections_run_id=None,
-    clustering_method="dbscan",
+    clustering_method=None, # defaults to dbscan, but can be set to lineage
     fdc_map_mc=None,
     cut_list=None,
     **kwargs,
@@ -267,15 +267,37 @@ def xenonnt_fuse_full_chain_simulation(
 
     import fuse
 
+    # Get the simulation config file
     if "/" in simulation_config:
+        # Local path to the simulation config file
         simulation_config_file = simulation_config
     else:
+        # Get the simulation config file from private_nt_aux_files
         simulation_config_file = "fuse_config_nt_{:s}.json".format(simulation_config)
 
+    # Get the corrections_run_id from argument or from config file
     corrections_run_id = corrections_run_id or fuse.from_config(
         simulation_config_file, "default_corrections_run_id"
     )
     log.info(f"Using corrections_run_id: {corrections_run_id}")
+
+    # Get the fdc_map_mc from argument or from config file
+    fdc_map_mc = fdc_map_mc or fuse.from_config(
+        simulation_config_file, "fdc_map_mc"
+    )
+
+    # Get clustering method
+    # if it is specified as an argument, use that
+    # if it is not specified, try to get it from the config file
+    # if it is not in the config file, use dbscan
+    if clustering_method is None:
+        try:
+            clustering_method = fuse.from_config(
+                simulation_config_file, "clustering_method"
+            )
+        except:
+            clustering_method = "dbscan"
+    
 
     st = fuse.full_chain_context(
         output_folder=output_folder,
@@ -287,7 +309,6 @@ def xenonnt_fuse_full_chain_simulation(
     )
     st.set_config(old_xedocs_versions_patch(corrections_version))
 
-    fdc_map_mc = fdc_map_mc or fuse.from_config(simulation_config_file, "fdc_map_mc")
     fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
     fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
     st.set_config({"fdc_map": fdc_conf})
