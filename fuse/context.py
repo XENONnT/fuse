@@ -253,7 +253,7 @@ def xenonnt_fuse_full_chain_simulation(
     corrections_version=DEFAULT_XEDOCS_VERSION,
     simulation_config=DEFAULT_SIMULATION_VERSION,
     corrections_run_id=None,
-    clustering_method=None, # defaults to dbscan, but can be set to lineage
+    clustering_method=None,  # defaults to dbscan, but can be set to lineage
     fdc_map_mc=None,
     cut_list=None,
     **kwargs,
@@ -282,9 +282,7 @@ def xenonnt_fuse_full_chain_simulation(
     log.info(f"Using corrections_run_id: {corrections_run_id}")
 
     # Get the fdc_map_mc from argument or from config file
-    fdc_map_mc = fdc_map_mc or fuse.from_config(
-        simulation_config_file, "fdc_map_mc"
-    )
+    fdc_map_mc = fdc_map_mc or fuse.from_config(simulation_config_file, "fdc_map_mc")
 
     # Get clustering method
     # if it is specified as an argument, use that
@@ -292,12 +290,9 @@ def xenonnt_fuse_full_chain_simulation(
     # if it is not in the config file, use dbscan
     if clustering_method is None:
         try:
-            clustering_method = fuse.from_config(
-                simulation_config_file, "clustering_method"
-            )
+            clustering_method = fuse.from_config(simulation_config_file, "clustering_method")
         except:
             clustering_method = "dbscan"
-    
 
     st = fuse.full_chain_context(
         output_folder=output_folder,
