@@ -46,13 +46,21 @@ jobs:
           python -m pip install pytest coverage coveralls
           git clone https://github.com/NESTCollaboration/nestpy.git
           cd nestpy
-          git submodule update --init --recursive
           git checkout fb3804e
+          git submodule update --init --recursive
 
-          # Patch the CMakeLists.txt file to use a newer version of cmake
-          sed -i 's/cmake_minimum_required(VERSION 2.8.12)/cmake_minimum_required(VERSION 3.12)/' CMakeLists.txt
-          sed -i 's/cmake_minimum_required(VERSION 2.8.12)/cmake_minimum_required(VERSION 3.12)/' lib/pybind11/CMakeLists.txt
+          echo "Installing pybind11 and patching cmake version in nestpy"
 
+          # Fix pybind11: use newer tag that works with modern CMake
+          cd lib/pybind11
+          git fetch --tags
+          git checkout v2.13.0
+          cd ../../
+
+          # Fix nestpy's CMakeLists.txt to work with modern CMake versions
+          sed -i 's/cmake_minimum_required(VERSION 2.8.12)/cmake_minimum_required(VERSION 2.8.12...3.30)/' CMakeLists.txt
+
+          # Install
           pip install .
           cd ..
           rm -rf nestpy
