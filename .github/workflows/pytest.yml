@@ -48,6 +48,10 @@ jobs:
           cd nestpy
           git submodule update --init --recursive
           git checkout fb3804e
+
+          # Patch the CMakeLists.txt file to use a newer version of cmake
+          sed -i 's/cmake_minimum_required(VERSION 2.8.12)/cmake_minimum_required(VERSION 3.12)/' CMakeLists.txt
+
           pip install .
           cd ..
           rm -rf nestpy
