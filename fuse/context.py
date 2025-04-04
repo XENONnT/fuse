@@ -265,12 +265,16 @@ def xenonnt_fuse_full_chain_simulation(
     corrections and configuration files for XENONnT.
     """
 
+    # Lets go for info level logging when working with fuse
+    log.setLevel("INFO")
+
     # Check if the provided simulation_config is a file path
     if os.path.isfile(simulation_config):
         simulation_config_file = simulation_config
     else:
         # Get the simulation config file from private_nt_aux_files
         simulation_config_file = "fuse_config_nt_{:s}.json".format(simulation_config)
+    log.info(f"Using simulation config file: {simulation_config_file}")
 
     # Get the corrections_run_id from argument or from config file
     corrections_run_id = corrections_run_id or fuse.from_config(
