@@ -93,7 +93,7 @@ jobs:
 
       - name: Show installed package versions
         run: |
-          straxen_print_versions
+          pip list
       - name: Test package and report to coveralls
         env:
           TEST_MONGO_URI: 'mongodb://localhost:27017/'
