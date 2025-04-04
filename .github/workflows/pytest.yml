@@ -87,6 +87,7 @@ jobs:
         if: matrix.dependency-version == 'lowest'
         run: |
           python -m pip install --upgrade pip poetry
+          poetry self add poetry-plugin-export
           poetry export --format requirements.txt --without-hashes --lowest --output requirements.txt
           pip install -r requirements.txt
           pip install .
