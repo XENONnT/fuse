@@ -341,7 +341,6 @@ def stable_sort(arr, kind="mergesort", **kwargs):
 
     Returns:
         Sorted array using mergesort algorithm
-
     """
     if kind != "mergesort":
         raise SortingError(UNSTABLE_SORT_MESSAGE)
