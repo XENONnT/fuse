@@ -6,7 +6,7 @@ import strax
 import straxen
 
 from ...plugin import FuseBaseDownChunkingPlugin
-from ...common import stable_sort
+from ...common import stable_sort, stable_argsort
 
 export, __all__ = strax.exporter()
 
@@ -566,7 +566,7 @@ def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
 
 
 def split_photons(propagated_photons):
-    sort_index = strax.stable_argsort(propagated_photons["pulse_id"])
+    sort_index = stable_argsort(propagated_photons["pulse_id"])
 
     propagated_photons_sorted = propagated_photons[sort_index]
 
