@@ -6,6 +6,7 @@ import strax
 import straxen
 
 from ...plugin import FuseBaseDownChunkingPlugin
+from ...common import stable_sort
 
 export, __all__ = strax.exporter()
 
@@ -245,7 +246,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         [_photons.append(x) for x in photons]
 
         # sort pulse groups by pulse id same as photons
-        pulse_groups = strax.stable_sort(pulse_groups, order="pulse_id")
+        pulse_groups = stable_sort(pulse_groups, order="pulse_id")
 
         # use an upper limit for the waveform buffer
         length_waveform_buffer = np.int32(

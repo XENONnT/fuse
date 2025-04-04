@@ -319,3 +319,18 @@ def pmt_gains(to_pe, digitizer_voltage_range, digitizer_bits, pmt_circuit_load_r
         where=to_pe != 0,
     )
     return gains
+
+def stable_sort(arr, kind="mergesort", **kwargs):
+    """Stable sort function using mergesort, w/o numba optimization.
+
+    Args:
+        arr: numpy array to sort
+        kind: sorting algorithm to use (only 'mergesort' is allowed)
+
+    Returns:
+        Sorted array using mergesort algorithm
+
+    """
+    if kind != "mergesort":
+        raise SortingError(UNSTABLE_SORT_MESSAGE)
+    return np.sort(arr, kind="mergesort", **kwargs)
