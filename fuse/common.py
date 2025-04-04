@@ -320,6 +320,7 @@ def pmt_gains(to_pe, digitizer_voltage_range, digitizer_bits, pmt_circuit_load_r
     )
     return gains
 
+
 def stable_sort(arr, kind="mergesort", **kwargs):
     """Stable sort function using mergesort, w/o numba optimization.
 
@@ -329,7 +330,6 @@ def stable_sort(arr, kind="mergesort", **kwargs):
 
     Returns:
         Sorted array using mergesort algorithm
-
     """
     if kind != "mergesort":
         raise SortingError(UNSTABLE_SORT_MESSAGE)
