@@ -1,6 +1,6 @@
 # mypy: ignore-errors
 import logging
-
+import os
 import strax
 import straxen
 import fuse
@@ -265,11 +265,8 @@ def xenonnt_fuse_full_chain_simulation(
     corrections and configuration files for XENONnT.
     """
 
-    import fuse
-
-    # Get the simulation config file
-    if "/" in simulation_config:
-        # Local path to the simulation config file
+    # Check if the provided simulation_config is a file path
+    if os.path.isfile(simulation_config):
         simulation_config_file = simulation_config
     else:
         # Get the simulation config file from private_nt_aux_files
@@ -283,6 +280,7 @@ def xenonnt_fuse_full_chain_simulation(
 
     # Get the fdc_map_mc from argument or from config file
     fdc_map_mc = fdc_map_mc or fuse.from_config(simulation_config_file, "fdc_map_mc")
+    log.info(f"Using fdc_map_mc: {fdc_map_mc}")
 
     # Get clustering method
     # if it is specified as an argument, use that
@@ -293,6 +291,7 @@ def xenonnt_fuse_full_chain_simulation(
             clustering_method = fuse.from_config(simulation_config_file, "clustering_method")
         except ValueError:
             clustering_method = "dbscan"
+    log.info(f"Using clustering method: {clustering_method}")
 
     st = fuse.full_chain_context(
         output_folder=output_folder,
