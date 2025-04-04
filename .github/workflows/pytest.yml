@@ -41,7 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest coverage coveralls poetry
+          python -m pip install pytest coverage coveralls
 
           # Clone and install nestpy (same as your existing workflow)
           git clone https://github.com/NESTCollaboration/nestpy.git
@@ -81,12 +81,11 @@ jobs:
       - name: Install fuse (latest dependencies)
         if: matrix.dependency-version == 'latest'
         run: |
-          poetry install
+          pip install .
 
       - name: Install fuse (lowest strax + straxen)
         if: matrix.dependency-version == 'lowest'
         run: |
-          python -m pip install --upgrade pip
           pip install strax==1.6.0 straxen==2.2.3
           pip install .
 
