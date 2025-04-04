@@ -86,10 +86,10 @@ jobs:
       - name: Install fuse (lowest strax + straxen)
         if: matrix.dependency-version == 'lowest'
         run: |
-          pip install --no-cache-dir --force-reinstall "numpy<1.26"
-          pip install strax==1.6.0 straxen==2.2.3
-          pip install --no-cache-dir --force-reinstall pandas
-          pip install .
+          pip install .        # grab latest deps first
+          pip install --force-reinstall --no-cache-dir \
+            strax==1.6.0 \
+            straxen==2.2.3
 
       - name: Show installed package versions
         run: |
