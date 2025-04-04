@@ -86,13 +86,14 @@ jobs:
       - name: Install fuse (lowest strax + straxen)
         if: matrix.dependency-version == 'lowest'
         run: |
+          pip install --no-cache-dir --force-reinstall "numpy<1.26"
           pip install strax==1.6.0 straxen==2.2.3
+          pip install --no-cache-dir --force-reinstall pandas
           pip install .
 
       - name: Show installed package versions
         run: |
-          pip freeze | grep -E 'strax(en)?'
-
+          straxen_print_versions
       - name: Test package and report to coveralls
         env:
           TEST_MONGO_URI: 'mongodb://localhost:27017/'
