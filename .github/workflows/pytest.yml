@@ -86,9 +86,10 @@ jobs:
       - name: Install fuse (lowest dependencies)
         if: matrix.dependency-version == 'lowest'
         run: |
-          poetry install --with main --no-root --lock --extras="" --sync --no-cache --no-interaction --only main --remove-untracked --install-only \
-            $(poetry export --format=requirements.txt --without-hashes | \
-            sed 's/>=/==/g')
+          python -m pip install --upgrade pip poetry
+          poetry export --format requirements.txt --without-hashes --lowest --output requirements.txt
+          pip install -r requirements.txt
+          pip install .
 
       - name: Show installed package versions
         run: |
