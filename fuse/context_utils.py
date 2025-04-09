@@ -113,7 +113,6 @@ class DummyMap:
         self.shape = shape
         self.data = {"map": np.ones(shape)}
 
-
     def __call__(self, x, **kwargs):
         shape = [len(x)] + list(self.shape)
         return np.ones(shape) * self.const
