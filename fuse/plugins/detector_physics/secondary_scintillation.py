@@ -197,7 +197,7 @@ class SecondaryScintillation(FuseBasePlugin):
         result_sum_photons["endtime"] = interactions_in_roi["endtime"]
 
         return {
-            self.result_name_photons: strax.sort_by_time(result_photons),
+            self.result_name_photons: result_photons,
             self.result_name_photons_sum: result_sum_photons,
         }
 
