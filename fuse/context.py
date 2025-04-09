@@ -257,7 +257,6 @@ def full_chain_context(
     return st
 
 
-
 def xenonnt_fuse_full_chain_simulation(
     output_folder="./fuse_data",
     corrections_version=DEFAULT_XEDOCS_VERSION,
@@ -327,7 +326,7 @@ def xenonnt_fuse_full_chain_simulation(
     write_sr_information_to_config(st, corrections_run_id)
     return st
 
-  
+
 def public_config_context(
     output_folder="./fuse_data",
     extra_plugins=[fuse.plugins.S2PhotonPropagationSimple],
