@@ -272,7 +272,7 @@ class file_loader:
                 self.log.info("Using fixed event spacing.")
                 event_times = (
                     np.linspace(
-                        start=0, stop=num_interactions / self.event_rate, num=num_interactions
+                        start=0, stop=num_interactions / self.event_rate, num=num_interactions, endpoint=False
                     )
                     + 1e9
                 ).astype(
