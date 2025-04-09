@@ -9,6 +9,7 @@ from .context_utils import (
     write_sr_information_to_config,
     set_simulation_config_file,
     old_xedocs_versions_patch,
+    overwrite_map_from_config
 )
 
 logging.basicConfig(handlers=[logging.StreamHandler()])

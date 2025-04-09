@@ -111,6 +111,8 @@ class DummyMap:
     def __init__(self, const, shape=()):
         self.const = float(const)
         self.shape = shape
+        self.data = {"map": np.ones(shape)}
+
 
     def __call__(self, x, **kwargs):
         shape = [len(x)] + list(self.shape)
@@ -130,3 +132,38 @@ def get_dummy(const, shape=()):
     """Make an Dummy Map."""
     itp_map = DummyMap(const, shape)
     return itp_map
+
+
+def overwrite_map_from_config(
+    context,
+    config,
+    resource_keys=[
+        "efield_map",
+        "s1_time_spline",
+        "s1_pattern_map",
+        "s2_time_spline",
+        "s2_pattern_map",
+        "s2_correction_map",
+        "photon_area_distribution",
+        "photon_ap_cdfs",
+        "noise_file",
+    ],
+):
+    for key, value in context.config.items():
+        if isinstance(value, str):
+            matching_keys = np.array(
+                ["=" + resource_key in value for resource_key in resource_keys]
+            )
+
+            if any(matching_keys):
+                context.set_config({key: config[resource_keys[np.argwhere(matching_keys)[0][0]]]})
+
+
+@URLConfig.register("lce_from_pattern_map")
+def lce_from_pattern_map(map, pmt_mask):
+    """Build a S1 lce correction map from a S1 pattern map."""
+
+    lcemap = deepcopy(map)
+    lcemap.data["map"] = np.sum(lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=pmt_mask)
+    lcemap.__init__(lcemap.data)
+    return lcemap
