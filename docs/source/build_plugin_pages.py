@@ -175,6 +175,7 @@ def build_all_pages():
 
     st = fuse.context.public_config_context(
         simulation_config="../examples/files/XENONnT_public_config.json",
+    )
 
     all_registered_fuse_plugins = {}
     for key, value in st._plugin_class_registry.items():
