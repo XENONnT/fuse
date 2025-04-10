@@ -167,7 +167,6 @@ def xenonnt_fuse_full_chain_simulation(
                 "Please provide a valid file path or file name."
             )
 
-
     # --- Load settings from config file ---
     corrections_run_id = (
         corrections_run_id
@@ -176,9 +175,7 @@ def xenonnt_fuse_full_chain_simulation(
     )
     log.info(f"Using corrections run id: {corrections_run_id}")
 
-    fdc_map_mc = (
-        fdc_map_mc if fdc_map_mc is not None else sim_config.get("fdc_map_mc", "")
-    )
+    fdc_map_mc = fdc_map_mc if fdc_map_mc is not None else sim_config.get("fdc_map_mc", "")
     log.info(f"Using fdc_map_mc: {fdc_map_mc}")
 
     clustering_method = (
