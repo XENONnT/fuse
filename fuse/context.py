@@ -238,6 +238,7 @@ def public_config_context(
     output_folder="./fuse_data",
     extra_plugins=[fuse.plugins.S2PhotonPropagationSimple],
     simulation_config_file="./files/XENONnT_public_config.json",
+    clustering_method="dbscan",
 ):
     """
     Create a context for the use of fuse with public XENONnT configs.
