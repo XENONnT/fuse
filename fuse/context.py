@@ -38,17 +38,17 @@ microphysics_plugins_clustering = {
         fuse.micro_physics.ChunkInput,
         fuse.micro_physics.LineageClustering,
         fuse.micro_physics.MergeLineage,
-    ]
+    ],
 }
 
 # Plugins to simulate microphysics (remaining)
 microphysics_plugins_remaining = [
-        fuse.micro_physics.XENONnT_TPC,
-        fuse.micro_physics.XENONnT_BelowCathode,
-        fuse.micro_physics.VolumesMerger,
-        fuse.micro_physics.ElectricField,
-        fuse.micro_physics.NestYields,
-        fuse.micro_physics.MicroPhysicsSummary,
+    fuse.micro_physics.XENONnT_TPC,
+    fuse.micro_physics.XENONnT_BelowCathode,
+    fuse.micro_physics.VolumesMerger,
+    fuse.micro_physics.ElectricField,
+    fuse.micro_physics.NestYields,
+    fuse.micro_physics.MicroPhysicsSummary,
 ]
 
 # Plugins to simulate S1 signals
@@ -109,14 +109,12 @@ processing_plugins = [fuse.processing.CorrectedAreasMC]
 
 
 def microphysics_context(
-    output_folder="./fuse_data", 
+    output_folder="./fuse_data",
     simulation_config_file="fuse_config_nt_sr1_dev.json",
     clustering_method="dbscan",
 ):
-    """
-    Create a context for the microphysics simulation of XENONnT.
-    """
-    
+    """Create a context for the microphysics simulation of XENONnT."""
+
     # --- Create context and register plugins ---
     st = strax.Context(storage=strax.DataDirectory(output_folder), **common_opts)
     st.set_config(dict(check_raw_record_overlaps=True, **common_config))
@@ -129,6 +127,7 @@ def microphysics_context(
 
     set_simulation_config_file(st, simulation_config_file)
     return st
+
 
 def xenonnt_fuse_full_chain_simulation(
     output_folder="./fuse_data",
@@ -147,14 +146,16 @@ def xenonnt_fuse_full_chain_simulation(
     },
     run_without_proper_corrections=False,
 ):
-    """ 
-    Create a context for the full chain simulation of XENONnT.
-    This context includes all the necessary configs and plugins for the simulation.
+    """Create a context for the full chain simulation of XENONnT.
+
+    This context includes all the necessary configs and plugins for the
+    simulation.
     """
 
     # --- Load core settings from config file ---
     simulation_config_file = (
-        simulation_config if os.path.isfile(simulation_config)
+        simulation_config
+        if os.path.isfile(simulation_config)
         else f"fuse_config_nt_{simulation_config}.json"
     )
 
@@ -164,7 +165,6 @@ def xenonnt_fuse_full_chain_simulation(
         fdc_map_mc = fuse.from_config(simulation_config_file, "fdc_map_mc")
     if clustering_method is None:
         clustering_method = fuse.from_config(simulation_config_file, "clustering_method")
-
 
     # --- Create context and register plugins ---
     st = strax.Context(storage=strax.DataDirectory(output_folder), **common_opts)
@@ -190,7 +190,6 @@ def xenonnt_fuse_full_chain_simulation(
     if cut_list:
         st.register_cut_list(cut_list)
 
-
     # --- Corrections setup ---
     if corrections_version:
         st.apply_xedocs_configs(version=corrections_version)
@@ -199,7 +198,6 @@ def xenonnt_fuse_full_chain_simulation(
         log.warning("Running without proper corrections. This is not recommended.")
         if not run_without_proper_corrections:
             raise ValueError("Set corrections_version or allow unsafe execution.")
-
 
     # Replace SIMULATION_CONFIG_FILE.json in plugin defaults
     set_simulation_config_file(st, simulation_config_file)
@@ -216,7 +214,7 @@ def xenonnt_fuse_full_chain_simulation(
         else:
             log.warning(f"{processing_config} not in context config, skipping...")
 
-    st.config["event_info_function"] = "disabled" 
+    st.config["event_info_function"] = "disabled"
 
     # Write SR information to config
     write_sr_information_to_config(st, corrections_run_id)
@@ -232,15 +230,14 @@ def xenonnt_fuse_full_chain_simulation(
 
     return st
 
+
 def public_config_context(
     output_folder="./fuse_data",
     extra_plugins=[fuse.plugins.S2PhotonPropagationSimple],
     simulation_config_file="./files/XENONnT_public_config.json",
     clustering_method="dbscan",
 ):
-    """
-    Create a context for the use of fuse with public XENONnT configs.
-    """
+    """Create a context for the use of fuse with public XENONnT configs."""
 
     st = strax.Context(storage=strax.DataDirectory(output_folder), **common_opts)
     st.set_config(dict(check_raw_record_overlaps=True, **common_config))
@@ -261,16 +258,18 @@ def public_config_context(
             st.register(plugin)
 
     set_simulation_config_file(st, simulation_config_file)
-    
+
     # Lets override some resource files with the ones from the simulation config
     config = straxen.get_resource(simulation_config_file, fmt="json")
     overwrite_map_from_config(st, config)
 
-    st.set_config({
-        "s1_lce_correction_map": "constant_dummy_map://1",
-        "gain_model_mc": "simple_load://resource://./files/fake_to_pe.npy?&fmt=npy",
-        "event_info_function": "disabled",
-    })
+    st.set_config(
+        {
+            "s1_lce_correction_map": "constant_dummy_map://1",
+            "gain_model_mc": "simple_load://resource://./files/fake_to_pe.npy?&fmt=npy",
+            "event_info_function": "disabled",
+        }
+    )
 
     st.deregister_plugins_with_missing_dependencies()
 
