@@ -151,7 +151,7 @@ def xenonnt_fuse_full_chain_simulation(
     """
 
     # --- Load config file ---
-    if simulation_config_file:
+    if simulation_config:
         simulation_config_file = (
             simulation_config
             if os.path.isfile(simulation_config)
@@ -160,6 +160,7 @@ def xenonnt_fuse_full_chain_simulation(
         sim_config = straxen.get_resource(simulation_config_file, fmt="json")
     else:
         if run_without_proper_corrections:
+            simulation_config_file = ""
             sim_config = {}
         else:
             raise ValueError(
