@@ -174,7 +174,7 @@ def create_plugin_documentation_text(st, plugin):
 def build_all_pages():
 
     st = fuse.context.public_config_context(
-        simulation_config="../examples/files/XENONnT_public_config.json",
+        simulation_config_file="../../examples/files/XENONnT_public_config.json",
     )
 
     all_registered_fuse_plugins = {}
