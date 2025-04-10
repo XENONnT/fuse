@@ -23,7 +23,7 @@ class TestDeterministicSeed(unittest.TestCase):
         self.test_context_0 = fuse.context.xenonnt_fuse_full_chain_simulation(
             output_folder=self.temp_dir_0.name,
             run_without_proper_corrections=True,
-            config_file="sr0_dev",
+            simulation_config="sr0_dev",
         )
 
         self.test_context_0.set_config(
@@ -37,7 +37,7 @@ class TestDeterministicSeed(unittest.TestCase):
         self.test_context_1 = fuse.context.xenonnt_fuse_full_chain_simulation(
             output_folder=self.temp_dir_1.name,
             run_without_proper_corrections=True,
-            config_file="sr0_dev",
+            simulation_config="sr0_dev",
         )
 
         self.test_context_1.set_config(

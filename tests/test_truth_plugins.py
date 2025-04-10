@@ -20,7 +20,7 @@ class TestTruthPlugins(unittest.TestCase):
         cls.test_context = fuse.context.xenonnt_fuse_full_chain_simulation(
             output_folder=cls.temp_dir.name,
             run_without_proper_corrections=True,
-            config_file="sr0_dev",
+            simulation_config="sr0_dev",
         )
 
         cls.test_context.set_config(
