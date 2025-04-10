@@ -160,8 +160,7 @@ def xenonnt_fuse_full_chain_simulation(
         sim_config = straxen.get_resource(simulation_config_file, fmt="json")
     else:
         raise ValueError(
-            "simulation_config_file is required. "
-            "Please provide a valid file path or file name."
+            "simulation_config_file is required. " "Please provide a valid file path or file name."
         )
 
     # --- Load settings from config file ---

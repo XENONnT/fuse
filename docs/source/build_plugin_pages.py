@@ -174,8 +174,9 @@ def create_plugin_documentation_text(st, plugin):
 def build_all_pages():
 
     st = fuse.context.xenonnt_fuse_full_chain_simulation(
-        output_folder="./fuse_data", run_without_proper_corrections=True,
-        simulation_config="sr0_dev"
+        output_folder="./fuse_data",
+        run_without_proper_corrections=True,
+        simulation_config="sr0_dev",
     )
 
     all_registered_fuse_plugins = {}
