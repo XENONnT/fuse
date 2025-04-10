@@ -159,14 +159,10 @@ def xenonnt_fuse_full_chain_simulation(
         )
         sim_config = straxen.get_resource(simulation_config_file, fmt="json")
     else:
-        if run_without_proper_corrections:
-            simulation_config_file = ""
-            sim_config = {}
-        else:
-            raise ValueError(
-                "simulation_config_file is required. "
-                "Please provide a valid file path or file name."
-            )
+        raise ValueError(
+            "simulation_config_file is required. "
+            "Please provide a valid file path or file name."
+        )
 
     # --- Load settings from config file ---
     corrections_run_id = (
@@ -220,7 +216,8 @@ def xenonnt_fuse_full_chain_simulation(
             raise ValueError("Set corrections_version or allow unsafe execution.")
 
     # Replace SIMULATION_CONFIG_FILE.json in plugin defaults
-    set_simulation_config_file(st, simulation_config_file)
+    if simulation_config_file:
+        set_simulation_config_file(st, simulation_config_file)
 
     # Format URLConfigs using the correct corrections_run_id
     for k, v in st.config.items():

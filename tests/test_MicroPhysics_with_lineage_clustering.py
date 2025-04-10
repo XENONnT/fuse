@@ -19,6 +19,7 @@ class TestLineageClustering(unittest.TestCase):
             output_folder=cls.temp_dir.name,
             run_without_proper_corrections=True,
             clustering_method="lineage",
+            config_file="sr0_dev"
         )
 
         cls.test_context.set_config(
