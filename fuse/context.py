@@ -150,17 +150,17 @@ def xenonnt_fuse_full_chain_simulation(
     simulation.
     """
 
-    # --- Load core settings from config file ---
+    # --- Load config file ---
     if simulation_config_file:
         simulation_config_file = (
             simulation_config
             if os.path.isfile(simulation_config)
             else f"fuse_config_nt_{simulation_config}.json"
         )
-        config = straxen.get_resource(simulation_config_file, fmt="json")
+        sim_config = straxen.get_resource(simulation_config_file, fmt="json")
     else:
         if run_without_proper_corrections:
-            config = {}
+            sim_config = {}
         else:
             raise ValueError(
                 "simulation_config_file is required. "
@@ -168,22 +168,23 @@ def xenonnt_fuse_full_chain_simulation(
             )
 
 
+    # --- Load settings from config file ---
     corrections_run_id = (
         corrections_run_id
         if corrections_run_id is not None
-        else config.get("default_corrections_run_id", "046477")
+        else sim_config.get("default_corrections_run_id", "046477")
     )
     log.info(f"Using corrections run id: {corrections_run_id}")
 
     fdc_map_mc = (
-        fdc_map_mc if fdc_map_mc is not None else config.get("fdc_map_mc", "")
+        fdc_map_mc if fdc_map_mc is not None else sim_config.get("fdc_map_mc", "")
     )
     log.info(f"Using fdc_map_mc: {fdc_map_mc}")
 
     clustering_method = (
         clustering_method
         if clustering_method is not None
-        else config.get("clustering_method", "dbscan")
+        else sim_config.get("clustering_method", "dbscan")
     )
     log.info(f"Using clustering method: {clustering_method}")
 
