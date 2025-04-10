@@ -17,9 +17,6 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.context")
 log.setLevel("INFO")
 
-DEFAULT_XEDOCS_VERSION = "global_v16"
-DEFAULT_SIMULATION_VERSION = "sr1_dev"
-
 # Backward compatibility for straxen versions
 if hasattr(straxen.contexts, "xnt_common_opts"):
     common_opts = straxen.contexts.xnt_common_opts
@@ -135,8 +132,8 @@ def microphysics_context(
 
 def xenonnt_fuse_full_chain_simulation(
     output_folder="./fuse_data",
-    corrections_version=DEFAULT_XEDOCS_VERSION,
-    simulation_config=DEFAULT_SIMULATION_VERSION,
+    corrections_version=None,
+    simulation_config=None,
     corrections_run_id=None,
     clustering_method=None,
     fdc_map_mc=None,
@@ -162,12 +159,25 @@ def xenonnt_fuse_full_chain_simulation(
         else f"fuse_config_nt_{simulation_config}.json"
     )
 
-    if corrections_run_id is None:
-        corrections_run_id = fuse.from_config(simulation_config_file, "default_corrections_run_id")
-    if fdc_map_mc is None:
-        fdc_map_mc = fuse.from_config(simulation_config_file, "fdc_map_mc")
-    if clustering_method is None:
-        clustering_method = fuse.from_config(simulation_config_file, "clustering_method")
+
+    corrections_run_id = (
+        corrections_run_id
+        if corrections_run_id is not None
+        else config.get("default_corrections_run_id", "046477")
+    )
+    log.info(f"Using corrections run id: {corrections_run_id}")
+
+    fdc_map_mc = (
+        fdc_map_mc if fdc_map_mc is not None else config.get("fdc_map_mc", "")
+    )
+    log.info(f"Using fdc_map_mc: {fdc_map_mc}")
+
+    clustering_method = (
+        clustering_method
+        if clustering_method is not None
+        else config.get("clustering_method", "dbscan")
+    )
+    log.info(f"Using clustering method: {clustering_method}")
 
 
     # --- Create context and register plugins ---
