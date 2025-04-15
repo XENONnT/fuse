@@ -840,7 +840,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         rr = np.clip(1 / r, 1 / rA, 1 / rW)
 
         return _luminescence_timings_simple(
-            len(xy), dG, E0, r, dr, rr, alpha, uE, pressure, n_photons
+            len(xy), dG, E0, r, dr, rr, alpha, uE, pressure, n_photons, self.rng
         )
 
     def optical_propagation(self, channels):
