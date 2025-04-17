@@ -215,14 +215,11 @@ class ElectronDrift(FuseBasePlugin):
 
             self.diffusion_longitudinal_map = _rz_map
 
-
-
         csys = self.fdc_map_fuse.coordinate_system
         rmin, rmax = csys[:, 0].min(), csys[:, 0].max()
         zmin, zmax = csys[:, 1].min(), csys[:, 1].max()
         self.fdc_map_r_bounds = (rmin, rmax)
         self.fdc_map_z_bounds = (zmin, zmax)
-
 
     def compute(self, interactions_in_roi):
         # Just apply this to clusters with photons
