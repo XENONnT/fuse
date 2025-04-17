@@ -332,6 +332,19 @@ class ElectronDrift(FuseBasePlugin):
             clipped_positions[:, 1], self.fdc_map_z_bounds[0], self.fdc_map_z_bounds[1]
         )
 
+        n_clipped_r = np.sum(
+            (positions[:, 0] < self.fdc_map_r_bounds[0])
+            | (positions[:, 0] > self.fdc_map_r_bounds[1])
+        )
+        n_clipped_z = np.sum(
+            (positions[:, 1] < self.fdc_map_z_bounds[0])
+            | (positions[:, 1] > self.fdc_map_z_bounds[1])
+        )
+        if n_clipped_r > 0 or n_clipped_z > 0:
+            self.log.warning(
+                f"Field distortion map is clipped {n_clipped_r} times in r and {n_clipped_z} times in z"
+            )
+
         r_obs = self.fdc_map_fuse(clipped_positions, map_name="r_distortion_map")
         x_obs = r_obs * np.cos(theta)
         y_obs = r_obs * np.sin(theta)
