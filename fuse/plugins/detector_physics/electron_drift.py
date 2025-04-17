@@ -342,7 +342,8 @@ class ElectronDrift(FuseBasePlugin):
         )
         if n_clipped_r > 0 or n_clipped_z > 0:
             self.log.warning(
-                f"Field distortion map is clipped {n_clipped_r} times in r and {n_clipped_z} times in z"
+                f"Field distortion map is clipped {n_clipped_r} \
+                    times in r and {n_clipped_z} times in z"
             )
 
         r_obs = self.fdc_map_fuse(clipped_positions, map_name="r_distortion_map")
