@@ -78,7 +78,6 @@ class MacroClusters(FuseBasePlugin):
                     s2_photons_2 = interactions_in_roi[ix1 + ix2]['sum_s2_photons']
                     s2_photons = s2_photons_1 + s2_photons_2
                     interactions_in_roi[ix1 + ix2]['sum_s2_photons'] = s2_photons
-                    interactions_in_roi[ix1]['sum_s2_photons'] = -1  # flag to throw this instruction away later
 
                     for quantity in [
                         "photons",
@@ -88,14 +87,9 @@ class MacroClusters(FuseBasePlugin):
                         "n_electron_interface",
                         "n_s1_photon_hits",
                     ]:
-                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][
-                            quantity
-                        ]
-
+                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][quantity]
                     for quantity in ["drift_time_mean", "drift_time_spread"]:
-                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][
-                            quantity
-                        ]
+                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][quantity]
                         interactions_in_roi[ix1 + ix2][quantity] /= 2
 
                     if s2_photons > 0:
@@ -104,7 +98,6 @@ class MacroClusters(FuseBasePlugin):
                                 interactions_in_roi[ix1 + ix2][f'{coord}{obs}'] = \
                                     (interactions_in_roi[ix1][f'{coord}{obs}'] * s2_photons_1 +
                                      interactions_in_roi[ix1 + ix2][f'{coord}{obs}'] * s2_photons_2) / s2_photons
-
 
                     interactions_in_roi[ix1 + ix2]["x_pri"] = interactions_in_roi[ix1]["x_pri"]
                     interactions_in_roi[ix1 + ix2]["y_pri"] = interactions_in_roi[ix1]["y_pri"]

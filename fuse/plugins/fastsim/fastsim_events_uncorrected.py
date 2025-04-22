@@ -23,28 +23,28 @@ class FastsimEventsUncorrected(FuseBasePlugin):
     provides = "fastsim_events_uncorrected"
     data_kind = "fastsim_events"
     dtype = [
-        (("S1 area, uncorrected [PE]", "s1_area"), np.float32),
-        (("S2 area, uncorrected [PE]", "s2_area"), np.float32),
-        (("Alternate S2 area, uncorrected [PE]", "alt_s2_area"), np.float32),
-        (("Sum of S2 areas in event, uncorrected [PE]", "s2_sum"), np.float32),
-        (("Number of S2s in event", "multiplicity"), np.int32),
-        (("Drift time between main S1 and S2 [ns]", "drift_time"), np.float32),
-        (("Drift time using alternate S2 [ns]", "alt_s2_interaction_drift_time"), np.float32),
-        (("Main S2 reconstructed X position, uncorrected [cm]", "s2_x"), np.float32),
-        (("Main S2 reconstructed Y position, uncorrected [cm]", "s2_y"), np.float32),
-        (("Alternate S2 reconstructed X position, uncorrected [cm]", "alt_s2_x"), np.float32),
-        (("Alternate S2 reconstructed Y position, uncorrected [cm]", "alt_s2_y"), np.float32),
-        (("Main interaction r-position with observed position [cm]", "r_naive"), np.float32),
-        (
-            ("Alternate interaction r-position with observed position [cm]", "alt_s2_r_naive"),
-            np.float32,
-        ),
-        (("Main interaction z-position with observed position [cm]", "z_naive"), np.float32),
-        (
-            ("Alternate interaction z-position with observed position [cm]", "alt_s2_z_naive"),
-            np.float32,
-        ),
-    ] + strax.time_fields
+                (("S1 area, uncorrected [PE]", "s1_area"), np.float32),
+                (("S2 area, uncorrected [PE]", "s2_area"), np.float32),
+                (("Alternate S2 area, uncorrected [PE]", "alt_s2_area"), np.float32),
+                (("Sum of S2 areas in event, uncorrected [PE]", "s2_sum"), np.float32),
+                (("Number of S2s in event", "multiplicity"), np.int32),
+                (("Drift time between main S1 and S2 [ns]", "drift_time"), np.float32),
+                (("Drift time using alternate S2 [ns]", "alt_s2_interaction_drift_time"), np.float32),
+                (("Main S2 reconstructed X position, uncorrected [cm]", "s2_x"), np.float32),
+                (("Main S2 reconstructed Y position, uncorrected [cm]", "s2_y"), np.float32),
+                (("Alternate S2 reconstructed X position, uncorrected [cm]", "alt_s2_x"), np.float32),
+                (("Alternate S2 reconstructed Y position, uncorrected [cm]", "alt_s2_y"), np.float32),
+                (("Main interaction r-position with observed position [cm]", "r_naive"), np.float32),
+                (
+                    ("Alternate interaction r-position with observed position [cm]", "alt_s2_r_naive"),
+                    np.float32,
+                ),
+                (("Main interaction z-position with observed position [cm]", "z_naive"), np.float32),
+                (
+                    ("Alternate interaction z-position with observed position [cm]", "alt_s2_z_naive"),
+                    np.float32,
+                ),
+            ] + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
 
@@ -100,6 +100,7 @@ class FastsimEventsUncorrected(FuseBasePlugin):
         cache=True,
         help="Probability of double photo-electron emission",
     )
+
     @staticmethod
     def average_spe_distribution(spe_shapes):
         """
@@ -143,7 +144,6 @@ class FastsimEventsUncorrected(FuseBasePlugin):
             if np.issubdtype(result.dtype[name], np.floating):
                 result[name].fill(np.nan)
         mean_photon_area_distribution = self.average_spe_distribution(self.photon_area_distribution)
-
         for i, eventid in enumerate(eventids):
             these_clusters = fastsim_macro_clusters[fastsim_macro_clusters["eventid"] == eventid]
 

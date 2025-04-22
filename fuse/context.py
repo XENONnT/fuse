@@ -89,9 +89,15 @@ truth_information_plugins = [
 
 fastsim_plugins = [
     fuse.fastsim.MacroClusters,
+<<<<<<< HEAD
     fuse.fastsim.FastsimEventsUncorrected,
     fuse.fastsim.FastsimCorrections,
     fuse.fastsim.FastsimEvents
+=======
+    fuse.fastsim.S1Areas,
+    fuse.fastsim.S2Areas,
+    fuse.fastsim.FastsimEventsUncorrected,
+>>>>>>> 845a46391d5e772439eda77308b3a21cf11dc6e4
 ]
 
 
