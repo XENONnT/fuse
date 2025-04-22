@@ -9,7 +9,6 @@
 
 name: Test package
 
-# Trigger this code when a new release is published
 on:
   push:
     branches: [ main ]
@@ -26,11 +25,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ "ubuntu-latest" ]
-        python-version: [ "3.9", "3.10" ]
+        python-version: [ "3.10", "3.11" ]
+        dependency-version: [ "latest", "lowest" ]
         test: [ 'coveralls' ]
 
     steps:
-      # Setup and installation
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -40,14 +39,20 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        # following https://github.com/NESTCollaboration/nestpy/blob/master/README.md
         run: |
           python -m pip install --upgrade pip
           python -m pip install pytest coverage coveralls
+
+          # Clone and install nestpy (same as your existing workflow)
           git clone https://github.com/NESTCollaboration/nestpy.git
           cd nestpy
-          git submodule update --init --recursive
           git checkout fb3804e
+          git submodule update --init --recursive
+          cd lib/pybind11
+          git fetch --tags
+          git checkout v2.13.0
+          cd ../../
+          sed -i 's/cmake_minimum_required(VERSION 2.8.12)/cmake_minimum_required(VERSION 2.8.12...3.30)/' CMakeLists.txt
           pip install .
           cd ..
           rm -rf nestpy
@@ -58,31 +63,42 @@ jobs:
           mongodb-version: 4.4.1
 
       - name: patch utilix file
-        # Secrets and required files
-        # Patch this file if we want to have access to the database
         run: bash .github/scripts/create_readonly_utilix_config.sh
         env:
-          # RunDB
           RUNDB_API_URL: ${{ secrets.RUNDB_API_URL }}
           RUNDB_API_USER_READONLY: ${{ secrets.RUNDB_API_USER_READONLY }}
-          RUNDB_API_PASSWORD_READONLY: ${{ secrets.RUNDB_API_PASSWORD_READONLY}}
+          RUNDB_API_PASSWORD_READONLY: ${{ secrets.RUNDB_API_PASSWORD_READONLY }}
           PYMONGO_URL: ${{ secrets.PYMONGO_URL }}
           PYMONGO_USER: ${{ secrets.PYMONGO_USER }}
           PYMONGO_PASSWORD: ${{ secrets.PYMONGO_PASSWORD }}
           PYMONGO_DATABASE: ${{ secrets.PYMONGO_DATABASE }}
-          # SCADA
           SCADA_URL: ${{ secrets.SCADA_URL }}
           SCADA_VALUE_URL: ${{ secrets.SCADA_VALUE_URL }}
           SCADA_USER: ${{ secrets.SCADA_USER }}
           SCADA_LOGIN_URL: ${{ secrets.SCADA_LOGIN_URL }}
           SCADA_PWD: ${{ secrets.SCADA_PWD }}
 
-      - name: Install fuse
+      - name: Install fuse (latest dependencies)
+        if: matrix.dependency-version == 'latest'
         run: |
           pip install .
 
+      - name: Install fuse (lowest strax + straxen)
+        if: matrix.dependency-version == 'lowest'
+        run: |
+          pip install --no-cache-dir \
+            numpy==1.24.4 \
+            pandas==1.5.3 \
+            numba==0.58.1
+          pip install \
+            strax==1.6.0 \
+            straxen==2.2.3
+          pip install .
+
+      - name: Show installed package versions
+        run: |
+          pip list
       - name: Test package and report to coveralls
-        # This is running a normal test
         env:
           TEST_MONGO_URI: 'mongodb://localhost:27017/'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

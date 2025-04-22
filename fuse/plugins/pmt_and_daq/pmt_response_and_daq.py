@@ -6,6 +6,7 @@ import strax
 import straxen
 
 from ...plugin import FuseBaseDownChunkingPlugin
+from ...common import stable_sort, stable_argsort
 
 export, __all__ = strax.exporter()
 
@@ -244,6 +245,9 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         _photons = List()
         [_photons.append(x) for x in photons]
 
+        # sort pulse groups by pulse id same as photons
+        pulse_groups = stable_sort(pulse_groups, order="pulse_id")
+
         # use an upper limit for the waveform buffer
         length_waveform_buffer = np.int32(
             np.sum(np.ceil(pulse_groups["length"] / strax.DEFAULT_RECORD_LENGTH))
@@ -283,7 +287,10 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
         # Interpolate on cdf ensures that each spe pulse would sum up to 1 pe*sample duration^-1
         pe_pulse_function = interp1d(
-            self.pe_pulse_ts, np.cumsum(self.pe_pulse_ys), bounds_error=False, fill_value=(0, 1)
+            self.pe_pulse_ts,
+            np.cumsum(self.pe_pulse_ys) / np.sum(self.pe_pulse_ys),
+            bounds_error=False,
+            fill_value=(0, 1),
         )
 
         # Samples are always multiples of sample_duration
@@ -559,7 +566,7 @@ def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
 
 
 def split_photons(propagated_photons):
-    sort_index = np.argsort(propagated_photons["pulse_id"])
+    sort_index = stable_argsort(propagated_photons["pulse_id"])
 
     propagated_photons_sorted = propagated_photons[sort_index]
 

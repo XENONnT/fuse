@@ -1,3 +1,53 @@
+1.4.4 / 2025-01-25
+------------------
+* Be compatible with straxen >= 3 (https://github.com/XENONnT/fuse/pull/282)
+* Remove CMT URLs, drop python 3.9 (https://github.com/XENONnT/fuse/pull/285)
+
+
+1.4.3 / 2025-01-13
+------------------
+* Little bugfix for CSV generators (https://github.com/XENONnT/fuse/pull/273)
+* Constraint strax(en) to be less than 2.0.0(3.0.0) (https://github.com/XENONnT/fuse/pull/276)
+* Use master for docformatter (https://github.com/XENONnT/fuse/pull/277)
+* Fix chunk ends late issue (https://github.com/XENONnT/fuse/pull/275)
+* [pre-commit.ci] pre-commit autoupdate (https://github.com/XENONnT/fuse/pull/274)
+
+1.4.2 / 2024-10-16
+------------------
+* utilix>0.9 compatibility (https://github.com/XENONnT/fuse/pull/267)
+* [pre-commit.ci] pre-commit autoupdate (https://github.com/XENONnT/fuse/pull/266)
+* Import MongoDownloader from utilix (https://github.com/XENONnT/fuse/pull/271)
+* Remove WFSim connection (https://github.com/XENONnT/fuse/pull/268)
+* Area correction override (https://github.com/XENONnT/fuse/pull/269)
+
+1.4.1 / 2024-09-17
+------------------
+* pulse_id type casting inconsistency (#260)
+* Make sure CDF goes to 1 smoothly (#261)
+* Option to replace maps by constant dummy map (#262)
+
+1.4.0 / 2024-09-10
+------------------
+* Efficient memory chunking in input plugin (#207)
+* fix numpy version (#243)
+* [pre-commit.ci] pre-commit autoupdate (#242)
+* Add lineage clustering algorithm (#190)
+* Keep interactions even if outside NEST validity (#241)
+* Update BetaYields (#192)
+* Add option to distribute Geant4 events with fixed timing (#225)
+* [pre-commit.ci] pre-commit autoupdate (#244)
+* Update mass and charge dtypes to int16 (#246)
+* Fix plugin warning/debug/info logging (#248)
+* [pre-commit.ci] pre-commit autoupdate (#250)
+* Exciton ratio fix (#251)
+* Poetry does not understand `requires-python` (#252)
+* [pre-commit.ci] pre-commit autoupdate (#253)
+* [pre-commit.ci] pre-commit autoupdate (#255)
+* [pre-commit.ci] pre-commit autoupdate (#256)
+* Update yields and clustering (#245)
+* Take yield and width parameters from config file (#257)
+* Faster lineage clustering (#258)
+
 1.3.0 / 2024-06-10
 ------------------
 * Use straxen documentation building functions to avoid duplicated codes (#218)
