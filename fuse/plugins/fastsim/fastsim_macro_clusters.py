@@ -49,8 +49,8 @@ class MacroClusters(FuseBasePlugin):
 
     electron_trapping_time = straxen.URLConfig(
         default="take://resource://"
-                "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                "&take=electron_trapping_time",
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=electron_trapping_time",
         type=(int, float),
         cache=True,
         help="Time scale electrons are trapped at the liquid gas interface",
@@ -58,8 +58,8 @@ class MacroClusters(FuseBasePlugin):
 
     p_double_pe_emission = straxen.URLConfig(
         default="take://resource://"
-                "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                "&take=p_double_pe_emision",
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=p_double_pe_emision",
         type=(int, float),
         cache=True,
         help="Probability of double photo-electron emission",
@@ -74,13 +74,13 @@ class MacroClusters(FuseBasePlugin):
                 if interactions_in_roi[ix1]["eventid"] != interactions_in_roi[ix1 + ix2]["eventid"]:
                     break
                 if self.merge_these_clusters(
-                        interactions_in_roi[ix1], interactions_in_roi[ix1 + ix2]
+                    interactions_in_roi[ix1], interactions_in_roi[ix1 + ix2]
                 ):
                     ne1 = interactions_in_roi[ix1]["n_electron_extracted"]
                     ne2 = interactions_in_roi[ix1 + ix2]["n_electron_extracted"]
                     ne_total = ne1 + ne2
-                    interactions_in_roi[ix1 + ix2]['n_electron_extracted'] = ne_total
-                    interactions_in_roi[ix1]['n_electron_extracted'] = -1
+                    interactions_in_roi[ix1 + ix2]["n_electron_extracted"] = ne_total
+                    interactions_in_roi[ix1]["n_electron_extracted"] = -1
 
                 for q in [
                     "photons",
@@ -99,12 +99,9 @@ class MacroClusters(FuseBasePlugin):
                     for coord in ["x", "y", "z"]:
                         for obs in ["", "_obs"]:
                             interactions_in_roi[ix1 + ix2][f"{coord}{obs}"] = (
-                                                                                      interactions_in_roi[ix1][
-                                                                                          f"{coord}{obs}"] * ne1
-                                                                                      + interactions_in_roi[
-                                                                                          ix1 + ix2][
-                                                                                          f"{coord}{obs}"] * ne2
-                                                                              ) / ne_total
+                                interactions_in_roi[ix1][f"{coord}{obs}"] * ne1
+                                + interactions_in_roi[ix1 + ix2][f"{coord}{obs}"] * ne2
+                            ) / ne_total
 
                 interactions_in_roi[ix1 + ix2]["x_pri"] = interactions_in_roi[ix1]["x_pri"]
                 interactions_in_roi[ix1 + ix2]["y_pri"] = interactions_in_roi[ix1]["y_pri"]
