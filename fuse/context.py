@@ -112,12 +112,12 @@ fastsim_plugins = [
     fuse.fastsim.MacroClusters,
     fuse.fastsim.FastsimEventsUncorrected,
     fuse.fastsim.FastsimCorrections,
-    fuse.fastsim.FastsimEvents
+    fuse.fastsim.FastsimEvents,
 ]
 
 
 def microphysics_context(
-        output_folder="./fuse_data", simulation_config_file="fuse_config_nt_sr1_dev.json"
+    output_folder="./fuse_data", simulation_config_file="fuse_config_nt_sr1_dev.json"
 ):
     """Function to create a fuse microphysics simulation context."""
 
@@ -137,19 +137,19 @@ def microphysics_context(
 
 
 def full_chain_context(
-        output_folder="./fuse_data",
-        clustering_method="dbscan",
-        corrections_version=None,
-        simulation_config_file="fuse_config_nt_sr1_dev.json",
-        corrections_run_id="046477",
-        run_id_specific_config={
-            "gain_model_mc": "gain_model",
-            "electron_lifetime_liquid": "elife",
-            "drift_velocity_liquid": "electron_drift_velocity",
-            "drift_time_gate": "electron_drift_time_gate",
-        },
-        run_without_proper_corrections=False,
-        extra_plugins=[],
+    output_folder="./fuse_data",
+    clustering_method="dbscan",
+    corrections_version=None,
+    simulation_config_file="fuse_config_nt_sr1_dev.json",
+    corrections_run_id="046477",
+    run_id_specific_config={
+        "gain_model_mc": "gain_model",
+        "electron_lifetime_liquid": "elife",
+        "drift_velocity_liquid": "electron_drift_velocity",
+        "drift_time_gate": "electron_drift_time_gate",
+    },
+    run_without_proper_corrections=False,
+    extra_plugins=[],
 ):
     """Function to create a fuse full chain simulation context."""
 
@@ -265,14 +265,14 @@ def full_chain_context(
 
 
 def xenonnt_fuse_full_chain_simulation(
-        output_folder="./fuse_data",
-        corrections_version=DEFAULT_XEDOCS_VERSION,
-        simulation_config=DEFAULT_SIMULATION_VERSION,
-        corrections_run_id=None,
-        clustering_method=None,  # defaults to dbscan, but can be set to lineage
-        fdc_map_mc=None,
-        cut_list=None,
-        **kwargs,
+    output_folder="./fuse_data",
+    corrections_version=DEFAULT_XEDOCS_VERSION,
+    simulation_config=DEFAULT_SIMULATION_VERSION,
+    corrections_run_id=None,
+    clustering_method=None,  # defaults to dbscan, but can be set to lineage
+    fdc_map_mc=None,
+    cut_list=None,
+    **kwargs,
 ):
     """Function to create a fuse full chain simulation context with the proper
     settings for XENONnT simulations.
@@ -335,9 +335,9 @@ def xenonnt_fuse_full_chain_simulation(
 
 
 def public_config_context(
-        output_folder="./fuse_data",
-        extra_plugins=[fuse.plugins.S2PhotonPropagationSimple],
-        simulation_config_file="./files/XENONnT_public_config.json",
+    output_folder="./fuse_data",
+    extra_plugins=[fuse.plugins.S2PhotonPropagationSimple],
+    simulation_config_file="./files/XENONnT_public_config.json",
 ):
     """Function to create a fuse full chain simulation context."""
 
@@ -423,18 +423,18 @@ def public_config_context(
 
 
 def fastsim_context(
-        output_folder="./fuse_data",
-        clustering_method="dbscan",
-        corrections_version=None,
-        simulation_config_file="fuse_config_nt_sr1_dev.json",
-        corrections_run_id="046477",
-        run_id_specific_config={
-            "gain_model_mc": "gain_model",
-            "electron_lifetime_liquid": "elife",
-            "drift_velocity_liquid": "electron_drift_velocity",
-            "drift_time_gate": "electron_drift_time_gate",
-        },
-        run_without_proper_corrections=False,
+    output_folder="./fuse_data",
+    clustering_method="dbscan",
+    corrections_version=None,
+    simulation_config_file="fuse_config_nt_sr1_dev.json",
+    corrections_run_id="046477",
+    run_id_specific_config={
+        "gain_model_mc": "gain_model",
+        "electron_lifetime_liquid": "elife",
+        "drift_velocity_liquid": "electron_drift_velocity",
+        "drift_time_gate": "electron_drift_time_gate",
+    },
+    run_without_proper_corrections=False,
 ):
     """Function to create a fuse fastsim context."""
 
