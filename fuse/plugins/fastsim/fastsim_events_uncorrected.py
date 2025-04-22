@@ -2,6 +2,7 @@ import strax
 import numpy as np
 import straxen
 import logging
+from scipy.interpolate import interp1d
 
 from ...plugin import FuseBasePlugin
 
@@ -86,7 +87,7 @@ class FastsimEventsUncorrected(FuseBasePlugin):
         help="S2 correction map",
     )
 
-    p_double_pe_emision = straxen.URLConfig(
+    p_double_pe_emission = straxen.URLConfig(
         default="take://resource://"
                 "SIMULATION_CONFIG_FILE.json?&fmt=json"
                 "&take=p_double_pe_emision",
@@ -94,39 +95,62 @@ class FastsimEventsUncorrected(FuseBasePlugin):
         cache=True,
         help="Probability of double photo-electron emission",
     )
+    @staticmethod
+    def average_spe_distribution(spe_shapes):
+        """
+            We take the spe distribution from all channels and take the average to be our spe distribution to draw
+            photon areas from
+        """
+        uniform_to_pe_arr = []
+        for ch in spe_shapes.columns[1:]:  # skip the first element which is the 'charge' header
+            if spe_shapes[ch].sum() > 0:
+                # mean_spe = (spe_shapes['charge'].values * spe_shapes[ch]).sum() / spe_shapes[ch].sum()
+                scaled_bins = spe_shapes['charge'].values  # / mean_spe
+                cdf = np.cumsum(spe_shapes[ch]) / np.sum(spe_shapes[ch])
+            else:
+                # if sum is 0, just make some dummy axes to pass to interpolator
+                cdf = np.linspace(0, 1, 10)
+                scaled_bins = np.zeros_like(cdf)
+
+            grid_cdf = np.linspace(0, 1, 2001)
+            # For Inverse_transform_sampling methode
+            grid_scale = interp1d(cdf, scaled_bins,
+                                  bounds_error=False,
+                                  fill_value=(scaled_bins[0], scaled_bins[-1]))(grid_cdf)
+
+            uniform_to_pe_arr.append(grid_scale)
+        spe_distribution = np.mean(uniform_to_pe_arr, axis=0)
+
+        return spe_distribution
 
     @staticmethod
-    def get_s1_area_with_spe(spe_distribution, num_photons):
+    def get_s1_area_with_spe(spe_dist, num_photons):
         """
             :params: spe_distribution, the spe distribution to draw photon areas from
             :params: num_photons, number of photons to draw from spe distribution
         """
-        s1_area_spe = []
-        for n_ph in num_photons:
-            s1_area_spe.append(np.sum(spe_distribution[
-                                          (np.random.random(n_ph) * len(spe_distribution)).astype(np.int64)]))
-
-        return np.array(s1_area_spe)
+        return np.sum(spe_dist[(np.random.random(num_photons) * len(spe_dist)).astype(np.int64)])
 
     def compute(self, fastsim_macro_clusters):
         eventids = np.unique(fastsim_macro_clusters['eventid'])
-        result = np.zeros(len(eventids), dtype=self.dtype)
+        result = np.empty(len(eventids), dtype=self.dtype)
+        for name in result.dtype.names:
+            if np.issubdtype(result.dtype[name], np.floating):
+                result[name].fill(np.nan)
+        mean_photon_area_distribution = self.average_spe_distribution(self.photon_area_distribution)
         for i, eventid in enumerate(eventids):
             these_clusters = fastsim_macro_clusters[fastsim_macro_clusters['eventid'] == eventid]
 
             result[i]["time"] = these_clusters[0]["time"]
             result[i]["endtime"] = these_clusters[0]["endtime"]
 
-            photons = np.sum(these_clusters['n_s1_photon_hits'])
-            result["s1_area"][i] = photons * 1.28  # TODO: replace 1.28 with correct spe value
+            photons = np.sum(these_clusters['n_s1_photon_hits']) * (1 + self.p_double_pe_emission)
+            result["s1_area"][i] = self.get_s1_area_with_spe(mean_photon_area_distribution, photons.astype(np.int64))
 
             cluster_info = []
             for cluster in these_clusters:
-                pos = np.array([cluster["x"], cluster["y"]]).T  # TODO: check if correct positions
-                ly = self.get_s2_light_yield(pos)[0]
-                s2_area = ly * cluster['n_electron_extracted']
-                if s2_area > 0:
-                    cluster_info.append((s2_area, cluster))
+                s2_area = cluster['sum_s2_photons'] * (1 + self.p_double_pe_emission)
+                cluster_info.append((s2_area, cluster))
 
             # Sort the clusters by s2_area in descending order
             cluster_info_sorted = sorted(cluster_info, key=lambda x: x[0], reverse=True)
@@ -149,7 +173,7 @@ class FastsimEventsUncorrected(FuseBasePlugin):
                 result[i]['alt_s2_z_naive'] = cluster_info_sorted[1][1]['z_obs']
 
             result[i]["multiplicity"] = len(cluster_info_sorted)
-            
+
         result['r_naive'] = np.sqrt(result['s2_x'] ** 2 + result['s2_y'] ** 2)
         result['alt_s2_r_naive'] = np.sqrt(result['alt_s2_x'] ** 2 + result['alt_s2_y'] ** 2)
 
