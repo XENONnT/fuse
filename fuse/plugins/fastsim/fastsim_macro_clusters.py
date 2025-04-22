@@ -49,8 +49,8 @@ class MacroClusters(FuseBasePlugin):
 
     electron_trapping_time = straxen.URLConfig(
         default="take://resource://"
-                "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                "&take=electron_trapping_time",
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=electron_trapping_time",
         type=(int, float),
         cache=True,
         help="Time scale electrons are trapped at the liquid gas interface",
@@ -58,8 +58,8 @@ class MacroClusters(FuseBasePlugin):
 
     p_double_pe_emission = straxen.URLConfig(
         default="take://resource://"
-                "SIMULATION_CONFIG_FILE.json?&fmt=json"
-                "&take=p_double_pe_emision",
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=p_double_pe_emision",
         type=(int, float),
         cache=True,
         help="Probability of double photo-electron emission",
@@ -73,11 +73,13 @@ class MacroClusters(FuseBasePlugin):
             for ix2 in range(1, len(interactions_in_roi[ix1:])):
                 if interactions_in_roi[ix1]["eventid"] != interactions_in_roi[ix1 + ix2]["eventid"]:
                     break
-                if self.merge_these_clusters(interactions_in_roi[ix1], interactions_in_roi[ix1 + ix2]):
-                    s2_photons_1 = interactions_in_roi[ix1]['sum_s2_photons']
-                    s2_photons_2 = interactions_in_roi[ix1 + ix2]['sum_s2_photons']
+                if self.merge_these_clusters(
+                    interactions_in_roi[ix1], interactions_in_roi[ix1 + ix2]
+                ):
+                    s2_photons_1 = interactions_in_roi[ix1]["sum_s2_photons"]
+                    s2_photons_2 = interactions_in_roi[ix1 + ix2]["sum_s2_photons"]
                     s2_photons = s2_photons_1 + s2_photons_2
-                    interactions_in_roi[ix1 + ix2]['sum_s2_photons'] = s2_photons
+                    interactions_in_roi[ix1 + ix2]["sum_s2_photons"] = s2_photons
 
                     for quantity in [
                         "photons",
@@ -87,17 +89,22 @@ class MacroClusters(FuseBasePlugin):
                         "n_electron_interface",
                         "n_s1_photon_hits",
                     ]:
-                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][quantity]
+                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][
+                            quantity
+                        ]
                     for quantity in ["drift_time_mean", "drift_time_spread"]:
-                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][quantity]
+                        interactions_in_roi[ix1 + ix2][quantity] += interactions_in_roi[ix1][
+                            quantity
+                        ]
                         interactions_in_roi[ix1 + ix2][quantity] /= 2
 
                     if s2_photons > 0:
-                        for coord in ['x', 'y', 'z']:
-                            for obs in ['', '_obs']:
-                                interactions_in_roi[ix1 + ix2][f'{coord}{obs}'] = \
-                                    (interactions_in_roi[ix1][f'{coord}{obs}'] * s2_photons_1 +
-                                     interactions_in_roi[ix1 + ix2][f'{coord}{obs}'] * s2_photons_2) / s2_photons
+                        for coord in ["x", "y", "z"]:
+                            for obs in ["", "_obs"]:
+                                interactions_in_roi[ix1 + ix2][f"{coord}{obs}"] = (
+                                    interactions_in_roi[ix1][f"{coord}{obs}"] * s2_photons_1
+                                    + interactions_in_roi[ix1 + ix2][f"{coord}{obs}"] * s2_photons_2
+                                ) / s2_photons
 
                     interactions_in_roi[ix1 + ix2]["x_pri"] = interactions_in_roi[ix1]["x_pri"]
                     interactions_in_roi[ix1 + ix2]["y_pri"] = interactions_in_roi[ix1]["y_pri"]
@@ -105,17 +112,18 @@ class MacroClusters(FuseBasePlugin):
 
                     break
 
-        return interactions_in_roi[interactions_in_roi['sum_s2_photons'] >= 0]
+        return interactions_in_roi[interactions_in_roi["sum_s2_photons"] >= 0]
 
     def merge_these_clusters(self, cluster_a, cluster_b):
         area = np.zeros(2)
         dt_mean = np.zeros(2)
         width = np.zeros(2)
         for i, inst in enumerate([cluster_a, cluster_b]):
-            area[i] = inst['sum_s2_photons'] * (1 + self.p_double_pe_emission)
-            dt_mean[i] = inst['drift_time_mean']
-            width[i] = np.sqrt(inst['drift_time_spread'] ** 2 +
-                               (self.electron_trapping_time + 78.3) ** 2)  # 1 sigma spread
+            area[i] = inst["sum_s2_photons"] * (1 + self.p_double_pe_emission)
+            dt_mean[i] = inst["drift_time_mean"]
+            width[i] = np.sqrt(
+                inst["drift_time_spread"] ** 2 + (self.electron_trapping_time + 78.3) ** 2
+            )  # 1 sigma spread
             # TODO: s2_time_spread=78.3 was part of fax config but has been removed since. Probably need to re-add it?
         alt, main = area.argsort()
         # TODO : Get normalisation factors and NN weights from private_nt_aux_files
@@ -124,9 +132,10 @@ class MacroClusters(FuseBasePlugin):
         alt_width = width[alt] / 5871
         delta_t = (dt_mean[main] - dt_mean[alt]) / 22378
         working_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-        w0, w1, w2, w3, w4, w5, w6, w7, w8, w9 = pickle.load(open(f'{working_dir}/nn_weights.p', 'rb+'))
+        w0, w1, w2, w3, w4, w5, w6, w7, w8, w9 = pickle.load(
+            open(f"{working_dir}/nn_weights.p", "rb+")
+        )
 
         X = np.array((sum_area, main_width, alt_width, delta_t), dtype=np.float32)
         y = get_nn_prediction(X, w0, w1, w2, w3, w4, w5, w6, w7, w8, w9)
         return y > 0.5
-

@@ -23,28 +23,28 @@ class FastsimEventsUncorrected(FuseBasePlugin):
     provides = "fastsim_events_uncorrected"
     data_kind = "fastsim_events"
     dtype = [
-                (("S1 area, uncorrected [PE]", "s1_area"), np.float32),
-                (("S2 area, uncorrected [PE]", "s2_area"), np.float32),
-                (("Alternate S2 area, uncorrected [PE]", "alt_s2_area"), np.float32),
-                (("Sum of S2 areas in event, uncorrected [PE]", "s2_sum"), np.float32),
-                (("Number of S2s in event", "multiplicity"), np.int32),
-                (("Drift time between main S1 and S2 [ns]", "drift_time"), np.float32),
-                (("Drift time using alternate S2 [ns]", "alt_s2_interaction_drift_time"), np.float32),
-                (("Main S2 reconstructed X position, uncorrected [cm]", "s2_x"), np.float32),
-                (("Main S2 reconstructed Y position, uncorrected [cm]", "s2_y"), np.float32),
-                (("Alternate S2 reconstructed X position, uncorrected [cm]", "alt_s2_x"), np.float32),
-                (("Alternate S2 reconstructed Y position, uncorrected [cm]", "alt_s2_y"), np.float32),
-                (("Main interaction r-position with observed position [cm]", "r_naive"), np.float32),
-                (
-                    ("Alternate interaction r-position with observed position [cm]", "alt_s2_r_naive"),
-                    np.float32,
-                ),
-                (("Main interaction z-position with observed position [cm]", "z_naive"), np.float32),
-                (
-                    ("Alternate interaction z-position with observed position [cm]", "alt_s2_z_naive"),
-                    np.float32,
-                ),
-            ] + strax.time_fields
+        (("S1 area, uncorrected [PE]", "s1_area"), np.float32),
+        (("S2 area, uncorrected [PE]", "s2_area"), np.float32),
+        (("Alternate S2 area, uncorrected [PE]", "alt_s2_area"), np.float32),
+        (("Sum of S2 areas in event, uncorrected [PE]", "s2_sum"), np.float32),
+        (("Number of S2s in event", "multiplicity"), np.int32),
+        (("Drift time between main S1 and S2 [ns]", "drift_time"), np.float32),
+        (("Drift time using alternate S2 [ns]", "alt_s2_interaction_drift_time"), np.float32),
+        (("Main S2 reconstructed X position, uncorrected [cm]", "s2_x"), np.float32),
+        (("Main S2 reconstructed Y position, uncorrected [cm]", "s2_y"), np.float32),
+        (("Alternate S2 reconstructed X position, uncorrected [cm]", "alt_s2_x"), np.float32),
+        (("Alternate S2 reconstructed Y position, uncorrected [cm]", "alt_s2_y"), np.float32),
+        (("Main interaction r-position with observed position [cm]", "r_naive"), np.float32),
+        (
+            ("Alternate interaction r-position with observed position [cm]", "alt_s2_r_naive"),
+            np.float32,
+        ),
+        (("Main interaction z-position with observed position [cm]", "z_naive"), np.float32),
+        (
+            ("Alternate interaction z-position with observed position [cm]", "alt_s2_z_naive"),
+            np.float32,
+        ),
+    ] + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
 
@@ -103,15 +103,13 @@ class FastsimEventsUncorrected(FuseBasePlugin):
 
     @staticmethod
     def average_spe_distribution(spe_shapes):
-        """
-            We take the spe distribution from all channels and take the average to be our spe distribution to draw
-            photon areas from
-        """
+        """We take the spe distribution from all channels and take the average
+        to be our spe distribution to draw photon areas from."""
         uniform_to_pe_arr = []
         for ch in spe_shapes.columns[1:]:  # skip the first element which is the 'charge' header
             if spe_shapes[ch].sum() > 0:
                 # mean_spe = (spe_shapes['charge'].values * spe_shapes[ch]).sum() / spe_shapes[ch].sum()
-                scaled_bins = spe_shapes['charge'].values  # / mean_spe
+                scaled_bins = spe_shapes["charge"].values  # / mean_spe
                 cdf = np.cumsum(spe_shapes[ch]) / np.sum(spe_shapes[ch])
             else:
                 # if sum is 0, just make some dummy axes to pass to interpolator
@@ -120,9 +118,9 @@ class FastsimEventsUncorrected(FuseBasePlugin):
 
             grid_cdf = np.linspace(0, 1, 2001)
             # For Inverse_transform_sampling methode
-            grid_scale = interp1d(cdf, scaled_bins,
-                                  bounds_error=False,
-                                  fill_value=(scaled_bins[0], scaled_bins[-1]))(grid_cdf)
+            grid_scale = interp1d(
+                cdf, scaled_bins, bounds_error=False, fill_value=(scaled_bins[0], scaled_bins[-1])
+            )(grid_cdf)
 
             uniform_to_pe_arr.append(grid_scale)
         spe_distribution = np.mean(uniform_to_pe_arr, axis=0)
@@ -138,7 +136,7 @@ class FastsimEventsUncorrected(FuseBasePlugin):
         return np.sum(spe_dist[(np.random.random(num_photons) * len(spe_dist)).astype(np.int64)])
 
     def compute(self, fastsim_macro_clusters):
-        eventids = np.unique(fastsim_macro_clusters['eventid'])
+        eventids = np.unique(fastsim_macro_clusters["eventid"])
         result = np.empty(len(eventids), dtype=self.dtype)
         for name in result.dtype.names:
             if np.issubdtype(result.dtype[name], np.floating):
@@ -150,12 +148,14 @@ class FastsimEventsUncorrected(FuseBasePlugin):
             result[i]["time"] = these_clusters[0]["time"]
             result[i]["endtime"] = these_clusters[0]["endtime"]
 
-            photons = np.sum(these_clusters['n_s1_photon_hits']) * (1 + self.p_double_pe_emission)
-            result["s1_area"][i] = self.get_s1_area_with_spe(mean_photon_area_distribution, photons.astype(np.int64))
+            photons = np.sum(these_clusters["n_s1_photon_hits"]) * (1 + self.p_double_pe_emission)
+            result["s1_area"][i] = self.get_s1_area_with_spe(
+                mean_photon_area_distribution, photons.astype(np.int64)
+            )
 
             cluster_info = []
             for cluster in these_clusters:
-                s2_area = cluster['sum_s2_photons'] * (1 + self.p_double_pe_emission)
+                s2_area = cluster["sum_s2_photons"] * (1 + self.p_double_pe_emission)
                 cluster_info.append((s2_area, cluster))
 
             # Sort the clusters by s2_area in descending order
@@ -182,8 +182,8 @@ class FastsimEventsUncorrected(FuseBasePlugin):
 
             result[i]["multiplicity"] = len(cluster_info_sorted)
 
-        result['r_naive'] = np.sqrt(result['s2_x'] ** 2 + result['s2_y'] ** 2)
-        result['alt_s2_r_naive'] = np.sqrt(result['alt_s2_x'] ** 2 + result['alt_s2_y'] ** 2)
+        result["r_naive"] = np.sqrt(result["s2_x"] ** 2 + result["s2_y"] ** 2)
+        result["alt_s2_r_naive"] = np.sqrt(result["alt_s2_x"] ** 2 + result["alt_s2_y"] ** 2)
 
         return result
 
