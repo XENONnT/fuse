@@ -28,7 +28,6 @@ else:
     common_opts = straxen.contexts.common_opts
     common_config = straxen.contexts.common_config
 
-
 # Plugins to simulate microphysics
 microphysics_plugins_dbscan_clustering = [
     fuse.micro_physics.ChunkInput,
@@ -104,21 +103,21 @@ truth_information_plugins = [
     fuse.truth_information.ClusterTagging,
 ]
 
-fastsim_plugins = [
-    fuse.fastsim.MacroClusters,
-    fuse.fastsim.FastsimEventsUncorrected,
-    fuse.fastsim.FastsimCorrections,
-    fuse.fastsim.FastsimEvents
-    ]
-
 # Plugins to override the default processing plugins in straxen
 processing_plugins = [
     fuse.processing.CorrectedAreasMC,
 ]
 
+fastsim_plugins = [
+    fuse.fastsim.MacroClusters,
+    fuse.fastsim.FastsimEventsUncorrected,
+    fuse.fastsim.FastsimCorrections,
+    fuse.fastsim.FastsimEvents
+]
+
 
 def microphysics_context(
-    output_folder="./fuse_data", simulation_config_file="fuse_config_nt_sr1_dev.json"
+        output_folder="./fuse_data", simulation_config_file="fuse_config_nt_sr1_dev.json"
 ):
     """Function to create a fuse microphysics simulation context."""
 
@@ -138,19 +137,19 @@ def microphysics_context(
 
 
 def full_chain_context(
-    output_folder="./fuse_data",
-    clustering_method="dbscan",
-    corrections_version=None,
-    simulation_config_file="fuse_config_nt_sr1_dev.json",
-    corrections_run_id="046477",
-    run_id_specific_config={
-        "gain_model_mc": "gain_model",
-        "electron_lifetime_liquid": "elife",
-        "drift_velocity_liquid": "electron_drift_velocity",
-        "drift_time_gate": "electron_drift_time_gate",
-    },
-    run_without_proper_corrections=False,
-    extra_plugins=[],
+        output_folder="./fuse_data",
+        clustering_method="dbscan",
+        corrections_version=None,
+        simulation_config_file="fuse_config_nt_sr1_dev.json",
+        corrections_run_id="046477",
+        run_id_specific_config={
+            "gain_model_mc": "gain_model",
+            "electron_lifetime_liquid": "elife",
+            "drift_velocity_liquid": "electron_drift_velocity",
+            "drift_time_gate": "electron_drift_time_gate",
+        },
+        run_without_proper_corrections=False,
+        extra_plugins=[],
 ):
     """Function to create a fuse full chain simulation context."""
 
@@ -265,150 +264,15 @@ def full_chain_context(
     return st
 
 
-def fastsim_context(
-    output_folder="./fuse_data",
-    clustering_method="dbscan",
-    corrections_version=None,
-    simulation_config_file="fuse_config_nt_sr1_dev.json",
-    corrections_run_id="046477",
-    run_id_specific_config={
-        "gain_model_mc": "gain_model",
-        "electron_lifetime_liquid": "elife",
-        "drift_velocity_liquid": "electron_drift_velocity",
-        "drift_time_gate": "electron_drift_time_gate",
-    },
-    run_without_proper_corrections=False,
-):
-    """Function to create a fuse fastsim context."""
-
-    if corrections_run_id is None:
-        raise ValueError("Specify a corrections_run_id to load the corrections")
-    if (corrections_version is None) & (not run_without_proper_corrections):
-        raise ValueError(
-            "Specify a corrections_version. If you want to run without proper "
-            "corrections for testing or just trying out fuse, "
-            "set run_without_proper_corrections to True"
-        )
-    if simulation_config_file is None:
-        raise ValueError("Specify a simulation configuration file")
-
-    if run_without_proper_corrections:
-        log.warning(
-            "Running without proper correction version. This is not recommended for production use."
-            "Take the context defined in cutax if you want to run XENONnT simulations."
-        )
-
-    st = strax.Context(
-        storage=strax.DataDirectory(output_folder), **straxen.contexts.xnt_common_opts
-    )
-
-    # Register microphysics plugins
-    if clustering_method == "dbscan":
-        for plugin in microphysics_plugins_dbscan_clustering:
-            st.register(plugin)
-    elif clustering_method == "lineage":
-        for plugin in microphysics_plugins_lineage_clustering:
-            st.register(plugin)
-    else:
-        raise ValueError(f"Clustering method {clustering_method} not implemented!")
-
-    for plugin in remaining_microphysics_plugins:
-        st.register(plugin)
-
-    # Register S1 plugins
-    for plugin in s1_simulation_plugins:
-        st.register(plugin)
-
-    # Register S2 plugins
-    for plugin in s2_simulation_plugins:
-        st.register(plugin)
-
-    # Register fastsim plugins
-    for plugin in fastsim_plugins:
-        st.register(plugin)
-
-    # Register truth plugins
-    for plugin in truth_information_plugins:
-        st.register(plugin)
-
-    if corrections_version is not None:
-        st.apply_xedocs_configs(version=corrections_version)
-
-    set_simulation_config_file(st, simulation_config_file)
-
-    local_versions = st.config
-    for config_name, url_config in local_versions.items():
-        if isinstance(url_config, str):
-            if "run_id" in url_config:
-                local_versions[config_name] = straxen.URLConfig.format_url_kwargs(
-                    url_config, run_id=corrections_run_id
-                )
-    st.config = local_versions
-
-    # Update some run specific config
-    for mc_config, processing_config in run_id_specific_config.items():
-        if processing_config in st.config:
-            st.config[mc_config] = st.config[processing_config]
-        else:
-            print(f"Warning! {processing_config} not in context config, skipping...")
-
-    # No blinding in simulations
-    st.config["event_info_function"] = "disabled"
-
-    # Deregister plugins with missing dependencies
-    st.deregister_plugins_with_missing_dependencies()
-
-    return st
-
-
-def set_simulation_config_file(context, config_file_name):
-    """Function to loop over the plugin config and replace
-    SIMULATION_CONFIG_FILE with the actual file name."""
-    for data_type, plugin in context._plugin_class_registry.items():
-        for option_key, option in plugin.takes_config.items():
-            if isinstance(option.default, str) and "SIMULATION_CONFIG_FILE.json" in option.default:
-                context.config[option_key] = option.default.replace(
-                    "SIMULATION_CONFIG_FILE.json", config_file_name
-                )
-
-            # Special case for the photoionization_modifier
-            if option_key == "photoionization_modifier":
-                context.config[option_key] = option.default
-
-
-@URLConfig.register("pattern_map")
-def pattern_map(map_data, pmt_mask, method="WeightedNearestNeighbors"):
-    """Pattern map handling."""
-
-    if "compressed" in map_data:
-        compressor, dtype, shape = map_data["compressed"]
-        map_data["map"] = np.frombuffer(
-            strax.io.COMPRESSORS[compressor]["decompress"](map_data["map"]), dtype=dtype
-        ).reshape(*shape)
-        del map_data["compressed"]
-    if "quantized" in map_data:
-        map_data["map"] = map_data["quantized"] * map_data["map"].astype(np.float32)
-        del map_data["quantized"]
-    if not (pmt_mask is None):
-        assert (
-            map_data["map"].shape[-1] == pmt_mask.shape[0]
-        ), "Error! Pattern map and PMT gains must have same dimensions!"
-        map_data["map"][..., ~pmt_mask] = 0.0
-    return straxen.InterpolatingMap(map_data, method=method)
-
-
-@URLConfig.register("s2_aft_scaling")
-def modify_s2_pattern_map(
-    s2_pattern_map, s2_mean_area_fraction_top, n_tpc_pmts, n_top_pmts, turned_off_pmts
 def xenonnt_fuse_full_chain_simulation(
-    output_folder="./fuse_data",
-    corrections_version=DEFAULT_XEDOCS_VERSION,
-    simulation_config=DEFAULT_SIMULATION_VERSION,
-    corrections_run_id=None,
-    clustering_method=None,  # defaults to dbscan, but can be set to lineage
-    fdc_map_mc=None,
-    cut_list=None,
-    **kwargs,
+        output_folder="./fuse_data",
+        corrections_version=DEFAULT_XEDOCS_VERSION,
+        simulation_config=DEFAULT_SIMULATION_VERSION,
+        corrections_run_id=None,
+        clustering_method=None,  # defaults to dbscan, but can be set to lineage
+        fdc_map_mc=None,
+        cut_list=None,
+        **kwargs,
 ):
     """Function to create a fuse full chain simulation context with the proper
     settings for XENONnT simulations.
@@ -471,9 +335,9 @@ def xenonnt_fuse_full_chain_simulation(
 
 
 def public_config_context(
-    output_folder="./fuse_data",
-    extra_plugins=[fuse.plugins.S2PhotonPropagationSimple],
-    simulation_config_file="./files/XENONnT_public_config.json",
+        output_folder="./fuse_data",
+        extra_plugins=[fuse.plugins.S2PhotonPropagationSimple],
+        simulation_config_file="./files/XENONnT_public_config.json",
 ):
     """Function to create a fuse full chain simulation context."""
 
@@ -554,5 +418,101 @@ def public_config_context(
 
     # Purge unused configs
     st.purge_unused_configs()
+
+    return st
+
+
+def fastsim_context(
+        output_folder="./fuse_data",
+        clustering_method="dbscan",
+        corrections_version=None,
+        simulation_config_file="fuse_config_nt_sr1_dev.json",
+        corrections_run_id="046477",
+        run_id_specific_config={
+            "gain_model_mc": "gain_model",
+            "electron_lifetime_liquid": "elife",
+            "drift_velocity_liquid": "electron_drift_velocity",
+            "drift_time_gate": "electron_drift_time_gate",
+        },
+        run_without_proper_corrections=False,
+):
+    """Function to create a fuse fastsim context."""
+
+    if corrections_run_id is None:
+        raise ValueError("Specify a corrections_run_id to load the corrections")
+    if (corrections_version is None) & (not run_without_proper_corrections):
+        raise ValueError(
+            "Specify a corrections_version. If you want to run without proper "
+            "corrections for testing or just trying out fuse, "
+            "set run_without_proper_corrections to True"
+        )
+    if simulation_config_file is None:
+        raise ValueError("Specify a simulation configuration file")
+
+    if run_without_proper_corrections:
+        log.warning(
+            "Running without proper correction version. This is not recommended for production use."
+            "Take the context defined in cutax if you want to run XENONnT simulations."
+        )
+
+    st = strax.Context(
+        storage=strax.DataDirectory(output_folder), **straxen.contexts.xnt_common_opts
+    )
+
+    # Register microphysics plugins
+    if clustering_method == "dbscan":
+        for plugin in microphysics_plugins_dbscan_clustering:
+            st.register(plugin)
+    elif clustering_method == "lineage":
+        for plugin in microphysics_plugins_lineage_clustering:
+            st.register(plugin)
+    else:
+        raise ValueError(f"Clustering method {clustering_method} not implemented!")
+
+    for plugin in remaining_microphysics_plugins:
+        st.register(plugin)
+
+    # Register S1 plugins
+    for plugin in s1_simulation_plugins:
+        st.register(plugin)
+
+    # Register S2 plugins
+    for plugin in s2_simulation_plugins:
+        st.register(plugin)
+
+    # Register fastsim plugins
+    for plugin in fastsim_plugins:
+        st.register(plugin)
+
+    # Register truth plugins
+    for plugin in truth_information_plugins:
+        st.register(plugin)
+
+    if corrections_version is not None:
+        st.apply_xedocs_configs(version=corrections_version)
+
+    set_simulation_config_file(st, simulation_config_file)
+
+    local_versions = st.config
+    for config_name, url_config in local_versions.items():
+        if isinstance(url_config, str):
+            if "run_id" in url_config:
+                local_versions[config_name] = straxen.URLConfig.format_url_kwargs(
+                    url_config, run_id=corrections_run_id
+                )
+    st.config = local_versions
+
+    # Update some run specific config
+    for mc_config, processing_config in run_id_specific_config.items():
+        if processing_config in st.config:
+            st.config[mc_config] = st.config[processing_config]
+        else:
+            print(f"Warning! {processing_config} not in context config, skipping...")
+
+    # No blinding in simulations
+    st.config["event_info_function"] = "disabled"
+
+    # Deregister plugins with missing dependencies
+    st.deregister_plugins_with_missing_dependencies()
 
     return st
