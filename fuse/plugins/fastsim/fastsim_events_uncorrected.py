@@ -14,10 +14,9 @@ log = logging.getLogger("fuse.fastsim.fastsim_s1")
 
 @export
 class FastsimEventsUncorrected(FuseBasePlugin):
-    """
-    Plugin to simulate S1 and (alt) S2 areas from photon hits and electrons extracted
+    """Plugin to simulate S1 and (alt) S2 areas from photon hits and electrons
+    extracted."""
 
-    """
     __version__ = "0.0.1"
 
     depends_on = ("fastsim_macro_clusters",)
@@ -36,9 +35,15 @@ class FastsimEventsUncorrected(FuseBasePlugin):
                 (("Alternate S2 reconstructed X position, uncorrected [cm]", "alt_s2_x"), np.float32),
                 (("Alternate S2 reconstructed Y position, uncorrected [cm]", "alt_s2_y"), np.float32),
                 (("Main interaction r-position with observed position [cm]", "r_naive"), np.float32),
-                (("Alternate interaction r-position with observed position [cm]", "alt_s2_r_naive"), np.float32),
+                (
+                    ("Alternate interaction r-position with observed position [cm]", "alt_s2_r_naive"),
+                    np.float32,
+                ),
                 (("Main interaction z-position with observed position [cm]", "z_naive"), np.float32),
-                (("Alternate interaction z-position with observed position [cm]", "alt_s2_z_naive"), np.float32),
+                (
+                    ("Alternate interaction z-position with observed position [cm]", "alt_s2_z_naive"),
+                    np.float32,
+                ),
             ] + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
@@ -95,6 +100,7 @@ class FastsimEventsUncorrected(FuseBasePlugin):
         cache=True,
         help="Probability of double photo-electron emission",
     )
+
     @staticmethod
     def average_spe_distribution(spe_shapes):
         """
@@ -126,20 +132,16 @@ class FastsimEventsUncorrected(FuseBasePlugin):
     @staticmethod
     def get_s1_area_with_spe(spe_dist, num_photons):
         """
-            :params: spe_distribution, the spe distribution to draw photon areas from
-            :params: num_photons, number of photons to draw from spe distribution
+        :params: spe_distribution, the spe distribution to draw photon areas from
+        :params: num_photons, number of photons to draw from spe distribution
         """
         return np.sum(spe_dist[(np.random.random(num_photons) * len(spe_dist)).astype(np.int64)])
 
     def compute(self, fastsim_macro_clusters):
-        eventids = np.unique(fastsim_macro_clusters['eventid'])
-        result = np.empty(len(eventids), dtype=self.dtype)
-        for name in result.dtype.names:
-            if np.issubdtype(result.dtype[name], np.floating):
-                result[name].fill(np.nan)
-        mean_photon_area_distribution = self.average_spe_distribution(self.photon_area_distribution)
+        eventids = np.unique(fastsim_macro_clusters["eventid"])
+        result = np.zeros(len(eventids), dtype=self.dtype)
         for i, eventid in enumerate(eventids):
-            these_clusters = fastsim_macro_clusters[fastsim_macro_clusters['eventid'] == eventid]
+            these_clusters = fastsim_macro_clusters[fastsim_macro_clusters["eventid"] == eventid]
 
             result[i]["time"] = these_clusters[0]["time"]
             result[i]["endtime"] = these_clusters[0]["endtime"]
@@ -158,19 +160,21 @@ class FastsimEventsUncorrected(FuseBasePlugin):
             # Assign the highest and second-highest s2_area and drift time values
             if len(cluster_info_sorted) > 0:
                 s2_areas = [info[0] for info in cluster_info_sorted]
-                result[i]['s2_sum'] = np.sum(s2_areas)
-                result[i]['s2_area'] = cluster_info_sorted[0][0]
-                result[i]['drift_time'] = cluster_info_sorted[0][1]['drift_time_mean']
-                result[i]['s2_x'] = cluster_info_sorted[0][1]['x_obs']
-                result[i]['s2_y'] = cluster_info_sorted[0][1]['y_obs']
-                result[i]['z_naive'] = cluster_info_sorted[0][1]['z_obs']
+                result[i]["s2_sum"] = np.sum(s2_areas)
+                result[i]["s2_area"] = cluster_info_sorted[0][0]
+                result[i]["drift_time"] = cluster_info_sorted[0][1]["drift_time_mean"]
+                result[i]["s2_x"] = cluster_info_sorted[0][1]["x_obs"]
+                result[i]["s2_y"] = cluster_info_sorted[0][1]["y_obs"]
+                result[i]["z_naive"] = cluster_info_sorted[0][1]["z_obs"]
 
             if len(cluster_info_sorted) > 1:
-                result[i]['alt_s2_area'] = cluster_info_sorted[1][0]
-                result[i]['alt_s2_interaction_drift_time'] = cluster_info_sorted[1][1]['drift_time_mean']
-                result[i]['alt_s2_x'] = cluster_info_sorted[1][1]['x_obs']
-                result[i]['alt_s2_y'] = cluster_info_sorted[1][1]['y_obs']
-                result[i]['alt_s2_z_naive'] = cluster_info_sorted[1][1]['z_obs']
+                result[i]["alt_s2_area"] = cluster_info_sorted[1][0]
+                result[i]["alt_s2_interaction_drift_time"] = cluster_info_sorted[1][1][
+                    "drift_time_mean"
+                ]
+                result[i]["alt_s2_x"] = cluster_info_sorted[1][1]["x_obs"]
+                result[i]["alt_s2_y"] = cluster_info_sorted[1][1]["y_obs"]
+                result[i]["alt_s2_z_naive"] = cluster_info_sorted[1][1]["z_obs"]
 
             result[i]["multiplicity"] = len(cluster_info_sorted)
 
