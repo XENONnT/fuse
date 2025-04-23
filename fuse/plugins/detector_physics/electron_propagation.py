@@ -58,7 +58,7 @@ class ElectronPropagation(FuseBasePlugin):
 
     x_position_offset_1d_mean_left = straxen.URLConfig(
         default="itp_map://resource://"
-        "/home/yongyu/codes_link/fuse_examples/x_position_offset_1d_mean_left.json?&fmt=json"
+        "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_left_vera_map.json?&fmt=json"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
@@ -66,14 +66,14 @@ class ElectronPropagation(FuseBasePlugin):
 
     x_position_offset_1d_mean_right = straxen.URLConfig(
         default="itp_map://resource://"
-        "/home/yongyu/codes_link/fuse_examples/x_position_offset_1d_mean_right.json?&fmt=json"
+        "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_right_vera_map.json?&fmt=json"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
     )
     drift_time_1d_perp = straxen.URLConfig(
         default="itp_map://resource://"
-        "/home/yongyu/codes_link/fuse_examples/drift_time_1d_perp.json?&fmt=json"
+        "/project2/lgrandi/pkharban/s2_only/drift_time_1d_perp_vera_map.json?&fmt=json"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
@@ -81,7 +81,7 @@ class ElectronPropagation(FuseBasePlugin):
 
     drift_time_spread_1d_perp = straxen.URLConfig(
         default="itp_map://resource://"
-        "/home/yongyu/codes_link/fuse_examples/drift_time_spread_1d_perp.json?&fmt=json"
+        "/project2/lgrandi/pkharban/s2_only/drift_time_spread_1d_perp_vera_map.json?&fmt=json"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
