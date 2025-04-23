@@ -119,7 +119,7 @@ class MacroClusters(FuseBasePlugin):
         dt_mean = np.zeros(2)
         width = np.zeros(2)
         for i, inst in enumerate([cluster_a, cluster_b]):
-            area[i] = inst["sum_s2_photons"] * (1 + self.p_double_pe_emission)
+            area[i] = inst["n_electron_extracted"] * (1 + self.p_double_pe_emission)
             dt_mean[i] = inst["drift_time_mean"]
             width[i] = np.sqrt(
                 inst["drift_time_spread"] ** 2 + (self.electron_trapping_time + 78.3) ** 2
