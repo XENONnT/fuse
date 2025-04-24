@@ -90,7 +90,8 @@ class ElectronPropagation(FuseBasePlugin):
     # perp_wires_cut_distance = straxen.URLConfig(
     #     default=4.45,
     #     help=(
-    #         "Distance in x to apply exception from the center of the gate perpendicular wires [cm]"
+    #         "Distance in x to apply exception" 
+    #         "from the center of the gate perpendicular wires [cm]"
     #     ),
     # )
 
