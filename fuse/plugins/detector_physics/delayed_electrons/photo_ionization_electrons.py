@@ -1,7 +1,7 @@
 import strax
 import straxen
 import numpy as np
-from scipy.stats import truncexpon
+from scipy.stats import expon, truncexpon
 
 from ....plugin import FuseBasePlugin
 
@@ -46,13 +46,22 @@ class PhotoIonizationElectrons(FuseBasePlugin):
     )
 
     # Calculate this from TPC dimenstions and drift velocity
-    photoionization_time_cutoff = straxen.URLConfig(
+    photoionization_time_cutoff_modeling = straxen.URLConfig(
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
         "&take=photoionization_time_cutoff",
         type=(int, float),
         cache=True,
-        help="Time window for photoionization after a S2 in [ns]",
+        help="Time window after a S2 where photoionization is modeled in [ns]",
+    )
+
+    photoionization_time_cutoff_mc = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=photoionization_time_cutoff",
+        type=(int, float),
+        cache=True,
+        help="Time window after a S2 where photoionization is simulated in [ns]",
     )
 
     # Add this to our simulation config
@@ -147,8 +156,22 @@ class PhotoIonizationElectrons(FuseBasePlugin):
             self.s2_secondary_sc_gain_mc * self.electron_extraction_yield
         ) / (1 + self.p_double_pe_emision)
 
+        # photoionization_time_cutoff is the cutoff when modeling photoionization_modifier
+        # photoionization_modifier will be smaller when cutoff is smaller because analysts
+        # only look at a part of the distribution not the whole one
+
+        # photoionization_time_cutoff_mc is the cut off choosen to simulate only a part of the
+        # photoionization distribution
+
+        ratio = expon.cdf(
+            self.photoionization_time_cutoff_mc, scale=self.photoionization_time_constant
+        ) / expon.cdf(
+            self.photoionization_time_cutoff_modeling, scale=self.photoionization_time_constant
+        )
+        self.photoionization_scaling /= ratio
+
         self.photoionization_cutoff = (
-            self.photoionization_time_cutoff / self.photoionization_time_constant
+            self.photoionization_time_cutoff_mc / self.photoionization_time_constant
         )
 
     def compute(self, interactions_in_roi, individual_electrons):

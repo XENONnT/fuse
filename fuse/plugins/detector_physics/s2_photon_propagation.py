@@ -107,7 +107,11 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     )
 
     gain_model_mc = straxen.URLConfig(
-        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        default=(
+            "list-to-array://xedocs://pmt_area_to_pes"
+            "?as_list=True&sort=pmt&detector=tpc"
+            "&run_id=plugin.run_id&version=ONLINE&attr=value"
+        ),
         infer_type=False,
         help="PMT gain model",
     )
@@ -254,7 +258,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
     min_electron_gap_length_for_splitting = straxen.URLConfig(
         type=(int, float),
-        default=1e5,
+        default=2e6,
         track=False,
         help="Chunk can not be split if gap between photons is smaller than this value given in ns",
     )
@@ -272,7 +276,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             pmt_circuit_load_resistor=self.pmt_circuit_load_resistor,
         )
 
-        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
+        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from xedocs by default)
         self.turned_off_pmts = np.nonzero(np.array(self.gains) == 0)[0]
 
         self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(
@@ -726,7 +730,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         rr = np.clip(1 / r, 1 / rA, 1 / rW)
 
         return _luminescence_timings_simple(
-            len(xy), dG, E0, r, dr, rr, alpha, uE, pressure, n_photons
+            len(xy), dG, E0, r, dr, rr, alpha, uE, pressure, n_photons, self.rng
         )
 
     def optical_propagation(self, channels):

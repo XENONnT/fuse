@@ -102,6 +102,18 @@ class ChunkInput(FuseBasePlugin):
         help="Filter only nuclear recoil events (maximum ER energy deposit 10 keV)",
     )
 
+    first_chunk_left = straxen.URLConfig(
+        default=1e6,
+        type=(int, float),
+        help="Time left of the first chunk",
+    )
+
+    last_chunk_length = straxen.URLConfig(
+        default=1e8,
+        type=(int, float),
+        help="Time length of the last chunk",
+    )
+
     def setup(self):
         super().setup()
 
@@ -112,6 +124,8 @@ class ChunkInput(FuseBasePlugin):
             separation_scale=self.separation_scale,
             event_rate=self.source_rate,
             cut_delayed=self.cut_delayed,
+            first_chunk_left=self.first_chunk_left,
+            last_chunk_length=self.last_chunk_length,
             n_interactions_per_chunk=self.n_interactions_per_chunk,
             arg_debug=self.debug,
             outer_cylinder=None,  # This is not running
@@ -163,8 +177,8 @@ class file_loader:
         event_rate=1,
         n_interactions_per_chunk=500,
         cut_delayed=4e12,
-        last_chunk_length=1e8,
         first_chunk_left=1e6,
+        last_chunk_length=1e8,
         chunk_delay_fraction=0.75,
         arg_debug=False,
         outer_cylinder=None,
@@ -257,10 +271,15 @@ class file_loader:
             if self.fixed_event_spacing:
                 self.log.info("Using fixed event spacing.")
                 event_times = (
-                    np.arange(
-                        start=0, stop=num_interactions / self.event_rate, step=1 / self.event_rate
+                    np.linspace(
+                        start=0,
+                        stop=num_interactions / self.event_rate,
+                        num=num_interactions,
+                        endpoint=False,
                     )
                     + 1e9
+                ).astype(
+                    np.int64
                 )  # ns
             else:
                 self.log.info("Using random event times.")

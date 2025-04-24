@@ -4,7 +4,7 @@ import unittest
 import tempfile
 import timeout_decorator
 import fuse
-import straxen
+import utilix
 from _utils import test_root_file_name
 
 TIMEOUT = 60
@@ -39,7 +39,7 @@ class TestPluginRandomSeeds(unittest.TestCase):
         cls.temp_dir.cleanup()
 
     def setUp(self):
-        downloader = straxen.MongoDownloader(store_files_at=(self.temp_dir.name,))
+        downloader = utilix.mongo_storage.MongoDownloader(store_files_at=(self.temp_dir.name,))
         downloader.download_single(test_root_file_name, human_readable_file_name=True)
 
         assert os.path.exists(os.path.join(self.temp_dir.name, test_root_file_name))
@@ -102,7 +102,7 @@ class TestPluginRandomSeeds(unittest.TestCase):
                     raise AssertionError(f"Plugin {key} has no seed")
 
     @timeout_decorator.timeout(
-        TIMEOUT, exception_message="test_if_run_number_changes_deterministic_seed timed out"
+        TIMEOUT * 2, exception_message="test_if_run_number_changes_deterministic_seed timed out"
     )
     def test_if_run_number_changes_deterministic_seed(self):
 

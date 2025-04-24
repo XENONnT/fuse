@@ -3,6 +3,7 @@ import awkward as ak
 import numba
 
 from scipy.interpolate import interp1d
+from numba.extending import register_jitable
 
 # Lets wait 10 minutes for the plugin to finish
 FUSE_PLUGIN_TIMEOUT = 600
@@ -204,25 +205,6 @@ def ak_num(array, **kwargs):
     return ak.num(array, **kwargs)
 
 
-@numba.njit
-def offset_range(offsets):
-    """Computes range of constant event ids while in same offset. E.g. for an
-    array [1], [1,2,3], [5] this function yields [0, 1, 1, 1, 2].
-
-    Args:
-        offsets (ak.array): jagged array offsets.
-
-    Returns:
-        np.array: Indicies.
-    """
-    res = np.zeros(np.sum(offsets), dtype=np.int32)
-    i = 0
-    for ind, o in enumerate(offsets):
-        res[i : i + o] = ind
-        i += o
-    return res
-
-
 # Code shared between S1 and S2 photon propagation
 def init_spe_scaling_factor_distributions(spe_shapes):
     # Create a converter array from uniform random numbers to SPE gains
@@ -338,3 +320,46 @@ def pmt_gains(to_pe, digitizer_voltage_range, digitizer_bits, pmt_circuit_load_r
         where=to_pe != 0,
     )
     return gains
+
+
+# Define error message as a constant
+UNSTABLE_SORT_MESSAGE = (
+    "quicksort and heapsort are not allowed due to non-deterministic behavior.\n"
+    "Please use mergesort for deterministic sorting behavior."
+)
+
+
+# Define custom exception for sorting errors
+class SortingError(Exception):
+    pass
+
+
+def stable_sort(arr, kind="mergesort", **kwargs):
+    """Stable sort function using mergesort, w/o numba optimization.
+
+    Args:
+        arr: numpy array to sort
+        kind: sorting algorithm to use (only 'mergesort' is allowed)
+
+    Returns:
+        Sorted array using mergesort algorithm
+    """
+    if kind != "mergesort":
+        raise SortingError(UNSTABLE_SORT_MESSAGE)
+    return np.sort(arr, kind="mergesort", **kwargs)
+
+
+@register_jitable
+def stable_argsort(arr, kind="mergesort"):
+    """Numba-optimized stable argsort function using mergesort.
+
+    Args:
+        arr: numpy array to sort
+        kind: sorting algorithm to use (only 'mergesort' is allowed)
+
+    Returns:
+        Indices that would sort the array using mergesort algorithm
+    """
+    if kind != "mergesort":
+        raise SortingError(UNSTABLE_SORT_MESSAGE)
+    return np.argsort(arr, kind="mergesort")
