@@ -133,39 +133,6 @@ class SecondaryScintillation(FuseBasePlugin):
         help="PMT gain model",
     )
 
-    n_top_pmts = straxen.URLConfig(
-        type=int,
-        help="Number of PMTs on top array",
-    )
-
-    n_tpc_pmts = straxen.URLConfig(
-        type=int,
-        help="Number of PMTs in the TPC",
-    )
-
-    s2_mean_area_fraction_top = straxen.URLConfig(
-        default="take://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=s2_mean_area_fraction_top",
-        type=(int, float),
-        cache=True,
-        help="Mean S2 area fraction top",
-    )
-
-    s2_pattern_map = straxen.URLConfig(
-        default="s2_aft_scaling://pattern_map://resource://simulation_config://"
-        "SIMULATION_CONFIG_FILE.json?"
-        "&key=s2_pattern_map"
-        "&fmt=pkl"
-        "&pmt_mask=plugin.pmt_mask"
-        "&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top"
-        "&n_tpc_pmts=plugin.n_tpc_pmts"
-        "&n_top_pmts=plugin.n_top_pmts"
-        "&turned_off_pmts=plugin.turned_off_pmts",
-        cache=True,
-        help="S2 pattern map",
-    )
-
     def setup(self):
         super().setup()
 
@@ -230,7 +197,7 @@ class SecondaryScintillation(FuseBasePlugin):
         result_sum_photons["endtime"] = interactions_in_roi["endtime"]
 
         return {
-            self.result_name_photons: strax.sort_by_time(result_photons),
+            self.result_name_photons: result_photons,
             self.result_name_photons_sum: result_sum_photons,
         }
 
