@@ -1,11 +1,11 @@
 from . import delayed_electrons_drift
 from .delayed_electrons_drift import *
 
+from . import delayed_electrons_propagation
+from .delayed_electrons_propagation import *
+
 from . import delayed_electrons_extraction
 from .delayed_electrons_extraction import *
-
-from . import delayed_electrons_timing
-from .delayed_electrons_timing import *
 
 from . import delayed_electrons_secondary_scintillation
 from .delayed_electrons_secondary_scintillation import *
