@@ -173,8 +173,8 @@ def create_plugin_documentation_text(st, plugin):
 
 def build_all_pages():
 
-    st = fuse.context.full_chain_context(
-        output_folder="./fuse_data", run_without_proper_corrections=True
+    st = fuse.context.public_config_context(
+        simulation_config_file="../../examples/files/XENONnT_public_config.json",
     )
 
     all_registered_fuse_plugins = {}
