@@ -1,4 +1,4 @@
-__version__ = "1.4.2"
+__version__ = "1.4.4"
 
 from . import dtypes
 from .dtypes import *
@@ -10,3 +10,4 @@ from .vertical_merger_plugin import *
 from .volume_plugin import *
 
 from .context import *
+from .context_utils import *
