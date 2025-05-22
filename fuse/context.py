@@ -10,6 +10,7 @@ from .context_utils import (
     set_simulation_config_file,
     old_xedocs_versions_patch,
     overwrite_map_from_config,
+    apply_mc_overrides,
 )
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
@@ -292,10 +293,6 @@ def xenonnt_fuse_full_chain_simulation(
     )
     log.info(f"Using corrections_run_id: {corrections_run_id}")
 
-    # Get the fdc_map_mc from argument or from config file
-    fdc_map_mc = fdc_map_mc or fuse.from_config(simulation_config_file, "fdc_map_mc")
-    log.info(f"Using fdc_map_mc: {fdc_map_mc}")
-
     # Get clustering method
     # if it is specified as an argument, use that
     # if it is not specified, try to get it from the config file
@@ -317,9 +314,17 @@ def xenonnt_fuse_full_chain_simulation(
     )
     st.set_config(old_xedocs_versions_patch(corrections_version))
 
+    # This is for backward compatibility with configs that did not have
+    # the mc_overrides in the config file. Can be removed in the future.
+    # Get the fdc_map_mc from argument or from config file
+    fdc_map_mc = fdc_map_mc or fuse.from_config(simulation_config_file, "fdc_map_mc")
+    log.info(f"Using fdc_map_mc: {fdc_map_mc}")
     fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
     fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
     st.set_config({"fdc_map": fdc_conf})
+
+    # Overwrite some resource files with the ones from the simulation config
+    apply_mc_overrides(st, corrections_version)
 
     if cut_list is not None:
         st.register_cut_list(cut_list)

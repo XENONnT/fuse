@@ -166,3 +166,21 @@ def lce_from_pattern_map(map, pmt_mask):
     lcemap.data["map"] = np.sum(lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=pmt_mask)
     lcemap.__init__(lcemap.data)
     return lcemap
+
+
+def apply_mc_overrides(context, config_file):
+    """
+    Apply config overrides from 'mc_overrides' using fuse.from_config.
+    """
+    try:
+        overrides = fuse.from_config(config_file, "mc_overrides")
+        for key, value in overrides.items():
+            if isinstance(value, list) and len(value) == 2:
+                filename, template = value
+                url = template.replace("MAP_NAME", filename)
+            else:
+                url = value
+            context.set_config({key: url})
+            log.debug(f"[mc_overrides] Set '{key}' to '{value}'")
+    except Exception as e:
+        log.warning(f"[mc_overrides] Failed to apply overrides from {config_file}: {e}")
