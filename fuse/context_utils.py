@@ -3,6 +3,10 @@ import strax
 import straxen
 from straxen import URLConfig
 from copy import deepcopy
+import logging
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger("fuse.context_utils")
 
 
 def write_sr_information_to_config(context, corrections_run_id):
@@ -170,10 +174,10 @@ def lce_from_pattern_map(map, pmt_mask):
 
 def apply_mc_overrides(context, config_file):
     """
-    Apply config overrides from 'mc_overrides' using fuse.from_config.
+    Apply config overrides from 'mc_overrides' using from_config.
     """
     try:
-        overrides = fuse.from_config(config_file, "mc_overrides")
+        overrides = from_config(config_file, "mc_overrides")
         for key, value in overrides.items():
             if isinstance(value, list) and len(value) == 2:
                 filename, template = value
