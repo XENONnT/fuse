@@ -324,7 +324,7 @@ def xenonnt_fuse_full_chain_simulation(
     st.set_config({"fdc_map": fdc_conf})
 
     # Overwrite some resource files with the ones from the simulation config
-    apply_mc_overrides(st, corrections_version)
+    apply_mc_overrides(st, simulation_config_file)
 
     if cut_list is not None:
         st.register_cut_list(cut_list)
