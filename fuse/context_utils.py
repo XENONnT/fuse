@@ -177,7 +177,8 @@ def apply_mc_overrides(context, config_file):
     Apply config overrides from 'mc_overrides' using from_config.
     """
     try:
-        overrides = from_config(config_file, "mc_overrides")
+        config = straxen.get_resource(config_file, fmt="json")
+        overrides = config.get("mc_overrides", {})
         for key, value in overrides.items():
             if isinstance(value, list) and len(value) == 2:
                 filename, template = value
@@ -187,4 +188,6 @@ def apply_mc_overrides(context, config_file):
             context.set_config({key: url})
             log.debug(f"[mc_overrides] Set '{key}' to '{value}'")
     except Exception as e:
-        log.warning(f"[mc_overrides] Failed to apply overrides from {config_file}: {e}")
+        raise ValueError(
+            f"[mc_overrides] Failed to apply overrides from {config_file}: {e}"
+        ) from e
