@@ -173,9 +173,7 @@ def lce_from_pattern_map(map, pmt_mask):
 
 
 def apply_mc_overrides(context, config_file):
-    """
-    Apply config overrides from 'mc_overrides' using from_config.
-    """
+    """Apply config overrides from 'mc_overrides' using from_config."""
     try:
         config = straxen.get_resource(config_file, fmt="json")
         overrides = config.get("mc_overrides", {})
@@ -188,6 +186,4 @@ def apply_mc_overrides(context, config_file):
             context.set_config({key: url})
             log.debug(f"[mc_overrides] Set '{key}' to '{value}'")
     except Exception as e:
-        raise ValueError(
-            f"[mc_overrides] Failed to apply overrides from {config_file}: {e}"
-        ) from e
+        raise ValueError(f"[mc_overrides] Failed to apply overrides from {config_file}: {e}") from e
