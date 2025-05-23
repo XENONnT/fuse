@@ -102,8 +102,10 @@ class TestFullChain(TestFullChainBase):
         self.test_context.set_config(
             {
                 "field_distortion_model": "inverse_fdc",
-                "fdc_map_fuse": "itp_map://resource://XnT_3D_FDC_xyt_dummy_all_zeros_v0.1.json.gz?"
-                "&fmt=json.gz&method=WeightedNearestNeighbors",
+                "fdc_map_fuse": (
+                    "itp_map://resource://XnT_3D_FDC_xyt_dummy_all_zeros_v0.1.json.gz?"
+                    "&fmt=json.gz&method=WeightedNearestNeighbors"
+                ),
             }
         )
         self.test_context.make(self.run_number, "drifted_electrons")

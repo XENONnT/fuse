@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "xenon-fuse"
-version = "1.4.4"
+version = "1.5.0"
 description = "XENON Framework for Unified Simulations of Events"
 authors = [
   "Henning Schulze Eißing, <h_schu55@uni-muenster.de>",
@@ -37,8 +37,8 @@ nestpy = ">=2.0.2"
 numba = ">=0.58.1"
 awkward = ">=2.5.1"
 uproot = ">=5.2.1"
-strax = ">=2.0.5"
-straxen = ">=3.0.3"
+strax = ">=1.6.0"
+straxen = ">=2.2.3"
 utilix = ">=0.11.0"
 
 [build-system]
