@@ -4,6 +4,10 @@ import straxen
 from straxen import URLConfig
 from copy import deepcopy
 from scipy import interpolate
+import logging
+
+logging.basicConfig(handlers=[logging.StreamHandler()])
+log = logging.getLogger("fuse.context_utils")
 
 
 def write_sr_information_to_config(context, corrections_run_id):
@@ -167,6 +171,22 @@ def lce_from_pattern_map(map, pmt_mask):
     lcemap.data["map"] = np.sum(lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=pmt_mask)
     lcemap.__init__(lcemap.data)
     return lcemap
+
+def apply_mc_overrides(context, config_file):
+    """Apply config overrides from 'mc_overrides' using from_config."""
+    try:
+        config = straxen.get_resource(config_file, fmt="json")
+        overrides = config.get("mc_overrides", {})
+        for key, value in overrides.items():
+            if isinstance(value, list) and len(value) == 2:
+                filename, template = value
+                url = template.replace("MAP_NAME", filename)
+            else:
+                url = value
+            context.set_config({key: url})
+            log.debug(f"[mc_overrides] Set '{key}' to '{value}'")
+    except Exception as e:
+        raise ValueError(f"[mc_overrides] Failed to apply overrides from {config_file}: {e}") from e
 
 @URLConfig.register("nveto_pmt_qe")
 def nveto_pmt_qe_dict(data):
