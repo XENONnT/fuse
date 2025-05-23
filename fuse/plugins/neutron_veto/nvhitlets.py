@@ -1,308 +1,86 @@
 import strax
 import straxen
 import numpy as np
-import logging
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.neutron_veto.nvhitlets")
-
-from ...common import FUSE_PLUGIN_TIMEOUT
-
-import uproot as rt
-import json
-import scipy as scp
-from scipy import interpolate
 import scipy.constants as const
-import awkward as ak
-import pandas as pd
 from sklearn.cluster import DBSCAN
-import random as rd
-from tqdm import tqdm
-import tqdm.notebook as tq
-import time
-import cutax
-
-##--------------------------------------------COMMENTS------------------------------------------------------------##
-
-# This hitlet simulator is an extension of the work of Diego Ramirez, Daniel Wenz, Andrea Mancuso and Pavel Kavrigin.
-# Functions of SPE charge sampling are in the PDF function based in the calibrations of nVeto done by Andrea Mancuso. Daniel Wenz provides a code that takes into account this functions to sample the charge, where this code is based. This leads to SPE a PDF function to sample charge in the hitlet simulator.
-# We use the Quantum efficiencies QE for each PMT as a wavelength function for nVeto provided by Andrea Mancuso.
-
-# WIKI NOTES:
-# https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:xenonnt:layos:nveto_hitlet_into_fuse
 
 
-# --------------------------------------------------------HITLETS AUXILIAR FUNCTIONS--------------------------------------------------------------------#
-def flat_list(l):
-    return np.array([item for sublist in l for item in sublist])
+from ...plugin import FuseBasePlugin
 
+from ...dtypes import (
+    neutron_veto_hitlet_dtype
+)
 
-def energytowavelenght(E):
-    Joules_to_eV = 1.602 * 1e-19
-    return 1e9 * const.h * const.c / (E * Joules_to_eV)
+class NeutronVetoHitlets(FuseBasePlugin):
+    """
+    Plugin to simulate the Neutron Veto to hitlets. 
+    
+    @Experts: Please add a better description of the plugin here.
+    """
 
-
-def create_SPE_file(path, sr="0"):
-    # path to the aux_files
-    # SR : to change configuration for each SR
-    spe_df = pd.DataFrame(columns=["pmtID", "pe", "SPE_values", "acceptance"])
-    array_x = np.load(path + "x_data_sr" + sr + ".npy")
-    array_y = np.load(path + "sr" + sr + "_pdfs.npy")
-    spe_df["pmtID"] = np.arange(2000, 2120)
-    spe_df["pe"] = array_x.tolist()
-    spe_df["SPE_values"] = array_y.tolist()
-    spe_df["acceptance"] = np.load(path + "spe_acc_sr" + sr + ".npy", allow_pickle=True)
-    return np.save(path + "SPE_SR" + sr + ".npy", spe_df.to_records())
-
-
-# SPE parameters: ID, pe, SPE, acceptance
-def SPE_parameters(file_spe_model):
-    with open(file_spe_model, 'r') as f:     
-        data_spe = json.load(f) 
-    data_dict = {entry['pmtID']: entry for entry in data_spe}
-    # SPE_ch= pd.DataFrame(columns=['pmtID','pe','SPE','acceptance'])
-    # SPE_ch['pmtID'],SPE_ch['pe'], SPE_ch['SPE'],SPE_ch['acceptance']=data_spe['pmtID'],data_spe['charge'],data_spe['SPE_values'],data_spe['acceptance']
-    # acceptance_ch= [threshold_acc(SPE_ch,i) for i in np.arange(2000,2120)]
-    # SPE_ch['threshold_pe']=acceptance_ch
-
-    return data_dict
-
-
-def threshold_acc(SPE_df, ID):
-    SPE_ID = pd.DataFrame()
-    SPE_ID["cumulative"] = np.cumsum(SPE_df[SPE_df.pmtID == ID].SPE.values[0])
-    SPE_ID["charges"] = SPE_df[SPE_df.pmtID == ID].pe.values[0]
-    accep = SPE_df[SPE_df.pmtID == ID].acceptance.values[0]
-    threshold = min(SPE_ID[SPE_ID.cumulative >= (1 - accep)].charges.values)
-    return threshold
-
-
-# To get nVeto plugin, it should be a best way to do that...
-st = cutax.contexts.xenonnt_online()
-strax_nv = st.get_single_plugin("0", "events_nv")
-
-
-# Quantum efficiency
-def QE_nVeto(Q_E_nveto_file):
-    with open(Q_E_nveto_file, "r") as f:
-        data = json.loads(f.read())
-    QE_array_n = []
-    # nVeto
-    for i in np.arange(2000, 2120):
-        QE_array_n.append(
-            interpolate.interp1d(
-                data["nv_pmt_qe_wavelength"],
-                data["nv_pmt_qe"][str(i)],
-                bounds_error=False,
-                fill_value=0,
-            )
-        )
-    # Watertank_QE
-    pmt_id = list(np.arange(2000, 2120))
-    QE_array = QE_array_n
-    pd_dict = {"pmt_id": pmt_id, "QE": QE_array}
-    return pd_dict
-
-
-# Cluster for stacket hitlets
-def channel_cluster_nv(t):
-    db_cluster = DBSCAN(
-        eps=8, min_samples=1
-    )  # As a preliminar value we fix distance between two photons arriving in the same pmt 8ns
-    t_val = np.array(t)
-    clusters = np.array(db_cluster.fit_predict(t_val.reshape(-1, 1)))
-    return clusters
-
-
-def get_clusters_arrays(arr, typ):
-    arr_nv_c = np.zeros(1, dtype=typ)
-    arr_nv_c["n_clusters_hits"] = len(arr)
-
-    for i in arr.dtype.names:  # <-- CORRETTO: usare dtype.names invece di fields
-        if i in ["time", "pmthitTime", "cluster_times_ns"]:
-            arr_nv_c[i] = np.min(arr[i])
-        elif i == "endtime":
-            arr_nv_c[i] = np.max(arr[i])
-        elif i in ["pe_area", "pmthitEnergy"]:
-            arr_nv_c[i] = np.sum(arr[i])
-        elif i in ["evtid", "pmthitID", "labels"]:
-            arr_nv_c[i] = np.unique(arr[i])
-
-    return arr_nv_c
-
-
-# Function to use in pivot_table module (clearly something we can optimize)
-def recover_value(x):
-    m_size = np.array(x).size
-    if m_size == 1:
-        ret = x
-    elif m_size > 1:
-        ret = list(x)
-    return ret
-
-
-def type_pri_evt(x):
-    if (type(x) == np.float32) or (type(x) == np.float64) or (type(x) == float):
-        ret = x
-    elif type(x) == list:
-        ret = x[0]
-    return ret
-
-
-# For building independent time hitlets to compute into events or hitlets time from a source (ex: AmBe)
-def time_hitlets_nv(time, ids, freq):
-    # freq: corresponds to the rate in [1/s] of the calibration source
-    if type(time) == list:
-        ret = min(time)
-    else:
-        ret = time
-    return ret + freq * ids * 1e9
-
-
-# Fonction to transform a hitlet dataframe output into 'hitlets_nv' ndarray
-dtype = [
-    ("area", np.float64),
-    ("amplitude", np.float64),
-    ("time_amplitude", np.int16),
-    ("entropy", np.float64),
-    ("range_50p_area", np.float64),
-    ("range_80p_area", np.float64),
-    ("left_area", np.float64),
-    ("low_left_area", np.float64),
-    ("range_hdr_50p_area", np.float64),
-    ("range_hdr_80p_area", np.float64),
-    ("left_hdr", np.float64),
-    ("low_left_hdr", np.float64),
-    ("fwhm", np.float64),
-    ("left", np.float64),
-    ("fwtm", np.float64),
-    ("low_left", np.float64),
-]
-dtype = dtype + strax.interval_dtype  # -> Time, length, dt, channel
-
-
-# A fuse plugin is a python class that inherits from strax.Plugin
-# As naming convention we use CamelCase for the class name
-def df_to_hit_array(data):
-    result = np.zeros(len(data), dtype=dtype)
-    result["time"] = data.time.values
-    result["length"] = np.array([1.0] * len(data))
-    result["dt"] = np.array([10.0] * len(data))
-    result["channel"] = data.pmthitID.values
-    result["area"] = data.pe_area.values
-    result = strax.sort_by_time(result)
-    return result
-
-
-def hit_array_to_nvhitlet(data):
-    result = np.zeros(len(data), dtype=dtype)
-    result["time"] = data["time"]
-    result["length"] = np.array([1.0] * len(data))
-    result["dt"] = np.array([10.0] * len(data))
-    result["channel"] = data["pmthitID"]
-    result["area"] = data["pe_area"]
-    result = strax.sort_by_time(result)
-    return result
-
-
-# A fuse plugin is a python class that inherits from strax.Plugin
-# As naming convention we use CamelCase for the class name
-class NeutronVetoHitlets(strax.Plugin):
-    # Each plugin has a version number
-    # If the version number changes, fuse will know that it need to re-simulate the data
     __version__ = "0.0.1"
 
-    # You need to tell fuse and strax what the plugin needs as input
-    # In this case we need nv_pmthits
     depends_on = "nv_pmthits"
-
-    # You need to tell fuse and strax what the plugin provides as output
-    # In this case we provide nv_hitlets
-    # You can later use st.make(run_number, "nv_hitlets") to run the simulation
     provides = "nv_hitlets"
-
-    # You need to tell fuse and strax what the data looks like
-    # Data of the same data_kind can be combined via "horizontal" concatenation and need
-    # to have the same output length.
     data_kind = "nv_hitlets"
 
-    # You also need to tell strax what columns the data has
-    # A column needs a name and a numpy data type. I set everything to float64 here, we can reduce it later
-    # I used the columns described here:
-    # https://github.com/XENONnT/fuse/blob/f777d9c281d9e046c2f322a30b462a9b7dd8ee00/test_nv/Hitlet_nv_fuse.py#L114
+    dtype = neutron_veto_hitlet_dtype + strax.interval_dtype
 
-    # We need to disable automatic rechunking for fuse plugins
-    # As fuse is going from "leightweigt" data to "heavy" data,
-    # automatic rechunking can lead to problems in later plugins
-    rechunk_on_save = False
-
-    # We need to specify when we want to save the data
-    save_when = strax.SaveWhen.TARGET
-
-    # strax uses a rather short timeout, lets increase it as
-    # some of the fuse simulation steps can take a while
-    input_timeout = FUSE_PLUGIN_TIMEOUT
-
-    # We need to tell strax what config options the plugin needs
-    # We will use the great URLConfigs that are a part of straxen
-    debug = straxen.URLConfig(
-        default=False,
-        type=bool,
-        track=False,
-        help="Show debug informations",
-    )
-
-    deterministic_seed = straxen.URLConfig(
-        default=True,
-        type=bool,
-        help="Set the random seed from lineage and run_id, or pull the seed from the OS.",
-    )
-
+    # Fix these URL configs! 
     nveto_pmt_qe = straxen.URLConfig(
         default="nveto_pmt_qe://resource://simulation_config://"
         "SIMULATION_CONFIG_FILE.json?&key=nveto_pmt_qe",
         help="Quantum efficiency of NV PMTs",
     )
 
-    nveto_spe_sr1 = straxen.URLConfig(
+    # Rename this to be not SR dependent
+    nveto_spe_parameters = straxen.URLConfig(
         default="nveto_spe_sr1://resource://simulation_config://"
         "SIMULATION_CONFIG_FILE.json?&key=nveto_spe_sr1",
         help="SR1 SPE model of NV PMTs",
     )
 
-    def __init__(self, sr=0):
-        self.path = "/home/digangi/private_nt_aux_files/sim_files/"  # pietro - need to modify this to work with urlconfig
-        self.QE_value = QE_nVeto(self.path + "nveto_pmt_qe.json")
-        self.SPE_nVeto = SPE_parameters(self.path+'nveto_spe_sr'+str(sr)+'.json')
-        self.dtype = dtype
+    # Add a few extra configs to remove them elsewhere
 
-    # Get Quantum efficiency
-    def QE_E(self, E, ID):
-        WL = energytowavelenght(E)
-        ind = ID - 2000
-        qe = self.QE_value["QE"][ind](WL)
-        return qe
+    # @experts: would the stacking change the output dtype of the plugin? If yes, it will not work. 
+    stack_hitlets = straxen.URLConfig(
+        default=False,
+        help="Option to enable or disable hitlet stacking",
+    )
 
-    def get_acceptance(self, ID):
-        acc = self.SPE_nVeto.get(ID)['acceptance']
-        return acc
+    # Is this value something you would like to track in the config files or should it just be set here?
+    ce_scaling = straxen.URLConfig(
+        type=(int, float),
+        default=0.75,
+        help="Add good description here",
+    )
 
-    # Get acceptance threshold
-    def get_threshold_acc(self, ID):
-        ind = ID - 2000
-        threshold = self.SPE_nVeto.threshold_pe.values[ind]
-        return threshold
+    # Next steps: remove this part. 
+    # def __init__(self, sr=0):
+    #     self.path = "/home/digangi/private_nt_aux_files/sim_files/"  # pietro - need to modify this to work with urlconfig
+    #     self.QE_value = QE_nVeto(self.path + "nveto_pmt_qe.json")
+    #     self.SPE_nVeto = SPE_parameters(self.path+'nveto_spe_sr'+str(sr)+'.json')
 
-    # Sampling charge from SPE
-    def pe_charge_N(self, pmt_id):
-        SPE_channel = self.SPE_nVeto.get(pmt_id)
-        charge=rd.choices(SPE_channel['pe'],SPE_channel['SPE_values'],k=1)[0]
+    def compute(self, nv_pmthits):
 
-        return charge
+        if len(nv_pmthits) == 0:
+            return np.zeros(0, self.dtype)
+        
+        hitlets = self._nv_hitlets(nv_pmthits)
+        
+        result = np.zeros(len(hitlets), dtype=self.dtype)
+        result["time"] = hitlets["time"]
+        result["length"] = 1
+        result["dt"] = 10
+        result["channel"] = hitlets["pmthitID"]
+        result["area"] = hitlets["pe_area"]
 
-    # --------------------------- Hitlet function ------------------------------------------------------------#
+        return strax.sort_by_time(result)
 
-    def _nv_hitlets(self, pmthits, CE_Scaling=0.75, Stacked="No", period=1.0):
+
+    def _nv_hitlets(self, pmthits):
+
+        # Henning comment: I would remove this long comment block below. If it is strictly needed, maybe it can got into the docstring of the class?
 
         # -------------------------------------------------Arguments---------------------------------------------------#
         # QE_Scaling corrrespond to collection efficiency, no study has been done on the CE of muon Veto we use a default value close to the nVeto see https://xe1t-wiki.lngs.infn.it/doku.php?id=xenon:mancuso:hitletsimulator:collection_efficiency
@@ -334,26 +112,26 @@ class NeutronVetoHitlets(strax.Plugin):
         pmthits = pmthits[mask]
 
         # 1. First step PHOTON to first dinode
-        print("Applying QE and CE")
+        self.log.debug("Applying QE and CE")
         # Applying Quantum efficiency for each pmt
         qe = 1e-2 * np.vectorize(self.QE_E)(pmthits["pmthitEnergy"], pmthits["pmthitID"])
         # Applying effective collection efficiency
-        qe *= CE_Scaling
+        qe *= self.ce_scaling
         # Applying acceptance per pmt: for the approach in which SPE PDF has already applied a threshold for low charges
         qe = qe * np.vectorize(self.get_acceptance)(pmthits["pmthitID"])
         # Generate a photoelectron based on (binomial) conversion probability qe*eCE*spe_acc
         pe = np.array([np.random.binomial(1, j, 1)[0] for j in qe])
         # Discard pmthits which do not generate a pe
-        print("Loading hit survive")
+        self.log.debug("Loading hit survive")
         maks_qe = pe > 0
         pmthits = pmthits[maks_qe]
 
         # 2. Sampling charge from SPE for each pmthit with a generated pe
-        print("Sampling hitlets charge pe")
+        self.log.debug("Sampling hitlets charge pe")
         pmthits["pe_area"] = np.vectorize(self.pe_charge_N)(pmthits["pmthitID"])
 
         # 3. Creating hitlet times
-        print("Getting time hitlets")
+        self.log.debug("Getting time hitlets")
         times = []
         for i in np.unique(pmthits["evtid"]):
             mask = pmthits["evtid"] == i
@@ -362,16 +140,18 @@ class NeutronVetoHitlets(strax.Plugin):
             times.append(cluster_times_ns)
         pmthits["cluster_times_ns"] = np.concatenate(times)
 
-        if Stacked == "No":
+
+        # Same comment as above: If this option produces different output dtypes it will not work. One could add a second output to the plugin if needed or add a new plugin that takes pmthits as input and produces the stacked hitlets as output.
+
+        if not self.stack_hitlets:
             return pmthits
-
+        
         # 3.1 Stacked hitlets: this correspond to hitlets in the same pmt with a time difference below some estimated time response of the Channel (8 ns, i.e. 4 samples).
-        elif Stacked == "yes":
-
-            print("Looking for stacked hitlets")
+        elif self.stack_hitlets:
+            self.log.debug("Looking for stacked hitlets")
             # Here we set times related to the first hit, we only use that for stacket hitlets
             arr_c_evt = []
-            for i in tq.tqdm(np.unique(pmthits["evtid"])):
+            for i in np.unique(pmthits["evtid"]):
                 arr_evt = pmthits[pmthits["evtid"] == i]
                 arr_c_pmt = []
                 for j in np.unique(arr_evt["pmthitID"]):
@@ -390,43 +170,122 @@ class NeutronVetoHitlets(strax.Plugin):
 
             return np.concatenate(arr_c_evt)
 
-    def setup(self):
+    # Get Quantum efficiency
+    def QE_E(self, E, ID):
+        WL = energy_to_wavelenght(E)
+        ind = ID - 2000
+        qe = self.nveto_pmt_qe["QE"][ind](WL)
+        return qe
 
-        # All plugins can report problmes or debug information via the logging feature
-        # You can set the log level via the debug config option.
-        # WARNING messages are always shown whild DEBUG messages are only shown if debug is True
-        if self.debug:
-            log.setLevel("DEBUG")
-            log.debug(f"Running NeutronVetoHitlets version {self.__version__} in debug mode")
-        else:
-            log.setLevel("WARNING")
+    def get_acceptance(self, ID):
+        acc = self.nveto_spe_parameters.get(ID)['acceptance']
+        return acc
 
-        # Many plugins need to generate random numbers for simulation the corresponding physics process
-        # In fuse we want to make sure that the simulation is reproducible.
-        # Therefore we have the default setting of deterministic_seed = True
-        # In this case the random seed is generated from the run_id and the lineage
-        # The lineage includes all plugins and their verions that are connected to the input of the
-        # current plugin as well as all tracked config options and the strax version.
-        # The run_id is a user input. More on the deterministic seed can be found in
-        # a dedicated notebook.
-        # Please make sure that you use the random number generator self.rng when you need random numbers
-        # later in the plugin.
-        if self.deterministic_seed:
-            hash_string = strax.deterministic_hash((self.run_id, self.lineage))
-            seed = int(hash_string.encode().hex(), 16)
-            self.rng = np.random.default_rng(seed=seed)
-            log.debug(f"Generating random numbers from seed {seed}")
-        else:
-            self.rng = np.random.default_rng()
-            log.debug(f"Generating random numbers with seed pulled from OS")
+    # Get acceptance threshold
+    def get_threshold_acc(self, ID):
+        ind = ID - 2000
+        threshold = self.nveto_spe_parameters.threshold_pe.values[ind]
+        return threshold
 
-    # The compute method is the heart of the plugin. It is executed for each chunk of input data and
-    # must produce data in the format specified in the self.dtype variable.
-    def compute(self, nv_pmthits, eCE=0.75, Stacked_opt="No", rate=1.0):
-        # Make sure your plugin can handle empty inputs
-        if len(nv_pmthits) == 0:
-            return np.zeros(0, self.dtype)
-        hitlets = self._nv_hitlets(nv_pmthits, CE_Scaling=eCE, Stacked=Stacked_opt, period=rate)
-        # All your NV goes here
-        result = hit_array_to_nvhitlet(hitlets)
-        return result
+    # Sampling charge from SPE
+    def pe_charge_N(self, pmt_id):
+        SPE_channel = self.nveto_spe_parameters.get(pmt_id)
+
+
+        # We can not use the line below as we have to make sure fuse is producing reproducible results. For this reason we have to stick to the random generator of the plugin.
+        # charge=rd.choices(SPE_channel['pe'],SPE_channel['SPE_values'],k=1)[0]
+
+        #I'm not sure if numpy choice is exactly the same as random.choices. Please check this.
+        charge=self.rng.choice(SPE_channel['pe'],SPE_channel['SPE_values'],k=1)[0]
+
+        return charge
+
+
+def energy_to_wavelenght(E):
+    Joules_to_eV = 1.602 * 1e-19
+    return 1e9 * const.h * const.c / (E * Joules_to_eV)
+
+# Cluster for stacket hitlets
+def channel_cluster_nv(t):
+    db_cluster = DBSCAN(
+        eps=8, min_samples=1
+    )  # As a preliminar value we fix distance between two photons arriving in the same pmt 8ns
+    t_val = np.array(t)
+    clusters = np.array(db_cluster.fit_predict(t_val.reshape(-1, 1)))
+    return clusters
+
+def get_clusters_arrays(arr, typ):
+    arr_nv_c = np.zeros(1, dtype=typ)
+    arr_nv_c["n_clusters_hits"] = len(arr)
+
+    for i in arr.dtype.names:  # <-- CORRETTO: usare dtype.names invece di fields
+        if i in ["time", "pmthitTime", "cluster_times_ns"]:
+            arr_nv_c[i] = np.min(arr[i])
+        elif i == "endtime":
+            arr_nv_c[i] = np.max(arr[i])
+        elif i in ["pe_area", "pmthitEnergy"]:
+            arr_nv_c[i] = np.sum(arr[i])
+        elif i in ["evtid", "pmthitID", "labels"]:
+            arr_nv_c[i] = np.unique(arr[i])
+
+    return arr_nv_c
+
+
+# I do not see this used anywhere: -> Delete?
+# def create_SPE_file(path, sr="0"):
+#     # path to the aux_files
+#     # SR : to change configuration for each SR
+#     spe_df = pd.DataFrame(columns=["pmtID", "pe", "SPE_values", "acceptance"])
+#     array_x = np.load(path + "x_data_sr" + sr + ".npy")
+#     array_y = np.load(path + "sr" + sr + "_pdfs.npy")
+#     spe_df["pmtID"] = np.arange(2000, 2120)
+#     spe_df["pe"] = array_x.tolist()
+#     spe_df["SPE_values"] = array_y.tolist()
+#     spe_df["acceptance"] = np.load(path + "spe_acc_sr" + sr + ".npy", allow_pickle=True)
+#     return np.save(path + "SPE_SR" + sr + ".npy", spe_df.to_records())
+
+
+# This one is the same as the nveto_spe_sr1_dict function right?
+# SPE parameters: ID, pe, SPE, acceptance
+# def SPE_parameters(file_spe_model):
+#     with open(file_spe_model, 'r') as f:     
+#         data_spe = json.load(f) 
+#     data_dict = {entry['pmtID']: entry for entry in data_spe}
+#     # SPE_ch= pd.DataFrame(columns=['pmtID','pe','SPE','acceptance'])
+#     # SPE_ch['pmtID'],SPE_ch['pe'], SPE_ch['SPE'],SPE_ch['acceptance']=data_spe['pmtID'],data_spe['charge'],data_spe['SPE_values'],data_spe['acceptance']
+#     # acceptance_ch= [threshold_acc(SPE_ch,i) for i in np.arange(2000,2120)]
+#     # SPE_ch['threshold_pe']=acceptance_ch
+
+#     return data_dict
+
+# I do not see this used anywhere: -> Delete?
+# def threshold_acc(SPE_df, ID):
+#     SPE_ID = pd.DataFrame()
+#     SPE_ID["cumulative"] = np.cumsum(SPE_df[SPE_df.pmtID == ID].SPE.values[0])
+#     SPE_ID["charges"] = SPE_df[SPE_df.pmtID == ID].pe.values[0]
+#     accep = SPE_df[SPE_df.pmtID == ID].acceptance.values[0]
+#     threshold = min(SPE_ID[SPE_ID.cumulative >= (1 - accep)].charges.values)
+#     return threshold
+
+
+# This one is the one in the URLConfig nveto_pmt_qe right?
+# Quantum efficiency
+# def QE_nVeto(Q_E_nveto_file):
+#     with open(Q_E_nveto_file, "r") as f:
+#         data = json.loads(f.read())
+#     QE_array_n = []
+#     # nVeto
+#     for i in np.arange(2000, 2120):
+#         QE_array_n.append(
+#             interpolate.interp1d(
+#                 data["nv_pmt_qe_wavelength"],
+#                 data["nv_pmt_qe"][str(i)],
+#                 bounds_error=False,
+#                 fill_value=0,
+#             )
+#         )
+#     # Watertank_QE
+#     pmt_id = list(np.arange(2000, 2120))
+#     QE_array = QE_array_n
+#     pd_dict = {"pmt_id": pmt_id, "QE": QE_array}
+#     return pd_dict
