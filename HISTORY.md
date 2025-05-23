@@ -1,6 +1,11 @@
+1.5.1 / 2025-05-23
+------------------
+* MC override in context config (https://github.com/XENONnT/fuse/pull/308)
+
+
 1.5.0 / 2025-05-21
 ------------------
-* Only simulate a part of the PI train by  (https://github.com/XENONnT/fuse/pull/287)
+* Only simulate a part of the PI train (https://github.com/XENONnT/fuse/pull/287)
 * typo fixes, code clarificaiton (https://github.com/XENONnT/fuse/pull/290)
 * Patch cmake version in nestpy (https://github.com/XENONnT/fuse/pull/302)
 * Cleanup unused configs (https://github.com/XENONnT/fuse/pull/301)
