@@ -323,7 +323,7 @@ def xenonnt_fuse_full_chain_simulation(
     else:
         # Backward compatibility: legacy fdc_map_mc logic
         if "fdc_map_mc" in config:
-            fdc_map_mc = fdc_map_mc or config["fdc_map_mc"]
+            fdc_map_mc = config["fdc_map_mc"]
             log.info(f"[legacy] Using fdc_map_mc: {fdc_map_mc}")
             fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
             fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
