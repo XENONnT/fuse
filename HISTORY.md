@@ -1,3 +1,7 @@
+1.5.2 / 2025-05-26
+------------------
+* Fix context to be compatible with new config formats (https://github.com/XENONnT/fuse/pull/310)
+
 1.5.1 / 2025-05-23
 ------------------
 * MC override in context config (https://github.com/XENONnT/fuse/pull/308)
