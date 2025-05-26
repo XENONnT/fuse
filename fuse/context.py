@@ -265,7 +265,6 @@ def xenonnt_fuse_full_chain_simulation(
     simulation_config=DEFAULT_SIMULATION_VERSION,
     corrections_run_id=None,
     clustering_method=None,  # defaults to dbscan, but can be set to lineage
-    fdc_map_mc=None,
     cut_list=None,
     **kwargs,
 ):
@@ -314,17 +313,26 @@ def xenonnt_fuse_full_chain_simulation(
     )
     st.set_config(old_xedocs_versions_patch(corrections_version))
 
-    # This is for backward compatibility with configs that did not have
-    # the mc_overrides in the config file. Can be removed in the future.
-    # Get the fdc_map_mc from argument or from config file
-    fdc_map_mc = fdc_map_mc or fuse.from_config(simulation_config_file, "fdc_map_mc")
-    log.info(f"Using fdc_map_mc: {fdc_map_mc}")
-    fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
-    fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
-    st.set_config({"fdc_map": fdc_conf})
+    # Load the full config once
+    config = straxen.get_resource(simulation_config_file, fmt="json")
 
-    # Overwrite some resource files with the ones from the simulation config
-    apply_mc_overrides(st, simulation_config_file)
+    # If mc_overrides is present, use that exclusively
+    if "mc_overrides" in config:
+        log.info("Found 'mc_overrides' in config,  using override-based config system.")
+        apply_mc_overrides(st, simulation_config_file)
+    else:
+        # Backward compatibility: legacy fdc_map_mc logic
+        if "fdc_map_mc" in config:
+            fdc_map_mc = config["fdc_map_mc"]
+            log.info(f"[legacy] Using fdc_map_mc: {fdc_map_mc}")
+            fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
+            fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
+            st.set_config({"fdc_map": fdc_conf})
+        else:
+            raise RuntimeError(
+                "No 'mc_overrides' or 'fdc_map_mc' found in the config. "
+                "Please define one of them to set 'fdc_map'."
+            )
 
     if cut_list is not None:
         st.register_cut_list(cut_list)
