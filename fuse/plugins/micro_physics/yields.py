@@ -641,10 +641,10 @@ class MigdalYields(NestYields):
         Returns:
         - float: Energy of the ionized electron.
         """
-        es = np.logspace(1e-4, 20, 10000)
+        es = np.logspace(-4, np.log10(20), 200)
         vs = np.repeat(v, len(es))
         
-        points = self.pairwise_log_transform(es.copy(), vs)
+        points = self.pairwise_log_transform(es.copy(), vs.copy())
         pdf = self.distribution_manager.dpI1(points, orbital)
         
         cdf = pdf.cumsum() # Not yet normalised
