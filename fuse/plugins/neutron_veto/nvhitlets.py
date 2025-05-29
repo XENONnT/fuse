@@ -7,14 +7,12 @@ from sklearn.cluster import DBSCAN
 
 from ...plugin import FuseBasePlugin
 
-from ...dtypes import (
-    neutron_veto_hitlet_dtype
-)
+from ...dtypes import neutron_veto_hitlet_dtype
+
 
 class NeutronVetoHitlets(FuseBasePlugin):
-    """
-    Plugin to simulate the Neutron Veto to hitlets. 
-    
+    """Plugin to simulate the Neutron Veto to hitlets.
+
     @Experts: Please add a better description of the plugin here.
     """
 
@@ -26,7 +24,7 @@ class NeutronVetoHitlets(FuseBasePlugin):
 
     dtype = neutron_veto_hitlet_dtype + strax.interval_dtype
 
-    # Fix these URL configs! 
+    # Fix these URL configs!
     nveto_pmt_qe = straxen.URLConfig(
         default="nveto_pmt_qe://resource://simulation_config://"
         "SIMULATION_CONFIG_FILE.json?&key=nveto_pmt_qe",
@@ -42,7 +40,7 @@ class NeutronVetoHitlets(FuseBasePlugin):
 
     # Add a few extra configs to remove them elsewhere
 
-    # @experts: would the stacking change the output dtype of the plugin? If yes, it will not work. 
+    # @experts: would the stacking change the output dtype of the plugin? If yes, it will not work.
     stack_hitlets = straxen.URLConfig(
         default=False,
         help="Option to enable or disable hitlet stacking",
@@ -55,7 +53,7 @@ class NeutronVetoHitlets(FuseBasePlugin):
         help="Add good description here",
     )
 
-    # Next steps: remove this part. 
+    # Next steps: remove this part.
     # def __init__(self, sr=0):
     #     self.path = "/home/digangi/private_nt_aux_files/sim_files/"  # pietro - need to modify this to work with urlconfig
     #     self.QE_value = QE_nVeto(self.path + "nveto_pmt_qe.json")
@@ -65,9 +63,9 @@ class NeutronVetoHitlets(FuseBasePlugin):
 
         if len(nv_pmthits) == 0:
             return np.zeros(0, self.dtype)
-        
+
         hitlets = self._nv_hitlets(nv_pmthits)
-        
+
         result = np.zeros(len(hitlets), dtype=self.dtype)
         result["time"] = hitlets["time"]
         result["length"] = 1
@@ -76,7 +74,6 @@ class NeutronVetoHitlets(FuseBasePlugin):
         result["area"] = hitlets["pe_area"]
 
         return strax.sort_by_time(result)
-
 
     def _nv_hitlets(self, pmthits):
 
@@ -140,12 +137,11 @@ class NeutronVetoHitlets(FuseBasePlugin):
             times.append(cluster_times_ns)
         pmthits["cluster_times_ns"] = np.concatenate(times)
 
-
         # Same comment as above: If this option produces different output dtypes it will not work. One could add a second output to the plugin if needed or add a new plugin that takes pmthits as input and produces the stacked hitlets as output.
 
         if not self.stack_hitlets:
             return pmthits
-        
+
         # 3.1 Stacked hitlets: this correspond to hitlets in the same pmt with a time difference below some estimated time response of the Channel (8 ns, i.e. 4 samples).
         elif self.stack_hitlets:
             self.log.debug("Looking for stacked hitlets")
@@ -178,7 +174,7 @@ class NeutronVetoHitlets(FuseBasePlugin):
         return qe
 
     def get_acceptance(self, ID):
-        acc = self.nveto_spe_parameters.get(ID)['acceptance']
+        acc = self.nveto_spe_parameters.get(ID)["acceptance"]
         return acc
 
     # Get acceptance threshold
@@ -191,12 +187,11 @@ class NeutronVetoHitlets(FuseBasePlugin):
     def pe_charge_N(self, pmt_id):
         SPE_channel = self.nveto_spe_parameters.get(pmt_id)
 
-
         # We can not use the line below as we have to make sure fuse is producing reproducible results. For this reason we have to stick to the random generator of the plugin.
         # charge=rd.choices(SPE_channel['pe'],SPE_channel['SPE_values'],k=1)[0]
 
-        #I'm not sure if numpy choice is exactly the same as random.choices. Please check this.
-        charge=self.rng.choice(SPE_channel['pe'],SPE_channel['SPE_values'],k=1)[0]
+        # I'm not sure if numpy choice is exactly the same as random.choices. Please check this.
+        charge = self.rng.choice(SPE_channel["pe"], SPE_channel["SPE_values"], k=1)[0]
 
         return charge
 
@@ -204,6 +199,7 @@ class NeutronVetoHitlets(FuseBasePlugin):
 def energy_to_wavelenght(E):
     Joules_to_eV = 1.602 * 1e-19
     return 1e9 * const.h * const.c / (E * Joules_to_eV)
+
 
 # Cluster for stacket hitlets
 def channel_cluster_nv(t):
@@ -213,6 +209,7 @@ def channel_cluster_nv(t):
     t_val = np.array(t)
     clusters = np.array(db_cluster.fit_predict(t_val.reshape(-1, 1)))
     return clusters
+
 
 def get_clusters_arrays(arr, typ):
     arr_nv_c = np.zeros(1, dtype=typ)
@@ -248,8 +245,8 @@ def get_clusters_arrays(arr, typ):
 # This one is the same as the nveto_spe_sr1_dict function right?
 # SPE parameters: ID, pe, SPE, acceptance
 # def SPE_parameters(file_spe_model):
-#     with open(file_spe_model, 'r') as f:     
-#         data_spe = json.load(f) 
+#     with open(file_spe_model, 'r') as f:
+#         data_spe = json.load(f)
 #     data_dict = {entry['pmtID']: entry for entry in data_spe}
 #     # SPE_ch= pd.DataFrame(columns=['pmtID','pe','SPE','acceptance'])
 #     # SPE_ch['pmtID'],SPE_ch['pe'], SPE_ch['SPE'],SPE_ch['acceptance']=data_spe['pmtID'],data_spe['charge'],data_spe['SPE_values'],data_spe['acceptance']

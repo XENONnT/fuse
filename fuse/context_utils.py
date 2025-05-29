@@ -172,6 +172,7 @@ def lce_from_pattern_map(map, pmt_mask):
     lcemap.__init__(lcemap.data)
     return lcemap
 
+
 def apply_mc_overrides(context, config_file):
     """Apply config overrides from 'mc_overrides' using from_config."""
     try:
@@ -188,26 +189,34 @@ def apply_mc_overrides(context, config_file):
     except Exception as e:
         raise ValueError(f"[mc_overrides] Failed to apply overrides from {config_file}: {e}") from e
 
+
 @URLConfig.register("nveto_pmt_qe")
 def nveto_pmt_qe_dict(data):
     """Get NV PMT quantum efficiecny values and interpolate."""
-    #with open(Q_E_nveto_file,'r') as f:
+    # with open(Q_E_nveto_file,'r') as f:
     #    data = json.loads(f.read())
-    QE_array_n=[]
-    #nVeto
-    for i in np.arange(2000,2120):
-        QE_array_n.append(interpolate.interp1d(data['nv_pmt_qe_wavelength'],data['nv_pmt_qe'][str(i)], bounds_error=False,fill_value=0))
-    #Watertank_QE
-    pmt_id= list(np.arange(2000,2120))
-    QE_array=QE_array_n
-    pd_dict= {"pmt_id":pmt_id,"QE":QE_array}
+    QE_array_n = []
+    # nVeto
+    for i in np.arange(2000, 2120):
+        QE_array_n.append(
+            interpolate.interp1d(
+                data["nv_pmt_qe_wavelength"],
+                data["nv_pmt_qe"][str(i)],
+                bounds_error=False,
+                fill_value=0,
+            )
+        )
+    # Watertank_QE
+    pmt_id = list(np.arange(2000, 2120))
+    QE_array = QE_array_n
+    pd_dict = {"pmt_id": pmt_id, "QE": QE_array}
     return pd_dict
 
 
 @URLConfig.register("nveto_spe_sr1")
 def nveto_spe_sr1_dict(data_spe):
     """Get dictionary with NV SPE parameters."""
-    #with open(file_spe_model, 'r') as f:     
-    #    data_spe = json.load(f) 
-    data_dict = {entry['pmtID']: entry for entry in data_spe}
+    # with open(file_spe_model, 'r') as f:
+    #    data_spe = json.load(f)
+    data_dict = {entry["pmtID"]: entry for entry in data_spe}
     return data_dict
