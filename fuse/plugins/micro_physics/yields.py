@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+
 import nestpy
 import strax
 import straxen
@@ -453,6 +455,7 @@ class BBF_quanta_generator:
         return Nph, Ne, Nex
 
 
+@export
 class MigdalYields(NestYields): 
     __version__ = '0.0.1-alpha'
     child_plugin = True
@@ -612,8 +615,8 @@ class MigdalYields(NestYields):
                 # Auger electrons and X-rays might disagree
                 em_energy = electron_energy + binding_e
 
-                m_photons, m_excitons, m_electrons = super().get_quanta(em_energy, 8, e_field, A, Z, create_s2, density)
-                
+                m_photons, m_electrons, m_excitons = super().get_quanta(em_energy, 8, e_field, A, Z, create_s2, density)
+
                 photons += m_photons
                 excitons += m_excitons
                 if create_s2:
