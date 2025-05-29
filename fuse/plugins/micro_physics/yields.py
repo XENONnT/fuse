@@ -513,6 +513,14 @@ class MigdalYields(NestYields):
         "Migdal class instance from https://github.com/petercox/Migdal/blob/v1.0.0/Migdal.py .\n",
     )
 
+    def setup(self):
+        super().setup()
+
+        self.vectorized_get_quanta = np.vectorize(
+            self.get_quanta, 
+            otypes=[int, int, int, bool, int, int, int, float, str]
+        )
+    
     def compute(self, interactions_in_roi):
 
         return_empty = len(interactions_in_roi) == 0
