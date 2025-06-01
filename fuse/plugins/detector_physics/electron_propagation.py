@@ -274,7 +274,9 @@ def simulate_horizontal_shift(
 ):
 
     diffusion_constant_radial_r = np.repeat(diffusion_constant_radial, n_electron.astype(np.int64))
-    diffusion_constant_azimuthal_r = np.repeat(diffusion_constant_azimuthal, n_electron.astype(np.int64))
+    diffusion_constant_azimuthal_r = np.repeat(
+        diffusion_constant_azimuthal, n_electron.astype(np.int64)
+    )
 
     hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial_r * drift_time_electron)
     hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal_r * drift_time_electron)
