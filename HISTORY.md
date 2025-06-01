@@ -1,3 +1,25 @@
+1.5.2 / 2025-05-26
+------------------
+* Fix context to be compatible with new config formats (https://github.com/XENONnT/fuse/pull/310)
+
+1.5.1 / 2025-05-23
+------------------
+* MC override in context config (https://github.com/XENONnT/fuse/pull/308)
+
+
+1.5.0 / 2025-05-21
+------------------
+* Only simulate a part of the PI train (https://github.com/XENONnT/fuse/pull/287)
+* typo fixes, code clarificaiton (https://github.com/XENONnT/fuse/pull/290)
+* Patch cmake version in nestpy (https://github.com/XENONnT/fuse/pull/302)
+* Cleanup unused configs (https://github.com/XENONnT/fuse/pull/301)
+* Daq photon sorting (https://github.com/XENONnT/fuse/pull/297)
+* Fuse compatibility with straxen (support both straxen v2 and v3)  (https://github.com/XENONnT/fuse/pull/298)
+* Public config (https://github.com/XENONnT/fuse/pull/288)
+* updating the fixed time separation (https://github.com/XENONnT/fuse/pull/289)
+* Move context to fuse (https://github.com/XENONnT/fuse/pull/299)
+* Clip FDC input positions (https://github.com/XENONnT/fuse/pull/304)
+
 1.4.4 / 2025-01-25
 ------------------
 * Be compatible with straxen >= 3 (https://github.com/XENONnT/fuse/pull/282)
