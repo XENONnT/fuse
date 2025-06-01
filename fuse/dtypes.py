@@ -1,6 +1,5 @@
 import numpy as np
 
-
 g4_fields = [
     (("Time with respect to the start of the event [ns]", "t"), np.float64),
     (("Energy deposit [keV]", "ed"), np.float32),
