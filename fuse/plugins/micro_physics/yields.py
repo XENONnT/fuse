@@ -456,22 +456,37 @@ class BBF_quanta_generator:
 
 
 @export
-class MigdalYields(NestYields): 
-    __version__ = '0.0.1-alpha'
+class MigdalYields(NestYields):
+    __version__ = "0.0.1-alpha"
     child_plugin = True
 
     provides = ("quanta", "migdal_truth")
-    
+
     common_dtypes = strax.time_fields + cluster_id_fields
     quanta_dtypes = common_dtypes + quanta_fields
     truth_dtype = common_dtypes + [
         (("This cluster contains a Migdal effect", "has_migdal"), np.bool_),
-        (("Number of photons at interaction position caused by Migdal effect", "migdal_photons"), np.int32),
-        (("Number of electrons at interaction position caused by Migdal effect", "migdal_electrons"), np.int32),
-        (("Number of excitons at interaction position caused by Migdal effect", "migdal_excitons"), np.int32),
+        (
+            ("Number of photons at interaction position caused by Migdal effect", "migdal_photons"),
+            np.int32,
+        ),
+        (
+            (
+                "Number of electrons at interaction position caused by Migdal effect",
+                "migdal_electrons",
+            ),
+            np.int32,
+        ),
+        (
+            (
+                "Number of excitons at interaction position caused by Migdal effect",
+                "migdal_excitons",
+            ),
+            np.int32,
+        ),
         (("Energy of Migdal electron", "migdal_energy"), np.float32),
         (("Orbital of Migdal electron", "migdal_orbital"), ">U3"),
-    ] 
+    ]
 
     dtype = {
         "quanta": quanta_dtypes,
@@ -506,10 +521,10 @@ class MigdalYields(NestYields):
     )
 
     distribution_manager = straxen.URLConfig(
-        default = "simple_load://resource://"
+        default="simple_load://resource://"
         "Migdal_probability_distribution_interpolators.pkl?"
         "&fmt=pkl",
-        help="Interpolators for the Migdal distribution functions. " 
+        help="Interpolators for the Migdal distribution functions. "
         "Migdal class instance from https://github.com/petercox/Migdal/blob/v1.0.0/Migdal.py .\n",
     )
 
@@ -520,20 +535,18 @@ class MigdalYields(NestYields):
         type=bool,
         help="Cause every nuclear recoil to be accompained by a Migdal effect.",
     )
-        
-    
+
     def setup(self):
         super().setup()
 
         self.vectorized_get_quanta = np.vectorize(
-            self.get_quanta, 
-            otypes=[int, int, int, bool, int, int, int, float, str]
+            self.get_quanta, otypes=[int, int, int, bool, int, int, int, float, str]
         )
-    
+
     def compute(self, interactions_in_roi):
 
         return_empty = len(interactions_in_roi) == 0
-        
+
         results = {}
         for data_type in self.provides:
             if return_empty:
@@ -545,12 +558,12 @@ class MigdalYields(NestYields):
                 result["cluster_id"] = interactions_in_roi["cluster_id"]
                 result["ed"] = interactions_in_roi["ed"]
                 result["nestid"] = interactions_in_roi["nestid"]
-            
+
             results[data_type] = result
 
         if return_empty:
             return results
-        
+
         # set the global nest random generator with self.short_seed
         nest_rng.set_seed(self.short_seed)
         # Now lock the seed during the computation
@@ -561,16 +574,17 @@ class MigdalYields(NestYields):
         # Generate quanta:
         if len(interactions_in_roi) > 0:
 
-            (photons,
-             electrons,
-             excitons,
-             has_migdal,
-             migdal_photons,
-             migdal_electrons,
-             migdal_excitons,
-             migdal_energy,
-             migdal_orbital
-             ) = self.vectorized_get_quanta(
+            (
+                photons,
+                electrons,
+                excitons,
+                has_migdal,
+                migdal_photons,
+                migdal_electrons,
+                migdal_excitons,
+                migdal_energy,
+                migdal_orbital,
+            ) = self.vectorized_get_quanta(
                 interactions_in_roi["ed"],
                 interactions_in_roi["nestid"],
                 interactions_in_roi["e_field"],
@@ -607,22 +621,24 @@ class MigdalYields(NestYields):
         return results
 
     def get_quanta(self, en, model, e_field, A, Z, create_s2, density):
-            
-        photons, electrons, excitons = super().get_quanta(en, model, e_field, A, Z, create_s2, density)
-        
+
+        photons, electrons, excitons = super().get_quanta(
+            en, model, e_field, A, Z, create_s2, density
+        )
+
         # Initialise Truth variables
         has_migdal = False
-        m_photons = m_electrons = m_excitons =  em_energy = 0
+        m_photons = m_electrons = m_excitons = em_energy = 0
         orbital = None
 
         # If the event is a NR, add migdal
         if model == 0:
-            
-            erec = en 
+
+            erec = en
             v = np.sqrt(2 * erec / self.xenon_mass)
-    
+
             has_migdal, orbital = self.get_orbital(v)
-            
+
             if has_migdal:
 
                 binding_e = self.binding_energies[orbital]
@@ -632,23 +648,35 @@ class MigdalYields(NestYields):
                 # Auger electrons and X-rays might disagree
                 em_energy = electron_energy + binding_e
 
-                m_photons, m_electrons, m_excitons = super().get_quanta(em_energy, 8, e_field, A, Z, create_s2, density)
+                m_photons, m_electrons, m_excitons = super().get_quanta(
+                    em_energy, 8, e_field, A, Z, create_s2, density
+                )
 
                 photons += m_photons
                 excitons += m_excitons
                 if create_s2:
                     electrons += m_electrons
 
-        return photons, electrons, excitons, has_migdal, m_photons, m_electrons, m_excitons, em_energy, orbital
+        return (
+            photons,
+            electrons,
+            excitons,
+            has_migdal,
+            m_photons,
+            m_electrons,
+            m_excitons,
+            em_energy,
+            orbital,
+        )
 
     def get_electron_energy(self, v, orbital):
-        """
-        Compute the energy of a Migdal electron based on the nucleus speed and orbital.
+        """Compute the energy of a Migdal electron based on the nucleus speed
+        and orbital.
 
-        This method uses the provided nucleus speed `v` and the specified orbital to 
-        generate the energy of the electron by sampling from a probability distribution. 
-        The probability distribution function (PDF) is computed and normalized, and 
-        the inverted cumulative distribution function (CDF) is used to obtain the 
+        This method uses the provided nucleus speed `v` and the specified orbital to
+        generate the energy of the electron by sampling from a probability distribution.
+        The probability distribution function (PDF) is computed and normalized, and
+        the inverted cumulative distribution function (CDF) is used to obtain the
         electron energy.
 
         Parameters:
@@ -666,30 +694,30 @@ class MigdalYields(NestYields):
         pdf = self.distribution_manager.dpI1(points, orbital)
 
         # Compute CDF
-        cdf = pdf.cumsum() # Not yet normalised
-        cdf /= cdf[-1] # Normalised
+        cdf = pdf.cumsum()  # Not yet normalised
+        cdf /= cdf[-1]  # Normalised
 
-        # Determine electron energy using inverted tranform sampling        
+        # Determine electron energy using inverted tranform sampling
         random_n = self.rng.uniform()
         inverted_cdf_value = np.interp(random_n, cdf, es)
 
         return inverted_cdf_value
 
     def get_orbital(self, v):
-        """
-        Determine the orbital shell from which an electron is ionized, if any, based on the nucleus speed.
+        """Determine the orbital shell from which an electron is ionized, if
+        any, based on the nucleus speed.
 
-        This method calculates the probabilities for each orbital shell based on the nucleus 
-        speed `v`. A random number is used to sample from these probabilities and determine 
+        This method calculates the probabilities for each orbital shell based on the nucleus
+        speed `v`. A random number is used to sample from these probabilities and determine
         whether an electron is ionized and, if so, from which orbital shell.
 
         Parameters:
         - v (float): Speed of the recoiling nucleus.
 
         Returns:
-        - Tuple[bool, str or None]: A tuple where the first element is a boolean indicating 
-        whether an electron was ionized, and the second element is the orbital shell 
-        ('3s', '4p', etc.) if an electron was ionized, or `None` if no electron was 
+        - Tuple[bool, str or None]: A tuple where the first element is a boolean indicating
+        whether an electron was ionized, and the second element is the orbital shell
+        ('3s', '4p', etc.) if an electron was ionized, or `None` if no electron was
         ionized.
         """
         total_probability = 0
@@ -697,13 +725,13 @@ class MigdalYields(NestYields):
 
         # Compute total probability of having a Migdal ionisation from considered shells
         for orbital in self.orbitals:
-            _probability = self.distribution_manager.pI1(np.log(v), orbital)            
+            _probability = self.distribution_manager.pI1(np.log(v), orbital)
             _probability = np.where(
                 np.isnan(_probability),
                 0,
                 _probability,
             )
-            
+
             total_probability += _probability
             probabilities[orbital] = _probability
 
@@ -715,10 +743,9 @@ class MigdalYields(NestYields):
 
         # Compute discrete CDFs for the different orbitals
         probabilities = pd.DataFrame(
-            probabilities.values(),
-            index=probabilities.keys(),
-            columns=["probability"])
-        probabilities['norm_probability'] = probabilities.probability / total_probability
+            probabilities.values(), index=probabilities.keys(), columns=["probability"]
+        )
+        probabilities["norm_probability"] = probabilities.probability / total_probability
         probabilities = probabilities.sort_values("norm_probability")
 
         # Determine which orbital the electron came from using inverse transform sampling
@@ -729,8 +756,7 @@ class MigdalYields(NestYields):
 
     @staticmethod
     def pairwise_log_transform(a, b):
-        """
-        Applies a logarithmic transformation to two input arrays or values.
+        """Applies a logarithmic transformation to two input arrays or values.
 
         Reshapes and concatenates the inputs into a 2D array, then computes the natural logarithm
         of each element. This ensures compatibility with functions requiring a 2D array with two columns.
