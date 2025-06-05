@@ -513,6 +513,15 @@ class MigdalYields(NestYields):
         "Migdal class instance from https://github.com/petercox/Migdal/blob/v1.0.0/Migdal.py .\n",
     )
 
+    force_migdal = straxen.URLConfig(
+        default="simple_load://simulation_config://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=force_migdal",
+        type=bool,
+        help="Cause every nuclear recoil to be accompained by a Migdal effect.",
+    )
+        
+    
     def setup(self):
         super().setup()
 
@@ -698,10 +707,13 @@ class MigdalYields(NestYields):
             total_probability += _probability
             probabilities[orbital] = _probability
 
-        random_n = self.rng.uniform()
-        if random_n > total_probability:
-            return False, None
-        
+        # If force_migdal==True and if total_probability>0, force Migdal event and skip step
+        if not (total_probability > 0 and self.force_migdal):
+            random_n = self.rng.uniform()
+            if random_n > total_probability:
+                return False, None
+
+        # Compute discrete CDFs for the different orbitals
         probabilities = pd.DataFrame(
             probabilities.values(),
             index=probabilities.keys(),
