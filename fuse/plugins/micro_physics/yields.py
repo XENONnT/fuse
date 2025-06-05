@@ -651,15 +651,17 @@ class MigdalYields(NestYields):
         """
         es = np.logspace(-4, np.log10(20), 200)
         vs = np.repeat(v, len(es))
-        
+
+        # Obtain PDF
         points = self.pairwise_log_transform(es.copy(), vs.copy())
         pdf = self.distribution_manager.dpI1(points, orbital)
-        
+
+        # Compute CDF
         cdf = pdf.cumsum() # Not yet normalised
         cdf /= cdf[-1] # Normalised
 
+        # Determine electron energy using inverted tranform sampling        
         random_n = self.rng.uniform()
-
         inverted_cdf_value = np.interp(random_n, cdf, es)
 
         return inverted_cdf_value
@@ -681,9 +683,10 @@ class MigdalYields(NestYields):
         ('3s', '4p', etc.) if an electron was ionized, or `None` if no electron was 
         ionized.
         """
-
         total_probability = 0
         probabilities = {}
+
+        # Compute total probability of having a Migdal ionisation from considered shells
         for orbital in self.orbitals:
             _probability = self.distribution_manager.pI1(np.log(v), orbital)            
             _probability = np.where(
@@ -705,7 +708,8 @@ class MigdalYields(NestYields):
             columns=["probability"])
         probabilities['norm_probability'] = probabilities.probability / total_probability
         probabilities = probabilities.sort_values("norm_probability")
-        
+
+        # Determine which orbital the electron came from using inverse transform sampling
         random_n = self.rng.uniform()
         for orbital, probability in probabilities.norm_probability.cumsum().items():
             if random_n < probability:
