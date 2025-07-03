@@ -39,9 +39,9 @@ class CorrectedAreasMC(straxen.CorrectedAreas):
 
         if not self.enable_delayed_electrons:
             for peak_type in ["", "alt_"]:            
-                result[f"{peak_type}cs2_area_fraction_top"] = result["s2_area_fraction_top"]
-                result[f"{peak_type}cs2_area_fraction_top_wo_timecorr"] = result["s2_area_fraction_top"]
-                result[f"{peak_type}cs2_area_fraction_top_wo_elifecorr"] = result["s2_area_fraction_top"]
-                result[f"{peak_type}cs2_area_fraction_top_wo_picorr"] = result["s2_area_fraction_top"]
+                result[f"{peak_type}cs2_area_fraction_top"] = events["s2_area_fraction_top"]
+                result[f"{peak_type}cs2_area_fraction_top_wo_timecorr"] = events["s2_area_fraction_top"]
+                result[f"{peak_type}cs2_area_fraction_top_wo_elifecorr"] = events["s2_area_fraction_top"]
+                result[f"{peak_type}cs2_area_fraction_top_wo_picorr"] = events["s2_area_fraction_top"]
 
         return result
