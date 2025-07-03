@@ -18,7 +18,7 @@ class CorrectedAreasMC(straxen.CorrectedAreas):
     data!
     """
 
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
     child_plugin = True
 
     enable_delayed_electrons = straxen.URLConfig(
