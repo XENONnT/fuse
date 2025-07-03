@@ -28,7 +28,6 @@ class CorrectedAreasMC(straxen.CorrectedAreas):
         help="Decide if you want to to enable delayed electrons from photoionization",
     )
 
-        
     def compute(self, events):
         result = super().compute(events)
         result["cs1"] = result["cs1_wo_timecorr"]
@@ -38,10 +37,16 @@ class CorrectedAreasMC(straxen.CorrectedAreas):
         result["alt_cs2"] = result["alt_cs2_wo_timecorr"]
 
         if not self.enable_delayed_electrons:
-            for peak_type in ["", "alt_"]:            
+            for peak_type in ["", "alt_"]:
                 result[f"{peak_type}cs2_area_fraction_top"] = events["s2_area_fraction_top"]
-                result[f"{peak_type}cs2_area_fraction_top_wo_timecorr"] = events["s2_area_fraction_top"]
-                result[f"{peak_type}cs2_area_fraction_top_wo_elifecorr"] = events["s2_area_fraction_top"]
-                result[f"{peak_type}cs2_area_fraction_top_wo_picorr"] = events["s2_area_fraction_top"]
+                result[f"{peak_type}cs2_area_fraction_top_wo_timecorr"] = events[
+                    "s2_area_fraction_top"
+                ]
+                result[f"{peak_type}cs2_area_fraction_top_wo_elifecorr"] = events[
+                    "s2_area_fraction_top"
+                ]
+                result[f"{peak_type}cs2_area_fraction_top_wo_picorr"] = events[
+                    "s2_area_fraction_top"
+                ]
 
         return result
