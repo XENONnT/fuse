@@ -21,6 +21,19 @@ class CorrectedAreasMC(straxen.CorrectedAreas):
     __version__ = "0.0.1"
     child_plugin = True
 
+    enable_delayed_electrons = straxen.URLConfig(
+        default=False,
+        type=bool,
+        track=True,
+        help="Decide if you want to to enable delayed electrons from photoionization",
+    )
+    
+    def setup(self):
+        super().setup()
+
+        if not self.enable_delayed_electrons:
+            self.cs2_bottom_top_ratio_correction = 1
+        
     def compute(self, events):
         result = super().compute(events)
         result["cs1"] = result["cs1_wo_timecorr"]
