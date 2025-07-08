@@ -265,7 +265,6 @@ def xenonnt_fuse_full_chain_simulation(
     corrections_version=DEFAULT_XEDOCS_VERSION,
     simulation_config=DEFAULT_SIMULATION_VERSION,
     corrections_run_id=None,
-    run_without_proper_corrections=False,
     run_without_proper_run_id=False,
     clustering_method=None,  # defaults to dbscan, but can be set to lineage
     cut_list=None,
