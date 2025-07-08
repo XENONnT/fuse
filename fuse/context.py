@@ -134,7 +134,6 @@ def microphysics_context(
 
 def full_chain_context(
     output_folder="./fuse_data",
-    clustering_method="dbscan",
     corrections_version=None,
     simulation_config_file="fuse_config_nt_sr1_dev.json",
     corrections_run_id="046477",
@@ -145,6 +144,7 @@ def full_chain_context(
         "drift_time_gate": "electron_drift_time_gate",
     },
     run_without_proper_corrections=False,
+    clustering_method="dbscan",
     extra_plugins=[],
 ):
     """Function to create a fuse full chain simulation context."""
@@ -152,8 +152,6 @@ def full_chain_context(
     # Lets go for info level logging when working with fuse
     log.setLevel("INFO")
 
-    if corrections_run_id is None:
-        raise ValueError("Specify a corrections_run_id to load the corrections")
     if (corrections_version is None) & (not run_without_proper_corrections):
         raise ValueError(
             "Specify a corrections_version. If you want to run without proper "
@@ -231,7 +229,9 @@ def full_chain_context(
 
     set_simulation_config_file(st, simulation_config_file)
 
-    write_run_id_to_config(st, corrections_run_id)
+    if not run_without_proper_corrections:
+        write_run_id_to_config(st, corrections_run_id)
+        write_sr_information_to_config(st, corrections_run_id)
 
     # Update some run specific config
     for mc_config, processing_config in run_id_specific_config.items():
@@ -258,6 +258,7 @@ def xenonnt_fuse_full_chain_simulation(
     corrections_version=DEFAULT_XEDOCS_VERSION,
     simulation_config=DEFAULT_SIMULATION_VERSION,
     corrections_run_id=None,
+    run_without_proper_corrections=False,
     clustering_method=None,  # defaults to dbscan, but can be set to lineage
     cut_list=None,
     **kwargs,
@@ -281,10 +282,11 @@ def xenonnt_fuse_full_chain_simulation(
     log.info(f"Using simulation config file: {simulation_config_file}")
 
     # Get the corrections_run_id from argument or from config file
-    corrections_run_id = corrections_run_id or fuse.from_config(
-        simulation_config_file, "default_corrections_run_id"
-    )
-    log.info(f"Using corrections_run_id: {corrections_run_id}")
+    if not run_without_proper_corrections:
+        corrections_run_id = corrections_run_id or fuse.from_config(
+            simulation_config_file, "default_corrections_run_id"
+        )
+        log.info(f"Using corrections_run_id: {corrections_run_id}")
 
     # Get clustering method
     # if it is specified as an argument, use that
@@ -302,6 +304,7 @@ def xenonnt_fuse_full_chain_simulation(
         corrections_version=corrections_version,
         simulation_config_file=simulation_config_file,
         corrections_run_id=corrections_run_id,
+        run_without_proper_corrections=run_without_proper_corrections,
         clustering_method=clustering_method,
         **kwargs,
     )
@@ -331,7 +334,6 @@ def xenonnt_fuse_full_chain_simulation(
     if cut_list is not None:
         st.register_cut_list(cut_list)
 
-    write_sr_information_to_config(st, corrections_run_id)
     return st
 
 
