@@ -144,6 +144,7 @@ def full_chain_context(
         "drift_time_gate": "electron_drift_time_gate",
     },
     run_without_proper_corrections=False,
+    run_without_proper_run_id=False,
     clustering_method="dbscan",
     extra_plugins=[],
 ):
@@ -152,6 +153,12 @@ def full_chain_context(
     # Lets go for info level logging when working with fuse
     log.setLevel("INFO")
 
+    if (corrections_run_id is None) & (not run_without_proper_run_id):
+        raise ValueError(
+            "Specify a corrections_run_id. If you want to run without proper "
+            "run_id for testing or just trying out fuse, "
+            "set run_without_proper_run_id to True"
+        )
     if (corrections_version is None) & (not run_without_proper_corrections):
         raise ValueError(
             "Specify a corrections_version. If you want to run without proper "
@@ -229,7 +236,7 @@ def full_chain_context(
 
     set_simulation_config_file(st, simulation_config_file)
 
-    if not run_without_proper_corrections:
+    if not run_without_proper_run_id:
         write_run_id_to_config(st, corrections_run_id)
         write_sr_information_to_config(st, corrections_run_id)
 
@@ -259,6 +266,7 @@ def xenonnt_fuse_full_chain_simulation(
     simulation_config=DEFAULT_SIMULATION_VERSION,
     corrections_run_id=None,
     run_without_proper_corrections=False,
+    run_without_proper_run_id=False,
     clustering_method=None,  # defaults to dbscan, but can be set to lineage
     cut_list=None,
     **kwargs,
@@ -282,7 +290,7 @@ def xenonnt_fuse_full_chain_simulation(
     log.info(f"Using simulation config file: {simulation_config_file}")
 
     # Get the corrections_run_id from argument or from config file
-    if not run_without_proper_corrections:
+    if not run_without_proper_run_id:
         corrections_run_id = corrections_run_id or fuse.from_config(
             simulation_config_file, "default_corrections_run_id"
         )
@@ -304,7 +312,7 @@ def xenonnt_fuse_full_chain_simulation(
         corrections_version=corrections_version,
         simulation_config_file=simulation_config_file,
         corrections_run_id=corrections_run_id,
-        run_without_proper_corrections=run_without_proper_corrections,
+        run_without_proper_run_id=run_without_proper_run_id,
         clustering_method=clustering_method,
         **kwargs,
     )
