@@ -11,7 +11,7 @@ log = logging.getLogger("fuse.context_utils")
 
 def write_sr_information_to_config(context, corrections_run_id):
     """Function to loop over the plugin config write the cutax sr information
-    to the context config."""
+    to the context config by assigning run_id."""
     for data_type, plugin in context._plugin_class_registry.items():
         for option_key, option in plugin.takes_config.items():
             if isinstance(option.default, str) and "science_run://" in option.default:
@@ -19,6 +19,19 @@ def write_sr_information_to_config(context, corrections_run_id):
                     "plugin.run_id",
                     corrections_run_id,
                 )
+
+
+def write_run_id_to_config(context, corrections_run_id):
+    """Function to loop over the plugin config write run_id."""
+    for config_name, url_config in deepcopy(context.config).items():
+        if isinstance(url_config, str) and "run_id" in url_config:
+            context.set_config(
+                {
+                    config_name: straxen.URLConfig.format_url_kwargs(
+                        url_config, run_id=corrections_run_id
+                    )
+                }
+            )
 
 
 def old_xedocs_versions_patch(xedocs_version):

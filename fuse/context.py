@@ -7,6 +7,7 @@ import fuse
 
 from .context_utils import (
     write_sr_information_to_config,
+    write_run_id_to_config,
     set_simulation_config_file,
     old_xedocs_versions_patch,
     overwrite_map_from_config,
@@ -230,14 +231,7 @@ def full_chain_context(
 
     set_simulation_config_file(st, simulation_config_file)
 
-    local_versions = st.config
-    for config_name, url_config in local_versions.items():
-        if isinstance(url_config, str):
-            if "run_id" in url_config:
-                local_versions[config_name] = straxen.URLConfig.format_url_kwargs(
-                    url_config, run_id=corrections_run_id
-                )
-    st.config = local_versions
+    write_run_id_to_config(st, corrections_run_id)
 
     # Update some run specific config
     for mc_config, processing_config in run_id_specific_config.items():
