@@ -248,7 +248,7 @@ def full_chain_context(
             print(f"Warning! {processing_config} not in context config, skipping...")
 
     # No blinding in simulations
-    st.config["event_info_function"] = "disabled"
+    st.set_config({"event_info_function": "disabled"})
 
     # Deregister plugins with missing dependencies
     st.deregister_plugins_with_missing_dependencies()
@@ -422,7 +422,7 @@ def public_config_context(
     )
 
     # No blinding in simulations
-    st.config["event_info_function"] = "disabled"
+    st.set_config({"event_info_function": "disabled"})
 
     # Deregister plugins with missing dependencies
     st.deregister_plugins_with_missing_dependencies()
