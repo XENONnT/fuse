@@ -1,3 +1,8 @@
+1.5.3 / 2025-07-01
+------------------
+* Print warning message properly by @dachengx in https://github.com/XENONnT/fuse/pull/312
+* Add back support of python 3.9 by @dachengx in https://github.com/XENONnT/fuse/pull/318
+
 1.5.2 / 2025-05-26
 ------------------
 * Fix context to be compatible with new config formats (https://github.com/XENONnT/fuse/pull/310)
@@ -5,7 +10,6 @@
 1.5.1 / 2025-05-23
 ------------------
 * MC override in context config (https://github.com/XENONnT/fuse/pull/308)
-
 
 1.5.0 / 2025-05-21
 ------------------
@@ -24,7 +28,6 @@
 ------------------
 * Be compatible with straxen >= 3 (https://github.com/XENONnT/fuse/pull/282)
 * Remove CMT URLs, drop python 3.9 (https://github.com/XENONnT/fuse/pull/285)
-
 
 1.4.3 / 2025-01-13
 ------------------
