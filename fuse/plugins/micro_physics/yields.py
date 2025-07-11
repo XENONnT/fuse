@@ -503,7 +503,7 @@ class MigdalYields(NestYields):
         help="Standard atomic weight of Xenon atom in keV",
     )
 
-    binding_energies = straxen.URLConfig(
+    xenon_binding_energies = straxen.URLConfig(
         default="simple_load://simulation_config://"
         "SIMULATION_CONFIG_FILE.json?"
         "&key=xenon_binding_energies",
@@ -512,7 +512,7 @@ class MigdalYields(NestYields):
         "From https://journals.aps.org/prd/abstract/10.1103/PhysRevD.107.035032",
     )
 
-    orbitals = straxen.URLConfig(
+    considered_orbitals = straxen.URLConfig(
         default="simple_load://simulation_config://"
         "SIMULATION_CONFIG_FILE.json?"
         "&key=considered_orbitals",
@@ -641,7 +641,7 @@ class MigdalYields(NestYields):
 
             if has_migdal:
 
-                binding_e = self.binding_energies[orbital]
+                binding_e = self.xenon_binding_energies[orbital]
                 electron_energy = self.get_electron_energy(v, orbital)
 
                 # TODO: Currently assuming that all of the binding energy is released as beta radiation.
@@ -724,7 +724,7 @@ class MigdalYields(NestYields):
         probabilities = {}
 
         # Compute total probability of having a Migdal ionisation from considered shells
-        for orbital in self.orbitals:
+        for orbital in self.considered_orbitals:
             _probability = self.distribution_manager.pI1(np.log(v), orbital)
             _probability = np.where(
                 np.isnan(_probability),
