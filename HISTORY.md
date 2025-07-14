@@ -1,3 +1,8 @@
+1.5.4 / 2025-07-14
+------------------
+* `storage` as string is enough for `strax.Context` by @dachengx in https://github.com/XENONnT/fuse/pull/323
+* Allow None `corrections_run_id` by @dachengx in https://github.com/XENONnT/fuse/pull/326
+
 1.5.3 / 2025-07-01
 ------------------
 * Print warning message properly by @dachengx in https://github.com/XENONnT/fuse/pull/312
