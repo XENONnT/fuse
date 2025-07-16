@@ -29,7 +29,7 @@ repos:
         additional_dependencies: [types-PyYAML, types-tqdm]
 
 -   repo: https://github.com/pycqa/doc8
-    rev: v2.0.0
+    rev: v1.1.2
     hooks:
     -   id: doc8
         files: ^docs/.*\.(rst|md)$
