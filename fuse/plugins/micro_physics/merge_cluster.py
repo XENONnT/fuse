@@ -125,7 +125,7 @@ def classify(types, parenttype, creaproc, edproc):
         return infinity, 0, 11
     elif types == "gamma":
         return 0, 0, 7
-    elif types == "e-":
+    elif (types == "e-") | (types == "e+"):
         return 0, 0, 8
     else:
         return infinity, infinity, 12
