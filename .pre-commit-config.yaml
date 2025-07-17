@@ -29,7 +29,9 @@ repos:
         additional_dependencies: [types-PyYAML, types-tqdm]
 
 -   repo: https://github.com/pycqa/doc8
-    rev: v2.0.0
+    # doc8 v2.0.0 needs python >= 3.10
+    rev: v1.1.2
+    update: false
     hooks:
     -   id: doc8
         files: ^docs/.*\.(rst|md)$

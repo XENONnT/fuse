@@ -27,6 +27,12 @@ def write_run_id_to_config(context, corrections_run_id):
         for config_name, url_config in context.config.copy().items():
             if isinstance(url_config, str) and pattern in url_config:
                 function(context, config_name, url_config, corrections_run_id)
+    # Actually this is not needed, but it is here for completeness
+    # Usually configs contains science_run:// will not be changed when applying global_version,
+    # so we decorate science_run:// by the default of plugin configs
+    # Because global_version guaranteed that all time dependent configs are assigned,
+    # we do not have to decorate run_id= by the default of plugin configs
+    for pattern, function in zip(["science_run://"], [replace_run_id_config]):
         for data_type, plugin in context._plugin_class_registry.items():
             for option_key, option in plugin.takes_config.items():
                 if isinstance(option.default, str) and pattern in option.default:
