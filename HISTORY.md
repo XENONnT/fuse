@@ -1,12 +1,17 @@
+1.5.5 / 2025-07-22
+------------------
+* fix positrons cluster classification in MergeCluster.classify (https://github.com/XENONnT/fuse/pull/317)
+* Do not decorate `run_id=` by the default of plugin configs (https://github.com/XENONnT/fuse/pull/328)
+
 1.5.4 / 2025-07-14
 ------------------
-* `storage` as string is enough for `strax.Context` by @dachengx in https://github.com/XENONnT/fuse/pull/323
-* Allow None `corrections_run_id` by @dachengx in https://github.com/XENONnT/fuse/pull/326
+* `storage` as string is enough for `strax.Context` (https://github.com/XENONnT/fuse/pull/323)
+* Allow None `corrections_run_id` (https://github.com/XENONnT/fuse/pull/326)
 
 1.5.3 / 2025-07-01
 ------------------
-* Print warning message properly by @dachengx in https://github.com/XENONnT/fuse/pull/312
-* Add back support of python 3.9 by @dachengx in https://github.com/XENONnT/fuse/pull/318
+* Print warning message properly (https://github.com/XENONnT/fuse/pull/312)
+* Add back support of python 3.9 (https://github.com/XENONnT/fuse/pull/318)
 
 1.5.2 / 2025-05-26
 ------------------
