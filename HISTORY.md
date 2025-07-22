@@ -1,3 +1,8 @@
+1.5.5 / 2025-07-22
+------------------
+* fix positrons cluster classification in MergeCluster.classify by @myoshida2458 in https://github.com/XENONnT/fuse/pull/317
+* Do not decorate `run_id=` by the default of plugin configs by @dachengx in https://github.com/XENONnT/fuse/pull/328
+
 1.5.4 / 2025-07-14
 ------------------
 * `storage` as string is enough for `strax.Context` by @dachengx in https://github.com/XENONnT/fuse/pull/323
