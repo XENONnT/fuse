@@ -6,7 +6,7 @@ import straxen
 import fuse
 
 from .context_utils import (
-    write_sr_information_to_config,
+    write_run_id_to_config,
     set_simulation_config_file,
     old_xedocs_versions_patch,
     overwrite_map_from_config,
@@ -116,7 +116,7 @@ def microphysics_context(
 ):
     """Function to create a fuse microphysics simulation context."""
 
-    st = strax.Context(storage=strax.DataDirectory(output_folder), **common_opts)
+    st = strax.Context(storage=output_folder, **common_opts)
 
     st.config.update(dict(detector="XENONnT", check_raw_record_overlaps=True, **common_config))
 
@@ -133,7 +133,6 @@ def microphysics_context(
 
 def full_chain_context(
     output_folder="./fuse_data",
-    clustering_method="dbscan",
     corrections_version=None,
     simulation_config_file="fuse_config_nt_sr1_dev.json",
     corrections_run_id="046477",
@@ -144,6 +143,8 @@ def full_chain_context(
         "drift_time_gate": "electron_drift_time_gate",
     },
     run_without_proper_corrections=False,
+    run_without_proper_run_id=False,
+    clustering_method="dbscan",
     extra_plugins=[],
 ):
     """Function to create a fuse full chain simulation context."""
@@ -151,8 +152,12 @@ def full_chain_context(
     # Lets go for info level logging when working with fuse
     log.setLevel("INFO")
 
-    if corrections_run_id is None:
-        raise ValueError("Specify a corrections_run_id to load the corrections")
+    if (corrections_run_id is None) & (not run_without_proper_run_id):
+        raise ValueError(
+            "Specify a corrections_run_id. If you want to run without proper "
+            "run_id for testing or just trying out fuse, "
+            "set run_without_proper_run_id to True"
+        )
     if (corrections_version is None) & (not run_without_proper_corrections):
         raise ValueError(
             "Specify a corrections_version. If you want to run without proper "
@@ -168,7 +173,7 @@ def full_chain_context(
             "Take the context defined in cutax if you want to run XENONnT simulations."
         )
 
-    st = strax.Context(storage=strax.DataDirectory(output_folder), **common_opts)
+    st = strax.Context(storage=output_folder, **common_opts)
     st.simulation_config_file = simulation_config_file
     st.corrections_run_id = corrections_run_id
 
@@ -230,14 +235,8 @@ def full_chain_context(
 
     set_simulation_config_file(st, simulation_config_file)
 
-    local_versions = st.config
-    for config_name, url_config in local_versions.items():
-        if isinstance(url_config, str):
-            if "run_id" in url_config:
-                local_versions[config_name] = straxen.URLConfig.format_url_kwargs(
-                    url_config, run_id=corrections_run_id
-                )
-    st.config = local_versions
+    if not run_without_proper_run_id:
+        write_run_id_to_config(st, corrections_run_id)
 
     # Update some run specific config
     for mc_config, processing_config in run_id_specific_config.items():
@@ -247,7 +246,7 @@ def full_chain_context(
             print(f"Warning! {processing_config} not in context config, skipping...")
 
     # No blinding in simulations
-    st.config["event_info_function"] = "disabled"
+    st.set_config({"event_info_function": "disabled"})
 
     # Deregister plugins with missing dependencies
     st.deregister_plugins_with_missing_dependencies()
@@ -264,8 +263,8 @@ def xenonnt_fuse_full_chain_simulation(
     corrections_version=DEFAULT_XEDOCS_VERSION,
     simulation_config=DEFAULT_SIMULATION_VERSION,
     corrections_run_id=None,
+    run_without_proper_run_id=False,
     clustering_method=None,  # defaults to dbscan, but can be set to lineage
-    fdc_map_mc=None,
     cut_list=None,
     **kwargs,
 ):
@@ -288,10 +287,11 @@ def xenonnt_fuse_full_chain_simulation(
     log.info(f"Using simulation config file: {simulation_config_file}")
 
     # Get the corrections_run_id from argument or from config file
-    corrections_run_id = corrections_run_id or fuse.from_config(
-        simulation_config_file, "default_corrections_run_id"
-    )
-    log.info(f"Using corrections_run_id: {corrections_run_id}")
+    if not run_without_proper_run_id:
+        corrections_run_id = corrections_run_id or fuse.from_config(
+            simulation_config_file, "default_corrections_run_id"
+        )
+        log.info(f"Using corrections_run_id: {corrections_run_id}")
 
     # Get clustering method
     # if it is specified as an argument, use that
@@ -309,27 +309,36 @@ def xenonnt_fuse_full_chain_simulation(
         corrections_version=corrections_version,
         simulation_config_file=simulation_config_file,
         corrections_run_id=corrections_run_id,
+        run_without_proper_run_id=run_without_proper_run_id,
         clustering_method=clustering_method,
         **kwargs,
     )
     st.set_config(old_xedocs_versions_patch(corrections_version))
 
-    # This is for backward compatibility with configs that did not have
-    # the mc_overrides in the config file. Can be removed in the future.
-    # Get the fdc_map_mc from argument or from config file
-    fdc_map_mc = fdc_map_mc or fuse.from_config(simulation_config_file, "fdc_map_mc")
-    log.info(f"Using fdc_map_mc: {fdc_map_mc}")
-    fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
-    fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
-    st.set_config({"fdc_map": fdc_conf})
+    # Load the full config once
+    config = straxen.get_resource(simulation_config_file, fmt="json")
 
-    # Overwrite some resource files with the ones from the simulation config
-    apply_mc_overrides(st, simulation_config_file)
+    # If mc_overrides is present, use that exclusively
+    if "mc_overrides" in config:
+        log.info("Found 'mc_overrides' in config,  using override-based config system.")
+        apply_mc_overrides(st, simulation_config_file)
+    else:
+        # Backward compatibility: legacy fdc_map_mc logic
+        if "fdc_map_mc" in config:
+            fdc_map_mc = config["fdc_map_mc"]
+            log.info(f"[legacy] Using fdc_map_mc: {fdc_map_mc}")
+            fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
+            fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
+            st.set_config({"fdc_map": fdc_conf})
+        else:
+            raise RuntimeError(
+                "No 'mc_overrides' or 'fdc_map_mc' found in the config. "
+                "Please define one of them to set 'fdc_map'."
+            )
 
     if cut_list is not None:
         st.register_cut_list(cut_list)
 
-    write_sr_information_to_config(st, corrections_run_id)
     return st
 
 
@@ -346,7 +355,7 @@ def public_config_context(
     if simulation_config_file is None:
         raise ValueError("Specify a simulation configuration file")
 
-    st = strax.Context(storage=strax.DataDirectory(output_folder), **straxen.contexts.common_opts)
+    st = strax.Context(storage=output_folder, **straxen.contexts.common_opts)
     st.simulation_config_file = simulation_config_file
     st.config.update(dict(check_raw_record_overlaps=True, **straxen.contexts.common_config))
 
@@ -410,7 +419,7 @@ def public_config_context(
     )
 
     # No blinding in simulations
-    st.config["event_info_function"] = "disabled"
+    st.set_config({"event_info_function": "disabled"})
 
     # Deregister plugins with missing dependencies
     st.deregister_plugins_with_missing_dependencies()

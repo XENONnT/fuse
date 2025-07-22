@@ -10,16 +10,34 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.context_utils")
 
 
-def write_sr_information_to_config(context, corrections_run_id):
-    """Function to loop over the plugin config write the cutax sr information
-    to the context config."""
-    for data_type, plugin in context._plugin_class_registry.items():
-        for option_key, option in plugin.takes_config.items():
-            if isinstance(option.default, str) and "science_run://" in option.default:
-                context.config[option_key] = option.default.replace(
-                    "plugin.run_id",
-                    corrections_run_id,
-                )
+def set_run_id_config(context, key, value, corrections_run_id):
+    """Set run_id of a URLConfig in the context config."""
+    context.set_config({key: straxen.URLConfig.format_url_kwargs(value, run_id=corrections_run_id)})
+
+
+def replace_run_id_config(context, key, value, corrections_run_id):
+    """Set run_id of a URLConfig in the context config."""
+    context.set_config({key: value.replace("plugin.run_id", corrections_run_id)})
+
+
+def write_run_id_to_config(context, corrections_run_id):
+    """Overwrite any run_id dependent URLConfig in the config."""
+    for pattern, function in zip(
+        ["run_id=", "science_run://"], [set_run_id_config, replace_run_id_config]
+    ):
+        for config_name, url_config in context.config.copy().items():
+            if isinstance(url_config, str) and pattern in url_config:
+                function(context, config_name, url_config, corrections_run_id)
+    # Actually this is not needed, but it is here for completeness
+    # Usually configs contains science_run:// will not be changed when applying global_version,
+    # so we decorate science_run:// by the default of plugin configs
+    # Because global_version guaranteed that all time dependent configs are assigned,
+    # we do not have to decorate run_id= by the default of plugin configs
+    for pattern, function in zip(["science_run://"], [replace_run_id_config]):
+        for data_type, plugin in context._plugin_class_registry.items():
+            for option_key, option in plugin.takes_config.items():
+                if isinstance(option.default, str) and pattern in option.default:
+                    function(context, option_key, option.default, corrections_run_id)
 
 
 def old_xedocs_versions_patch(xedocs_version):

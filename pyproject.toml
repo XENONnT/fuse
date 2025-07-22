@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "xenon-fuse"
-version = "1.5.1"
+version = "1.5.4"
 description = "XENON Framework for Unified Simulations of Events"
 authors = [
   "Henning Schulze Eißing, <h_schu55@uni-muenster.de>",
@@ -25,7 +25,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<4.0"
+python = ">=3.9,<4.0"
 numpy = "*"
 pandas = "*"
 scipy = "*"

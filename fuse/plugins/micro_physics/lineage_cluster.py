@@ -402,8 +402,8 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
             # This case should not happen or? Classify it as nontype
             return NEST_NONE
 
-    # Electrons that are not created by a gamma.
-    elif particle_interaction["type"] == "e-":
+    # Electrons or positrons that are not created by a gamma.
+    elif (particle_interaction["type"] == "e-") | (particle_interaction["type"] == "e+"):
         return NEST_BETA
 
     # The gamma case
