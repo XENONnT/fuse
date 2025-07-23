@@ -75,3 +75,26 @@ propagated_photons_fields = [
     (("ID of the cluster creating the photon", "cluster_id"), np.int32),
     (("Type of the photon. S1 (1), S2 (2) or PMT AP (0)", "photon_type"), np.int8),
 ]
+
+
+# @ Experts: Please add a description of the fields in the dtype
+# See fields above for inspiration.
+# Is float64 necessary? Switch to float32 if possible to save space.
+neutron_veto_hitlet_dtype = [
+    ("area", np.float64),
+    ("amplitude", np.float64),
+    ("time_amplitude", np.int16),
+    ("entropy", np.float64),
+    ("range_50p_area", np.float64),
+    ("range_80p_area", np.float64),
+    ("left_area", np.float64),
+    ("low_left_area", np.float64),
+    ("range_hdr_50p_area", np.float64),
+    ("range_hdr_80p_area", np.float64),
+    ("left_hdr", np.float64),
+    ("low_left_hdr", np.float64),
+    ("fwhm", np.float64),
+    ("left", np.float64),
+    ("fwtm", np.float64),
+    ("low_left", np.float64),
+]
