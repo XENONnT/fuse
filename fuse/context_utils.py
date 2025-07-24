@@ -71,7 +71,7 @@ def set_simulation_config_file(context, config_file_name):
 @URLConfig.register("pattern_map")
 def pattern_map(map_data, pmt_mask, method="WeightedNearestNeighbors"):
     """Pattern map handling."""
-
+    
     if "compressed" in map_data:
         compressor, dtype, shape = map_data["compressed"]
         map_data["map"] = np.frombuffer(
@@ -86,6 +86,9 @@ def pattern_map(map_data, pmt_mask, method="WeightedNearestNeighbors"):
             map_data["map"].shape[-1] == pmt_mask.shape[0]
         ), "Error! Pattern map and PMT gains must have same dimensions!"
         map_data["map"][..., ~pmt_mask] = 0.0
+    if "preferred_interpolation_method" in map_data:
+        method = map_data["preferred_interpolation_method"]
+
     return straxen.InterpolatingMap(map_data, method=method)
 
 
