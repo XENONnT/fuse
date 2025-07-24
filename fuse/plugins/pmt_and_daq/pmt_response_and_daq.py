@@ -87,7 +87,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
     )
 
     enable_noise = straxen.URLConfig(
-        default="take://resource://" "SIMULATION_CONFIG_FILE.json?&fmt=json" "&take=enable_noise",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_noise",
         cache=True,
         help="Option to enable or disable noise",
     )
