@@ -104,7 +104,7 @@ class LineageClustering(FuseBasePlugin):
         )
 
         data = np.zeros(len(geant4_interactions), dtype=self.dtype)
-        data["lineage_index"] = unique_lineage_index
+        data["lineage_index"] = unique_lineage_index + self.lineages_build
         data["event_lineage_index"] = lineage_ids
         data["lineage_type"] = lineage_types
         data["A"] = lineage_A
@@ -113,6 +113,8 @@ class LineageClustering(FuseBasePlugin):
 
         data["time"] = geant4_interactions["time"]
         data["endtime"] = geant4_interactions["endtime"]
+
+        self.lineages_build = np.max(data["lineage_index"]) + 1
 
         return data
 
@@ -145,14 +147,12 @@ class LineageClustering(FuseBasePlugin):
                 self.classify_ic_as_gamma,
                 self.classify_phot_as_beta,
             )[undo_sort_index]
-
-            all_lineag_ids.append(lineage["lineage_index"] + self.lineages_build)
+            
+            all_lineag_ids.append(lineage["lineage_index"])
             all_lineage_types.append(lineage["lineage_type"])
             all_lineage_As.append(lineage["lineage_A"])
             all_lineage_Zs.append(lineage["lineage_Z"])
             all_main_cluster_types.append(lineage["main_cluster_type"])
-
-            self.lineages_build = np.max(lineage["lineage_index"]) + 1
 
         return (
             np.concatenate(all_lineag_ids),
