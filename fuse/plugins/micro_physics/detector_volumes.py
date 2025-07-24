@@ -204,7 +204,9 @@ class XENONnT_GasPhase(VolumePlugin):
     )
 
     xenonnt_z_lxe = straxen.URLConfig(
-        default="take://resource://" "SIMULATION_CONFIG_FILE.json?&fmt=json" "&take=xenonnt_z_lxe",
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=xenonnt_z_lxe",
         type=(int, float),
         help="Position of the bottom of gas phase [cm]",
     )
