@@ -32,7 +32,9 @@ class PMTAfterPulses(FuseBasePlugin):
     # Config options
 
     enable_pmt_afterpulses = straxen.URLConfig(
-        default=True,
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=enable_pmt_afterpulses",
         type=bool,
         track=True,
         help="Decide if you want to to enable PMT afterpulsing",
