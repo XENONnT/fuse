@@ -15,11 +15,11 @@ class TestDetectorPhysicsCsv(unittest.TestCase):
         cls.temp_dir = tempfile.TemporaryDirectory()
 
         cls.test_context = fuse.context.full_chain_context(
-            output_folder=cls.temp_dir.name, 
+            output_folder=cls.temp_dir.name,
             run_without_proper_corrections=True,
             extra_plugins=[
                 fuse.plugins.detector_physics.ChunkCsvInput,
-            ]
+            ],
         )
         cls.test_context.deregister_plugins_with_missing_dependencies()
 

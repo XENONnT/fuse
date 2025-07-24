@@ -112,7 +112,7 @@ processing_plugins = [
 
 
 def microphysics_context(
-    output_folder="./fuse_data", 
+    output_folder="./fuse_data",
     simulation_config_file="fuse_config_nt_sr1_dev.json",
     extra_plugins=[],
 ):
@@ -129,7 +129,7 @@ def microphysics_context(
         st.register(plugin)
     for plugin in extra_plugins:
         st.register(plugin)
-    
+
     set_simulation_config_file(st, simulation_config_file)
 
     return st
