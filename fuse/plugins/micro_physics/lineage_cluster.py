@@ -147,7 +147,7 @@ class LineageClustering(FuseBasePlugin):
                 self.classify_ic_as_gamma,
                 self.classify_phot_as_beta,
             )[undo_sort_index]
-            
+
             all_lineag_ids.append(lineage["lineage_index"])
             all_lineage_types.append(lineage["lineage_type"])
             all_lineage_As.append(lineage["lineage_A"])
