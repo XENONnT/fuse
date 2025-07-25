@@ -71,7 +71,7 @@ def set_simulation_config_file(context, config_file_name):
 @URLConfig.register("pattern_map")
 def pattern_map(map_data, pmt_mask, method="WeightedNearestNeighbors"):
     """Pattern map handling."""
-    
+
     if "compressed" in map_data:
         compressor, dtype, shape = map_data["compressed"]
         map_data["map"] = np.frombuffer(
