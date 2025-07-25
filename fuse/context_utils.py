@@ -88,7 +88,7 @@ def pattern_map(map_data, pmt_mask, method="WeightedNearestNeighbors"):
         map_data["map"][..., ~pmt_mask] = 0.0
 
     log.debug(f"Interpolating pattern map '{map_data['name']}' with method '{method}'")
-    
+
     return straxen.InterpolatingMap(map_data, method=method)
 
 
