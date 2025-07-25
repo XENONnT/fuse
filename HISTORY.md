@@ -1,3 +1,9 @@
+1.5.6 / 2025-07-25
+------------------
+* Fix lineage_cluster ids in https://github.com/XENONnT/fuse/pull/331
+* Add untracked configs from file in https://github.com/XENONnT/fuse/pull/332
+* Add s2_pattern_map_interpolation_method in https://github.com/XENONnT/fuse/pull/334
+
 1.5.5 / 2025-07-22
 ------------------
 * fix positrons cluster classification in MergeCluster.classify (https://github.com/XENONnT/fuse/pull/317)
