@@ -213,7 +213,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         "&n_tpc_pmts=plugin.n_tpc_pmts"
         "&n_top_pmts=plugin.n_top_pmts"
         "&turned_off_pmts=plugin.turned_off_pmts"
-        "&s2_pattern_map_interpolation_method=plugin.s2_pattern_map_interpolation_method",
+        "&method=plugin.s2_pattern_map_interpolation_method",
         cache=True,
         help="S2 pattern map",
     )
