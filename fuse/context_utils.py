@@ -88,6 +88,7 @@ def pattern_map(map_data, pmt_mask, method="WeightedNearestNeighbors"):
         map_data["map"][..., ~pmt_mask] = 0.0
     if "preferred_interpolation_method" in map_data:
         method = map_data["preferred_interpolation_method"]
+        log.info(f"[pattern_map] Using 'preferred_interpolation_method': '{method}'")
 
     return straxen.InterpolatingMap(map_data, method=method)
 
