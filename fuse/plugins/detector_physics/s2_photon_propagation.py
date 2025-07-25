@@ -29,7 +29,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     Note: The timing calculation is defined in the child plugin.
     """
 
-    __version__ = "0.3.5"
+    __version__ = "0.3.6"
 
     depends_on = (
         "merged_electron_time",
@@ -212,9 +212,17 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         "&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top"
         "&n_tpc_pmts=plugin.n_tpc_pmts"
         "&n_top_pmts=plugin.n_top_pmts"
-        "&turned_off_pmts=plugin.turned_off_pmts",
+        "&turned_off_pmts=plugin.turned_off_pmts"
+        "&method=plugin.s2_pattern_map_interpolation_method",
         cache=True,
         help="S2 pattern map",
+    )
+
+    s2_pattern_map_interpolation_method = straxen.URLConfig(
+        default="WeightedNearestNeighbors",
+        help="Interpolation method for the S2 pattern map",
+        type=str,
+        cache=True,
     )
 
     singlet_fraction_gas = straxen.URLConfig(
