@@ -40,7 +40,9 @@ class PhotoIonizationElectrons(FuseBasePlugin):
     # Config options
 
     enable_delayed_electrons = straxen.URLConfig(
-        default=False,
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=enable_delayed_electrons",
         type=bool,
         track=True,
         help="Decide if you want to to enable delayed electrons from photoionization",
