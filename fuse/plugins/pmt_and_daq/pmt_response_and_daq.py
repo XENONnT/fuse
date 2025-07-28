@@ -284,7 +284,6 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         _pmt_current_templates[i] : photon timing fall between [10*m+i,
         10*m+i+1) (i, m are integers)
         """
-
         # Interpolate on cdf ensures that each spe pulse would sum up to 1 pe*sample duration^-1
         pe_pulse_function = interp1d(
             self.pe_pulse_ts,

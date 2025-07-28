@@ -80,7 +80,6 @@ class FindCluster(FuseBasePlugin):
 
         First interactions are clustered in time, then in space.
         """
-
         time_cluster = simple_1d_clustering(interactions["time"], cluster_size_time)
 
         # Splitting into time cluster and apply space clustering space:
@@ -126,7 +125,6 @@ def simple_1d_clustering(data, scale):
     Returns:
         clusters_undo_sort (np.array): Cluster Labels
     """
-
     idx_sort = np.argsort(data)
     idx_undo_sort = np.argsort(idx_sort)
 
