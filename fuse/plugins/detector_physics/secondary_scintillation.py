@@ -208,7 +208,6 @@ class SecondaryScintillation(FuseBasePlugin):
             positions: 2d array of positions (floats) returns array
                 of floats (mean expectation)
         """
-
         if self.se_gain_from_map:
             sc_gain = self.se_gain_map(positions)
         else:
@@ -233,7 +232,6 @@ class SecondaryScintillation(FuseBasePlugin):
 
 def group_result_photons_by_cluster_id(result, cluster_id):
     """Function to group result_photons by cluster_id."""
-
     sort_index = np.argsort(cluster_id)
 
     cluster_id_sorted = cluster_id[sort_index]
