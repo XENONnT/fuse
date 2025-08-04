@@ -71,7 +71,6 @@ def full_array_to_numpy(array, dtype):
 def _sample_from_distribution(p, channel, spe_scaling_factor_distributions):
     """Function to sample from a SPE scaling factor distribution for a given
     channel."""
-
     indices = np.int64(p * 2000) + 1
     return spe_scaling_factor_distributions[channel, indices]
 
@@ -79,7 +78,6 @@ def _sample_from_distribution(p, channel, spe_scaling_factor_distributions):
 @numba.njit()
 def sample_spe_scaling_factors(p, channel, spe_scaling_factor_distributions):
     """Function to sample the spe scaling factors for multiple photons."""
-
     result = []
     for i in range(len(p)):
         result.append(
@@ -263,7 +261,6 @@ def photon_gain_calculation(
 ):
     """Function to calculate the PMT gain a photon will be amplified with in
     the waveform simulation."""
-
     # Sample if the photon is a double PE emission
     _photon_is_dpe = rng.binomial(n=1, p=p_double_pe_emision, size=len(_photon_channels)).astype(
         np.bool_
@@ -310,7 +307,6 @@ def build_photon_propagation_output(
 
 def pmt_gains(to_pe, digitizer_voltage_range, digitizer_bits, pmt_circuit_load_resistor):
     """Build PMT Gains from PMT gain model and digitizer parameters."""
-
     adc_2_current = digitizer_voltage_range / 2 ** (digitizer_bits) / pmt_circuit_load_resistor
 
     gains = np.divide(

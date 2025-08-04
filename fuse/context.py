@@ -117,7 +117,6 @@ def microphysics_context(
     extra_plugins=[],
 ):
     """Function to create a fuse microphysics simulation context."""
-
     st = strax.Context(storage=output_folder, **common_opts)
 
     st.config.update(dict(detector="XENONnT", check_raw_record_overlaps=True, **common_config))
@@ -152,7 +151,6 @@ def full_chain_context(
     extra_plugins=[],
 ):
     """Function to create a fuse full chain simulation context."""
-
     # Lets go for info level logging when working with fuse
     log.setLevel("INFO")
 
@@ -278,7 +276,6 @@ def xenonnt_fuse_full_chain_simulation(
     It takes the general full_chain_context and sets the proper
     corrections and configuration files for XENONnT.
     """
-
     # Lets go for info level logging when working with fuse
     log.setLevel("INFO")
 
@@ -352,7 +349,6 @@ def public_config_context(
     simulation_config_file="./files/XENONnT_public_config.json",
 ):
     """Function to create a fuse full chain simulation context."""
-
     # Lets go for info level logging when working with fuse
     log.setLevel("INFO")
 
