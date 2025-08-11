@@ -31,8 +31,10 @@ class NestYields(FuseBasePlugin):
     return_yields_only = straxen.URLConfig(
         default=False,
         type=bool,
-        help="Set to True to return the yields model output directly instead of the \
-        calculated actual quanta with NEST getQuanta function. Only for testing purposes.",
+        help=\
+             "Set to True to return the yields model output directly instead of the \
+        calculated actual quanta with NEST getQuanta function. Only for testing purposes."\
+                                                                                          ,
     )
 
     nest_width_parameters = straxen.URLConfig(
@@ -40,11 +42,13 @@ class NestYields(FuseBasePlugin):
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
         "&take=nest_width_parameters",
         type=dict,
-        help="Set to modify default NEST NRERWidthParameters to match recombination fluctuations. \
+        help=\
+             "Set to modify default NEST NRERWidthParameters to match recombination fluctuations. \
         From NEST code https://github.com/NESTCollaboration/nest/blob/v2.4.0/src/NEST.cpp \
         and NEST paper https://arxiv.org/abs/2211.10726 \
         See self.get_nest_width_parameters() for the options and default values. \
-        Example use: {'fano_ER': -0.0015, 'A_ER': 0.096452}",
+        Example use: {'fano_ER': -0.0015, 'A_ER': 0.096452}"\
+                                                            ,
     )
 
     nest_er_yields_parameters = straxen.URLConfig(
@@ -52,9 +56,11 @@ class NestYields(FuseBasePlugin):
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
         "&take=nest_er_yields_parameters",
         type=list,
-        help="Set to modify default NEST ER yields parameters. Use -1 to keep default value. \
+        help=\
+             "Set to modify default NEST ER yields parameters. Use -1 to keep default value. \
         From NEST code https://github.com/NESTCollaboration/nest/blob/v2.4.0/src/NEST.cpp \
-        Used in the calcuations of BetaYieldsGR.",
+        Used in the calcuations of BetaYieldsGR."\
+                                                 ,
     )
 
     fix_gamma_yield_field = straxen.URLConfig(
@@ -159,7 +165,6 @@ class NestYields(FuseBasePlugin):
 
     def get_quanta(self, en, model, e_field, A, Z, create_s2, density):
         """Function to get quanta for given parameters using NEST."""
-
         yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
 
         return self.process_yields(yields_result, create_s2)
@@ -167,7 +172,6 @@ class NestYields(FuseBasePlugin):
     def get_yields_from_NEST(self, en, model, e_field, A, Z, density):
         """Function which uses NEST to yield photons and electrons for a given
         set of parameters."""
-
         # Fix for Kr83m events
         max_allowed_energy_difference = 1  # keV
         if model == 11:
@@ -213,7 +217,6 @@ class NestYields(FuseBasePlugin):
 
     def process_yields(self, yields_result, create_s2):
         """Process the yields with NEST to get actual quanta."""
-
         # Density argument is not used in function...
         event_quanta = self.nc.GetQuanta(
             yields_result, free_parameters=self.updated_nest_width_parameters

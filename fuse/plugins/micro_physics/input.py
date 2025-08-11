@@ -229,7 +229,6 @@ class file_loader:
 
     def output_chunk(self):
         """Function to return one chunk of data from the root or csv file."""
-
         if self.file_type == "root":
             interactions, n_simulated_events, start, stop = self._load_root_file()
         elif self.file_type == "csv":
@@ -537,7 +536,6 @@ class file_loader:
             start: Index of the first loaded interaction
             stop: Index of the last loaded interaction
         """
-
         self.log.debug("Load instructions from a csv file!")
 
         df = pd.read_csv(self.file)
@@ -583,7 +581,6 @@ class file_loader:
         Returns:
             ak.Array(dictionary): awkward array
         """
-
         _, evt_offsets = np.unique(df["eventid"], return_counts=True)
 
         dictionary = {

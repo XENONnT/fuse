@@ -885,7 +885,6 @@ def draw_excitation_times(inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_ga
     Returns:
         time of each photon
     """
-
     inv_cdf_len = len(inv_cdf_list[0])
     timings = np.zeros(np.sum(nph))
     upper_hist_ind = np.clip(hist_indices + 1, 0, len(inv_cdf_list) - 1)
