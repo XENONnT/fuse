@@ -112,7 +112,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
     )
 
     tpc_radius = straxen.URLConfig(
-        default="take://resource://" "SIMULATION_CONFIG_FILE.json?&fmt=json" "&take=tpc_radius",
+        default="take://resource://"  "SIMULATION_CONFIG_FILE.json?&fmt=json"  "&take=tpc_radius",
         type=(int, float),
         cache=True,
         help="Radius of the XENONnT TPC [cm]",
@@ -255,7 +255,6 @@ def ramdom_xy_position(n, radius, rng):
 # We should try to make it a general function in the future.
 def group_electrons_by_cluster_id(electrons):
     """Function to group electrons by cluster_id."""
-
     sort_index = np.argsort(electrons["cluster_id"])
 
     electrons_sorted = electrons[sort_index]

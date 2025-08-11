@@ -71,7 +71,6 @@ def set_simulation_config_file(context, config_file_name):
 @URLConfig.register("pattern_map")
 def pattern_map(map_data, pmt_mask, method="WeightedNearestNeighbors"):
     """Pattern map handling."""
-
     if "compressed" in map_data:
         compressor, dtype, shape = map_data["compressed"]
         map_data["map"] = np.frombuffer(
@@ -186,7 +185,6 @@ def overwrite_map_from_config(
 @URLConfig.register("lce_from_pattern_map")
 def lce_from_pattern_map(map, pmt_mask):
     """Build a S1 lce correction map from a S1 pattern map."""
-
     lcemap = deepcopy(map)
     lcemap.data["map"] = np.sum(lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=pmt_mask)
     lcemap.__init__(lcemap.data)

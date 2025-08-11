@@ -79,3 +79,4 @@ class FuseBasePlugin(strax.Plugin):
 
 class FuseBaseDownChunkingPlugin(strax.DownChunkingPlugin, FuseBasePlugin):
     """Base plugin for fuse DownChunkingPlugins."""
+
