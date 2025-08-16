@@ -5,6 +5,7 @@ import straxen
 import re
 import periodictable as pt
 
+from ...common import stable_argsort
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -135,8 +136,8 @@ class LineageClustering(FuseBasePlugin):
 
             event = geant4_interactions[geant4_interactions["eventid"] == event_id]
 
-            track_id_sort = np.argsort(event[["trackid", "t"]])
-            undo_sort_index = np.argsort(track_id_sort)
+            track_id_sort = stable_argsort(event[["trackid", "t"]])
+            undo_sort_index = stable_argsort(track_id_sort)
             event = event[track_id_sort]
 
             lineage = self.build_lineage_for_event(
