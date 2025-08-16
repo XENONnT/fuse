@@ -4,7 +4,7 @@ import numpy as np
 import strax
 import straxen
 
-from ...common import pmt_gains
+from ...common import stable_argsort, pmt_gains
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -234,7 +234,7 @@ class SecondaryScintillation(FuseBasePlugin):
 def group_result_photons_by_cluster_id(result, cluster_id):
     """Function to group result_photons by cluster_id."""
 
-    sort_index = np.argsort(cluster_id)
+    sort_index = stable_argsort(cluster_id)
 
     cluster_id_sorted = cluster_id[sort_index]
     result_sorted = result[sort_index]

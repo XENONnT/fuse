@@ -489,7 +489,7 @@ def add_current(photon_timings, photon_gains, pulse_left, dt, pmt_current_templa
         return
 
     template_length = len(pmt_current_templates[0])
-    i_photons = np.argsort(photon_timings)
+    i_photons = stable_argsort(photon_timings)
     # Convert photon_timings to int outside this function
     # photon_timings = photon_timings // 1
 

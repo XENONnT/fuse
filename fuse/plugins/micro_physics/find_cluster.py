@@ -4,6 +4,7 @@ import strax
 import straxen
 from sklearn.cluster import DBSCAN
 
+from ...common import stable_argsort
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -127,8 +128,8 @@ def simple_1d_clustering(data, scale):
         clusters_undo_sort (np.array): Cluster Labels
     """
 
-    idx_sort = np.argsort(data)
-    idx_undo_sort = np.argsort(idx_sort)
+    idx_sort = stable_argsort(data)
+    idx_undo_sort = stable_argsort(idx_sort)
 
     data_sorted = data[idx_sort]
 

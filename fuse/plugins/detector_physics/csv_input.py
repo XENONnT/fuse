@@ -12,7 +12,7 @@ from ...dtypes import (
     quanta_fields,
     electric_fields,
 )
-from ...common import dynamic_chunking
+from ...common import stable_sort, stable_argsort, dynamic_chunking
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -173,7 +173,7 @@ class csv_file_loader:
             event_times = self.rng.uniform(
                 low=0, high=n_simulated_events / self.event_rate, size=n_simulated_events
             ).astype(np.int64)
-            event_times = np.sort(event_times)
+            event_times = stable_sort(event_times)
 
             structure = np.unique(instructions["eventid"], return_counts=True)[1]
             interaction_time = np.repeat(event_times[: len(structure)], structure)
@@ -184,7 +184,7 @@ class csv_file_loader:
         else:
             raise ValueError("Source rate cannot be negative!")
 
-        sort_idx = np.argsort(instructions["time"])
+        sort_idx = stable_argsort(instructions["time"])
         instructions = instructions[sort_idx]
 
         # Group into chunks

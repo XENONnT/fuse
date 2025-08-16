@@ -3,6 +3,7 @@ import straxen
 import numpy as np
 from scipy.stats import expon, truncexpon
 
+from ....common import stable_argsort
 from ....plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -256,7 +257,7 @@ def ramdom_xy_position(n, radius, rng):
 def group_electrons_by_cluster_id(electrons):
     """Function to group electrons by cluster_id."""
 
-    sort_index = np.argsort(electrons["cluster_id"])
+    sort_index = stable_argsort(electrons["cluster_id"])
 
     electrons_sorted = electrons[sort_index]
 

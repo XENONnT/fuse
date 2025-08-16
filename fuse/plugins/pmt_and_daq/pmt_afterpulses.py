@@ -3,7 +3,7 @@ import numpy as np
 import straxen
 
 from ...dtypes import propagated_photons_fields
-from ...common import pmt_gains
+from ...common import stable_argsort, pmt_gains
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -128,7 +128,7 @@ class PMTAfterPulses(FuseBasePlugin):
         s2_photons = None
 
         # Sort all photons by time
-        sortind = np.argsort(merged_photons["time"])
+        sortind = stable_argsort(merged_photons["time"])
         merged_photons = merged_photons[sortind]
 
         _photon_timings = merged_photons["time"]
