@@ -67,7 +67,7 @@ class ChunkInput(FuseBasePlugin):
     )
 
     cut_delayed = straxen.URLConfig(
-        default=9e18,
+        default=1e18,
         type=(int, float),
         help="All interactions happening after this time (including the event time) will be cut",
     )
