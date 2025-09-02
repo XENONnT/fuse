@@ -7,8 +7,10 @@ from scipy.stats import skewnorm
 from scipy import constants
 
 from ...dtypes import propagated_photons_fields
-from ...common import pmt_gains, build_photon_propagation_output
 from ...common import (
+    stable_argsort,
+    pmt_gains,
+    build_photon_propagation_output,
     init_spe_scaling_factor_distributions,
     pmt_transit_time_spread,
     photon_gain_calculation,
@@ -374,8 +376,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         # Sort both the interactions and the electrons by cluster_id
         # We will later sort by time again when yielding the data.
-        sort_index_ic = np.argsort(interactions_chunk["cluster_id"])
-        sort_index_eg = np.argsort(electron_group["cluster_id"])
+        sort_index_ic = stable_argsort(interactions_chunk["cluster_id"])
+        sort_index_eg = stable_argsort(electron_group["cluster_id"])
         interactions_chunk = interactions_chunk[sort_index_ic]
         electron_group = electron_group[sort_index_eg]
 

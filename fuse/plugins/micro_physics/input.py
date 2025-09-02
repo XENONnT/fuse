@@ -9,7 +9,14 @@ import strax
 import straxen
 
 from ...dtypes import g4_fields, primary_positions_fields, deposit_positions_fields
-from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, awkward_to_flat_numpy
+from ...common import (
+    stable_sort,
+    stable_argsort,
+    full_array_to_numpy,
+    reshape_awkward,
+    dynamic_chunking,
+    awkward_to_flat_numpy,
+)
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -286,7 +293,7 @@ class file_loader:
                 event_times = self.rng.uniform(
                     low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
                 ).astype(np.int64)
-                event_times = np.sort(event_times)
+                event_times = stable_sort(event_times)
 
             interactions["time"] = interactions["t"] + event_times
 
@@ -309,7 +316,7 @@ class file_loader:
         interaction_time = awkward_to_flat_numpy(interactions["time"])
 
         # First caclulate sort index for the interaction times
-        sort_idx = np.argsort(interaction_time)
+        sort_idx = stable_argsort(interaction_time)
         # and now make it an integer for strax time field
         interaction_time = interaction_time.astype(np.int64)
         # Sort the interaction times
@@ -376,7 +383,7 @@ class file_loader:
             current_chunk = current_chunk[select_times]
 
             # Sorting each chunk by time within the chunk
-            sort_chunk = np.argsort(current_chunk["time"])
+            sort_chunk = stable_argsort(current_chunk["time"])
             current_chunk = current_chunk[sort_chunk]
 
             if c_ix == unique_chunk_index_values[-1]:

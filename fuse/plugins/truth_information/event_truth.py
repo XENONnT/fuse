@@ -64,8 +64,6 @@ class EventTruth(strax.Plugin):
             contributing_cluster_informations = interactions_in_roi[
                 np.isin(interactions_in_roi["cluster_id"], photons_per_event[i]["cluster_id"])
             ]
-            # sort_index = np.argsort(contributing_cluster_informations["cluster_id"])
-            # contributing_cluster_informations = contributing_cluster_informations[sort_index]
             result["total_energy_in_event_truth"][i] = np.sum(
                 contributing_cluster_informations["ed"]
             )
