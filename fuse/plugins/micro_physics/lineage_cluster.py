@@ -100,8 +100,8 @@ class LineageClustering(FuseBasePlugin):
         undo_sort_index = stable_argsort(event_id_sort)
         interactions = geant4_interactions[event_id_sort]
 
-        lineage_ids, lineage_trackids, lineage_types, lineage_A, lineage_Z, main_cluster_type = self.build_lineages(
-            interactions
+        lineage_ids, lineage_trackids, lineage_types, lineage_A, lineage_Z, main_cluster_type = (
+            self.build_lineages(interactions)
         )
 
         # The lineage index is now unique per event. We need to make it unique for the whole run
