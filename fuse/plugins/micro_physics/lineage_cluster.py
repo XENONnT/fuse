@@ -95,7 +95,7 @@ class LineageClustering(FuseBasePlugin):
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        event_id_sort = stable_argsort(geant4_interactions[["eventid", "t"]])
+        event_id_sort = stable_argsort(geant4_interactions[["eventid", "time", "t"]])
         undo_sort_index = stable_argsort(event_id_sort)
         interactions = geant4_interactions[event_id_sort]
 
