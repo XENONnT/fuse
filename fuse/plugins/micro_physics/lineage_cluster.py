@@ -27,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
 
     depends_on = "geant4_interactions"
 
@@ -36,6 +36,7 @@ class LineageClustering(FuseBasePlugin):
     dtype = [
         (("Lineage index of the energy deposit", "lineage_index"), np.int32),
         (("Event lineage index", "event_lineage_index"), np.int32),
+        (("Geant4 lineage track ID", "lineage_trackid"), np.int16),
         (("NEST interaction type", "lineage_type"), np.int32),
         (("Mass number of the interacting particle", "A"), np.int16),
         (("Charge number of the interacting particle", "Z"), np.int16),
@@ -95,8 +96,8 @@ class LineageClustering(FuseBasePlugin):
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        lineage_ids, lineage_types, lineage_A, lineage_Z, main_cluster_type = self.build_lineages(
-            geant4_interactions
+        lineage_ids, lineage_trackids, lineage_types, lineage_A, lineage_Z, main_cluster_type = (
+            self.build_lineages(geant4_interactions)
         )
 
         # The lineage index is now unique per event. We need to make it unique for the whole run
@@ -107,6 +108,7 @@ class LineageClustering(FuseBasePlugin):
         data = np.zeros(len(geant4_interactions), dtype=self.dtype)
         data["lineage_index"] = unique_lineage_index + self.lineages_build
         data["event_lineage_index"] = lineage_ids
+        data["lineage_trackid"] = lineage_trackids
         data["lineage_type"] = lineage_types
         data["A"] = lineage_A
         data["Z"] = lineage_Z
@@ -126,7 +128,8 @@ class LineageClustering(FuseBasePlugin):
 
         event_ids = np.unique(geant4_interactions["eventid"])
 
-        all_lineag_ids = []
+        all_lineage_ids = []
+        all_lineage_trackids = []
         all_lineage_types = []
         all_lineage_As = []
         all_lineage_Zs = []
@@ -149,14 +152,16 @@ class LineageClustering(FuseBasePlugin):
                 self.classify_phot_as_beta,
             )[undo_sort_index]
 
-            all_lineag_ids.append(lineage["lineage_index"])
+            all_lineage_ids.append(lineage["lineage_index"])
+            all_lineage_trackids.append(lineage["lineage_trackid"])
             all_lineage_types.append(lineage["lineage_type"])
             all_lineage_As.append(lineage["lineage_A"])
             all_lineage_Zs.append(lineage["lineage_Z"])
             all_main_cluster_types.append(lineage["main_cluster_type"])
 
         return (
-            np.concatenate(all_lineag_ids),
+            np.concatenate(all_lineage_ids),
+            np.concatenate(all_lineage_trackids),
             np.concatenate(all_lineage_types),
             np.concatenate(all_lineage_As),
             np.concatenate(all_lineage_Zs),
@@ -175,6 +180,7 @@ class LineageClustering(FuseBasePlugin):
 
         tmp_dtype = [
             ("lineage_index", np.int32),
+            ("lineage_trackid", np.int16),
             ("lineage_type", np.int32),
             ("lineage_A", np.int16),
             ("lineage_Z", np.int16),
@@ -597,6 +603,7 @@ def start_new_lineage(
         particle, classify_ic_as_gamma, classify_phot_as_beta
     )
     tmp_result[i]["lineage_index"] = running_lineage_index
+    tmp_result[i]["lineage_trackid"] = particle["trackid"]
     tmp_result[i]["lineage_type"] = lineage_class
     tmp_result[i]["lineage_A"] = lineage_A
     tmp_result[i]["lineage_Z"] = lineage_Z
@@ -607,6 +614,7 @@ def start_new_lineage(
 def continue_lineage(particle, tmp_result, i, parent_lineage):
 
     tmp_result[i]["lineage_index"] = parent_lineage["lineage_index"]
+    tmp_result[i]["lineage_trackid"] = parent_lineage["lineage_trackid"]
     tmp_result[i]["lineage_type"] = parent_lineage["lineage_type"]
     tmp_result[i]["lineage_A"] = parent_lineage["lineage_A"]
     tmp_result[i]["lineage_Z"] = parent_lineage["lineage_Z"]

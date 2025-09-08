@@ -50,6 +50,7 @@ cluster_misc_fields = [
     (("Mass number of the interacting particle", "A"), np.int16),
     (("Charge number of the interacting particle", "Z"), np.int16),
     (("Geant4 event ID", "eventid"), np.int32),
+    (("Geant4 track ID", "trackid"), np.int16),
     (("Xenon density at the cluster position", "xe_density"), np.float32),
     (("ID of the volume in which the cluster occured", "vol_id"), np.int8),
     (("Flag indicating if a cluster can create a S2 signal", "create_S2"), np.bool_),
