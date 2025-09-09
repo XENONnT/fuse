@@ -17,7 +17,9 @@ class TestPluginRandomSeeds(unittest.TestCase):
         cls.run_number = "TestRun_00000"
 
         cls.test_context = fuse.context.xenonnt_fuse_full_chain_simulation(
-            cls.temp_dir.name, run_without_proper_corrections=True
+            cls.temp_dir.name, run_without_proper_corrections=True,
+                config_file="sr0_dev"
+
         )
         cls.test_context.set_config(
             {

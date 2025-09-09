@@ -214,7 +214,8 @@ def xenonnt_fuse_full_chain_simulation(
 
 
     # Replace SIMULATION_CONFIG_FILE.json in plugin defaults
-    set_simulation_config_file(st, simulation_config_file)
+    if simulation_config_file:
+        set_simulation_config_file(st, simulation_config_file)
 
     if not run_without_proper_run_id:
         write_run_id_to_config(st, corrections_run_id)
