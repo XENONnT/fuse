@@ -89,7 +89,7 @@ delayed_electron_merger_plugins = [
 ]
 
 # Plugins to simulate PMTs and DAQ
-pmt_daq_plugins = [
+pmt_and_daq_plugins = [
     fuse.pmt_and_daq.PMTAfterPulses,
     fuse.pmt_and_daq.PhotonSummary,
     fuse.pmt_and_daq.PulseWindow,
@@ -182,7 +182,7 @@ def xenonnt_fuse_full_chain_simulation(
         s2_simulation_plugins,
         delayed_electron_simulation_plugins,
         delayed_electron_merger_plugins,
-        pmt_daq_plugins,
+        pmt_and_daq_plugins,
         truth_information_plugins,
         processing_plugins,
         extra_plugins,
@@ -255,7 +255,7 @@ def public_config_context(
         s2_simulation_plugins,
         delayed_electron_simulation_plugins,
         delayed_electron_merger_plugins,
-        pmt_daq_plugins,
+        pmt_and_daq_plugins,
         truth_information_plugins,
         processing_plugins,
         extra_plugins,

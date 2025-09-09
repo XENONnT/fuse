@@ -15,7 +15,7 @@ class TestLineageClustering(unittest.TestCase):
     def setUpClass(cls):
         cls.temp_dir = tempfile.TemporaryDirectory()
 
-        cls.test_context = fuse.context.full_chain_context(
+        cls.test_context = fuse.context.xenonnt_fuse_full_chain_simulation(
             output_folder=cls.temp_dir.name,
             run_without_proper_corrections=True,
             clustering_method="lineage",

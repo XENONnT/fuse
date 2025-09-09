@@ -16,7 +16,7 @@ class TestPluginRandomSeeds(unittest.TestCase):
         cls.temp_dir = tempfile.TemporaryDirectory()
         cls.run_number = "TestRun_00000"
 
-        cls.test_context = fuse.context.full_chain_context(
+        cls.test_context = fuse.context.xenonnt_fuse_full_chain_simulation(
             cls.temp_dir.name, run_without_proper_corrections=True
         )
         cls.test_context.set_config(
