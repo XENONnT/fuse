@@ -160,22 +160,23 @@ def xenonnt_fuse_full_chain_simulation(
     )
 
 
+    # --- Load settings from config file ---
     corrections_run_id = (
         corrections_run_id
         if corrections_run_id is not None
-        else config.get("default_corrections_run_id", "046477")
+        else sim_config.get("default_corrections_run_id", "046477")
     )
     log.info(f"Using corrections run id: {corrections_run_id}")
 
     fdc_map_mc = (
-        fdc_map_mc if fdc_map_mc is not None else config.get("fdc_map_mc", "")
+        fdc_map_mc if fdc_map_mc is not None else sim_config.get("fdc_map_mc", "")
     )
     log.info(f"Using fdc_map_mc: {fdc_map_mc}")
 
     clustering_method = (
         clustering_method
         if clustering_method is not None
-        else config.get("clustering_method", "dbscan")
+        else sim_config.get("clustering_method", "dbscan")
     )
     log.info(f"Using clustering method: {clustering_method}")
 
