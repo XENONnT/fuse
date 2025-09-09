@@ -96,16 +96,20 @@ class LineageClustering(FuseBasePlugin):
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
+        event_id_sort = stable_argsort(geant4_interactions[["eventid", "time", "t"]])
+        undo_sort_index = stable_argsort(event_id_sort)
+        interactions = geant4_interactions[event_id_sort]
+
         lineage_ids, lineage_trackids, lineage_types, lineage_A, lineage_Z, main_cluster_type = (
-            self.build_lineages(geant4_interactions)
+            self.build_lineages(interactions)
         )
 
         # The lineage index is now unique per event. We need to make it unique for the whole run
         _, unique_lineage_index = np.unique(
-            (geant4_interactions["eventid"], lineage_ids), axis=1, return_inverse=True
+            (interactions["eventid"], lineage_ids), axis=1, return_inverse=True
         )
 
-        data = np.zeros(len(geant4_interactions), dtype=self.dtype)
+        data = np.zeros(len(interactions), dtype=self.dtype)
         data["lineage_index"] = unique_lineage_index + self.lineages_build
         data["event_lineage_index"] = lineage_ids
         data["lineage_trackid"] = lineage_trackids
@@ -114,12 +118,12 @@ class LineageClustering(FuseBasePlugin):
         data["Z"] = lineage_Z
         data["main_cluster_type"] = main_cluster_type
 
-        data["time"] = geant4_interactions["time"]
-        data["endtime"] = geant4_interactions["endtime"]
+        data["time"] = interactions["time"]
+        data["endtime"] = interactions["endtime"]
 
         self.lineages_build = np.max(data["lineage_index"]) + 1
 
-        return data
+        return data[undo_sort_index]
 
     def build_lineages(
         self,
