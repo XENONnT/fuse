@@ -20,7 +20,7 @@ class TestLineageClustering(unittest.TestCase):
             output_folder=cls.temp_dir.name,
             clustering_method="lineage",
             simulation_config=test_simulation_config,
-            corrections_run_id=test_corrections_run_id
+            corrections_run_id=test_corrections_run_id,
         )
 
         cls.test_context.set_config(

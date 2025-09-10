@@ -37,17 +37,17 @@ microphysics_plugins_clustering = {
         fuse.micro_physics.ChunkInput,
         fuse.micro_physics.LineageClustering,
         fuse.micro_physics.MergeLineage,
-    ]
+    ],
 }
 
 # Plugins to simulate microphysics (remaining)
 microphysics_plugins_remaining = [
-        fuse.micro_physics.XENONnT_TPC,
-        fuse.micro_physics.XENONnT_BelowCathode,
-        fuse.micro_physics.VolumesMerger,
-        fuse.micro_physics.ElectricField,
-        fuse.micro_physics.NestYields,
-        fuse.micro_physics.MicroPhysicsSummary,
+    fuse.micro_physics.XENONnT_TPC,
+    fuse.micro_physics.XENONnT_BelowCathode,
+    fuse.micro_physics.VolumesMerger,
+    fuse.micro_physics.ElectricField,
+    fuse.micro_physics.NestYields,
+    fuse.micro_physics.MicroPhysicsSummary,
 ]
 
 # Plugins to simulate S1 signals
@@ -108,7 +108,7 @@ processing_plugins = [fuse.processing.CorrectedAreasMC]
 
 
 def microphysics_context(
-    output_folder="./fuse_data", 
+    output_folder="./fuse_data",
     simulation_config_file="fuse_config_nt_sr1_dev.json",
     clustering_method="dbscan",
     extra_plugins=[],
@@ -131,6 +131,7 @@ def microphysics_context(
 
     return st
 
+
 def xenonnt_fuse_full_chain_simulation(
     output_folder="./fuse_data",
     corrections_version=None,
@@ -147,9 +148,10 @@ def xenonnt_fuse_full_chain_simulation(
     },
     run_without_proper_run_id=False,
 ):
-    """ 
-    Create a context for the full chain simulation of XENONnT.
-    This context includes all the necessary configs and plugins for the simulation.
+    """Create a context for the full chain simulation of XENONnT.
+
+    This context includes all the necessary configs and plugins for the
+    simulation.
     """
 
     # --- Load config file ---
@@ -190,6 +192,7 @@ def xenonnt_fuse_full_chain_simulation(
     # if "cutax" in str(extra_plugins):
     if any("cutax" in str(p) for p in extra_plugins) or cut_list:
         import cutax
+
         extra_plugins.extend(cutax.EXTRA_PLUGINS)
 
     for plugin_list in [
@@ -211,15 +214,15 @@ def xenonnt_fuse_full_chain_simulation(
         st.register_cut_list(cut_list)
         st.register(cut_list)
 
-
     # --- Corrections setup ---
     if corrections_version:
         st.apply_xedocs_configs(version=corrections_version)
         st.set_config(old_xedocs_versions_patch(corrections_version))
     else:
-        log.warning("Please provide a corrections_version to ensure proper corrections. \
-        Example: 'global_v16'")
-
+        log.warning(
+            "Please provide a corrections_version to ensure proper corrections. \
+        Example: 'global_v16'"
+        )
 
     # Replace SIMULATION_CONFIG_FILE.json in plugin defaults
     if simulation_config_file:
@@ -264,15 +267,14 @@ def xenonnt_fuse_full_chain_simulation(
 
     return st
 
+
 def public_config_context(
     output_folder="./fuse_data",
     extra_plugins=[fuse.plugins.S2PhotonPropagationSimple],
     simulation_config_file="./files/XENONnT_public_config.json",
     clustering_method="dbscan",
 ):
-    """
-    Create a context for the use of fuse with public XENONnT configs.
-    """
+    """Create a context for the use of fuse with public XENONnT configs."""
 
     st = strax.Context(storage=output_folder, **straxen.contexts.common_opts)
     st.simulation_config_file = simulation_config_file
@@ -294,7 +296,7 @@ def public_config_context(
             st.register(plugin)
 
     set_simulation_config_file(st, simulation_config_file)
-    
+
     # Lets override some resource files with the ones from the simulation config
     config = straxen.get_resource(simulation_config_file, fmt="json")
     overwrite_map_from_config(st, config)
