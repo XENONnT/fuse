@@ -116,18 +116,19 @@ def microphysics_context(
     """Function to create a fuse microphysics simulation context."""
 
     st = strax.Context(storage=output_folder, **common_opts)
-
-    st.config.update(dict(detector="XENONnT", check_raw_record_overlaps=True, **common_config))
+    st.set_config(dict(check_raw_record_overlaps=True, **common_config))
 
     # Register microphysics plugins
-    for plugin in microphysics_plugins_dbscan_clustering:
-        st.register(plugin)
-    for plugin in remaining_microphysics_plugins:
-        st.register(plugin)
-    for plugin in extra_plugins:
-        st.register(plugin)
+    for plugin_list in [
+        microphysics_plugins_clustering[clustering_method],
+        microphysics_plugins_remaining,
+        extra_plugins,
+    ]:
+        for p in plugin_list:
+            st.register(p)
 
     set_simulation_config_file(st, simulation_config_file)
+
     return st
 
 def xenonnt_fuse_full_chain_simulation(
@@ -136,39 +137,42 @@ def xenonnt_fuse_full_chain_simulation(
     simulation_config=None,
     corrections_run_id=None,
     clustering_method=None,
-    fdc_map_mc=None,
     cut_list=None,
+    extra_plugins=[],
     run_id_specific_config={
         "gain_model_mc": "gain_model",
         "electron_lifetime_liquid": "elife",
         "drift_velocity_liquid": "electron_drift_velocity",
         "drift_time_gate": "electron_drift_time_gate",
     },
-    run_without_proper_corrections=False,
     run_without_proper_run_id=False,
-    extra_plugins=[],
 ):
     """ 
     Create a context for the full chain simulation of XENONnT.
     This context includes all the necessary configs and plugins for the simulation.
     """
 
-    # --- Load core settings from config file ---
-    simulation_config_file = (
-        simulation_config if os.path.isfile(simulation_config)
-        else f"fuse_config_nt_{simulation_config}.json"
-    )
+    # --- Load config file ---
+    if simulation_config:
+        simulation_config_file = (
+            simulation_config
+            if os.path.isfile(simulation_config)
+            else f"fuse_config_nt_{simulation_config}.json"
+        )
+        sim_config = straxen.get_resource(simulation_config_file, fmt="json")
+    else:
+        raise ValueError(
+            "simulation_config_file is required. " "Please provide a valid file path or file name."
+        )
 
     # --- Load settings from config file ---
-    corrections_run_id = (
-        corrections_run_id
-        if corrections_run_id is not None
-        else sim_config.get("default_corrections_run_id", "046477")
-    )
-    log.info(f"Using corrections run id: {corrections_run_id}")
-
-    fdc_map_mc = fdc_map_mc if fdc_map_mc is not None else sim_config.get("fdc_map_mc", "")
-    log.info(f"Using fdc_map_mc: {fdc_map_mc}")
+    if not run_without_proper_run_id:
+        corrections_run_id = (
+            corrections_run_id
+            if corrections_run_id is not None
+            else sim_config.get("default_corrections_run_id", "046477")
+        )
+        log.info(f"Using corrections run id: {corrections_run_id}")
 
     clustering_method = (
         clustering_method
@@ -177,12 +181,16 @@ def xenonnt_fuse_full_chain_simulation(
     )
     log.info(f"Using clustering method: {clustering_method}")
 
-
     # --- Create context and register plugins ---
-    st = strax.Context(storage=strax.DataDirectory(output_folder), **common_opts)
+    st = strax.Context(storage=output_folder, **common_opts)
     st.set_config(dict(check_raw_record_overlaps=True, **common_config))
     st.simulation_config_file = simulation_config_file
     st.corrections_run_id = corrections_run_id
+
+    # if "cutax" in str(extra_plugins):
+    if any("cutax" in str(p) for p in extra_plugins) or cut_list:
+        import cutax
+        extra_plugins.extend(cutax.EXTRA_PLUGINS)
 
     for plugin_list in [
         microphysics_plugins_clustering[clustering_method],
@@ -201,6 +209,8 @@ def xenonnt_fuse_full_chain_simulation(
 
     if cut_list:
         st.register_cut_list(cut_list)
+        st.register(cut_list)
+
 
 
     # --- Corrections setup ---
@@ -208,9 +218,8 @@ def xenonnt_fuse_full_chain_simulation(
         st.apply_xedocs_configs(version=corrections_version)
         st.set_config(old_xedocs_versions_patch(corrections_version))
     else:
-        log.warning("Running without proper corrections. This is not recommended.")
-        if not run_without_proper_corrections:
-            raise ValueError("Set corrections_version or allow unsafe execution.")
+        log.warning("Please provide a corrections_version to ensure proper corrections. \
+        Example: 'global_v16'")
 
 
     # Replace SIMULATION_CONFIG_FILE.json in plugin defaults
@@ -227,20 +236,32 @@ def xenonnt_fuse_full_chain_simulation(
         else:
             log.warning(f"{processing_config} not in context config, skipping...")
 
+    # If mc_overrides is present, use that exclusively
+    if "mc_overrides" in sim_config:
+        log.info("Found 'mc_overrides' in config,  using override-based config system.")
+        apply_mc_overrides(st, simulation_config_file)
+    else:
+        # Backward compatibility: legacy fdc_map_mc logic
+        if "fdc_map_mc" in sim_config:
+            fdc_map_mc = sim_config["fdc_map_mc"]
+            log.info(f"[legacy] Using fdc_map_mc: {fdc_map_mc}")
+            fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
+            fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
+            st.set_config({"fdc_map": fdc_conf})
+        else:
+            raise RuntimeError(
+                "No 'mc_overrides' or 'fdc_map_mc' found in the config. "
+                "Please define one of them to set 'fdc_map'."
+            )
+
     # No blinding in simulations
     st.set_config({"event_info_function": "disabled"})
 
-    # Write SR information to config
-    write_sr_information_to_config(st, corrections_run_id)
-
-    # Set the fdc_map for straxen
-    fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
-    st.set_config({"fdc_map": f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"})
+    st.deregister_plugins_with_missing_dependencies()
 
     if hasattr(st, "purge_unused_configs"):
+        log.info("Purging unused configs...")
         st.purge_unused_configs()
-
-    st.deregister_plugins_with_missing_dependencies()
 
     return st
 
