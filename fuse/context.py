@@ -220,7 +220,7 @@ def xenonnt_fuse_full_chain_simulation(
         st.set_config(old_xedocs_versions_patch(corrections_version))
     else:
         log.warning(
-            "Running without proper corrections! Please provide a corrections_version " \
+            "Running without proper corrections! Please provide a corrections_version "
             "to ensure proper corrections. "
             "Example: 'global_v16'"
         )
