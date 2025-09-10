@@ -6,6 +6,9 @@ import graphviz
 import shutil
 from straxen.docs_utils import add_spaces, add_deps_to_graph_tree
 
+test_simulation_config = "sr0_dev"
+test_corrections_run_id = "046477"
+
 kind_colors.update(fuse.common.kind_colors)
 
 # List of config options that are not tracked
@@ -174,8 +177,9 @@ def create_plugin_documentation_text(st, plugin):
 def build_all_pages():
 
     st = fuse.context.xenonnt_fuse_full_chain_simulation(
-        output_folder="./fuse_data", run_without_proper_corrections=True,
-        simulation_config="sr0_dev"
+        output_folder="./fuse_data",
+        simulation_config=test_simulation_config,
+        corrections_run_id=test_corrections_run_id
     )
 
     all_registered_fuse_plugins = {}

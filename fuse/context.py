@@ -212,7 +212,6 @@ def xenonnt_fuse_full_chain_simulation(
         st.register(cut_list)
 
 
-
     # --- Corrections setup ---
     if corrections_version:
         st.apply_xedocs_configs(version=corrections_version)
