@@ -79,7 +79,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
     )
 
     photoionization_modifier = straxen.URLConfig(
-        default="xedocs://photoionization_strengths?version=v2&run_id=plugin.run_id&attr=value",
+        default="xedocs://photoionization_strengths?version=ONLINE&run_id=plugin.run_id&attr=value",
         type=(int, float),
         cache=True,
         help="Photoionization modifier",

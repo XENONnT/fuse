@@ -5,7 +5,7 @@ import tempfile
 import timeout_decorator
 import fuse
 from _utils import build_random_instructions
-from _utils import test_corrections_run_id, test_simulation_config
+from _utils import test_simulation_config
 
 TIMEOUT = 480
 
@@ -18,7 +18,6 @@ class TestDetectorPhysicsCsv(unittest.TestCase):
         cls.test_context = fuse.context.xenonnt_fuse_full_chain_simulation(
             output_folder=cls.temp_dir.name,
             simulation_config=test_simulation_config,
-            corrections_run_id=test_corrections_run_id,
         )
         cls.test_context.deregister_plugins_with_missing_dependencies()
 

@@ -6,7 +6,7 @@ import timeout_decorator
 import fuse
 import utilix
 from _utils import test_root_file_name
-from _utils import test_corrections_run_id, test_simulation_config
+from _utils import test_simulation_config
 
 TIMEOUT = 60
 
@@ -20,7 +20,6 @@ class TestPluginRandomSeeds(unittest.TestCase):
         cls.test_context = fuse.context.xenonnt_fuse_full_chain_simulation(
             cls.temp_dir.name,
             simulation_config=test_simulation_config,
-            corrections_run_id=test_corrections_run_id,
         )
         cls.test_context.set_config(
             {

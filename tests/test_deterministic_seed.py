@@ -6,7 +6,7 @@ import fuse
 import utilix
 from numpy.testing import assert_array_equal, assert_raises
 from _utils import test_root_file_name
-from _utils import test_corrections_run_id, test_simulation_config
+from _utils import test_simulation_config
 
 TIMEOUT = 180
 
@@ -24,7 +24,6 @@ class TestDeterministicSeed(unittest.TestCase):
         self.test_context_0 = fuse.context.xenonnt_fuse_full_chain_simulation(
             output_folder=self.temp_dir_0.name,
             simulation_config=test_simulation_config,
-            corrections_run_id=test_corrections_run_id,
         )
 
         self.test_context_0.set_config(
@@ -38,7 +37,6 @@ class TestDeterministicSeed(unittest.TestCase):
         self.test_context_1 = fuse.context.xenonnt_fuse_full_chain_simulation(
             output_folder=self.temp_dir_1.name,
             simulation_config=test_simulation_config,
-            corrections_run_id=test_corrections_run_id,
         )
 
         self.test_context_1.set_config(
