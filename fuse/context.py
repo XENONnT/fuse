@@ -147,6 +147,7 @@ def xenonnt_fuse_full_chain_simulation(
         "drift_time_gate": "electron_drift_time_gate",
     },
     run_without_proper_run_id=False,
+    run_without_config_file=False,
 ):
     """Create a context for the full chain simulation of XENONnT.
 
@@ -154,20 +155,30 @@ def xenonnt_fuse_full_chain_simulation(
     simulation.
     """
 
-    # --- Load config file ---
-    if simulation_config:
-        simulation_config_file = (
-            simulation_config
-            if os.path.isfile(simulation_config)
-            else f"fuse_config_nt_{simulation_config}.json"
+    # Load config file
+    if run_without_config_file:
+        # Just a dummy name to avoid errors. We use this to setup context for the docs.
+        simulation_config_file = "fuse_config_file.json"
+        sim_config = {
+            "fdc_map_mc": ".",
+        }
+        log.warning(
+            "Running without a proper config file! Do not use this for real simulations."
         )
-        sim_config = straxen.get_resource(simulation_config_file, fmt="json")
     else:
-        raise ValueError(
-            "simulation_config_file is required. " "Please provide a valid file path or file name."
-        )
+        if simulation_config:
+            simulation_config_file = (
+                simulation_config
+                if os.path.isfile(simulation_config)
+                else f"fuse_config_nt_{simulation_config}.json"
+            )
+            sim_config = straxen.get_resource(simulation_config_file, fmt="json")
+        else:
+            raise ValueError(
+                "simulation_config_file is required. " "Please provide a valid file path or file name."
+            )
 
-    # --- Load settings from config file ---
+    # Load settings from config file
     if not run_without_proper_run_id:
         corrections_run_id = (
             corrections_run_id
@@ -183,16 +194,14 @@ def xenonnt_fuse_full_chain_simulation(
     )
     log.info(f"Using clustering method: {clustering_method}")
 
-    # --- Create context and register plugins ---
+    # Create context and register plugins
     st = strax.Context(storage=output_folder, **common_opts)
     st.set_config(dict(check_raw_record_overlaps=True, **common_config))
     st.simulation_config_file = simulation_config_file
     st.corrections_run_id = corrections_run_id
 
-    # if "cutax" in str(extra_plugins):
     if any("cutax" in str(p) for p in extra_plugins) or cut_list:
         import cutax
-
         extra_plugins.extend(cutax.EXTRA_PLUGINS)
 
     for plugin_list in [
@@ -214,7 +223,7 @@ def xenonnt_fuse_full_chain_simulation(
         st.register_cut_list(cut_list)
         st.register(cut_list)
 
-    # --- Corrections setup ---
+    # Corrections setup
     if corrections_version:
         st.apply_xedocs_configs(version=corrections_version)
         st.set_config(old_xedocs_versions_patch(corrections_version))
@@ -263,7 +272,6 @@ def xenonnt_fuse_full_chain_simulation(
     st.deregister_plugins_with_missing_dependencies()
 
     if hasattr(st, "purge_unused_configs"):
-        log.info("Purging unused configs...")
         st.purge_unused_configs()
 
     return st

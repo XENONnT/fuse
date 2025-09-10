@@ -18,6 +18,9 @@ class TestDetectorPhysicsCsv(unittest.TestCase):
         cls.test_context = fuse.context.xenonnt_fuse_full_chain_simulation(
             output_folder=cls.temp_dir.name,
             simulation_config=test_simulation_config,
+            extra_plugins=[
+                fuse.plugins.detector_physics.ChunkCsvInput,
+            ],
         )
         cls.test_context.deregister_plugins_with_missing_dependencies()
 
