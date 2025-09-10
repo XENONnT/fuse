@@ -162,9 +162,7 @@ def xenonnt_fuse_full_chain_simulation(
         sim_config = {
             "fdc_map_mc": ".",
         }
-        log.warning(
-            "Running without a proper config file! Do not use this for real simulations."
-        )
+        log.warning("Running without a proper config file! Do not use this for real simulations.")
     else:
         if simulation_config:
             simulation_config_file = (
@@ -175,7 +173,8 @@ def xenonnt_fuse_full_chain_simulation(
             sim_config = straxen.get_resource(simulation_config_file, fmt="json")
         else:
             raise ValueError(
-                "simulation_config_file is required. " "Please provide a valid file path or file name."
+                "simulation_config_file is required. "
+                "Please provide a valid file path or file name."
             )
 
     # Load settings from config file
@@ -202,6 +201,7 @@ def xenonnt_fuse_full_chain_simulation(
 
     if any("cutax" in str(p) for p in extra_plugins) or cut_list:
         import cutax
+
         extra_plugins.extend(cutax.EXTRA_PLUGINS)
 
     for plugin_list in [
