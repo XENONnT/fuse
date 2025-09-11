@@ -385,7 +385,19 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
     """Function to classify a new lineage based on the particle and its parent
     information."""
 
-    # Excited states of nuclei, decaying electromagnetically
+    def classify_gamma(particle_interaction):
+        if particle_interaction["edproc"] == "compt":
+            return NEST_BETA
+        elif particle_interaction["edproc"] == "conv":
+            return NEST_BETA
+        elif particle_interaction["edproc"] == "phot":
+            # This is gamma photoabsorption. Return gamma
+            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
+        else:
+            # could be rayleigh scattering or something else. Classify it as gamma...
+            return NEST_BETA
+
+    # If [ in type, it is a nucleus excitation, decaying electromagnetically
     # this will become the lineage of internal conversion electrons
     if "[" in particle_interaction["type"]:
         return NEST_GAMMA if classify_ic_as_gamma else NEST_BETA
@@ -396,7 +408,8 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
     ):
         return NEST_NR
 
-    elif (particle_interaction["parenttype"] == "neutron") & (
+    # Neutron as primary particle
+    elif (particle_interaction["parenttype"] in ["", "none", "neutron"]) & (
         particle_interaction["type"] == "neutron"
     ):
         return NEST_NR
@@ -409,6 +422,15 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
             return NEST_BETA
         elif particle_interaction["creaproc"] == "phot":
             return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
+        elif particle_interaction["creaproc"] == "photonNuclear":
+            if num_there(particle_interaction["type"]):
+                return NEST_NR
+            elif particle_interaction["type"] == "neutron":
+                return NEST_NR
+            elif particle_interaction["type"] == "gamma":
+                return classify_gamma(particle_interaction)
+            else:
+                return NEST_NONE
         else:
             # This case should not happen or? Classify it as nontype
             return NEST_NONE
@@ -419,27 +441,12 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
 
     # The gamma case
     elif particle_interaction["type"] == "gamma":
-        if particle_interaction["edproc"] == "compt":
-            return NEST_BETA
-        elif particle_interaction["edproc"] == "conv":
-            return NEST_BETA
-        elif particle_interaction["edproc"] == "phot":
-            # This is gamma photoabsorption. Return gamma
-            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
-        else:
-            # could be rayleigh scattering or something else. Classify it as gamma...
-            return NEST_BETA
+        return classify_gamma(particle_interaction)
 
     # Primaries and decay products
     elif (particle_interaction["creaproc"] == "RadioactiveDecayBase") or (
         particle_interaction["parenttype"] == "none"
     ):
-
-        # If [ in type, it is a nucleus excitation
-        # we give it a beta for the possible conversion electrons
-        if "[" in particle_interaction["type"]:
-            return NEST_BETA
-
         # Alpha particles
         if particle_interaction["type"] == "alpha":
             return NEST_ALPHA
@@ -467,14 +474,14 @@ def is_lineage_broken(
 ):
     """Function to check if the lineage is broken."""
 
+    # second step of a decay. We want to split the lineage
     if (
         particle["creaproc"] == "RadioactiveDecayBase"
         and particle["edproc"] == "RadioactiveDecayBase"
     ):
-        # second step of a decay. We want to split the lineage
         return True
 
-    # In the nest code: Lineage is always broken if the parent is a ion
+    # In the nest code: lineage is always broken if the parent is an ion
     # this breaks the lineage for all ions, also for alpha decays (we need it)
     # but if it's via an excited nuclear state, we want to keep the lineage
     if (num_there(parent["type"])) and ("[" not in parent["type"]):
