@@ -27,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.4"
+    __version__ = "0.0.5"
 
     depends_on = "geant4_interactions"
 
@@ -523,9 +523,7 @@ def is_lineage_broken(
 
     # Does this make sense?
     if parent["type"] == "neutron":
-        if parent["edproc"].startswith("hadElastic"):
-            return True
-        elif parent["edproc"].startswith("neutronIne"):
+        if parent["edproc"] in ["hadElastic", "ionIoni", "neutronInelastic"]:
             return True
 
     # Otherwise the lineage is not broken
