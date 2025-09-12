@@ -178,6 +178,7 @@ def build_all_pages():
     st = fuse.context.xenonnt_fuse_full_chain_simulation(
         output_folder="./fuse_data",
         run_without_config_file=True,
+        corrections_run_id="00000",
     )
 
     all_registered_fuse_plugins = {}
