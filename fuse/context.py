@@ -186,7 +186,7 @@ def xenonnt_fuse_full_chain_simulation(
         )
         if corrections_run_id is None:
             raise ValueError(
-                "corrections_run_id is required. Please provide a config file with " \
+                "corrections_run_id is required. Please provide a config file with "
                 "default_corrections_run_id or provide it directly in the context function."
             )
         log.info(f"Using corrections run id: {corrections_run_id}")
