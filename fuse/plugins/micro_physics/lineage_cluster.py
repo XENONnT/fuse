@@ -423,16 +423,18 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
         elif particle_interaction["creaproc"] == "phot":
             return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
         elif particle_interaction["creaproc"] == "photonNuclear":
+            # nuclear recoil after photonuclear interaction
             if num_there(particle_interaction["type"]):
                 return NEST_NR
             elif particle_interaction["type"] == "neutron":
                 return NEST_NR
+            # gamma ray after photonuclear interaction
             elif particle_interaction["type"] == "gamma":
                 return classify_gamma(particle_interaction)
             else:
                 return NEST_NONE
         else:
-            # This case should not happen or? Classify it as nontype
+            # This case should not happen? Classify it as none type
             return NEST_NONE
 
     # Electrons or positrons that are not created by a gamma.
@@ -457,7 +459,7 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
             return 6, mass, element_number
 
         else:
-            # This case should not happen or? Classify it as nontype
+            # This case should not happen? Classify it as NONE
             return NEST_NONE
 
     else:
@@ -515,16 +517,16 @@ def is_lineage_broken(
         if distance > gamma_distance_threshold:
             return True
 
+    # break neutron lineage
+    if parent["type"] == "neutron":
+        if parent["edproc"] in ["hadElastic", "neutronInelastic", "nCapture"]:
+            return True
+
     # I also want to break the lineage if the interaction happens way after the parent interaction
     time_difference = particle["t"] - parent["t"]
 
     if time_difference > time_threshold:
         return True
-
-    # Does this make sense?
-    if parent["type"] == "neutron":
-        if parent["edproc"] in ["hadElastic", "ionIoni", "neutronInelastic"]:
-            return True
 
     # Otherwise the lineage is not broken
     return False
