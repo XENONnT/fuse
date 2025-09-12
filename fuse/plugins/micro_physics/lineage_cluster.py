@@ -27,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.4"
+    __version__ = "0.0.5"
 
     depends_on = "geant4_interactions"
 
@@ -385,7 +385,19 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
     """Function to classify a new lineage based on the particle and its parent
     information."""
 
-    # Excited states of nuclei, decaying electromagnetically
+    def classify_gamma(particle_interaction):
+        if particle_interaction["edproc"] == "compt":
+            return NEST_BETA
+        elif particle_interaction["edproc"] == "conv":
+            return NEST_BETA
+        elif particle_interaction["edproc"] == "phot":
+            # This is gamma photoabsorption. Return gamma
+            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
+        else:
+            # could be rayleigh scattering or something else. Classify it as gamma...
+            return NEST_BETA
+
+    # If [ in type, it is a nucleus excitation, decaying electromagnetically
     # this will become the lineage of internal conversion electrons
     if "[" in particle_interaction["type"]:
         return NEST_GAMMA if classify_ic_as_gamma else NEST_BETA
@@ -396,7 +408,8 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
     ):
         return NEST_NR
 
-    elif (particle_interaction["parenttype"] == "neutron") & (
+    # Neutron as primary particle
+    elif (particle_interaction["parenttype"] in ["", "none", "neutron"]) & (
         particle_interaction["type"] == "neutron"
     ):
         return NEST_NR
@@ -409,8 +422,19 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
             return NEST_BETA
         elif particle_interaction["creaproc"] == "phot":
             return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
+        elif particle_interaction["creaproc"] == "photonNuclear":
+            # nuclear recoil after photonuclear interaction
+            if num_there(particle_interaction["type"]):
+                return NEST_NR
+            elif particle_interaction["type"] == "neutron":
+                return NEST_NR
+            # gamma ray after photonuclear interaction
+            elif particle_interaction["type"] == "gamma":
+                return classify_gamma(particle_interaction)
+            else:
+                return NEST_NONE
         else:
-            # This case should not happen or? Classify it as nontype
+            # This case should not happen? Classify it as none type
             return NEST_NONE
 
     # Electrons or positrons that are not created by a gamma.
@@ -419,27 +443,12 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
 
     # The gamma case
     elif particle_interaction["type"] == "gamma":
-        if particle_interaction["edproc"] == "compt":
-            return NEST_BETA
-        elif particle_interaction["edproc"] == "conv":
-            return NEST_BETA
-        elif particle_interaction["edproc"] == "phot":
-            # This is gamma photoabsorption. Return gamma
-            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
-        else:
-            # could be rayleigh scattering or something else. Classify it as gamma...
-            return NEST_BETA
+        return classify_gamma(particle_interaction)
 
     # Primaries and decay products
     elif (particle_interaction["creaproc"] == "RadioactiveDecayBase") or (
         particle_interaction["parenttype"] == "none"
     ):
-
-        # If [ in type, it is a nucleus excitation
-        # we give it a beta for the possible conversion electrons
-        if "[" in particle_interaction["type"]:
-            return NEST_BETA
-
         # Alpha particles
         if particle_interaction["type"] == "alpha":
             return NEST_ALPHA
@@ -450,7 +459,7 @@ def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_a
             return 6, mass, element_number
 
         else:
-            # This case should not happen or? Classify it as nontype
+            # This case should not happen? Classify it as NONE
             return NEST_NONE
 
     else:
@@ -467,14 +476,14 @@ def is_lineage_broken(
 ):
     """Function to check if the lineage is broken."""
 
+    # second step of a decay. We want to split the lineage
     if (
         particle["creaproc"] == "RadioactiveDecayBase"
         and particle["edproc"] == "RadioactiveDecayBase"
     ):
-        # second step of a decay. We want to split the lineage
         return True
 
-    # In the nest code: Lineage is always broken if the parent is a ion
+    # In the nest code: lineage is always broken if the parent is an ion
     # this breaks the lineage for all ions, also for alpha decays (we need it)
     # but if it's via an excited nuclear state, we want to keep the lineage
     if (num_there(parent["type"])) and ("[" not in parent["type"]):
@@ -508,18 +517,16 @@ def is_lineage_broken(
         if distance > gamma_distance_threshold:
             return True
 
+    # break neutron lineage
+    if parent["type"] == "neutron":
+        if parent["edproc"] in ["hadElastic", "neutronInelastic", "nCapture"]:
+            return True
+
     # I also want to break the lineage if the interaction happens way after the parent interaction
     time_difference = particle["t"] - parent["t"]
 
     if time_difference > time_threshold:
         return True
-
-    # Does this make sense?
-    if parent["type"] == "neutron":
-        if parent["edproc"].startswith("hadElastic"):
-            return True
-        elif parent["edproc"].startswith("neutronIne"):
-            return True
 
     # Otherwise the lineage is not broken
     return False
