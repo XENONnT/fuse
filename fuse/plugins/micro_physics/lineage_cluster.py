@@ -519,7 +519,7 @@ def is_lineage_broken(
 
     # break neutron lineage
     if parent["type"] == "neutron":
-        if parent["edproc"] in ["hadElastic", "neutronInelastic", "nCapture"]:
+        if parent["edproc"] in ["Transportation", "hadElastic", "neutronInelastic", "nCapture"]:
             return True
 
     # I also want to break the lineage if the interaction happens way after the parent interaction
