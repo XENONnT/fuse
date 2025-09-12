@@ -182,8 +182,13 @@ def xenonnt_fuse_full_chain_simulation(
         corrections_run_id = (
             corrections_run_id
             if corrections_run_id is not None
-            else sim_config.get("default_corrections_run_id", "046477")
+            else sim_config.get("default_corrections_run_id", None)
         )
+        if corrections_run_id is None:
+            raise ValueError(
+                "corrections_run_id is required. Please provide a config file with " \
+                "default_corrections_run_id or provide it directly in the context function."
+            )
         log.info(f"Using corrections run id: {corrections_run_id}")
 
     clustering_method = (
