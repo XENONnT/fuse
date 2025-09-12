@@ -73,6 +73,13 @@ class ChunkInput(FuseBasePlugin):
         help="If True, the events will be spaced with a fixed time difference of 1/source_rate",
     )
 
+    subtract_first_interaction_time = straxen.URLConfig(
+        default=True,
+        type=bool,
+        help="If True, the time of the first interaction of each event is subtracted "
+        "when source_rate > 0, before the random sampled event time is added.",
+    )
+
     cut_delayed = straxen.URLConfig(
         default=1e18,
         type=(int, float),
@@ -130,6 +137,7 @@ class ChunkInput(FuseBasePlugin):
             self.rng,
             separation_scale=self.separation_scale,
             event_rate=self.source_rate,
+            subtract_first_interaction_time=self.subtract_first_interaction_time,
             cut_delayed=self.cut_delayed,
             first_chunk_left=self.first_chunk_left,
             last_chunk_length=self.last_chunk_length,
@@ -182,6 +190,7 @@ class file_loader:
         random_number_generator,
         separation_scale=1e8,
         event_rate=1,
+        subtract_first_interaction_time=True,
         n_interactions_per_chunk=500,
         cut_delayed=4e12,
         first_chunk_left=1e6,
@@ -202,6 +211,7 @@ class file_loader:
         self.rng = random_number_generator
         self.separation_scale = separation_scale
         self.event_rate = event_rate / 1e9  # Conversion to ns
+        self.subtract_first_interaction_time = subtract_first_interaction_time
         self.n_interactions_per_chunk = n_interactions_per_chunk
         self.cut_delayed = cut_delayed
         self.last_chunk_length = np.int64(last_chunk_length)
@@ -266,9 +276,9 @@ class file_loader:
         interactions = interactions[m]
 
         # Sort interactions in events by time and subtract time of the first interaction
-        interactions = interactions[ak.argsort(interactions["t"])]
+        interactions = interactions[ak.argsort(interactions["t"], stable=True)]
 
-        if self.event_rate > 0:
+        if self.event_rate > 0 and self.subtract_first_interaction_time:
             interactions["t"] = interactions["t"] - interactions["t"][:, 0]
 
         # Adjust event times if necessary
