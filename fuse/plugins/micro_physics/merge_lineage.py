@@ -65,6 +65,7 @@ def merge_lineages(result, interactions):
         result[i]["x"] = np.average(lineage["x"], weights=lineage["ed"])
         result[i]["y"] = np.average(lineage["y"], weights=lineage["ed"])
         result[i]["z"] = np.average(lineage["z"], weights=lineage["ed"])
+        result[i]["t"] = np.average(lineage["t"], weights=lineage["ed"])
         result[i]["time"] = np.average(lineage["time"], weights=lineage["ed"])
         result[i]["ed"] = np.sum(lineage["ed"])
 

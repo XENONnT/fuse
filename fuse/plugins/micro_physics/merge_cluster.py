@@ -77,6 +77,7 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
         result[i]["x"] = np.average(cluster["x"], weights=cluster["ed"])
         result[i]["y"] = np.average(cluster["y"], weights=cluster["ed"])
         result[i]["z"] = np.average(cluster["z"], weights=cluster["ed"])
+        result[i]["t"] = np.average(cluster["t"], weights=cluster["ed"])
         result[i]["time"] = np.average(cluster["time"], weights=cluster["ed"])
         result[i]["ed"] = np.sum(cluster["ed"])
 

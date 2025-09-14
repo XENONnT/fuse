@@ -23,7 +23,11 @@ __all__.extend(["microphysics_summary_fields"])
 # through microphysics_summary_fields, so do not set microphysics_summary_fields
 # or variable related to it as a static attribute of a class.
 microphysics_summary_fields = (
-    cluster_positions_fields + quanta_fields + electric_fields + cluster_id_fields
+    cluster_positions_fields
+    + quanta_fields
+    + electric_fields
+    + cluster_id_fields
+    + csv_cluster_misc_fields
 )
 
 
@@ -84,9 +88,10 @@ class ChunkCsvInput(FuseBasePlugin):
     def infer_dtype(self):
         return microphysics_summary_fields + strax.time_fields
 
+    # alias for backward compatibility
     @staticmethod
     def needed_csv_input_fields():
-        return microphysics_summary_fields + csv_cluster_misc_fields
+        return microphysics_summary_fields
 
     def setup(self):
         super().setup()
@@ -161,9 +166,8 @@ class csv_file_loader:
         self.log = log
 
         # The csv file needs to have these columns:
-        _fields = ChunkCsvInput.needed_csv_input_fields()
-        self.columns = list(np.dtype(_fields).names)
-        self.dtype = _fields + strax.time_fields
+        self.columns = list(np.dtype(microphysics_summary_fields).names)
+        self.dtype = microphysics_summary_fields + strax.time_fields
 
     def output_chunk(self):
         instructions, n_simulated_events = self.__load_csv_file()
