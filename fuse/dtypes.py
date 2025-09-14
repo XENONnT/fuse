@@ -46,8 +46,10 @@ csv_cluster_misc_fields = [
 ]
 
 
-cluster_misc_fields = csv_cluster_misc_fields + [
+cluster_misc_fields = [
+    (("Geant4 event ID", "eventid"), np.int32),
     (("Geant4 track ID", "trackid"), np.int16),
+    (("Time of the interaction [ns]", "t"), np.float64),
     (("Mass number of the interacting particle", "A"), np.int16),
     (("Charge number of the interacting particle", "Z"), np.int16),
     (("Xenon density at the cluster position", "xe_density"), np.float32),
