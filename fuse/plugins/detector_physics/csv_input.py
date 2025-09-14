@@ -88,6 +88,11 @@ class ChunkCsvInput(FuseBasePlugin):
     def infer_dtype(self):
         return microphysics_summary_fields + strax.time_fields
 
+    # alias for backward compatibility
+    @staticmethod
+    def needed_csv_input_fields():
+        return microphysics_summary_fields
+
     def setup(self):
         super().setup()
 
