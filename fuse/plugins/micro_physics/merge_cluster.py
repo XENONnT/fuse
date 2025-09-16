@@ -67,9 +67,11 @@ class MergeCluster(FuseBasePlugin):
             raise ValueError("tag_cluster_by must be 'energy' or 'time'")
 
         # Need to sort clusters first by cluster id
-        geant4_interactions_sorted = geant4_interactions[np.argsort(geant4_interactions['cluster_ids'])]
+        geant4_interactions_sorted = geant4_interactions[
+            np.argsort(geant4_interactions["cluster_ids"])
+        ]
         geant4_ids = np.unique(geant4_interactions_sorted["cluster_ids"])
-        
+
         result = np.zeros(len(geant4_ids), dtype=self.dtype)
         result = cluster_and_classify(result, geant4_interactions_sorted, cluster_by_energy)
 
@@ -81,40 +83,40 @@ class MergeCluster(FuseBasePlugin):
 @numba.njit
 def cluster_and_classify(results, interactions, tag_cluster_by_energy):
     event_i = 0
-    current_id = interactions[0]['cluster_ids']
-    
+    current_id = interactions[0]["cluster_ids"]
+
     weighted_x = 0
     weighted_y = 0
     weighted_z = 0
     weighted_t = 0
     weighted_time = 0
     sum_ed = 0
-    
+
     largest_ed = 0
-    smallest_time = 9223372036854775807 # Int64 inf
+    smallest_time = 9223372036854775807  # Int64 inf
     interaction_in_cluster_index = 0
     main_interaction_index = 0
-    
+
     A = 0
     Z = 0
     nestid = 0
     x_pri = 0
     y_pri = 0
-    z_pri =  0
+    z_pri = 0
     eventid = 0
     cluster_id = 0
 
     for cluster_i, cluster in enumerate(interactions):
 
-        _is_new_cluster = (current_id < cluster['cluster_ids'])
+        _is_new_cluster = current_id < cluster["cluster_ids"]
         if _is_new_cluster:
             # First store results of currten cluster:
-            results[event_i]['x'] = weighted_x/sum_ed
-            results[event_i]['y'] = weighted_y/sum_ed
-            results[event_i]['z'] = weighted_z/sum_ed
-            results[event_i]['t'] = weighted_t/sum_ed
-            results[event_i]['time'] = weighted_time/sum_ed
-            results[event_i]['ed'] = sum_ed
+            results[event_i]["x"] = weighted_x / sum_ed
+            results[event_i]["y"] = weighted_y / sum_ed
+            results[event_i]["z"] = weighted_z / sum_ed
+            results[event_i]["t"] = weighted_t / sum_ed
+            results[event_i]["time"] = weighted_time / sum_ed
+            results[event_i]["ed"] = sum_ed
 
             # Only call this function onces since it has to handle strings...
             A, Z, nestid = classify(
@@ -135,7 +137,7 @@ def cluster_and_classify(results, interactions, tag_cluster_by_energy):
 
             # Now prepare buffer for new cluster:
             event_i += 1
-            current_id = cluster['cluster_ids']
+            current_id = cluster["cluster_ids"]
 
             # use zero here to compute average on the fly
             weighted_x = 0
@@ -149,49 +151,49 @@ def cluster_and_classify(results, interactions, tag_cluster_by_energy):
             interaction_in_cluster_index = 0
             main_interaction_index = 0
             largest_ed = 0
-            smallest_time = 9223372036854775807 # Int64 inf
+            smallest_time = 9223372036854775807  # Int64 inf
             A = 0
             Z = 0
             nestid = 0
             x_pri = 0
             y_pri = 0
-            z_pri =  0
-            eventid =  0
+            z_pri = 0
+            eventid = 0
             cluster_id = 0
 
-        weighted_x += cluster['x']*cluster['ed']
-        weighted_y += cluster['y']*cluster['ed']
-        weighted_z += cluster['z']*cluster['ed']
-        weighted_t += cluster['t']*cluster['ed']
-        weighted_time += cluster['time']*cluster['ed']
-        sum_ed += cluster['ed']
-    
-        largest_ed = max(largest_ed, cluster['ed'])
-        smallest_time = min(smallest_time, cluster['time'])
-    
-        if tag_cluster_by_energy and (cluster['ed'] == largest_ed):
+        weighted_x += cluster["x"] * cluster["ed"]
+        weighted_y += cluster["y"] * cluster["ed"]
+        weighted_z += cluster["z"] * cluster["ed"]
+        weighted_t += cluster["t"] * cluster["ed"]
+        weighted_time += cluster["time"] * cluster["ed"]
+        sum_ed += cluster["ed"]
+
+        largest_ed = max(largest_ed, cluster["ed"])
+        smallest_time = min(smallest_time, cluster["time"])
+
+        if tag_cluster_by_energy and (cluster["ed"] == largest_ed):
             main_interaction_index = cluster_i
-            eventid = cluster['eventid']
-            cluster_id = cluster['cluster_ids']
-            x_pri = cluster['x_pri']
-            y_pri = cluster['y_pri']
-            z_pri = cluster['z_pri']
-    
+            eventid = cluster["eventid"]
+            cluster_id = cluster["cluster_ids"]
+            x_pri = cluster["x_pri"]
+            y_pri = cluster["y_pri"]
+            z_pri = cluster["z_pri"]
+
         elif not tag_cluster_by_energy and smallest_time == cluster["time"]:
             main_interaction_index = cluster_i
-            eventid = cluster['eventid']
-            cluster_id = cluster['cluster_ids']
-            x_pri = cluster['x_pri']
-            y_pri = cluster['y_pri']
-            z_pri = cluster['z_pri']
+            eventid = cluster["eventid"]
+            cluster_id = cluster["cluster_ids"]
+            x_pri = cluster["x_pri"]
+            y_pri = cluster["y_pri"]
+            z_pri = cluster["z_pri"]
 
     # Done with looping store last result:
-    results[event_i]['x'] = weighted_x/sum_ed
-    results[event_i]['y'] = weighted_y/sum_ed
-    results[event_i]['z'] = weighted_z/sum_ed
-    results[event_i]['t'] = weighted_t/sum_ed
-    results[event_i]['time'] = weighted_time/sum_ed
-    results[event_i]['ed'] = sum_ed
+    results[event_i]["x"] = weighted_x / sum_ed
+    results[event_i]["y"] = weighted_y / sum_ed
+    results[event_i]["z"] = weighted_z / sum_ed
+    results[event_i]["t"] = weighted_t / sum_ed
+    results[event_i]["time"] = weighted_time / sum_ed
+    results[event_i]["ed"] = sum_ed
 
     # Only call this function onces since it has to handle strings...
     A, Z, nestid = classify(
@@ -209,11 +211,12 @@ def cluster_and_classify(results, interactions, tag_cluster_by_energy):
     results[event_i]["z_pri"] = z_pri
     results[event_i]["eventid"] = eventid
     results[event_i]["cluster_id"] = cluster_id
-    
+
     return results
 
 
 infinity = np.iinfo(np.int8).max
+
 
 @numba.njit
 def classify(types, parenttype, creaproc, edproc):
