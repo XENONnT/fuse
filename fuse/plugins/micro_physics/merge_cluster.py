@@ -86,6 +86,7 @@ def cluster_and_classify(results, interactions, tag_cluster_by_energy):
     weighted_x = 0
     weighted_y = 0
     weighted_z = 0
+    weighted_t = 0
     weighted_time = 0
     sum_ed = 0
     
@@ -111,6 +112,7 @@ def cluster_and_classify(results, interactions, tag_cluster_by_energy):
             results[event_i]['x'] = weighted_x/sum_ed
             results[event_i]['y'] = weighted_y/sum_ed
             results[event_i]['z'] = weighted_z/sum_ed
+            results[event_i]['t'] = weighted_t/sum_ed
             results[event_i]['time'] = weighted_time/sum_ed
             results[event_i]['ed'] = sum_ed
 
@@ -139,6 +141,7 @@ def cluster_and_classify(results, interactions, tag_cluster_by_energy):
             weighted_x = 0
             weighted_y = 0
             weighted_z = 0
+            weighted_t = 0
             weighted_time = 0
             sum_ed = 0
 
@@ -159,6 +162,7 @@ def cluster_and_classify(results, interactions, tag_cluster_by_energy):
         weighted_x += cluster['x']*cluster['ed']
         weighted_y += cluster['y']*cluster['ed']
         weighted_z += cluster['z']*cluster['ed']
+        weighted_t += cluster['t']*cluster['ed']
         weighted_time += cluster['time']*cluster['ed']
         sum_ed += cluster['ed']
     
@@ -185,6 +189,7 @@ def cluster_and_classify(results, interactions, tag_cluster_by_energy):
     results[event_i]['x'] = weighted_x/sum_ed
     results[event_i]['y'] = weighted_y/sum_ed
     results[event_i]['z'] = weighted_z/sum_ed
+    results[event_i]['t'] = weighted_t/sum_ed
     results[event_i]['time'] = weighted_time/sum_ed
     results[event_i]['ed'] = sum_ed
 
