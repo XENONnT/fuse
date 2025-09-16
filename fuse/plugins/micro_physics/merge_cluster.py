@@ -94,7 +94,6 @@ def cluster_and_classify(results, interactions, tag_cluster_by_energy):
 
     largest_ed = 0
     smallest_time = 9223372036854775807  # Int64 inf
-    interaction_in_cluster_index = 0
     main_interaction_index = 0
 
     A = 0
@@ -148,7 +147,6 @@ def cluster_and_classify(results, interactions, tag_cluster_by_energy):
             sum_ed = 0
 
             # Set unsued value as buffer:
-            interaction_in_cluster_index = 0
             main_interaction_index = 0
             largest_ed = 0
             smallest_time = 9223372036854775807  # Int64 inf
