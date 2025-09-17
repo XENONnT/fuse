@@ -4,8 +4,10 @@ import strax
 import straxen
 
 from ...dtypes import propagated_photons_fields
-from ...common import pmt_gains, build_photon_propagation_output
 from ...common import (
+    stable_argsort,
+    pmt_gains,
+    build_photon_propagation_output,
     init_spe_scaling_factor_distributions,
     pmt_transit_time_spread,
     photon_gain_calculation,
@@ -197,7 +199,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         )
 
         # I should sort by time i guess
-        sortind = np.argsort(_photon_timings)
+        sortind = stable_argsort(_photon_timings)
         _photon_channels = _photon_channels[sortind]
         _photon_timings = _photon_timings[sortind]
         _cluster_id = _cluster_id[sortind]

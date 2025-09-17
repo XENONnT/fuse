@@ -3,6 +3,7 @@ import straxen
 import numpy as np
 from scipy.stats import expon, truncexpon
 
+from ....common import stable_argsort
 from ....plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -39,7 +40,9 @@ class PhotoIonizationElectrons(FuseBasePlugin):
     # Config options
 
     enable_delayed_electrons = straxen.URLConfig(
-        default=False,
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=enable_delayed_electrons",
         type=bool,
         track=True,
         help="Decide if you want to to enable delayed electrons from photoionization",
@@ -75,7 +78,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
     )
 
     photoionization_modifier = straxen.URLConfig(
-        default="xedocs://photoionization_strengths?version=v2&run_id=plugin.run_id&attr=value",
+        default="xedocs://photoionization_strengths?version=ONLINE&run_id=plugin.run_id&attr=value",
         type=(int, float),
         cache=True,
         help="Photoionization modifier",
@@ -253,7 +256,7 @@ def ramdom_xy_position(n, radius, rng):
 def group_electrons_by_cluster_id(electrons):
     """Function to group electrons by cluster_id."""
 
-    sort_index = np.argsort(electrons["cluster_id"])
+    sort_index = stable_argsort(electrons["cluster_id"])
 
     electrons_sorted = electrons[sort_index]
 

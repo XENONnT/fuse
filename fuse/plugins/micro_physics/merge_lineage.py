@@ -7,6 +7,7 @@ from ...dtypes import (
     cluster_id_fields,
     cluster_misc_fields,
 )
+from ...common import stable_sort
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -24,7 +25,7 @@ class MergeLineage(FuseBasePlugin):
     individual energy depositions.
     """
 
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     depends_on = ("geant4_interactions", "interaction_lineage")
 
@@ -54,21 +55,17 @@ class MergeLineage(FuseBasePlugin):
 
         result["endtime"] = result["time"]
 
-        return result
+        return stable_sort(result, order="time")
 
 
 def merge_lineages(result, interactions):
-
-    lineages_in_event = [
-        interactions[interactions["lineage_index"] == i]
-        for i in np.unique(interactions["lineage_index"])
-    ]
-
-    for i, lineage in enumerate(lineages_in_event):
+    for i, lineage_index in enumerate(np.unique(interactions["lineage_index"])):
+        lineage = interactions[interactions["lineage_index"] == lineage_index]
 
         result[i]["x"] = np.average(lineage["x"], weights=lineage["ed"])
         result[i]["y"] = np.average(lineage["y"], weights=lineage["ed"])
         result[i]["z"] = np.average(lineage["z"], weights=lineage["ed"])
+        result[i]["t"] = np.average(lineage["t"], weights=lineage["ed"])
         result[i]["time"] = np.average(lineage["time"], weights=lineage["ed"])
         result[i]["ed"] = np.sum(lineage["ed"])
 
@@ -76,6 +73,7 @@ def merge_lineages(result, interactions):
 
         # These ones are the same for all interactions in the lineage
         result[i]["eventid"] = lineage["eventid"][0]
+        result[i]["trackid"] = lineage["lineage_trackid"][0]
         result[i]["nestid"] = lineage["lineage_type"][0]
         result[i]["A"] = lineage["A"][0]
         result[i]["Z"] = lineage["Z"][0]
