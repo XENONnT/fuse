@@ -339,9 +339,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         # Sort both the interactions and the electrons by cluster_id
         # We will later sort by time again when yielding the data.
-        sort_index_ic = stable_argsort(interactions_chunk["cluster_id"])
         sort_index_eg = stable_argsort(electron_group["cluster_id"])
-        interactions_chunk = interactions_chunk[sort_index_ic]
         electron_group = electron_group[sort_index_eg]
 
         positions = np.array([electron_group["x_interface"], electron_group["y_interface"]]).T
