@@ -168,7 +168,6 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         help="Enable the time and position shift due to the perpendicular wires",
     )
 
-
     x_position_offset_1d_mean_left = straxen.URLConfig(
         default="itp_map://resource://"
         "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_left_vera_map.json?&fmt=json"
