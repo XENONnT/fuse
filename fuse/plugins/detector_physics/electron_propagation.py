@@ -169,36 +169,40 @@ class ElectronPropagationPerpWires(ElectronPropagation):
     )
 
     perp_wires_x_position_offset_1d_mean_left = straxen.URLConfig(
-        default="itp_map://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=perp_wires_x_position_offset_1d_mean_left"
+        default="itp_map://resource://simulation_config://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=perp_wires_x_position_offset_1d_mean_left"
+        "&fmt=json"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
     )
 
     perp_wires_x_position_offset_1d_mean_right = straxen.URLConfig(
-        default="itp_map://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=perp_wires_x_position_offset_1d_mean_right"
+        default="itp_map://resource://simulation_config://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=perp_wires_x_position_offset_1d_mean_right"
+        "&fmt=json"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
     )
 
     perp_wires_drift_time_1d_perp = straxen.URLConfig(
-        default="itp_map://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=perp_wires_drift_time_1d_perp"
+        default="itp_map://resource://simulation_config://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=perp_wires_drift_time_1d_perp"
+        "&fmt=json"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
     )
 
     perp_wires_drift_time_spread_1d_perp = straxen.URLConfig(
-        default="itp_map://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=perp_wires_drift_time_spread_1d_perp"
+        default="itp_map://resource://simulation_config://"
+        "SIMULATION_CONFIG_FILE.json?"
+        "&key=perp_wires_drift_time_spread_1d_perp"
+        "&fmt=json"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
