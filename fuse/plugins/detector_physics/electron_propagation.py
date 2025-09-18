@@ -56,58 +56,11 @@ class ElectronPropagation(FuseBasePlugin):
         help="Map for the electric field dependencies",
     )
 
-    enable_perp_wire_electron_shift = straxen.URLConfig(
-        default="take://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=enable_perp_wire_electron_shift",
-        type=bool,
-        cache=True,
-        help="Enable the time and position shift due to the perpendicular wires",
-    )
 
-    x_position_offset_1d_mean_left = straxen.URLConfig(
-        default="itp_map://resource://"
-        "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_left_vera_map.json?&fmt=json"
-        "&method=WeightedNearestNeighbors",
-        cache=True,
-        help="test",
-    )
-
-    x_position_offset_1d_mean_right = straxen.URLConfig(
-        default="itp_map://resource://"
-        "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_right_vera_map.json?&fmt=json"
-        "&method=WeightedNearestNeighbors",
-        cache=True,
-        help="test",
-    )
-    drift_time_1d_perp = straxen.URLConfig(
-        default="itp_map://resource://"
-        "/project2/lgrandi/pkharban/s2_only/drift_time_1d_perp_vera_map.json?&fmt=json"
-        "&method=WeightedNearestNeighbors",
-        cache=True,
-        help="test",
-    )
-
-    drift_time_spread_1d_perp = straxen.URLConfig(
-        default="itp_map://resource://"
-        "/project2/lgrandi/pkharban/s2_only/drift_time_spread_1d_perp_vera_map.json?&fmt=json"
-        "&method=WeightedNearestNeighbors",
-        cache=True,
-        help="test",
-    )
-
-    # perp_wires_cut_distance = straxen.URLConfig(
-    #     default=4.45,
-    #     help=(
-    #         "Distance in x to apply exception"
-    #         "from the center of the gate perpendicular wires [cm]"
-    #     ),
-    # )
-
-    perp_wire_x_pos = 13.06  # cm
-    perp_wire_angle = np.deg2rad(30)
-    perp_wires_cut_distance = [8.5, 11.3]
-    position_correction_pp_wire_shift = 12.76  # cm
+    # perp_wire_x_pos = 13.06  # cm
+    # perp_wire_angle = np.deg2rad(30)
+    # perp_wires_cut_distance = [8.5, 11.3]
+    # position_correction_pp_wire_shift = 12.76  # cm
 
     def setup(self):
         super().setup()
@@ -180,13 +133,9 @@ class ElectronPropagation(FuseBasePlugin):
             + electron_drift_time
         )
 
-        if self.enable_perp_wire_electron_shift:
-        
-            # time shift due to perpendicular wire effect
-            electron_times = time_correction_pp_wire(self, electron_times, positions_shifted)
-
-            # position shift due to perpendicular wire effect
-            positions_shifted = position_correction_pp_wire(self, positions_shifted)
+        positions_shifted, electron_times = self.apply_perpendicular_wire_effects(
+            positions_shifted, electron_times
+        )
 
         cluster_id = np.repeat(
             interactions_in_roi[mask]["cluster_id"],
@@ -202,6 +151,105 @@ class ElectronPropagation(FuseBasePlugin):
         result["cluster_id"] = cluster_id
 
         return result
+
+    def apply_perpendicular_wire_effects(self, positions, times):
+        """Apply the time and position shift due to the perpendicular wires."""
+        return positions, times
+        
+
+
+@export
+class ElectronPropagationPerpWires(ElectronPropagation):
+    """Plugin to simulate the propagation of electrons in the TPC to the gas
+    interface, including the effect of the perpendicular wires on time and position."""
+
+    __version__ = "0.0.1"
+
+ 
+    x_position_offset_1d_mean_left = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_left_vera_map.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+
+    x_position_offset_1d_mean_right = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_right_vera_map.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+    drift_time_1d_perp = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/project2/lgrandi/pkharban/s2_only/drift_time_1d_perp_vera_map.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+
+    drift_time_spread_1d_perp = straxen.URLConfig(
+        default="itp_map://resource://"
+        "/project2/lgrandi/pkharban/s2_only/drift_time_spread_1d_perp_vera_map.json?&fmt=json"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+
+    perp_wire_x_pos = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=perp_wire_x_pos",
+        type=(int, float),
+        cache=True,
+        help="X position of the perpendicular wires [cm]",
+    )
+
+    perp_wire_angle = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=perp_wire_angle",
+        type=(int, float),
+        cache=True,
+        help="Angle of the perpendicular wires [deg]",
+    )
+
+    perp_wires_cut_distance = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=perp_wires_cut_distance",
+        type=(list, tuple),
+        cache=True,
+        help="Distance in x (cm) from the center of the gate perpendicular wires; " \
+        "expects a list or tuple [left, right]",
+    )
+
+    position_correction_pp_wire_shift = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=position_correction_pp_wire_shift",
+        type=(int, float),
+        cache=True,
+        help="Distance in x (cm) from the center of the gate perpendicular wires " \
+        "to apply different position corrections",
+    )
+
+    enable_perp_wire_electron_shift = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=enable_perp_wire_electron_shift",
+        type=bool,
+        cache=True,
+        help="Enable the time and position shift due to the perpendicular wires",
+    )
+
+    def apply_perpendicular_wire_effects(self, positions, times):
+        """Apply the time and position shift due to the perpendicular wires."""
+        if self.enable_perp_wire_electron_shift:
+            times = time_correction_pp_wire(self, times, positions)
+            positions = position_correction_pp_wire(self, positions)
+        return positions, times
 
 
 def drift_time_in_tpc(n_electron, drift_time_mean, drift_time_spread, rng):
