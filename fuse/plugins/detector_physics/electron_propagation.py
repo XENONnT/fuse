@@ -159,6 +159,16 @@ class ElectronPropagationPerpWires(ElectronPropagation):
 
     __version__ = "0.0.1"
 
+    enable_perp_wire_electron_shift = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=enable_perp_wire_electron_shift",
+        type=bool,
+        cache=True,
+        help="Enable the time and position shift due to the perpendicular wires",
+    )
+
+
     x_position_offset_1d_mean_left = straxen.URLConfig(
         default="itp_map://resource://"
         "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_left_vera_map.json?&fmt=json"
@@ -208,10 +218,10 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         help="Angle of the perpendicular wires [deg]",
     )
 
-    perp_wires_cut_distance = straxen.URLConfig(
+    perp_wires_rot_x_mask = straxen.URLConfig(
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=perp_wires_cut_distance",
+        "&take=perp_wires_rot_x_mask",
         type=(list, tuple),
         cache=True,
         help="Distance in x (cm) from the center of the gate perpendicular wires; "
@@ -228,15 +238,6 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         "to apply different position corrections",
     )
 
-    enable_perp_wire_electron_shift = straxen.URLConfig(
-        default="take://resource://"
-        "SIMULATION_CONFIG_FILE.json?&fmt=json"
-        "&take=enable_perp_wire_electron_shift",
-        type=bool,
-        cache=True,
-        help="Enable the time and position shift due to the perpendicular wires",
-    )
-
     def setup(self):
 
         super().setup()
@@ -245,16 +246,17 @@ class ElectronPropagationPerpWires(ElectronPropagation):
     def apply_perpendicular_wire_effects(self, positions, times):
         """Apply the time and position shift due to the perpendicular wires."""
         if self.enable_perp_wire_electron_shift:
-            times = self.time_correction_pp_wire(self, times, positions)
-            positions = self.position_correction_pp_wire(self, positions)
+            self.log.debug("Applying perpendicular wire effects")
+            times = self.time_correction_pp_wire(times, positions)
+            positions = self.position_correction_pp_wire(positions)
         return positions, times
 
     def position_correction_pp_wire(self, positions):
 
-        x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
+        x_rot, y_rot = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
 
         x_diff = np.zeros(positions.shape[0], dtype=positions.dtype)
-        mask_near_wires = self.get_near_wires_mask(self, positions)
+        mask_near_wires = self.get_near_wires_mask(positions)
         mask_near_wires_left = mask_near_wires & (
             np.abs(x_rot) < self.position_correction_pp_wire_shift
         )
@@ -274,14 +276,14 @@ class ElectronPropagationPerpWires(ElectronPropagation):
 
         # inverse rotation
         x_obs_shifted, y_obs_shifted = rotate_axis(
-            self, x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle_rad
+            x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle_rad
         )
         positions = np.column_stack([x_obs_shifted, y_obs_shifted])
 
         return positions
 
     def time_correction_pp_wire(self, time, positions):
-        x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
+        x_rot, y_rot = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
 
         x_extend = np.expand_dims(x_rot, axis=1)
         drift_time_perp_mean_r = self.drift_time_1d_perp(x_extend)
@@ -294,9 +296,9 @@ class ElectronPropagationPerpWires(ElectronPropagation):
 
     def get_near_wires_mask(self, positions):
         """Returns a mask selecting the events near the perpendicular wires."""
-        x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
-        mask_near_wires = np.abs(x_rot) - self.perp_wire_x_pos < self.perp_wires_cut_distance[1]
-        mask_near_wires &= np.abs(x_rot) - self.perp_wire_x_pos > -self.perp_wires_cut_distance[0]
+        x_rot, y_rot = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
+        mask_near_wires = np.abs(x_rot) - self.perp_wire_x_pos < self.perp_wires_rot_x_mask[1]
+        mask_near_wires &= np.abs(x_rot) - self.perp_wire_x_pos > -self.perp_wires_rot_x_mask[0]
         return mask_near_wires
 
 
@@ -310,7 +312,7 @@ def drift_time_in_tpc(n_electron, drift_time_mean, drift_time_spread, rng):
     return timing.astype(np.int64)
 
 
-def rotate_axis(self, x_obs, y_obs, angle):
+def rotate_axis(x_obs, y_obs, angle):
     x_rot = np.cos(angle) * x_obs - np.sin(angle) * y_obs
     y_rot = np.sin(angle) * x_obs + np.cos(angle) * y_obs
     return x_rot, y_rot
