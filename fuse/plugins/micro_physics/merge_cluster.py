@@ -10,6 +10,7 @@ from ...dtypes import (
     cluster_misc_fields,
 )
 from ...plugin import FuseBasePlugin
+from ...common import stable_sort
 
 export, __all__ = strax.exporter()
 
@@ -67,9 +68,7 @@ class MergeCluster(FuseBasePlugin):
             raise ValueError("tag_cluster_by must be 'energy' or 'time'")
 
         # Need to sort clusters first by cluster id
-        geant4_interactions_sorted = geant4_interactions[
-            np.argsort(geant4_interactions["cluster_ids"])
-        ]
+        geant4_interactions_sorted = stable_sort(geant4_interactions, order="cluster_ids")
         geant4_ids = np.unique(geant4_interactions_sorted["cluster_ids"])
 
         result = np.zeros(len(geant4_ids), dtype=self.dtype)
@@ -77,7 +76,7 @@ class MergeCluster(FuseBasePlugin):
 
         result["endtime"] = result["time"]
 
-        return result
+        return stable_sort(result, order="time")
 
 
 @numba.njit
