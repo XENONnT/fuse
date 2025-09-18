@@ -62,7 +62,7 @@ class ChunkInput(FuseBasePlugin):
     source_rate = straxen.URLConfig(
         default=1,
         type=(int, float),
-        help="Source rate used to generate event times"
+        help="Source rate used to generate event times in 1/s."
         "Use a value >0 to generate event times in fuse"
         "Use source_rate = 0 to use event times from the input file (only for csv input)",
     )
