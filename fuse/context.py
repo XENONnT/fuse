@@ -213,6 +213,8 @@ def xenonnt_fuse_full_chain_simulation(
 
         extra_plugins.extend(cutax.EXTRA_PLUGINS)
 
+    # Register all plugins
+    # The order here matters!
     plugin_lists = [
         microphysics_plugins_clustering[clustering_method],
         microphysics_plugins_remaining,
@@ -225,10 +227,13 @@ def xenonnt_fuse_full_chain_simulation(
         processing_plugins,
     ]
 
+    # Perpendicular wire electron shift plugin
     if enable_perp_wire_electron_shift:
         log.info("Enabling perpendicular wire electron shift plugin.")
         plugin_lists.append(perpendicular_wire_shift_plugins)
 
+    # Lastly, any extra plugins the user wants to add
+    # Needs to be last, in case it overrides any of the above
     plugin_lists.append(extra_plugins)
 
     for plugin_list in plugin_lists:
