@@ -88,8 +88,8 @@ delayed_electron_merger_plugins = [
 
 perpendicular_wire_shift_plugins = [
     fuse.detector_physics.ElectronPropagationPerpWires,
-    fuse.detector_physics.delayed_electrons.DelayedElectronPropagationPerpWires
-    ]
+    fuse.detector_physics.delayed_electrons.DelayedElectronPropagationPerpWires,
+]
 
 # Plugins to simulate PMTs and DAQ
 pmt_and_daq_plugins = [
