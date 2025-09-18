@@ -237,9 +237,8 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         help="Enable the time and position shift due to the perpendicular wires",
     )
 
-
     def setup(self):
-        
+
         super().setup()
         self.perp_wire_angle_rad = np.deg2rad(self.perp_wire_angle)
 
@@ -249,7 +248,7 @@ class ElectronPropagationPerpWires(ElectronPropagation):
             times = self.time_correction_pp_wire(self, times, positions)
             positions = self.position_correction_pp_wire(self, positions)
         return positions, times
-    
+
     def position_correction_pp_wire(self, positions):
 
         x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
@@ -281,7 +280,6 @@ class ElectronPropagationPerpWires(ElectronPropagation):
 
         return positions
 
-
     def time_correction_pp_wire(self, time, positions):
         x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
 
@@ -293,7 +291,7 @@ class ElectronPropagationPerpWires(ElectronPropagation):
             drift_time_perp_mean_r * 1e3, drift_time_perp_spread_r * 1e3, size=time.shape[0]
         )
         return time + perp_time
-    
+
     def get_near_wires_mask(self, positions):
         """Returns a mask selecting the events near the perpendicular wires."""
         x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
@@ -306,7 +304,7 @@ def drift_time_in_tpc(n_electron, drift_time_mean, drift_time_spread, rng):
     n_electrons = np.sum(n_electron).astype(np.int64)
     drift_time_mean_r = np.repeat(drift_time_mean, n_electron.astype(np.int64))
     drift_time_spread_r = np.repeat(drift_time_spread, n_electron.astype(np.int64))
-    
+
     timing = rng.normal(drift_time_mean_r, drift_time_spread_r, size=n_electrons)
 
     return timing.astype(np.int64)
