@@ -254,7 +254,7 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
 
         x_diff = np.zeros(positions.shape[0], dtype=positions.dtype)
-        mask_near_wires = get_near_wires_mask(self, positions)
+        mask_near_wires = self.get_near_wires_mask(self, positions)
         mask_near_wires_left = mask_near_wires & (
             np.abs(x_rot) < self.position_correction_pp_wire_shift
         )
