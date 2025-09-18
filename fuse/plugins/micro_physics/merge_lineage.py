@@ -1,5 +1,6 @@
 import strax
 import numpy as np
+import numba
 
 from ...dtypes import (
     primary_positions_fields,
@@ -25,7 +26,7 @@ class MergeLineage(FuseBasePlugin):
     individual energy depositions.
     """
 
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     depends_on = ("geant4_interactions", "interaction_lineage")
 
@@ -50,6 +51,8 @@ class MergeLineage(FuseBasePlugin):
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
+        
+        geant4_interactions = stable_sort(geant4_interactions, order="lineage_index")
         result = np.zeros(len(np.unique(geant4_interactions["lineage_index"])), dtype=self.dtype)
         result = merge_lineages(result, geant4_interactions)
 
@@ -58,27 +61,109 @@ class MergeLineage(FuseBasePlugin):
         return stable_sort(result, order="time")
 
 
-def merge_lineages(result, interactions):
-    for i, lineage_index in enumerate(np.unique(interactions["lineage_index"])):
-        lineage = interactions[interactions["lineage_index"] == lineage_index]
+@numba.njit
+def merge_lineages(results, interactions):
+    event_i = 0
+    current_lineage = interactions[0]["lineage_index"]
 
-        result[i]["x"] = np.average(lineage["x"], weights=lineage["ed"])
-        result[i]["y"] = np.average(lineage["y"], weights=lineage["ed"])
-        result[i]["z"] = np.average(lineage["z"], weights=lineage["ed"])
-        result[i]["t"] = np.average(lineage["t"], weights=lineage["ed"])
-        result[i]["time"] = np.average(lineage["time"], weights=lineage["ed"])
-        result[i]["ed"] = np.sum(lineage["ed"])
+    weighted_x = 0
+    weighted_y = 0
+    weighted_z = 0
+    weighted_t = 0
+    weighted_time = 0
+    sum_ed = 0
 
-        result[i]["cluster_id"] = lineage["lineage_index"][0]
+    lineage_index = -1
+    eventid = -1
+    track_id = -1
+    nestid = -1
+    A = -1
+    Z = -1
+    x_pri = -1
+    y_pri = -1
+    z_pri = -1
 
-        # These ones are the same for all interactions in the lineage
-        result[i]["eventid"] = lineage["eventid"][0]
-        result[i]["trackid"] = lineage["lineage_trackid"][0]
-        result[i]["nestid"] = lineage["lineage_type"][0]
-        result[i]["A"] = lineage["A"][0]
-        result[i]["Z"] = lineage["Z"][0]
-        result[i]["x_pri"] = lineage["x_pri"][0]
-        result[i]["y_pri"] = lineage["y_pri"][0]
-        result[i]["z_pri"] = lineage["z_pri"][0]
+    for lineage_i, lineage in enumerate(interactions):
 
-    return result
+        _is_new_lineage = current_lineage < lineage["lineage_index"]
+        if _is_new_lineage:
+            # First store results of currten cluster:
+            results[event_i]["x"] = weighted_x / sum_ed
+            results[event_i]["y"] = weighted_y / sum_ed
+            results[event_i]["z"] = weighted_z / sum_ed
+            results[event_i]["t"] = weighted_t / sum_ed
+            results[event_i]["time"] = weighted_time / sum_ed
+            results[event_i]["ed"] = sum_ed
+
+            results[event_i]["cluster_id"] = lineage_index
+
+            results[event_i]["eventid"] = eventid
+            results[event_i]["trackid"] = track_id
+            results[event_i]["nestid"] = nestid
+            results[event_i]["A"] = A
+            results[event_i]["Z"] = Z
+            results[event_i]["x_pri"] = x_pri
+            results[event_i]["y_pri"] = y_pri
+            results[event_i]["z_pri"] = z_pri
+
+            # Now prepare buffer for new cluster:
+            event_i += 1
+            current_lineage = lineage["lineage_index"]
+
+            # use zero here to compute average on the fly
+            weighted_x = 0
+            weighted_y = 0
+            weighted_z = 0
+            weighted_t = 0
+            weighted_time = 0
+            sum_ed = 0
+
+            lineage_index = -1
+            eventid = -1
+            track_id = -1
+            nestid = -1
+            A = -1
+            Z = -1
+            x_pri = -1
+            y_pri = -1
+            z_pri = -1
+
+        weighted_x += lineage["x"] * lineage["ed"]
+        weighted_y += lineage["y"] * lineage["ed"]
+        weighted_z += lineage["z"] * lineage["ed"]
+        weighted_t += lineage["t"] * lineage["ed"]
+        weighted_time += lineage["time"] * lineage["ed"]
+        sum_ed += lineage["ed"]
+
+        _is_first_lineage = lineage_index == -1
+        if _is_first_lineage:
+            lineage_index = lineage["lineage_index"]
+            eventid = lineage["eventid"]
+            track_id = lineage['lineage_trackid']
+            nestid = lineage['lineage_type']
+            A = lineage["A"]
+            Z = lineage["Z"]
+            x_pri = lineage["x_pri"]
+            y_pri = lineage["y_pri"]
+            z_pri = lineage["z_pri"]
+
+    # First store results of currten cluster:
+    results[event_i]["x"] = weighted_x / sum_ed
+    results[event_i]["y"] = weighted_y / sum_ed
+    results[event_i]["z"] = weighted_z / sum_ed
+    results[event_i]["t"] = weighted_t / sum_ed
+    results[event_i]["time"] = weighted_time / sum_ed
+    results[event_i]["ed"] = sum_ed
+
+    results[event_i]["cluster_id"] = lineage_index
+
+    results[event_i]["eventid"] = eventid
+    results[event_i]["trackid"] = track_id
+    results[event_i]["nestid"] = nestid
+    results[event_i]["A"] = A
+    results[event_i]["Z"] = Z
+    results[event_i]["x_pri"] = x_pri
+    results[event_i]["y_pri"] = y_pri
+    results[event_i]["z_pri"] = z_pri
+
+    return results
