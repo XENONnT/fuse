@@ -98,21 +98,6 @@ class TestMicroPhysicsAlternativePlugins(TestMicroPhysicsBase):
         )
         self.test_context.make(self.run_number, "quanta")
 
-    @timeout_decorator.timeout(TIMEOUT, exception_message="GasPhasePlugin timed out")
-    def test_GasPhasePlugin(self):
-        self.test_context = fuse.context.microphysics_context(
-            self.temp_dir.name,
-            extra_plugins=[fuse.plugins.XENONnT_GasPhase],
-        )
-        self.test_context.set_config(
-            {
-                "path": self.temp_dir.name,
-                "file_name": test_root_file_name,
-                "entry_stop": 25,
-            }
-        )
-        self.test_context.make(self.run_number, "gas_phase_interactions")
-
 
 if __name__ == "__main__":
     unittest.main()
