@@ -19,7 +19,7 @@ class ElectronPropagation(FuseBasePlugin):
     provides = "electrons_at_interface"
     data_kind = "individual_electrons"
 
-    save_when = strax.SaveWhen.TARGET  # ?
+    save_when = strax.SaveWhen.TARGET
 
     dtype = [
         (("x position of the electron at the interface [cm]", "x_interface"), np.float32),
@@ -55,11 +55,6 @@ class ElectronPropagation(FuseBasePlugin):
         cache=True,
         help="Map for the electric field dependencies",
     )
-
-    # perp_wire_x_pos = 13.06  # cm
-    # perp_wire_angle = np.deg2rad(30)
-    # perp_wires_cut_distance = [8.5, 11.3]
-    # position_correction_pp_wire_shift = 12.76  # cm
 
     def setup(self):
         super().setup()
