@@ -98,8 +98,6 @@ class TestMicroPhysicsAlternativePlugins(TestMicroPhysicsBase):
         )
         self.test_context.make(self.run_number, "quanta")
 
-<<<<<<< HEAD
-=======
     @timeout_decorator.timeout(TIMEOUT, exception_message="GasPhasePlugin timed out")
     def test_GasPhasePlugin(self):
         self.test_context = fuse.context.microphysics_context(
@@ -115,7 +113,6 @@ class TestMicroPhysicsAlternativePlugins(TestMicroPhysicsBase):
         )
         self.test_context.make(self.run_number, "gas_phase_interactions")
 
->>>>>>> main
 
 if __name__ == "__main__":
     unittest.main()
