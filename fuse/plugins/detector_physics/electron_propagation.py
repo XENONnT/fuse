@@ -168,32 +168,37 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         help="Enable the time and position shift due to the perpendicular wires",
     )
 
-    x_position_offset_1d_mean_left = straxen.URLConfig(
+    perp_wires_x_position_offset_1d_mean_left = straxen.URLConfig(
         default="itp_map://resource://"
-        "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_left_vera_map.json?&fmt=json"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=perp_wires_x_position_offset_1d_mean_left"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
     )
 
-    x_position_offset_1d_mean_right = straxen.URLConfig(
+    perp_wires_x_position_offset_1d_mean_right = straxen.URLConfig(
         default="itp_map://resource://"
-        "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_right_vera_map.json?&fmt=json"
-        "&method=WeightedNearestNeighbors",
-        cache=True,
-        help="test",
-    )
-    drift_time_1d_perp = straxen.URLConfig(
-        default="itp_map://resource://"
-        "/project2/lgrandi/pkharban/s2_only/drift_time_1d_perp_vera_map.json?&fmt=json"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=perp_wires_x_position_offset_1d_mean_right"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
     )
 
-    drift_time_spread_1d_perp = straxen.URLConfig(
+    perp_wires_drift_time_1d_perp = straxen.URLConfig(
         default="itp_map://resource://"
-        "/project2/lgrandi/pkharban/s2_only/drift_time_spread_1d_perp_vera_map.json?&fmt=json"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=perp_wires_drift_time_1d_perp"
+        "&method=WeightedNearestNeighbors",
+        cache=True,
+        help="test",
+    )
+    
+    perp_wires_drift_time_spread_1d_perp = straxen.URLConfig(
+        default="itp_map://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=perp_wires_drift_time_spread_1d_perp"
         "&method=WeightedNearestNeighbors",
         cache=True,
         help="test",
@@ -267,8 +272,8 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         x_rot_left = x_rot[mask_near_wires_left]
         x_rot_right = x_rot[mask_near_wires_right]
 
-        x_diff[mask_near_wires_left] = self.x_position_offset_1d_mean_left(x_rot_left)
-        x_diff[mask_near_wires_right] = self.x_position_offset_1d_mean_right(x_rot_right)
+        x_diff[mask_near_wires_left] = self.perp_wires_x_position_offset_1d_mean_left(x_rot_left)
+        x_diff[mask_near_wires_right] = self.perp_wires_x_position_offset_1d_mean_right(x_rot_right)
 
         x_diff = np.expand_dims(x_diff, axis=1)
         x_rot_shifted = x_rot + x_diff
@@ -285,8 +290,8 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         x_rot, y_rot = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
 
         x_extend = np.expand_dims(x_rot, axis=1)
-        drift_time_perp_mean_r = self.drift_time_1d_perp(x_extend)
-        drift_time_perp_spread_r = self.drift_time_spread_1d_perp(x_extend)
+        drift_time_perp_mean_r = self.perp_wires_drift_time_1d_perp(x_extend)
+        drift_time_perp_spread_r = self.perp_wires_drift_time_spread_1d_perp(x_extend)
 
         perp_time = self.rng.normal(
             drift_time_perp_mean_r * 1e3, drift_time_perp_spread_r * 1e3, size=time.shape[0]
