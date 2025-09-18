@@ -51,7 +51,6 @@ class MergeLineage(FuseBasePlugin):
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        
         geant4_interactions = stable_sort(geant4_interactions, order="lineage_index")
         result = np.zeros(len(np.unique(geant4_interactions["lineage_index"])), dtype=self.dtype)
         result = merge_lineages(result, geant4_interactions)
@@ -139,8 +138,8 @@ def merge_lineages(results, interactions):
         if _is_first_lineage:
             lineage_index = lineage["lineage_index"]
             eventid = lineage["eventid"]
-            track_id = lineage['lineage_trackid']
-            nestid = lineage['lineage_type']
+            track_id = lineage["lineage_trackid"]
+            nestid = lineage["lineage_type"]
             A = lineage["A"]
             Z = lineage["Z"]
             x_pri = lineage["x_pri"]
