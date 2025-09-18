@@ -56,6 +56,15 @@ class ElectronPropagation(FuseBasePlugin):
         help="Map for the electric field dependencies",
     )
 
+    enable_perp_wire_electron_shift = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=enable_perp_wire_electron_shift",
+        type=bool,
+        cache=True,
+        help="Enable the time and position shift due to the perpendicular wires",
+    )
+
     x_position_offset_1d_mean_left = straxen.URLConfig(
         default="itp_map://resource://"
         "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_left_vera_map.json?&fmt=json"
@@ -171,11 +180,13 @@ class ElectronPropagation(FuseBasePlugin):
             + electron_drift_time
         )
 
-        # time shift due to perpendicular wire effect
-        electron_times = time_correction_pp_wire(self, electron_times, positions_shifted)
+        if self.enable_perp_wire_electron_shift:
+        
+            # time shift due to perpendicular wire effect
+            electron_times = time_correction_pp_wire(self, electron_times, positions_shifted)
 
-        # position shift due to perpendicular wire effect
-        positions_shifted = position_correction_pp_wire(self, positions_shifted)
+            # position shift due to perpendicular wire effect
+            positions_shifted = position_correction_pp_wire(self, positions_shifted)
 
         cluster_id = np.repeat(
             interactions_in_roi[mask]["cluster_id"],
