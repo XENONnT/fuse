@@ -1,5 +1,5 @@
 import strax
-from ..electron_propagation import ElectronPropagation
+from ..electron_propagation import ElectronPropagation, ElectronPropagationPerpWires
 
 export, __all__ = strax.exporter()
 
@@ -22,7 +22,7 @@ class DelayedElectronPropagation(ElectronPropagation):
 
 
 @export
-class DelayedElectronPropagationPerpWires(DelayedElectronPropagationPerpWires):
+class DelayedElectronPropagationPerpWires(ElectronPropagationPerpWires):
     """This class is used to simulate the propagation of electrons from the
     sources of electron afterpulses, including the effect of perpendicular
     wires."""
