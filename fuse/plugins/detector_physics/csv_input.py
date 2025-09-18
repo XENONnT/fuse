@@ -1,4 +1,3 @@
-import logging
 from typing import Tuple
 
 import numpy as np
@@ -13,21 +12,22 @@ from ...dtypes import (
     quanta_fields,
     electric_fields,
 )
-from ...common import dynamic_chunking
+from ...common import stable_sort, stable_argsort, dynamic_chunking
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
 __all__.extend(["microphysics_summary_fields"])
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.csv_input")
 
 
 # In some cases we might want to change dtype of microphysics_summary
 # through microphysics_summary_fields, so do not set microphysics_summary_fields
 # or variable related to it as a static attribute of a class.
 microphysics_summary_fields = (
-    cluster_positions_fields + quanta_fields + electric_fields + cluster_id_fields
+    cluster_positions_fields
+    + quanta_fields
+    + electric_fields
+    + cluster_id_fields
+    + csv_cluster_misc_fields
 )
 
 
@@ -73,12 +73,25 @@ class ChunkCsvInput(FuseBasePlugin):
         help="n_interactions_per_chunk",
     )
 
+    first_chunk_left = straxen.URLConfig(
+        default=1e6,
+        type=(int, float),
+        help="Time left of the first chunk",
+    )
+
+    last_chunk_length = straxen.URLConfig(
+        default=1e8,
+        type=(int, float),
+        help="Time length of the last chunk",
+    )
+
     def infer_dtype(self):
         return microphysics_summary_fields + strax.time_fields
 
+    # alias for backward compatibility
     @staticmethod
     def needed_csv_input_fields():
-        return microphysics_summary_fields + csv_cluster_misc_fields
+        return microphysics_summary_fields
 
     def setup(self):
         super().setup()
@@ -89,7 +102,10 @@ class ChunkCsvInput(FuseBasePlugin):
             event_rate=self.source_rate,
             separation_scale=self.separation_scale,
             n_interactions_per_chunk=self.n_interactions_per_chunk,
+            first_chunk_left=self.first_chunk_left,
+            last_chunk_length=self.last_chunk_length,
             debug=self.debug,
+            log=self.log,
         )
         self.file_reader_iterator = self.file_reader.output_chunk()
 
@@ -136,6 +152,7 @@ class csv_file_loader:
         first_chunk_left=1e6,
         last_chunk_length=1e8,
         debug=False,
+        log=None,
     ):
         self.input_file = input_file
         self.rng = random_number_generator
@@ -146,11 +163,11 @@ class csv_file_loader:
         self.last_chunk_length = np.int64(last_chunk_length)
         self.first_chunk_left = np.int64(first_chunk_left)
         self.debug = debug
+        self.log = log
 
         # The csv file needs to have these columns:
-        _fields = ChunkCsvInput.needed_csv_input_fields()
-        self.columns = list(np.dtype(_fields).names)
-        self.dtype = _fields + strax.time_fields
+        self.columns = list(np.dtype(microphysics_summary_fields).names)
+        self.dtype = microphysics_summary_fields + strax.time_fields
 
     def output_chunk(self):
         instructions, n_simulated_events = self.__load_csv_file()
@@ -160,18 +177,18 @@ class csv_file_loader:
             event_times = self.rng.uniform(
                 low=0, high=n_simulated_events / self.event_rate, size=n_simulated_events
             ).astype(np.int64)
-            event_times = np.sort(event_times)
+            event_times = stable_sort(event_times)
 
             structure = np.unique(instructions["eventid"], return_counts=True)[1]
             interaction_time = np.repeat(event_times[: len(structure)], structure)
             instructions["time"] = interaction_time + instructions["t"]
         elif self.event_rate == 0:
             instructions["time"] = instructions["t"]
-            log.debug("Using event times from provided input file.")
+            self.log.debug("Using event times from provided input file.")
         else:
             raise ValueError("Source rate cannot be negative!")
 
-        sort_idx = np.argsort(instructions["time"])
+        sort_idx = stable_argsort(instructions["time"])
         instructions = instructions[sort_idx]
 
         # Group into chunks
@@ -193,7 +210,7 @@ class csv_file_loader:
             chunk_bounds = chunk_end + np.int64(self.chunk_delay_fraction * gap_length)
             self.chunk_bounds = np.append(chunk_start[0] - self.first_chunk_left, chunk_bounds)
         else:
-            log.warning("Only one Chunk! Rate too high?")
+            self.log.warning("Only one Chunk! Rate too high?")
             self.chunk_bounds = [
                 chunk_start[0] - self.first_chunk_left,
                 chunk_end[0] + self.last_chunk_length,
@@ -206,7 +223,7 @@ class csv_file_loader:
         ):
             if c_ix == unique_chunk_index_values[-1]:
                 source_done = True
-                log.debug("Build last chunk.")
+                self.log.debug("Build last chunk.")
 
             yield instructions[chunk_idx == c_ix], chunk_left, chunk_right, source_done
 
@@ -214,7 +231,7 @@ class csv_file_loader:
         return self.chunk_bounds[-1]
 
     def __load_csv_file(self):
-        log.debug("Load detector simulation instructions from a csv file!")
+        self.log.debug("Load detector simulation instructions from a csv file!")
         df = pd.read_csv(self.input_file)
 
         missing_columns = set(self.columns) - set(df.columns)

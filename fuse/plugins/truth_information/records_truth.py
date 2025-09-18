@@ -3,7 +3,7 @@ import straxen
 import numpy as np
 import numba
 
-from ...common import pmt_gains
+from ...common import stable_argsort, pmt_gains
 
 export, __all__ = strax.exporter()
 
@@ -28,7 +28,11 @@ class RecordsTruth(strax.Plugin):
     dtype = strax.interval_dtype + dtype
 
     gain_model_mc = straxen.URLConfig(
-        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        default=(
+            "list-to-array://xedocs://pmt_area_to_pes"
+            "?as_list=True&sort=pmt&detector=tpc"
+            "&run_id=plugin.run_id&version=ONLINE&attr=value"
+        ),
         infer_type=False,
         help="PMT gain model",
     )
@@ -113,7 +117,7 @@ def fill_result_buffer(list_input, result_buffer):
 
 
 def split_photons_by_channel(propagated_photons):
-    sort_index = np.argsort(propagated_photons[["channel", "time"]])
+    sort_index = stable_argsort(propagated_photons[["channel", "time"]])
 
     propagated_photons_sorted = propagated_photons[sort_index]
 
@@ -124,7 +128,7 @@ def split_photons_by_channel(propagated_photons):
 
 
 def split_records_by_channel(records):
-    sort_index = np.argsort(records[["channel", "time"]])
+    sort_index = stable_argsort(records[["channel", "time"]])
 
     records_sorted = records[sort_index]
 

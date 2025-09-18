@@ -1,13 +1,13 @@
-import logging
-
 import numpy as np
 import nestpy
 import strax
 import straxen
 
 from ...dtypes import propagated_photons_fields
-from ...common import pmt_gains, build_photon_propagation_output
 from ...common import (
+    stable_argsort,
+    pmt_gains,
+    build_photon_propagation_output,
     init_spe_scaling_factor_distributions,
     pmt_transit_time_spread,
     photon_gain_calculation,
@@ -15,9 +15,6 @@ from ...common import (
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.s1_photon_propagation")
 
 # Initialize the nestpy random generator
 # The seed will be set in the compute method
@@ -107,7 +104,11 @@ class S1PhotonPropagationBase(FuseBasePlugin):
     )
 
     gain_model_mc = straxen.URLConfig(
-        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        default=(
+            "list-to-array://xedocs://pmt_area_to_pes"
+            "?as_list=True&sort=pmt&detector=tpc"
+            "&run_id=plugin.run_id&version=ONLINE&attr=value"
+        ),
         infer_type=False,
         help="PMT gain model",
     )
@@ -137,9 +138,9 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         if self.deterministic_seed or (self.user_defined_random_seed is not None):
             # Dont know but nestpy seems to have a problem with large seeds
             self.short_seed = int(repr(self.seed)[-8:])
-            log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
+            self.log.debug(f"Generating nestpy random numbers from seed {self.short_seed}")
         else:
-            log.debug("Generating random numbers with seed pulled from OS")
+            self.log.debug("Generating random numbers with seed pulled from OS")
 
         self.gains = pmt_gains(
             self.gain_model_mc,
@@ -148,7 +149,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
             pmt_circuit_load_resistor=self.pmt_circuit_load_resistor,
         )
 
-        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
+        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from xedocs by default)
         self.turned_off_pmts = np.nonzero(np.array(self.gains) == 0)[0]
 
         self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(
@@ -198,7 +199,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         )
 
         # I should sort by time i guess
-        sortind = np.argsort(_photon_timings)
+        sortind = stable_argsort(_photon_timings)
         _photon_channels = _photon_channels[sortind]
         _photon_timings = _photon_timings[sortind]
         _cluster_id = _cluster_id[sortind]
@@ -265,7 +266,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     """Child plugin to simulate the propagation of S1 photons using optical
     propagation and luminescence timing from nestpy."""
 
-    __version__ = "0.3.1"
+    __version__ = "0.3.2"
 
     child_plugin = True
 
@@ -338,7 +339,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
     def setup(self):
         super().setup()
 
-        log.debug(
+        self.log.debug(
             "Using NEST for scintillation time without set calculator\n"
             "Creating new nestpy calculator"
         )
@@ -401,7 +402,13 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
             n_photon_hits <= n_photons_emitted
         ), "Number of photon hits must be less than or equal to number of photons emitted"
 
-        # scintilation_times = np.zeros(np.sum(n_photon_hits), dtype=np.int64)
+        # Calculate the original exciton to photon ratio
+        exciton_to_photon_ratio = np.divide(
+            n_excitons.astype(np.float32),
+            n_photons_emitted.astype(np.float32),
+            out=np.zeros(len(n_photons_emitted), dtype=np.float32),
+            where=n_photons_emitted != 0,
+        ).astype(np.float32)
 
         scintilation_times = np.array([])
 
@@ -426,7 +433,7 @@ class S1PhotonPropagation(S1PhotonPropagationBase):
                     scint_time = self.nestpy_calc.GetPhotonTimes(
                         nestpy.INTERACTION_TYPE(recoil_type[i]),
                         n_times_to_sample,
-                        n_excitons[i],
+                        round(exciton_to_photon_ratio[i] * n_times_to_sample),
                         local_field[i],
                         e_dep[i],
                     )

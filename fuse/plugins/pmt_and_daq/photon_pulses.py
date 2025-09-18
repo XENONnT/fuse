@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import numba
 import strax
@@ -8,9 +6,6 @@ import straxen
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.pmt_and_daq.photon_pulses")
 
 
 @export
@@ -175,7 +170,7 @@ def concat_overlapping_hits(hits, extensions, pmt_channels, start, end):
             strax.interval_dtype
             + [
                 (("End time of the interval (ns since unix epoch)", "endtime"), np.int64),
-                (("pulse_id"), np.int64),
+                ((("ID of the pulse window", "pulse_id")), np.int64),
             ]
         ),
     )
@@ -197,7 +192,7 @@ def concat_overlapping_hits(hits, extensions, pmt_channels, start, end):
     return hits, photon_identifiers
 
 
-pulse_dtype = strax.interval_dtype + [(("pulse_id"), np.int64)]
+pulse_dtype = strax.interval_dtype + [((("ID of the pulse window", "pulse_id")), np.int64)]
 
 
 @strax.utils.growing_result(pulse_dtype, chunk_size=int(1e4))

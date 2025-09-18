@@ -2,7 +2,7 @@ import numpy as np
 import strax
 import straxen
 
-from ...common import pmt_gains
+from ...common import stable_argsort, pmt_gains
 
 export, __all__ = strax.exporter()
 
@@ -69,7 +69,11 @@ class PeakTruth(strax.OverlapWindowPlugin):
     ] + strax.time_fields
 
     gain_model_mc = straxen.URLConfig(
-        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        default=(
+            "list-to-array://xedocs://pmt_area_to_pes"
+            "?as_list=True&sort=pmt&detector=tpc"
+            "&run_id=plugin.run_id&version=ONLINE&attr=value"
+        ),
         infer_type=False,
         help="PMT gain model",
     )
@@ -246,7 +250,7 @@ def _get_cluster_information(interactions_in_roi, unique_contributing_clusters):
     contributing_cluster_informations = interactions_in_roi[
         np.isin(interactions_in_roi["cluster_id"], unique_contributing_clusters)
     ]
-    sort_index = np.argsort(contributing_cluster_informations["cluster_id"])
+    sort_index = stable_argsort(contributing_cluster_informations["cluster_id"])
     return contributing_cluster_informations[sort_index]
 
 

@@ -1,6 +1,5 @@
 import os
 from typing import Tuple
-import logging
 
 import uproot
 import awkward as ak
@@ -10,13 +9,17 @@ import strax
 import straxen
 
 from ...dtypes import g4_fields, primary_positions_fields, deposit_positions_fields
-from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, awkward_to_flat_numpy
+from ...common import (
+    stable_sort,
+    stable_argsort,
+    full_array_to_numpy,
+    reshape_awkward,
+    dynamic_chunking,
+    awkward_to_flat_numpy,
+)
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.input")
 
 
 # Remove the path and file name option from the config and do this with the run_number??
@@ -59,7 +62,7 @@ class ChunkInput(FuseBasePlugin):
     source_rate = straxen.URLConfig(
         default=1,
         type=(int, float),
-        help="Source rate used to generate event times"
+        help="Source rate used to generate event times in 1/s."
         "Use a value >0 to generate event times in fuse"
         "Use source_rate = 0 to use event times from the input file (only for csv input)",
     )
@@ -70,8 +73,15 @@ class ChunkInput(FuseBasePlugin):
         help="If True, the events will be spaced with a fixed time difference of 1/source_rate",
     )
 
+    subtract_first_interaction_time = straxen.URLConfig(
+        default=True,
+        type=bool,
+        help="If True, the time of the first interaction of each event is subtracted "
+        "when source_rate > 0, before the random sampled event time is added.",
+    )
+
     cut_delayed = straxen.URLConfig(
-        default=9e18,
+        default=1e18,
         type=(int, float),
         help="All interactions happening after this time (including the event time) will be cut",
     )
@@ -106,6 +116,18 @@ class ChunkInput(FuseBasePlugin):
         help="Filter only nuclear recoil events (maximum ER energy deposit 10 keV)",
     )
 
+    first_chunk_left = straxen.URLConfig(
+        default=1e6,
+        type=(int, float),
+        help="Time left of the first chunk",
+    )
+
+    last_chunk_length = straxen.URLConfig(
+        default=1e8,
+        type=(int, float),
+        help="Time length of the last chunk",
+    )
+
     def setup(self):
         super().setup()
 
@@ -115,7 +137,10 @@ class ChunkInput(FuseBasePlugin):
             self.rng,
             separation_scale=self.separation_scale,
             event_rate=self.source_rate,
+            subtract_first_interaction_time=self.subtract_first_interaction_time,
             cut_delayed=self.cut_delayed,
+            first_chunk_left=self.first_chunk_left,
+            last_chunk_length=self.last_chunk_length,
             n_interactions_per_chunk=self.n_interactions_per_chunk,
             arg_debug=self.debug,
             outer_cylinder=None,  # This is not running
@@ -124,6 +149,7 @@ class ChunkInput(FuseBasePlugin):
             cut_by_eventid=self.cut_by_eventid,
             cut_nr_only=self.nr_only,
             fixed_event_spacing=self.fixed_event_spacing,
+            log=self.log,
         )
         self.file_reader_iterator = self.file_reader.output_chunk()
 
@@ -164,10 +190,11 @@ class file_loader:
         random_number_generator,
         separation_scale=1e8,
         event_rate=1,
+        subtract_first_interaction_time=True,
         n_interactions_per_chunk=500,
         cut_delayed=4e12,
-        last_chunk_length=1e8,
         first_chunk_left=1e6,
+        last_chunk_length=1e8,
         chunk_delay_fraction=0.75,
         arg_debug=False,
         outer_cylinder=None,
@@ -176,6 +203,7 @@ class file_loader:
         cut_by_eventid=False,
         cut_nr_only=False,
         fixed_event_spacing=False,
+        log=None,
     ):
         self.directory = directory
         self.file_name = file_name
@@ -183,6 +211,7 @@ class file_loader:
         self.rng = random_number_generator
         self.separation_scale = separation_scale
         self.event_rate = event_rate / 1e9  # Conversion to ns
+        self.subtract_first_interaction_time = subtract_first_interaction_time
         self.n_interactions_per_chunk = n_interactions_per_chunk
         self.cut_delayed = cut_delayed
         self.last_chunk_length = np.int64(last_chunk_length)
@@ -195,6 +224,7 @@ class file_loader:
         self.cut_by_eventid = cut_by_eventid
         self.cut_nr_only = cut_nr_only
         self.fixed_event_spacing = fixed_event_spacing
+        self.log = log
 
         self.file = os.path.join(self.directory, self.file_name)
 
@@ -230,7 +260,7 @@ class file_loader:
         # m = interactions["ed"] > 0
 
         if self.cut_nr_only:
-            log.info("'nr_only' set to True, keeping only the NR events")
+            self.log.info("'nr_only' set to True, keeping only the NR events")
             m = ((interactions["type"] == "neutron") & (interactions["edproc"] == "hadElastic")) | (
                 interactions["edproc"] == "ionIoni"
             )
@@ -246,9 +276,9 @@ class file_loader:
         interactions = interactions[m]
 
         # Sort interactions in events by time and subtract time of the first interaction
-        interactions = interactions[ak.argsort(interactions["t"])]
+        interactions = interactions[ak.argsort(interactions["t"], stable=True)]
 
-        if self.event_rate > 0:
+        if self.event_rate > 0 and self.subtract_first_interaction_time:
             interactions["t"] = interactions["t"] - interactions["t"][:, 0]
 
         # Adjust event times if necessary
@@ -256,30 +286,35 @@ class file_loader:
             num_interactions = len(interactions["t"])
 
             if self.fixed_event_spacing:
-                log.info("Using fixed event spacing.")
+                self.log.info("Using fixed event spacing.")
                 event_times = (
-                    np.arange(
-                        start=0, stop=num_interactions / self.event_rate, step=1 / self.event_rate
+                    np.linspace(
+                        start=0,
+                        stop=num_interactions / self.event_rate,
+                        num=num_interactions,
+                        endpoint=False,
                     )
                     + 1e9
+                ).astype(
+                    np.int64
                 )  # ns
             else:
-                log.info("Using random event times.")
+                self.log.info("Using random event times.")
                 event_times = self.rng.uniform(
                     low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
                 ).astype(np.int64)
-                event_times = np.sort(event_times)
+                event_times = stable_sort(event_times)
 
             interactions["time"] = interactions["t"] + event_times
 
         elif self.event_rate == 0:
-            log.info("Using event times from provided input file.")
+            self.log.info("Using event times from provided input file.")
             if self.file_type == "root":
                 msg = (
                     "Using event times from root file is not recommended! "
                     "Use a source_rate > 0 instead."
                 )
-                log.warning(msg)
+                self.log.warning(msg)
             interactions["time"] = interactions["t"]
 
         else:
@@ -291,7 +326,7 @@ class file_loader:
         interaction_time = awkward_to_flat_numpy(interactions["time"])
 
         # First caclulate sort index for the interaction times
-        sort_idx = np.argsort(interaction_time)
+        sort_idx = stable_argsort(interaction_time)
         # and now make it an integer for strax time field
         interaction_time = interaction_time.astype(np.int64)
         # Sort the interaction times
@@ -317,7 +352,7 @@ class file_loader:
             self.chunk_bounds = np.append(chunk_start[0] - self.first_chunk_left, chunk_bounds)
 
         else:
-            log.warning(
+            self.log.warning(
                 "Only one Chunk created! Only a few events simulated? "
                 "If no, your chunking parameters might not be optimal. "
                 "Try to decrease the source_rate or decrease the n_interactions_per_chunk."
@@ -334,7 +369,7 @@ class file_loader:
 
         # Process and yield each chunk
         source_done = False
-        log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
+        self.log.info(f"Simulating data in {len(unique_chunk_index_values)} chunks.")
         for c_ix, chunk_left, chunk_right in zip(
             unique_chunk_index_values, self.chunk_bounds[:-1], self.chunk_bounds[1:]
         ):
@@ -358,7 +393,7 @@ class file_loader:
             current_chunk = current_chunk[select_times]
 
             # Sorting each chunk by time within the chunk
-            sort_chunk = np.argsort(current_chunk["time"])
+            sort_chunk = stable_argsort(current_chunk["time"])
             current_chunk = current_chunk[sort_chunk]
 
             if c_ix == unique_chunk_index_values[-1]:
@@ -382,15 +417,15 @@ class file_loader:
         ttree, n_simulated_events = self._get_ttree()
 
         if self.arg_debug:
-            log.info(f"Total entries in input file = {ttree.num_entries}")
+            self.log.info(f"Total entries in input file = {ttree.num_entries}")
             cutby_string = "output file entry"
             if self.cut_by_eventid:
                 cutby_string = "g4 eventid"
 
             if self.entry_start is not None:
-                log.debug(f"Starting to read from {cutby_string} {self.entry_start}")
+                self.log.debug(f"Starting to read from {cutby_string} {self.entry_start}")
             if self.entry_stop is not None:
-                log.debug(f"Ending read in at {cutby_string} {self.entry_stop}")
+                self.log.debug(f"Ending read in at {cutby_string} {self.entry_stop}")
 
         if self.entry_start is not None and self.entry_stop is not None:
             if self.entry_start >= self.entry_stop:
@@ -520,7 +555,7 @@ class file_loader:
             stop: Index of the last loaded interaction
         """
 
-        log.debug("Load instructions from a csv file!")
+        self.log.debug("Load instructions from a csv file!")
 
         df = pd.read_csv(self.file)
 

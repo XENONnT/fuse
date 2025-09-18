@@ -1,7 +1,6 @@
 import strax
 import straxen
 import numpy as np
-import logging
 
 from ...dtypes import (
     primary_positions_fields,
@@ -12,9 +11,6 @@ from ...dtypes import (
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.merge_cluster")
 
 
 @export
@@ -81,6 +77,7 @@ def cluster_and_classify(result, interactions, tag_cluster_by):
         result[i]["x"] = np.average(cluster["x"], weights=cluster["ed"])
         result[i]["y"] = np.average(cluster["y"], weights=cluster["ed"])
         result[i]["z"] = np.average(cluster["z"], weights=cluster["ed"])
+        result[i]["t"] = np.average(cluster["t"], weights=cluster["ed"])
         result[i]["time"] = np.average(cluster["time"], weights=cluster["ed"])
         result[i]["ed"] = np.sum(cluster["ed"])
 
@@ -129,7 +126,7 @@ def classify(types, parenttype, creaproc, edproc):
         return infinity, 0, 11
     elif types == "gamma":
         return 0, 0, 7
-    elif types == "e-":
+    elif (types == "e-") | (types == "e+"):
         return 0, 0, 8
     else:
         return infinity, infinity, 12

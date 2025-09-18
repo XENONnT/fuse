@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 from numba import njit
 from numba.typed import List
@@ -8,11 +6,9 @@ import strax
 import straxen
 
 from ...plugin import FuseBaseDownChunkingPlugin
+from ...common import stable_sort, stable_argsort
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.pmt_and_daq.pmt_response_and_daq")
 
 
 @export
@@ -91,7 +87,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
     )
 
     enable_noise = straxen.URLConfig(
-        default=True,
+        default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=enable_noise",
         cache=True,
         help="Option to enable or disable noise",
     )
@@ -204,7 +200,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
     def compute(self, propagated_photons, pulse_windows, start, end):
         if len(propagated_photons) == 0 or len(pulse_windows) == 0:
-            log.debug("No photons or pulse windows found for chunk!")
+            self.log.debug("No photons or pulse windows found for chunk!")
 
             yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
             return  # Exit early
@@ -224,7 +220,9 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
         n_chunks = len(pulse_window_chunks)
         if n_chunks > 1:
-            log.info(f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks")
+            self.log.info(
+                f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks"
+            )
 
         photon_chunks = []
         for pulse_groups in pulse_window_chunks:
@@ -246,6 +244,9 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         # convert photons to numba list for njit
         _photons = List()
         [_photons.append(x) for x in photons]
+
+        # sort pulse groups by pulse id same as photons
+        pulse_groups = stable_sort(pulse_groups, order="pulse_id")
 
         # use an upper limit for the waveform buffer
         length_waveform_buffer = np.int32(
@@ -286,7 +287,10 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
 
         # Interpolate on cdf ensures that each spe pulse would sum up to 1 pe*sample duration^-1
         pe_pulse_function = interp1d(
-            self.pe_pulse_ts, np.cumsum(self.pe_pulse_ys), bounds_error=False, fill_value=(0, 1)
+            self.pe_pulse_ts,
+            np.cumsum(self.pe_pulse_ys) / np.sum(self.pe_pulse_ys),
+            bounds_error=False,
+            fill_value=(0, 1),
         )
 
         # Samples are always multiples of sample_duration
@@ -485,7 +489,7 @@ def add_current(photon_timings, photon_gains, pulse_left, dt, pmt_current_templa
         return
 
     template_length = len(pmt_current_templates[0])
-    i_photons = np.argsort(photon_timings)
+    i_photons = stable_argsort(photon_timings)
     # Convert photon_timings to int outside this function
     # photon_timings = photon_timings // 1
 
@@ -562,7 +566,7 @@ def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
 
 
 def split_photons(propagated_photons):
-    sort_index = np.argsort(propagated_photons["pulse_id"])
+    sort_index = stable_argsort(propagated_photons["pulse_id"])
 
     propagated_photons_sorted = propagated_photons[sort_index]
 

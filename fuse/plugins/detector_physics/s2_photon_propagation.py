@@ -1,15 +1,16 @@
 import strax
 import straxen
 import numpy as np
-import logging
 
 from numba import njit
 from scipy.stats import skewnorm
 from scipy import constants
 
 from ...dtypes import propagated_photons_fields
-from ...common import pmt_gains, build_photon_propagation_output
 from ...common import (
+    stable_argsort,
+    pmt_gains,
+    build_photon_propagation_output,
     init_spe_scaling_factor_distributions,
     pmt_transit_time_spread,
     photon_gain_calculation,
@@ -17,9 +18,6 @@ from ...common import (
 from ...plugin import FuseBaseDownChunkingPlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.s2_photon_propagation")
 
 conversion_to_bar = 1 / constants.elementary_charge / 1e1
 
@@ -33,7 +31,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     Note: The timing calculation is defined in the child plugin.
     """
 
-    __version__ = "0.3.5"
+    __version__ = "0.3.6"
 
     depends_on = (
         "merged_electron_time",
@@ -115,7 +113,11 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     )
 
     gain_model_mc = straxen.URLConfig(
-        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        default=(
+            "list-to-array://xedocs://pmt_area_to_pes"
+            "?as_list=True&sort=pmt&detector=tpc"
+            "&run_id=plugin.run_id&version=ONLINE&attr=value"
+        ),
         infer_type=False,
         help="PMT gain model",
     )
@@ -212,9 +214,17 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         "&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top"
         "&n_tpc_pmts=plugin.n_tpc_pmts"
         "&n_top_pmts=plugin.n_top_pmts"
-        "&turned_off_pmts=plugin.turned_off_pmts",
+        "&turned_off_pmts=plugin.turned_off_pmts"
+        "&method=plugin.s2_pattern_map_interpolation_method",
         cache=True,
         help="S2 pattern map",
+    )
+
+    s2_pattern_map_interpolation_method = straxen.URLConfig(
+        default="WeightedNearestNeighbors",
+        help="Interpolation method for the S2 pattern map",
+        type=str,
+        cache=True,
     )
 
     singlet_fraction_gas = straxen.URLConfig(
@@ -280,7 +290,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
     min_electron_gap_length_for_splitting = straxen.URLConfig(
         type=(int, float),
-        default=1e5,
+        default=2e6,
         track=False,
         help="Chunk can not be split if gap between photons is smaller than this value given in ns",
     )
@@ -298,7 +308,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             pmt_circuit_load_resistor=self.pmt_circuit_load_resistor,
         )
 
-        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
+        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from xedocs by default)
         self.turned_off_pmts = np.nonzero(np.array(self.gains) == 0)[0]
 
         self.spe_scaling_factor_distributions = init_spe_scaling_factor_distributions(
@@ -338,7 +348,9 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         n_chunks = len(electron_chunks)
         if n_chunks > 1:
-            log.info(f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks")
+            self.log.info(
+                f"Chunk size exceeding file size target. Downchunking to {n_chunks} chunks"
+            )
 
         last_start = start
         for i, electron_group in enumerate(electron_chunks):
@@ -364,8 +376,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         # Sort both the interactions and the electrons by cluster_id
         # We will later sort by time again when yielding the data.
-        sort_index_ic = np.argsort(interactions_chunk["cluster_id"])
-        sort_index_eg = np.argsort(electron_group["cluster_id"])
+        sort_index_ic = stable_argsort(interactions_chunk["cluster_id"])
+        sort_index_eg = stable_argsort(electron_group["cluster_id"])
         interactions_chunk = interactions_chunk[sort_index_ic]
         electron_group = electron_group[sort_index_eg]
 
@@ -601,7 +613,7 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 
     def setup(self):
         super().setup()
-        log.debug(
+        self.log.debug(
             "Using Garfield GasGap luminescence timing and optical propagation "
             f"with plugin version {self.__version__}"
         )
@@ -783,8 +795,8 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
 
     def setup(self):
         super().setup()
-        log.debug("Using simple luminescence timing and optical propagation")
-        log.warn(
+        self.log.debug("Using simple luminescence timing and optical propagation")
+        self.log.warn(
             "This is a legacy option, do you really want to use the simple luminescence model?"
         )
 
@@ -838,7 +850,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         rr = np.clip(1 / r, 1 / rA, 1 / rW)
 
         return _luminescence_timings_simple(
-            len(xy), dG, E0, r, dr, rr, alpha, uE, pressure, n_photons
+            len(xy), dG, E0, r, dr, rr, alpha, uE, pressure, n_photons, self.rng
         )
 
     def optical_propagation(self, channels):

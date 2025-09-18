@@ -1,17 +1,12 @@
 import strax
 import straxen
-import logging
 
 import numpy as np
-from copy import deepcopy
 
 from ...common import pmt_gains
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.s1_photon_hits")
 
 
 @export
@@ -19,7 +14,7 @@ class S1PhotonHits(FuseBasePlugin):
     """Plugin to simulate the number of detected S1 photons using a S1 light
     collection efficiency map."""
 
-    __version__ = "0.2.1"
+    __version__ = "0.2.2"
 
     depends_on = "microphysics_summary"
     provides = "s1_photon_hits"
@@ -58,19 +53,23 @@ class S1PhotonHits(FuseBasePlugin):
     )
 
     gain_model_mc = straxen.URLConfig(
-        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        default=(
+            "list-to-array://xedocs://pmt_area_to_pes"
+            "?as_list=True&sort=pmt&detector=tpc"
+            "&run_id=plugin.run_id&version=ONLINE&attr=value"
+        ),
         infer_type=False,
         help="PMT gain model",
     )
 
-    s1_pattern_map = straxen.URLConfig(
-        default="pattern_map://resource://simulation_config://"
+    s1_lce_correction_map = straxen.URLConfig(
+        default="lce_from_pattern_map://pattern_map://resource://simulation_config://"
         "SIMULATION_CONFIG_FILE.json?"
         "&key=s1_pattern_map"
         "&fmt=pkl"
         "&pmt_mask=plugin.pmt_mask",
         cache=True,
-        help="S1 pattern map",
+        help="S1 LCE correction map",
     )
 
     p_double_pe_emision = straxen.URLConfig(
@@ -101,16 +100,7 @@ class S1PhotonHits(FuseBasePlugin):
             pmt_circuit_load_resistor=self.pmt_circuit_load_resistor,
         )
 
-        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from cmt by default)
-
-        # Build LCE map from s1 pattern map
-        lcemap = deepcopy(self.s1_pattern_map)
-        # AT: this scaling with mast is redundant to `make_patternmap`, but keep it in for now
-        lcemap.data["map"] = np.sum(
-            lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=self.pmt_mask
-        )
-        lcemap.__init__(lcemap.data)
-        self.s1_lce_correction_map = lcemap
+        self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from xedocs by default)
 
     def compute(self, interactions_in_roi):
         # Just apply this to clusters with photons

@@ -3,9 +3,10 @@ import unittest
 import tempfile
 import timeout_decorator
 import fuse
-import straxen
+import utilix
 from numpy.testing import assert_array_equal, assert_raises
 from _utils import test_root_file_name
+from _utils import test_simulation_config
 
 TIMEOUT = 180
 
@@ -16,12 +17,13 @@ class TestDeterministicSeed(unittest.TestCase):
         self.temp_dir_1 = tempfile.TemporaryDirectory()
 
         for temp_dir in [self.temp_dir_0, self.temp_dir_1]:
-            downloader = straxen.MongoDownloader(store_files_at=(temp_dir.name,))
+            downloader = utilix.mongo_storage.MongoDownloader(store_files_at=(temp_dir.name,))
             downloader.download_single(test_root_file_name, human_readable_file_name=True)
             assert os.path.exists(os.path.join(temp_dir.name, test_root_file_name))
 
-        self.test_context_0 = fuse.context.full_chain_context(
-            output_folder=self.temp_dir_0.name, run_without_proper_corrections=True
+        self.test_context_0 = fuse.context.xenonnt_fuse_full_chain_simulation(
+            output_folder=self.temp_dir_0.name,
+            simulation_config=test_simulation_config,
         )
 
         self.test_context_0.set_config(
@@ -32,8 +34,9 @@ class TestDeterministicSeed(unittest.TestCase):
             }
         )
 
-        self.test_context_1 = fuse.context.full_chain_context(
-            output_folder=self.temp_dir_1.name, run_without_proper_corrections=True
+        self.test_context_1 = fuse.context.xenonnt_fuse_full_chain_simulation(
+            output_folder=self.temp_dir_1.name,
+            simulation_config=test_simulation_config,
         )
 
         self.test_context_1.set_config(

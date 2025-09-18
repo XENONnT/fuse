@@ -4,8 +4,9 @@ import unittest
 import tempfile
 import timeout_decorator
 import fuse
-import straxen
+import utilix
 from _utils import test_root_file_name
+from _utils import test_simulation_config
 
 TIMEOUT = 240
 
@@ -15,10 +16,10 @@ class TestLineageClustering(unittest.TestCase):
     def setUpClass(cls):
         cls.temp_dir = tempfile.TemporaryDirectory()
 
-        cls.test_context = fuse.context.full_chain_context(
+        cls.test_context = fuse.context.xenonnt_fuse_full_chain_simulation(
             output_folder=cls.temp_dir.name,
-            run_without_proper_corrections=True,
             clustering_method="lineage",
+            simulation_config=test_simulation_config,
         )
 
         cls.test_context.set_config(
@@ -36,7 +37,7 @@ class TestLineageClustering(unittest.TestCase):
         cls.temp_dir.cleanup()
 
     def setUp(self):
-        downloader = straxen.MongoDownloader(store_files_at=(self.temp_dir.name,))
+        downloader = utilix.mongo_storage.MongoDownloader(store_files_at=(self.temp_dir.name,))
         downloader.download_single(test_root_file_name, human_readable_file_name=True)
 
         assert os.path.exists(os.path.join(self.temp_dir.name, test_root_file_name))

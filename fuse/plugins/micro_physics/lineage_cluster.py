@@ -1,18 +1,14 @@
 import numpy as np
 import strax
-import logging
 import straxen
-from numba import njit
 
 import re
 import periodictable as pt
 
+from ...common import stable_argsort
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.micro_physics.lineage_cluster")
 
 NEST_BETA = (8, 0, 0)
 NEST_GAMMA = (7, 0, 0)
@@ -31,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.2"
+    __version__ = "0.0.5"
 
     depends_on = "geant4_interactions"
 
@@ -40,6 +36,7 @@ class LineageClustering(FuseBasePlugin):
     dtype = [
         (("Lineage index of the energy deposit", "lineage_index"), np.int32),
         (("Event lineage index", "event_lineage_index"), np.int32),
+        (("Geant4 lineage track ID", "lineage_trackid"), np.int16),
         (("NEST interaction type", "lineage_type"), np.int32),
         (("Mass number of the interacting particle", "A"), np.int16),
         (("Charge number of the interacting particle", "Z"), np.int16),
@@ -52,15 +49,37 @@ class LineageClustering(FuseBasePlugin):
 
     # Config options
     gamma_distance_threshold = straxen.URLConfig(
-        default=0.9,
+        default=0.0,
         type=(int, float),
-        help="Distance threshold to break lineage for gamma rays [cm]. Default from NEST code",
+        help="Distance threshold to break lineage for gamma rays [cm]. \
+        Do not break if distance is smaller than threshold. \
+        Default at 0 means we always break the lineage.",
+    )
+
+    brem_distance_threshold = straxen.URLConfig(
+        default=0,
+        type=(int, float),
+        help="Distance threshold to break lineage for bremsstrahlung [cm]. \
+        Do not break if distance is smaller than threshold.",
     )
 
     time_threshold = straxen.URLConfig(
         default=10,
         type=(int, float),
         help="Time threshold to break the lineage [ns]",
+    )
+
+    classify_ic_as_gamma = straxen.URLConfig(
+        default=True,
+        type=bool,
+        help="Classify internal conversion electrons as gamma particles",
+    )
+
+    classify_phot_as_beta = straxen.URLConfig(
+        default=True,
+        type=bool,
+        help="Classify photoabsorption electrons as beta particles \
+        (if False, classify as gamma particles)",
     )
 
     def compute(self, geant4_interactions):
@@ -72,32 +91,39 @@ class LineageClustering(FuseBasePlugin):
             np.ndarray: An array of cluster IDs with corresponding time and endtime values.
         """
 
-        log.debug(f"Building lineages for {len(geant4_interactions)} interactions")
+        self.log.debug(f"Building lineages for {len(geant4_interactions)} interactions")
 
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        lineage_ids, lineage_types, lineage_A, lineage_Z, main_cluster_type = self.build_lineages(
-            geant4_interactions
+        event_id_sort = stable_argsort(geant4_interactions[["eventid", "time", "t"]])
+        undo_sort_index = stable_argsort(event_id_sort)
+        interactions = geant4_interactions[event_id_sort]
+
+        lineage_ids, lineage_trackids, lineage_types, lineage_A, lineage_Z, main_cluster_type = (
+            self.build_lineages(interactions)
         )
 
         # The lineage index is now unique per event. We need to make it unique for the whole run
         _, unique_lineage_index = np.unique(
-            (geant4_interactions["eventid"], lineage_ids), axis=1, return_inverse=True
+            (interactions["eventid"], lineage_ids), axis=1, return_inverse=True
         )
 
-        data = np.zeros(len(geant4_interactions), dtype=self.dtype)
-        data["lineage_index"] = unique_lineage_index
+        data = np.zeros(len(interactions), dtype=self.dtype)
+        data["lineage_index"] = unique_lineage_index + self.lineages_build
         data["event_lineage_index"] = lineage_ids
+        data["lineage_trackid"] = lineage_trackids
         data["lineage_type"] = lineage_types
         data["A"] = lineage_A
         data["Z"] = lineage_Z
         data["main_cluster_type"] = main_cluster_type
 
-        data["time"] = geant4_interactions["time"]
-        data["endtime"] = geant4_interactions["endtime"]
+        data["time"] = interactions["time"]
+        data["endtime"] = interactions["endtime"]
 
-        return data
+        self.lineages_build = np.max(data["lineage_index"]) + 1
+
+        return data[undo_sort_index]
 
     def build_lineages(
         self,
@@ -106,7 +132,8 @@ class LineageClustering(FuseBasePlugin):
 
         event_ids = np.unique(geant4_interactions["eventid"])
 
-        all_lineag_ids = []
+        all_lineage_ids = []
+        all_lineage_trackids = []
         all_lineage_types = []
         all_lineage_As = []
         all_lineage_Zs = []
@@ -116,32 +143,48 @@ class LineageClustering(FuseBasePlugin):
 
             event = geant4_interactions[geant4_interactions["eventid"] == event_id]
 
-            track_id_sort = np.argsort(event[["trackid", "t"]])
-            undo_sort_index = np.argsort(track_id_sort)
+            track_id_sort = stable_argsort(event[["trackid", "t"]])
+            undo_sort_index = stable_argsort(track_id_sort)
             event = event[track_id_sort]
 
-            lineage = self.build_lineage_for_event(event)[undo_sort_index]
+            lineage = self.build_lineage_for_event(
+                event,
+                self.gamma_distance_threshold,
+                self.brem_distance_threshold,
+                self.time_threshold,
+                self.classify_ic_as_gamma,
+                self.classify_phot_as_beta,
+            )[undo_sort_index]
 
-            all_lineag_ids.append(lineage["lineage_index"] + self.lineages_build)
+            all_lineage_ids.append(lineage["lineage_index"])
+            all_lineage_trackids.append(lineage["lineage_trackid"])
             all_lineage_types.append(lineage["lineage_type"])
             all_lineage_As.append(lineage["lineage_A"])
             all_lineage_Zs.append(lineage["lineage_Z"])
             all_main_cluster_types.append(lineage["main_cluster_type"])
 
-            self.lineages_build = np.max(lineage["lineage_index"]) + 1
-
         return (
-            np.concatenate(all_lineag_ids),
+            np.concatenate(all_lineage_ids),
+            np.concatenate(all_lineage_trackids),
             np.concatenate(all_lineage_types),
             np.concatenate(all_lineage_As),
             np.concatenate(all_lineage_Zs),
             np.concatenate(all_main_cluster_types),
         )
 
-    def build_lineage_for_event(self, event):
+    @staticmethod
+    def build_lineage_for_event(
+        event,
+        gamma_distance_threshold,
+        brem_distance_threshold,
+        time_threshold,
+        classify_ic_as_gamma,
+        classify_phot_as_beta,
+    ):
 
         tmp_dtype = [
             ("lineage_index", np.int32),
+            ("lineage_trackid", np.int16),
             ("lineage_type", np.int32),
             ("lineage_A", np.int16),
             ("lineage_Z", np.int16),
@@ -152,19 +195,22 @@ class LineageClustering(FuseBasePlugin):
 
         main_cluster_type = assign_main_cluster_type_to_event(event)
 
+        trackid_lookup = precompute_particle_lookup(event)
+        parent_lookup = precompute_parent_lookup(event)
+
         # Now iterate all interactions
         running_lineage_index = 0
         for i in range(len(event)):
 
             # Get the particle information
-            particle, particle_lineage = get_particle(event, tmp_result, i)
+            particle, particle_lineage = get_particle(event, tmp_result, i, trackid_lookup)
             # Is the particle already in a lineage?
             particle_already_in_lineage = is_particle_in_lineage(particle_lineage)
             # If the particle is not in a lineage, create a new lineage
             if not particle_already_in_lineage:
                 # It is the first time we see this particle! Now we need to check if
                 # there is a parent particle.
-                parent, parent_lineage = get_parent(event, tmp_result, particle)
+                parent, parent_lineage = get_parent(event, tmp_result, particle, parent_lookup)
                 # If there is a parent:
                 if parent is not None:
 
@@ -172,16 +218,22 @@ class LineageClustering(FuseBasePlugin):
                     broken_lineage = is_lineage_broken(
                         particle,
                         parent,
-                        parent_lineage,
-                        self.gamma_distance_threshold,
-                        self.time_threshold,
+                        gamma_distance_threshold,
+                        brem_distance_threshold,
+                        time_threshold,
                     )
 
                     if broken_lineage:
                         # The lineage is broken. We can start a new one!
                         running_lineage_index += 1
+
                         tmp_result = start_new_lineage(
-                            particle, tmp_result, i, running_lineage_index
+                            particle,
+                            tmp_result,
+                            i,
+                            running_lineage_index,
+                            classify_ic_as_gamma,
+                            classify_phot_as_beta,
                         )
 
                     else:
@@ -191,7 +243,15 @@ class LineageClustering(FuseBasePlugin):
                 else:
                     # Particle without parent. Start a new lineage
                     running_lineage_index += 1
-                    tmp_result = start_new_lineage(particle, tmp_result, i, running_lineage_index)
+
+                    tmp_result = start_new_lineage(
+                        particle,
+                        tmp_result,
+                        i,
+                        running_lineage_index,
+                        classify_ic_as_gamma,
+                        classify_phot_as_beta,
+                    )
 
             else:
                 # We have seen this particle before. Now evaluate if we have to break the lineage
@@ -204,15 +264,21 @@ class LineageClustering(FuseBasePlugin):
                     broken_lineage = is_lineage_broken(
                         particle,
                         last_particle_interaction,
-                        last_particle_lineage,
-                        self.gamma_distance_threshold,
-                        self.time_threshold,
+                        gamma_distance_threshold,
+                        brem_distance_threshold,
+                        time_threshold,
                     )
                     if broken_lineage:
                         # New lineage!
                         running_lineage_index += 1
+
                         tmp_result = start_new_lineage(
-                            particle, tmp_result, i, running_lineage_index
+                            particle,
+                            tmp_result,
+                            i,
+                            running_lineage_index,
+                            classify_ic_as_gamma,
+                            classify_phot_as_beta,
                         )
 
                     else:
@@ -232,57 +298,73 @@ class LineageClustering(FuseBasePlugin):
         return tmp_result
 
 
-def get_particle(event_interactions, event_lineage, index):
+def precompute_particle_lookup(event):
+    """Precompute a lookup dictionary for particles by their trackid."""
+    trackid_to_idx = {}
+    for idx, trackid in enumerate(event["trackid"]):
+        if trackid not in trackid_to_idx:
+            trackid_to_idx[trackid] = []
+        trackid_to_idx[trackid].append(idx)
+    return trackid_to_idx
+
+
+def get_particle(event_interactions, event_lineage, index, trackid_lookup):
     """Returns the particle at the index and the lineage of all interactions of
     the same particle."""
-
     event = event_interactions[index]
-
-    return event, event_lineage[event_interactions["trackid"] == event["trackid"]]
+    particle_indices = trackid_lookup[event["trackid"]]
+    return event, event_lineage[particle_indices]
 
 
 def get_last_particle_interaction(event_interactions, particle, particle_lineage):
-    """Function to get the last (the previous in time) interaction of the
-    particle (that is in the lineage)."""
+    """Returns the last (previous in time) interaction of the particle that is
+    in the lineage."""
 
+    # Get all interactions for the given particle
     all_particle_interactions = event_interactions[
         event_interactions["trackid"] == particle["trackid"]
     ]
 
-    # the last interaction is already in a lineage! Use that:
+    # Find the last interaction already in the lineage
     index_of_last_interaction = np.nonzero(particle_lineage)[0][-1]
+
     return (
         all_particle_interactions[index_of_last_interaction],
         particle_lineage[index_of_last_interaction],
     )
 
 
-def get_parent(event_interactions, event_lineage, particle):
-    """Returns the parent particle and its lineage of the given particle."""
+def precompute_parent_lookup(event):
+    """Precompute a lookup dictionary for parent relationships."""
+    parent_lookup = {}
+    for idx, (trackid, parentid) in enumerate(zip(event["trackid"], event["parentid"])):
+        parent_lookup[trackid] = parentid
+    return parent_lookup
 
-    index_of_parent_particle = np.where(event_interactions["trackid"] == particle["parentid"])[
-        0
-    ]  # [0]
-    if len(index_of_parent_particle) == 0:  # There is no parent particle
+
+def get_parent(event_interactions, event_lineage, particle, parent_lookup):
+    """Returns the parent particle and its lineage of the given particle."""
+    parent_id = parent_lookup.get(particle["trackid"], None)
+    if parent_id is None:
         return None, None
 
-    parent_interactions = event_interactions[index_of_parent_particle]
-    parent_lineages = event_lineage[index_of_parent_particle]
+    parent_indices = np.where(event_interactions["trackid"] == parent_id)[0]
+    if len(parent_indices) == 0:
+        return None, None
 
-    # Sometimes we can have parents that are after the particle. This makes no sense.
+    parent_interactions = event_interactions[parent_indices]
+    parent_lineages = event_lineage[parent_indices]
+
     parent_interactions_time_cut = parent_interactions["t"] <= particle["t"]
 
     if np.sum(parent_interactions_time_cut) == 0:
-        # there is no parent particle interaction before the particle. Why is this happening?
-        # lets return the parent closest in time..
         parent_to_return = np.argmin(abs(parent_interactions["t"] - particle["t"]))
         return parent_interactions[parent_to_return], parent_lineages[parent_to_return]
 
-    # If there are multiple parent interactions before the particle, we need to take the last one
-    possible_parents = parent_interactions[parent_interactions_time_cut]
-    possible_parents_lineages = parent_lineages[parent_interactions_time_cut]
-
-    return possible_parents[-1], possible_parents_lineages[-1]
+    return (
+        parent_interactions[parent_interactions_time_cut][-1],
+        parent_lineages[parent_interactions_time_cut][-1],
+    )
 
 
 def is_particle_in_lineage(lineage):
@@ -299,9 +381,26 @@ def num_there(s):
     return any(i.isdigit() for i in s)
 
 
-def classify_lineage(particle_interaction):
+def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_as_beta):
     """Function to classify a new lineage based on the particle and its parent
     information."""
+
+    def classify_gamma(particle_interaction):
+        if particle_interaction["edproc"] == "compt":
+            return NEST_BETA
+        elif particle_interaction["edproc"] == "conv":
+            return NEST_BETA
+        elif particle_interaction["edproc"] == "phot":
+            # This is gamma photoabsorption. Return gamma
+            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
+        else:
+            # could be rayleigh scattering or something else. Classify it as gamma...
+            return NEST_BETA
+
+    # If [ in type, it is a nucleus excitation, decaying electromagnetically
+    # this will become the lineage of internal conversion electrons
+    if "[" in particle_interaction["type"]:
+        return NEST_GAMMA if classify_ic_as_gamma else NEST_BETA
 
     # NR interactions
     if (particle_interaction["parenttype"] == "neutron") & (
@@ -309,7 +408,8 @@ def classify_lineage(particle_interaction):
     ):
         return NEST_NR
 
-    elif (particle_interaction["parenttype"] == "neutron") & (
+    # Neutron as primary particle
+    elif (particle_interaction["parenttype"] in ["", "none", "neutron"]) & (
         particle_interaction["type"] == "neutron"
     ):
         return NEST_NR
@@ -321,40 +421,34 @@ def classify_lineage(particle_interaction):
         elif particle_interaction["creaproc"] == "conv":
             return NEST_BETA
         elif particle_interaction["creaproc"] == "phot":
-            return NEST_GAMMA
+            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
+        elif particle_interaction["creaproc"] == "photonNuclear":
+            # nuclear recoil after photonuclear interaction
+            if num_there(particle_interaction["type"]):
+                return NEST_NR
+            elif particle_interaction["type"] == "neutron":
+                return NEST_NR
+            # gamma ray after photonuclear interaction
+            elif particle_interaction["type"] == "gamma":
+                return classify_gamma(particle_interaction)
+            else:
+                return NEST_NONE
         else:
-            # This case should not happen or? Classify it as nontype
+            # This case should not happen? Classify it as none type
             return NEST_NONE
 
-    # Electrons that are not created by a gamma.
-    elif particle_interaction["type"] == "e-":
+    # Electrons or positrons that are not created by a gamma.
+    elif (particle_interaction["type"] == "e-") | (particle_interaction["type"] == "e+"):
         return NEST_BETA
 
     # The gamma case
     elif particle_interaction["type"] == "gamma":
-        if particle_interaction["edproc"] == "compt":
-            return NEST_BETA
-        elif particle_interaction["edproc"] == "conv":
-            return NEST_BETA
-        elif particle_interaction["edproc"] == "phot":
-            # Not sure about this, but was looking for a way to give beta yields
-            # to gammas that are coming directly from a radioactive decay
-            if particle_interaction["creaproc"] == "RadioactiveDecayBase":
-                return NEST_BETA
-            # Need this case for custom geant4 inputs...
-            elif particle_interaction["creaproc"] == "Null":
-                return NEST_BETA
-            else:
-                return NEST_GAMMA
-        else:
-            # could be rayleigh scattering or something else. Classify it as gamma...
-            return NEST_BETA
+        return classify_gamma(particle_interaction)
 
     # Primaries and decay products
     elif (particle_interaction["creaproc"] == "RadioactiveDecayBase") or (
         particle_interaction["parenttype"] == "none"
     ):
-
         # Alpha particles
         if particle_interaction["type"] == "alpha":
             return NEST_ALPHA
@@ -365,7 +459,7 @@ def classify_lineage(particle_interaction):
             return 6, mass, element_number
 
         else:
-            # This case should not happen or? Classify it as nontype
+            # This case should not happen? Classify it as NONE
             return NEST_NONE
 
     else:
@@ -373,27 +467,35 @@ def classify_lineage(particle_interaction):
         return NEST_NONE
 
 
-@njit()
 def is_lineage_broken(
     particle,
     parent,
-    parent_lineage,
     gamma_distance_threshold,
+    brem_distance_threshold,
     time_threshold,
 ):
     """Function to check if the lineage is broken."""
 
-    # In the nest code: Lineage is always broken if the parent is a ion
-    # But if it's an alpha particle, we want to keep the lineage
-    break_for_ion = parent_lineage["lineage_type"] == 6
-    break_for_ion &= parent["type"] != "alpha"
-    break_for_ion &= particle["creaproc"] != "eIoni"
+    # second step of a decay. We want to split the lineage
+    if (
+        particle["creaproc"] == "RadioactiveDecayBase"
+        and particle["edproc"] == "RadioactiveDecayBase"
+    ):
+        return True
 
-    if break_for_ion:
+    # In the nest code: lineage is always broken if the parent is an ion
+    # this breaks the lineage for all ions, also for alpha decays (we need it)
+    # but if it's via an excited nuclear state, we want to keep the lineage
+    if (num_there(parent["type"])) and ("[" not in parent["type"]):
         return True
 
     # For gamma rays, check the distance between the parent and the particle
     if particle["type"] == "gamma":
+
+        if particle["creaproc"] == "phot" and particle["edproc"] == "phot":
+            # We do not want to split a photo absorption into two clusters
+            # The second photo absorption (that we see) could be x rays
+            return False
 
         # Break the lineage for these transportation gammas
         # Transportations is a special case. They are not real gammas.
@@ -404,10 +506,20 @@ def is_lineage_broken(
 
         particle_position = np.array([particle["x"], particle["y"], particle["z"]])
         parent_position = np.array([parent["x"], parent["y"], parent["z"]])
-
         distance = np.sqrt(np.sum((parent_position - particle_position) ** 2, axis=0))
 
+        if particle["creaproc"] == "eBrem":
+            # we do not want to split a bremsstrahlung into two clusters
+            # if the distance is really small, it is most likely the same interaction
+            if distance < brem_distance_threshold:
+                return False
+
         if distance > gamma_distance_threshold:
+            return True
+
+    # break neutron lineage
+    if parent["type"] == "neutron":
+        if parent["edproc"] in ["Transportation", "hadElastic", "neutronInelastic", "nCapture"]:
             return True
 
     # I also want to break the lineage if the interaction happens way after the parent interaction
@@ -415,13 +527,6 @@ def is_lineage_broken(
 
     if time_difference > time_threshold:
         return True
-
-    # Does this make sense?
-    if parent["type"] == "neutron":
-        if parent["edproc"].startswith("hadElastic"):
-            return True
-        elif parent["edproc"].startswith("neutronIne"):
-            return True
 
     # Otherwise the lineage is not broken
     return False
@@ -501,10 +606,15 @@ def assign_main_cluster_type_to_event(event):
     return main_cluster_types
 
 
-def start_new_lineage(particle, tmp_result, i, running_lineage_index):
+def start_new_lineage(
+    particle, tmp_result, i, running_lineage_index, classify_ic_as_gamma, classify_phot_as_beta
+):
 
-    lineage_class, lineage_A, lineage_Z = classify_lineage(particle)
+    lineage_class, lineage_A, lineage_Z = classify_lineage(
+        particle, classify_ic_as_gamma, classify_phot_as_beta
+    )
     tmp_result[i]["lineage_index"] = running_lineage_index
+    tmp_result[i]["lineage_trackid"] = particle["trackid"]
     tmp_result[i]["lineage_type"] = lineage_class
     tmp_result[i]["lineage_A"] = lineage_A
     tmp_result[i]["lineage_Z"] = lineage_Z
@@ -515,6 +625,7 @@ def start_new_lineage(particle, tmp_result, i, running_lineage_index):
 def continue_lineage(particle, tmp_result, i, parent_lineage):
 
     tmp_result[i]["lineage_index"] = parent_lineage["lineage_index"]
+    tmp_result[i]["lineage_trackid"] = parent_lineage["lineage_trackid"]
     tmp_result[i]["lineage_type"] = parent_lineage["lineage_type"]
     tmp_result[i]["lineage_A"] = parent_lineage["lineage_A"]
     tmp_result[i]["lineage_Z"] = parent_lineage["lineage_Z"]

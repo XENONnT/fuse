@@ -1,34 +1,50 @@
 # mypy: ignore-errors
-
-from copy import deepcopy
 import logging
-
-import numpy as np
+import os
 import strax
 import straxen
-from straxen import URLConfig
 import fuse
+
+from .context_utils import (
+    write_run_id_to_config,
+    set_simulation_config_file,
+    old_xedocs_versions_patch,
+    overwrite_map_from_config,
+    apply_mc_overrides,
+)
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.context")
+log.setLevel("INFO")
+
+# Backward compatibility for straxen versions
+if hasattr(straxen.contexts, "xnt_common_opts"):
+    common_opts = straxen.contexts.xnt_common_opts
+    common_config = straxen.contexts.xnt_common_config
+else:
+    common_opts = straxen.contexts.common_opts
+    common_config = straxen.contexts.common_config
+
 
 # Plugins to simulate microphysics
-microphysics_plugins_dbscan_clustering = [
-    fuse.micro_physics.ChunkInput,
-    fuse.micro_physics.FindCluster,
-    fuse.micro_physics.MergeCluster,
-]
+microphysics_plugins_clustering = {
+    "dbscan": [
+        fuse.micro_physics.ChunkInput,
+        fuse.micro_physics.FindCluster,
+        fuse.micro_physics.MergeCluster,
+    ],
+    "lineage": [
+        fuse.micro_physics.ChunkInput,
+        fuse.micro_physics.LineageClustering,
+        fuse.micro_physics.MergeLineage,
+    ],
+}
 
-microphysics_plugins_lineage_clustering = [
-    fuse.micro_physics.ChunkInput,
-    fuse.micro_physics.LineageClustering,
-    fuse.micro_physics.MergeLineage,
-]
-
-remaining_microphysics_plugins = [
-    fuse.micro_physics.cuts_and_selections.XENONnT_TPC,
-    fuse.micro_physics.cuts_and_selections.XENONnT_BelowCathode,
-    fuse.micro_physics.cuts_and_selections.DefaultSimulation,
+# Plugins to simulate microphysics (remaining)
+microphysics_plugins_remaining = [
+    fuse.micro_physics.XENONnT_TPC,
+    fuse.micro_physics.XENONnT_BelowCathode,
+    fuse.micro_physics.VolumesMerger,
     fuse.micro_physics.ElectricField,
     fuse.micro_physics.NestYields,
     fuse.micro_physics.MicroPhysicsSummary,
@@ -87,209 +103,234 @@ truth_information_plugins = [
     fuse.truth_information.ClusterTagging,
 ]
 
+# Plugins to override the default processing plugins in straxen
+processing_plugins = [fuse.processing.CorrectedAreasMC]
+
 
 def microphysics_context(
-    output_folder="./fuse_data", simulation_config_file="fuse_config_nt_sr1_dev.json"
+    output_folder="./fuse_data",
+    simulation_config_file="fuse_config_nt_sr1_dev.json",
+    clustering_method="dbscan",
+    extra_plugins=[],
 ):
     """Function to create a fuse microphysics simulation context."""
 
-    st = strax.Context(
-        storage=strax.DataDirectory(output_folder), **straxen.contexts.xnt_common_opts
-    )
-
-    st.config.update(
-        dict(
-            detector="XENONnT", check_raw_record_overlaps=True, **straxen.contexts.xnt_common_config
-        )
-    )
+    st = strax.Context(storage=output_folder, **common_opts)
+    st.set_config(dict(check_raw_record_overlaps=True, **common_config))
 
     # Register microphysics plugins
-    for plugin in microphysics_plugins_dbscan_clustering:
-        st.register(plugin)
-    for plugin in remaining_microphysics_plugins:
-        st.register(plugin)
+    for plugin_list in [
+        microphysics_plugins_clustering[clustering_method],
+        microphysics_plugins_remaining,
+        extra_plugins,
+    ]:
+        for p in plugin_list:
+            st.register(p)
 
     set_simulation_config_file(st, simulation_config_file)
 
     return st
 
 
-def full_chain_context(
+def xenonnt_fuse_full_chain_simulation(
     output_folder="./fuse_data",
-    clustering_method="dbscan",
     corrections_version=None,
-    simulation_config_file="fuse_config_nt_sr1_dev.json",
-    corrections_run_id="046477",
+    simulation_config=None,
+    corrections_run_id=None,
+    clustering_method=None,
+    cut_list=None,
+    extra_plugins=[],
     run_id_specific_config={
         "gain_model_mc": "gain_model",
         "electron_lifetime_liquid": "elife",
         "drift_velocity_liquid": "electron_drift_velocity",
         "drift_time_gate": "electron_drift_time_gate",
     },
-    run_without_proper_corrections=False,
+    run_without_proper_run_id=False,
+    run_without_config_file=False,
 ):
-    """Function to create a fuse full chain simulation context."""
+    """Create a context for the full chain simulation of XENONnT.
 
-    if corrections_run_id is None:
-        raise ValueError("Specify a corrections_run_id to load the corrections")
-    if (corrections_version is None) & (not run_without_proper_corrections):
-        raise ValueError(
-            "Specify a corrections_version. If you want to run without proper "
-            "corrections for testing or just trying out fuse, "
-            "set run_without_proper_corrections to True"
-        )
-    if simulation_config_file is None:
-        raise ValueError("Specify a simulation configuration file")
+    This context includes all the necessary configs and plugins for the
+    simulation.
+    """
 
-    if run_without_proper_corrections:
-        log.warning(
-            "Running without proper correction version. This is not recommended for production use."
-            "Take the context defined in cutax if you want to run XENONnT simulations."
-        )
-
-    st = strax.Context(
-        storage=strax.DataDirectory(output_folder), **straxen.contexts.xnt_common_opts
-    )
-
-    st.config.update(
-        dict(  # detector='XENONnT',
-            check_raw_record_overlaps=True, **straxen.contexts.xnt_common_config
-        )
-    )
-
-    # Register microphysics plugins
-    if clustering_method == "dbscan":
-        for plugin in microphysics_plugins_dbscan_clustering:
-            st.register(plugin)
-    elif clustering_method == "lineage":
-        for plugin in microphysics_plugins_lineage_clustering:
-            st.register(plugin)
+    # Load config file
+    if run_without_config_file:
+        # Just a dummy name to avoid errors. We use this to setup context for the docs.
+        simulation_config_file = "fuse_config_file.json"
+        sim_config = {
+            "fdc_map_mc": ".",
+        }
+        log.warning("Running without a proper config file! Do not use this for real simulations.")
     else:
-        raise ValueError(f"Clustering method {clustering_method} not implemented!")
+        if simulation_config:
+            simulation_config_file = (
+                simulation_config
+                if os.path.isfile(simulation_config)
+                else f"fuse_config_nt_{simulation_config}.json"
+            )
+            sim_config = straxen.get_resource(simulation_config_file, fmt="json")
+        else:
+            raise ValueError(
+                "simulation_config_file is required. "
+                "Please provide a valid file path or file name."
+            )
 
-    for plugin in remaining_microphysics_plugins:
-        st.register(plugin)
+    # Load settings from config file
+    if not run_without_proper_run_id:
+        corrections_run_id = (
+            corrections_run_id
+            if corrections_run_id is not None
+            else sim_config.get("default_corrections_run_id", None)
+        )
+        if corrections_run_id is None:
+            raise ValueError(
+                "corrections_run_id is required. Please provide a config file with "
+                "default_corrections_run_id or provide it directly in the context function."
+            )
+        log.info(f"Using corrections run id: {corrections_run_id}")
 
-    # Register S1 plugins
-    for plugin in s1_simulation_plugins:
-        st.register(plugin)
+    clustering_method = (
+        clustering_method
+        if clustering_method is not None
+        else sim_config.get("clustering_method", "dbscan")
+    )
+    log.info(f"Using clustering method: {clustering_method}")
 
-    # Register S2 plugins
-    for plugin in s2_simulation_plugins:
-        st.register(plugin)
+    # Create context and register plugins
+    st = strax.Context(storage=output_folder, **common_opts)
+    st.set_config(dict(check_raw_record_overlaps=True, **common_config))
+    st.simulation_config_file = simulation_config_file
+    st.corrections_run_id = corrections_run_id
 
-    # Register delayed Electrons plugins
-    for plugin in delayed_electron_simulation_plugins:
-        st.register(plugin)
+    if any("cutax" in str(p) for p in extra_plugins) or cut_list:
+        import cutax
 
-    # Register merger plugins.
-    for plugin in delayed_electron_merger_plugins:
-        st.register(plugin)
+        extra_plugins.extend(cutax.EXTRA_PLUGINS)
 
-    # Register PMT and DAQ plugins
-    for plugin in pmt_and_daq_plugins:
-        st.register(plugin)
+    for plugin_list in [
+        microphysics_plugins_clustering[clustering_method],
+        microphysics_plugins_remaining,
+        s1_simulation_plugins,
+        s2_simulation_plugins,
+        delayed_electron_simulation_plugins,
+        delayed_electron_merger_plugins,
+        pmt_and_daq_plugins,
+        truth_information_plugins,
+        processing_plugins,
+        extra_plugins,
+    ]:
+        for plugin in plugin_list:
+            st.register(plugin)
 
-    # Register truth plugins
-    for plugin in truth_information_plugins:
-        st.register(plugin)
+    if cut_list:
+        st.register_cut_list(cut_list)
+        st.register(cut_list)
 
-    if corrections_version is not None:
+    # Corrections setup
+    if corrections_version:
         st.apply_xedocs_configs(version=corrections_version)
+        st.set_config(old_xedocs_versions_patch(corrections_version))
+    else:
+        log.warning(
+            "Running without proper corrections! Please provide a corrections_version "
+            "to ensure proper corrections. "
+            "Example: 'global_v16'"
+        )
 
-    set_simulation_config_file(st, simulation_config_file)
+    # Replace SIMULATION_CONFIG_FILE.json in plugin defaults
+    if simulation_config_file:
+        set_simulation_config_file(st, simulation_config_file)
 
-    local_versions = st.config
-    for config_name, url_config in local_versions.items():
-        if isinstance(url_config, str):
-            if "run_id" in url_config:
-                local_versions[config_name] = straxen.URLConfig.format_url_kwargs(
-                    url_config, run_id=corrections_run_id
-                )
-    st.config = local_versions
+    if not run_without_proper_run_id:
+        write_run_id_to_config(st, corrections_run_id)
 
     # Update some run specific config
     for mc_config, processing_config in run_id_specific_config.items():
         if processing_config in st.config:
             st.config[mc_config] = st.config[processing_config]
         else:
-            print(f"Warning! {processing_config} not in context config, skipping...")
+            log.warning(f"{processing_config} not in context config, skipping...")
+
+    # If mc_overrides is present, use that exclusively
+    if "mc_overrides" in sim_config:
+        log.info("Found 'mc_overrides' in config,  using override-based config system.")
+        apply_mc_overrides(st, simulation_config_file)
+    else:
+        # Backward compatibility: legacy fdc_map_mc logic
+        if "fdc_map_mc" in sim_config:
+            fdc_map_mc = sim_config["fdc_map_mc"]
+            log.info(f"[legacy] Using fdc_map_mc: {fdc_map_mc}")
+            fdc_ext = fdc_map_mc.split(fdc_map_mc.split(".")[0] + ".")[-1]
+            fdc_conf = f"itp_map://resource://{fdc_map_mc}?fmt={fdc_ext}"
+            st.set_config({"fdc_map": fdc_conf})
+        else:
+            raise RuntimeError(
+                "No 'mc_overrides' or 'fdc_map_mc' found in the config. "
+                "Please define one of them to set 'fdc_map'."
+            )
 
     # No blinding in simulations
-    st.config["event_info_function"] = "disabled"
+    st.set_config({"event_info_function": "disabled"})
 
-    # Deregister plugins with missing dependencies
     st.deregister_plugins_with_missing_dependencies()
+
+    if hasattr(st, "purge_unused_configs"):
+        st.purge_unused_configs()
 
     return st
 
 
-def set_simulation_config_file(context, config_file_name):
-    """Function to loop over the plugin config and replace
-    SIMULATION_CONFIG_FILE with the actual file name."""
-    for data_type, plugin in context._plugin_class_registry.items():
-        for option_key, option in plugin.takes_config.items():
-            if isinstance(option.default, str) and "SIMULATION_CONFIG_FILE.json" in option.default:
-                context.config[option_key] = option.default.replace(
-                    "SIMULATION_CONFIG_FILE.json", config_file_name
-                )
-
-            # Special case for the photoionization_modifier
-            if option_key == "photoionization_modifier":
-                context.config[option_key] = option.default
-
-
-@URLConfig.register("pattern_map")
-def pattern_map(map_data, pmt_mask, method="WeightedNearestNeighbors"):
-    """Pattern map handling."""
-
-    if "compressed" in map_data:
-        compressor, dtype, shape = map_data["compressed"]
-        map_data["map"] = np.frombuffer(
-            strax.io.COMPRESSORS[compressor]["decompress"](map_data["map"]), dtype=dtype
-        ).reshape(*shape)
-        del map_data["compressed"]
-    if "quantized" in map_data:
-        map_data["map"] = map_data["quantized"] * map_data["map"].astype(np.float32)
-        del map_data["quantized"]
-    if not (pmt_mask is None):
-        assert (
-            map_data["map"].shape[-1] == pmt_mask.shape[0]
-        ), "Error! Pattern map and PMT gains must have same dimensions!"
-        map_data["map"][..., ~pmt_mask] = 0.0
-    return straxen.InterpolatingMap(map_data, method=method)
-
-
-@URLConfig.register("s2_aft_scaling")
-def modify_s2_pattern_map(
-    s2_pattern_map, s2_mean_area_fraction_top, n_tpc_pmts, n_top_pmts, turned_off_pmts
+def public_config_context(
+    output_folder="./fuse_data",
+    extra_plugins=[fuse.plugins.S2PhotonPropagationSimple],
+    simulation_config_file="./files/XENONnT_public_config.json",
+    clustering_method="dbscan",
 ):
-    """Modify the S2 pattern map to match a given input AFT."""
-    if s2_mean_area_fraction_top > 0:
-        s2map = deepcopy(s2_pattern_map)
-        # First we need to set turned off pmts before scaling
-        s2map.data["map"][..., turned_off_pmts] = 0
-        s2map_topeff_ = s2map.data["map"][..., :n_top_pmts].sum(axis=2, keepdims=True)
-        s2map_toteff_ = s2map.data["map"].sum(axis=2, keepdims=True)
-        orig_aft_ = np.nanmean(s2map_topeff_ / s2map_toteff_)
-        # Getting scales for top/bottom separately to preserve total efficiency
-        scale_top_ = s2_mean_area_fraction_top / orig_aft_
-        scale_bot_ = (1 - s2_mean_area_fraction_top) / (1 - orig_aft_)
-        s2map.data["map"][..., :n_top_pmts] *= scale_top_
-        s2map.data["map"][..., n_top_pmts:n_tpc_pmts] *= scale_bot_
-        s2_pattern_map.__init__(s2map.data)
-    return s2_pattern_map
+    """Create a context for the use of fuse with public XENONnT configs."""
 
+    st = strax.Context(storage=output_folder, **straxen.contexts.common_opts)
+    st.simulation_config_file = simulation_config_file
+    st.config.update(dict(check_raw_record_overlaps=True, **straxen.contexts.common_config))
 
-# Probably not needed!
-@URLConfig.register("simple_load")
-def load(data):
-    """Some Documentation."""
-    return data
+    for plugin_list in [
+        microphysics_plugins_clustering[clustering_method],
+        microphysics_plugins_remaining,
+        s1_simulation_plugins,
+        s2_simulation_plugins,
+        delayed_electron_simulation_plugins,
+        delayed_electron_merger_plugins,
+        pmt_and_daq_plugins,
+        truth_information_plugins,
+        processing_plugins,
+        extra_plugins,
+    ]:
+        for plugin in plugin_list:
+            st.register(plugin)
 
+    set_simulation_config_file(st, simulation_config_file)
 
-@URLConfig.register("simulation_config")
-def from_config(config_name, key):
-    """Return a value from a json config file."""
-    config = straxen.get_resource(config_name, fmt="json")
-    return config[key]
+    # Lets override some resource files with the ones from the simulation config
+    config = straxen.get_resource(simulation_config_file, fmt="json")
+    overwrite_map_from_config(st, config)
+
+    # And finally some hardcoded configs
+    st.set_config({"s1_lce_correction_map": "constant_dummy_map://1"})
+    st.set_config(
+        {
+            "gain_model_mc": "simple_load://resource://./files/fake_to_pe.npy?&fmt=npy",
+        }
+    )
+
+    # No blinding in simulations
+    st.set_config({"event_info_function": "disabled"})
+
+    # Deregister plugins with missing dependencies
+    st.deregister_plugins_with_missing_dependencies()
+
+    # Remove unused configs
+    if hasattr(st, "purge_unused_configs"):
+        st.purge_unused_configs()
+
+    return st

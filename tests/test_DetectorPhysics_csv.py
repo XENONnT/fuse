@@ -5,6 +5,7 @@ import tempfile
 import timeout_decorator
 import fuse
 from _utils import build_random_instructions
+from _utils import test_simulation_config
 
 TIMEOUT = 480
 
@@ -14,10 +15,13 @@ class TestDetectorPhysicsCsv(unittest.TestCase):
     def setUpClass(cls):
         cls.temp_dir = tempfile.TemporaryDirectory()
 
-        cls.test_context = fuse.context.full_chain_context(
-            output_folder=cls.temp_dir.name, run_without_proper_corrections=True
+        cls.test_context = fuse.context.xenonnt_fuse_full_chain_simulation(
+            output_folder=cls.temp_dir.name,
+            simulation_config=test_simulation_config,
+            extra_plugins=[
+                fuse.plugins.detector_physics.ChunkCsvInput,
+            ],
         )
-        cls.test_context.register(fuse.plugins.detector_physics.ChunkCsvInput)
         cls.test_context.deregister_plugins_with_missing_dependencies()
 
         cls.input_file = os.path.join(cls.temp_dir.name, "test.csv")

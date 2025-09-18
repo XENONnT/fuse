@@ -1,16 +1,12 @@
 import strax
 import numpy as np
 import straxen
-import logging
 
 from ...dtypes import propagated_photons_fields
-from ...common import pmt_gains
+from ...common import stable_argsort, pmt_gains
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.pmt_and_daq.pmt_afterpulses")
 
 
 @export
@@ -36,7 +32,9 @@ class PMTAfterPulses(FuseBasePlugin):
     # Config options
 
     enable_pmt_afterpulses = straxen.URLConfig(
-        default=True,
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=enable_pmt_afterpulses",
         type=bool,
         track=True,
         help="Decide if you want to to enable PMT afterpulsing",
@@ -86,7 +84,11 @@ class PMTAfterPulses(FuseBasePlugin):
     )
 
     gain_model_mc = straxen.URLConfig(
-        default="cmt://to_pe_model?version=ONLINE&run_id=plugin.run_id",
+        default=(
+            "list-to-array://xedocs://pmt_area_to_pes"
+            "?as_list=True&sort=pmt&detector=tpc"
+            "&run_id=plugin.run_id&version=ONLINE&attr=value"
+        ),
         infer_type=False,
         help="PMT gain model",
     )
@@ -126,7 +128,7 @@ class PMTAfterPulses(FuseBasePlugin):
         s2_photons = None
 
         # Sort all photons by time
-        sortind = np.argsort(merged_photons["time"])
+        sortind = stable_argsort(merged_photons["time"])
         merged_photons = merged_photons[sortind]
 
         _photon_timings = merged_photons["time"]
@@ -175,7 +177,7 @@ class PMTAfterPulses(FuseBasePlugin):
             prob_ap = delaytime_cdf[merged_photon_channels, -1]
             if prob_ap.max() * self.pmt_ap_modifier > 0.5:
                 prob = prob_ap.max() * self.pmt_ap_modifier
-                log.warning(f"PMT after pulse probability is {prob} larger than 0.5?")
+                self.log.warning(f"PMT after pulse probability is {prob} larger than 0.5?")
 
             # Scaling down (up) rU0 effectivly increase (decrease) the ap rate
             rU0 /= self.pmt_ap_modifier

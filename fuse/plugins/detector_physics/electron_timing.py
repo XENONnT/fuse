@@ -1,14 +1,10 @@
 import strax
 import numpy as np
 import straxen
-import logging
 
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.electron_timing")
 
 
 @export
@@ -93,5 +89,8 @@ class ElectronTiming(FuseBasePlugin):
 
         timing = self.rng.exponential(self.electron_trapping_time, size=time_r.shape[0])
         timing += self.rng.normal(drift_time_mean_r, drift_time_spread_r, size=time_r.shape[0])
+
+        # Clip negative drift times
+        timing = np.clip(timing, 0, np.inf)
 
         return time_r + timing.astype(np.int64)

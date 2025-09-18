@@ -1,14 +1,10 @@
 import strax
 import straxen
-import logging
 import numpy as np
 
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
-
-logging.basicConfig(handlers=[logging.StreamHandler()])
-log = logging.getLogger("fuse.detector_physics.electron_drift")
 
 
 @export
@@ -219,6 +215,12 @@ class ElectronDrift(FuseBasePlugin):
 
             self.diffusion_longitudinal_map = _rz_map
 
+        csys = self.fdc_map_fuse.coordinate_system
+        rmin, rmax = csys[:, 0].min(), csys[:, 0].max()
+        zmin, zmax = csys[:, 1].min(), csys[:, 1].max()
+        self.fdc_map_r_bounds = (rmin, rmax)
+        self.fdc_map_z_bounds = (zmin, zmax)
+
     def compute(self, interactions_in_roi):
         # Just apply this to clusters with photons
         mask = interactions_in_roi["electrons"] > 0
@@ -266,7 +268,7 @@ class ElectronDrift(FuseBasePlugin):
                 n=n_electron.astype(np.int32), p=electron_lifetime_correction
             )
         else:
-            log.debug("No electron lifetime applied")
+            self.log.debug("No electron lifetime applied")
 
         result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         result["time"] = interactions_in_roi["time"]
@@ -321,7 +323,30 @@ class ElectronDrift(FuseBasePlugin):
         """
         positions = np.array([np.sqrt(x**2 + y**2), z]).T
         theta = np.arctan2(y, x)
-        r_obs = self.fdc_map_fuse(positions, map_name="r_distortion_map")
+
+        clipped_positions = np.copy(positions)
+        clipped_positions[:, 0] = np.clip(
+            clipped_positions[:, 0], self.fdc_map_r_bounds[0], self.fdc_map_r_bounds[1]
+        )
+        clipped_positions[:, 1] = np.clip(
+            clipped_positions[:, 1], self.fdc_map_z_bounds[0], self.fdc_map_z_bounds[1]
+        )
+
+        n_clipped_r = np.sum(
+            (positions[:, 0] < self.fdc_map_r_bounds[0])
+            | (positions[:, 0] > self.fdc_map_r_bounds[1])
+        )
+        n_clipped_z = np.sum(
+            (positions[:, 1] < self.fdc_map_z_bounds[0])
+            | (positions[:, 1] > self.fdc_map_z_bounds[1])
+        )
+        if n_clipped_r > 0 or n_clipped_z > 0:
+            self.log.warning(
+                "Field distortion map is clipped "
+                f"{n_clipped_r} times in r and {n_clipped_z} times in z"
+            )
+
+        r_obs = self.fdc_map_fuse(clipped_positions, map_name="r_distortion_map")
         x_obs = r_obs * np.cos(theta)
         y_obs = r_obs * np.sin(theta)
 
