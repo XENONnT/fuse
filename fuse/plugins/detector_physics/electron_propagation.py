@@ -194,7 +194,7 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         cache=True,
         help="test",
     )
-    
+
     perp_wires_drift_time_spread_1d_perp = straxen.URLConfig(
         default="itp_map://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
