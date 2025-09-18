@@ -86,6 +86,10 @@ delayed_electron_merger_plugins = [
     fuse.detector_physics.delayed_electrons.S1PhotonHitsMerger,
 ]
 
+perpendicular_wire_shift_plugins = [
+    fuse.detector_physics.ElectronPropagationPerpWires
+]
+
 # Plugins to simulate PMTs and DAQ
 pmt_and_daq_plugins = [
     fuse.pmt_and_daq.PMTAfterPulses,
@@ -198,6 +202,11 @@ def xenonnt_fuse_full_chain_simulation(
     )
     log.info(f"Using clustering method: {clustering_method}")
 
+    enable_perp_wire_electron_shift = sim_config.get(
+        "enable_perp_wire_electron_shift",
+        False
+    )
+
     # Create context and register plugins
     st = strax.Context(storage=output_folder, **common_opts)
     st.set_config(dict(check_raw_record_overlaps=True, **common_config))
@@ -209,7 +218,7 @@ def xenonnt_fuse_full_chain_simulation(
 
         extra_plugins.extend(cutax.EXTRA_PLUGINS)
 
-    for plugin_list in [
+    plugin_lists = [
         microphysics_plugins_clustering[clustering_method],
         microphysics_plugins_remaining,
         s1_simulation_plugins,
@@ -219,8 +228,15 @@ def xenonnt_fuse_full_chain_simulation(
         pmt_and_daq_plugins,
         truth_information_plugins,
         processing_plugins,
-        extra_plugins,
-    ]:
+    ]
+
+    if enable_perp_wire_electron_shift:
+        log.info("Enabling perpendicular wire electron shift plugin.")
+        plugin_lists.extend(perpendicular_wire_shift_plugins)
+
+    plugin_lists.extend(extra_plugins)
+
+    for plugin_list in plugin_lists:
         for plugin in plugin_list:
             st.register(plugin)
 
