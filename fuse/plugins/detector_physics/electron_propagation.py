@@ -237,19 +237,76 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         help="Enable the time and position shift due to the perpendicular wires",
     )
 
+
+    def setup(self):
+        
+        super().setup()
+        self.perp_wire_angle_rad = np.deg2rad(self.perp_wire_angle)
+
     def apply_perpendicular_wire_effects(self, positions, times):
         """Apply the time and position shift due to the perpendicular wires."""
         if self.enable_perp_wire_electron_shift:
-            times = time_correction_pp_wire(self, times, positions)
-            positions = position_correction_pp_wire(self, positions)
+            times = self.time_correction_pp_wire(self, times, positions)
+            positions = self.position_correction_pp_wire(self, positions)
         return positions, times
+    
+    def position_correction_pp_wire(self, positions):
+
+        x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
+
+        x_diff = np.zeros(positions.shape[0], dtype=positions.dtype)
+        mask_near_wires = get_near_wires_mask(self, positions)
+        mask_near_wires_left = mask_near_wires & (
+            np.abs(x_rot) < self.position_correction_pp_wire_shift
+        )
+        mask_near_wires_right = mask_near_wires & (
+            np.abs(x_rot) >= self.position_correction_pp_wire_shift
+        )
+
+        x_rot = np.expand_dims(x_rot, axis=1)
+        x_rot_left = x_rot[mask_near_wires_left]
+        x_rot_right = x_rot[mask_near_wires_right]
+
+        x_diff[mask_near_wires_left] = self.x_position_offset_1d_mean_left(x_rot_left)
+        x_diff[mask_near_wires_right] = self.x_position_offset_1d_mean_right(x_rot_right)
+
+        x_diff = np.expand_dims(x_diff, axis=1)
+        x_rot_shifted = x_rot + x_diff
+
+        # inverse rotation
+        x_obs_shifted, y_obs_shifted = rotate_axis(
+            self, x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle_rad
+        )
+        positions = np.column_stack([x_obs_shifted, y_obs_shifted])
+
+        return positions
+
+
+    def time_correction_pp_wire(self, time, positions):
+        x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
+
+        x_extend = np.expand_dims(x_rot, axis=1)
+        drift_time_perp_mean_r = self.drift_time_1d_perp(x_extend)
+        drift_time_perp_spread_r = self.drift_time_spread_1d_perp(x_extend)
+
+        perp_time = self.rng.normal(
+            drift_time_perp_mean_r * 1e3, drift_time_perp_spread_r * 1e3, size=time.shape[0]
+        )
+        return time + perp_time
+    
+    def get_near_wires_mask(self, positions):
+        """Returns a mask selecting the events near the perpendicular wires."""
+        x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
+        mask_near_wires = np.abs(x_rot) - self.perp_wire_x_pos < self.perp_wires_cut_distance[1]
+        mask_near_wires &= np.abs(x_rot) - self.perp_wire_x_pos > -self.perp_wires_cut_distance[0]
+        return mask_near_wires
 
 
 def drift_time_in_tpc(n_electron, drift_time_mean, drift_time_spread, rng):
     n_electrons = np.sum(n_electron).astype(np.int64)
     drift_time_mean_r = np.repeat(drift_time_mean, n_electron.astype(np.int64))
     drift_time_spread_r = np.repeat(drift_time_spread, n_electron.astype(np.int64))
-
+    
     timing = rng.normal(drift_time_mean_r, drift_time_spread_r, size=n_electrons)
 
     return timing.astype(np.int64)
@@ -259,59 +316,6 @@ def rotate_axis(self, x_obs, y_obs, angle):
     x_rot = np.cos(angle) * x_obs - np.sin(angle) * y_obs
     y_rot = np.sin(angle) * x_obs + np.cos(angle) * y_obs
     return x_rot, y_rot
-
-
-def get_near_wires_mask(self, positions):
-    """Returns a mask selecting the events near the perpendicular wires."""
-    x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle)
-    mask_near_wires = np.abs(x_rot) - self.perp_wire_x_pos < self.perp_wires_cut_distance[1]
-    mask_near_wires &= np.abs(x_rot) - self.perp_wire_x_pos > -self.perp_wires_cut_distance[0]
-    return mask_near_wires
-
-
-def position_correction_pp_wire(self, positions):
-
-    x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle)
-
-    x_diff = np.zeros(positions.shape[0], dtype=positions.dtype)
-    mask_near_wires = get_near_wires_mask(self, positions)
-    mask_near_wires_left = mask_near_wires & (
-        np.abs(x_rot) < self.position_correction_pp_wire_shift
-    )
-    mask_near_wires_right = mask_near_wires & (
-        np.abs(x_rot) >= self.position_correction_pp_wire_shift
-    )
-
-    x_rot = np.expand_dims(x_rot, axis=1)
-    x_rot_left = x_rot[mask_near_wires_left]
-    x_rot_right = x_rot[mask_near_wires_right]
-
-    x_diff[mask_near_wires_left] = self.x_position_offset_1d_mean_left(x_rot_left)
-    x_diff[mask_near_wires_right] = self.x_position_offset_1d_mean_right(x_rot_right)
-
-    x_diff = np.expand_dims(x_diff, axis=1)
-    x_rot_shifted = x_rot + x_diff
-
-    # inverse rotation
-    x_obs_shifted, y_obs_shifted = rotate_axis(
-        self, x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle
-    )
-    positions = np.column_stack([x_obs_shifted, y_obs_shifted])
-
-    return positions
-
-
-def time_correction_pp_wire(self, time, positions):
-    x_rot, y_rot = rotate_axis(self, positions[:, 0], positions[:, 1], self.perp_wire_angle)
-
-    x_extend = np.expand_dims(x_rot, axis=1)
-    drift_time_perp_mean_r = self.drift_time_1d_perp(x_extend)
-    drift_time_perp_spread_r = self.drift_time_spread_1d_perp(x_extend)
-
-    perp_time = self.rng.normal(
-        drift_time_perp_mean_r * 1e3, drift_time_perp_spread_r * 1e3, size=time.shape[0]
-    )
-    return time + perp_time
 
 
 @njit()
