@@ -227,9 +227,9 @@ def xenonnt_fuse_full_chain_simulation(
 
     if enable_perp_wire_electron_shift:
         log.info("Enabling perpendicular wire electron shift plugin.")
-        plugin_lists.extend(perpendicular_wire_shift_plugins)
+        plugin_lists.append(perpendicular_wire_shift_plugins)
 
-    plugin_lists.extend(extra_plugins)
+    plugin_lists.append(extra_plugins)
 
     for plugin_list in plugin_lists:
         for plugin in plugin_list:
