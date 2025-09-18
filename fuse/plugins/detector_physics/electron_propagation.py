@@ -56,7 +56,6 @@ class ElectronPropagation(FuseBasePlugin):
         help="Map for the electric field dependencies",
     )
 
-
     # perp_wire_x_pos = 13.06  # cm
     # perp_wire_angle = np.deg2rad(30)
     # perp_wires_cut_distance = [8.5, 11.3]
@@ -155,17 +154,16 @@ class ElectronPropagation(FuseBasePlugin):
     def apply_perpendicular_wire_effects(self, positions, times):
         """Apply the time and position shift due to the perpendicular wires."""
         return positions, times
-        
 
 
 @export
 class ElectronPropagationPerpWires(ElectronPropagation):
     """Plugin to simulate the propagation of electrons in the TPC to the gas
-    interface, including the effect of the perpendicular wires on time and position."""
+    interface, including the effect of the perpendicular wires on time and
+    position."""
 
     __version__ = "0.0.1"
 
- 
     x_position_offset_1d_mean_left = straxen.URLConfig(
         default="itp_map://resource://"
         "/project2/lgrandi/pkharban/s2_only/x_position_offset_1d_mean_left_vera_map.json?&fmt=json"
@@ -221,7 +219,7 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         "&take=perp_wires_cut_distance",
         type=(list, tuple),
         cache=True,
-        help="Distance in x (cm) from the center of the gate perpendicular wires; " \
+        help="Distance in x (cm) from the center of the gate perpendicular wires; "
         "expects a list or tuple [left, right]",
     )
 
@@ -231,7 +229,7 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         "&take=position_correction_pp_wire_shift",
         type=(int, float),
         cache=True,
-        help="Distance in x (cm) from the center of the gate perpendicular wires " \
+        help="Distance in x (cm) from the center of the gate perpendicular wires "
         "to apply different position corrections",
     )
 
