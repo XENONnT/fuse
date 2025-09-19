@@ -62,8 +62,8 @@ class S1PhotonHits(FuseBasePlugin):
         help="PMT gain model",
     )
 
-    s1_lce_correction_map = straxen.URLConfig(
-        default="lce_from_pattern_map://pattern_map://resource://simulation_config://"
+    s1_pattern_map = straxen.URLConfig(
+        default="pattern_map://resource://simulation_config://"
         "SIMULATION_CONFIG_FILE.json?"
         "&key=s1_pattern_map"
         "&fmt=pkl"
@@ -101,6 +101,11 @@ class S1PhotonHits(FuseBasePlugin):
         )
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from xedocs by default)
+
+        self.s1_lce_correction_map = lce_from_pattern_map(
+            self.s1_pattern_map,
+            self.pmt_mask
+        )
 
     def compute(self, interactions_in_roi):
         # Just apply this to clusters with photons
@@ -156,3 +161,12 @@ class S1PhotonHits(FuseBasePlugin):
         n_photon_hits = self.rng.binomial(n=n_photons, p=ly)
 
         return n_photon_hits
+
+
+def lce_from_pattern_map(map, pmt_mask):
+    """Build a S1 lce correction map from a S1 pattern map."""
+
+    lcemap = deepcopy(map)
+    lcemap.data["map"] = np.sum(lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=pmt_mask)
+    lcemap.__init__(lcemap.data)
+    return lcemap
