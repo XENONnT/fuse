@@ -41,9 +41,7 @@ class ElectronDrift(FuseBasePlugin):
         ),
     ] + strax.time_fields
 
-    save_when = strax.SaveWhen.ALWAYS
-
-    # Config options
+    save_when = strax.SaveWhen.TARGET
 
     drift_velocity_liquid = straxen.URLConfig(
         default="take://resource://"
@@ -449,5 +447,6 @@ class ElectronDrift(FuseBasePlugin):
 
         # # Clip negative values to zero before taking the sqrt
         # drift_time_spread_squared = np.clip(drift_time_spread_squared, 0, np.inf)
+
 
         # drift_time_spread = np.sqrt(drift_time_spread_squared)

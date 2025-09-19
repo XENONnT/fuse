@@ -86,6 +86,7 @@ class ElectronPropagation(FuseBasePlugin):
             [interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["y_obs"]]
         ).T
 
+        # Calculate the horizontal diffusion
         if self.enable_diffusion_transverse_map:
             diffusion_constant_radial = self.field_dependencies_map(
                 interactions_in_roi[mask]["z_obs"], positions, map_name="diffusion_radial_map"
@@ -99,8 +100,10 @@ class ElectronPropagation(FuseBasePlugin):
             diffusion_constant_radial = self.diffusion_constant_transverse
             diffusion_constant_azimuthal = self.diffusion_constant_transverse
 
+        # Initialize array for horizontal diffusion
         hdiff = np.zeros((electron_drift_time.shape[0], 2))
 
+        # Fills the hdiff array with the horizontal diffusion
         simulate_horizontal_shift(
             interactions_in_roi[mask]["n_electron_interface"],
             electron_drift_time,
@@ -111,13 +114,12 @@ class ElectronPropagation(FuseBasePlugin):
             self.rng,
         )
 
+        # Add the horizontal diffusion to the initial position
         positions_shifted = (
             np.repeat(positions, interactions_in_roi[mask]["n_electron_interface"], axis=0) + hdiff
         )
 
         # Now we have the positions of the electrons at the top of the LXe
-        # Simulation of wire effects go in here -> time shift + position shift
-
         electron_times = (
             np.repeat(
                 interactions_in_roi[mask]["time"],
@@ -127,6 +129,7 @@ class ElectronPropagation(FuseBasePlugin):
             + electron_drift_time
         )
 
+        # Simulation of wire effects go in here -> time shift + position shift
         positions_shifted, electron_times = self.apply_perpendicular_wire_effects(
             positions_shifted, electron_times
         )
@@ -319,15 +322,20 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         return positions
 
     def time_correction_pp_wire(self, time, positions):
+
         x_rot, _ = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
 
         x_extend = np.expand_dims(x_rot, axis=1)
-        drift_time_perp_mean_r = self.perp_wires_drift_time_1d(x_extend)
-        drift_time_perp_spread_r = self.perp_wires_drift_time_spread_1d(x_extend)
+        drift_time_perp_mean_r = self.perp_wires_drift_time_1d(x_extend) # in us
+        drift_time_perp_spread_r = self.perp_wires_drift_time_spread_1d(x_extend) # in us
 
-        perp_time = self.rng.normal(
-            drift_time_perp_mean_r * 1e3, drift_time_perp_spread_r * 1e3, size=time.shape[0]
-        )
+        # perp_time = self.rng.normal(
+        #     drift_time_perp_mean_r * 1e3, drift_time_perp_spread_r * 1e3, size=time.shape[0]
+        # )
+
+        # forget the spead for now, just add the drift time mean
+        perp_time = drift_time_perp_mean_r.flatten() * 1e3 # in ns
+
         return time + perp_time
 
     def get_near_wires_mask(self, positions):
