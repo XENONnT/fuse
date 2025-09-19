@@ -9,7 +9,14 @@ import strax
 import straxen
 
 from ...dtypes import g4_fields, primary_positions_fields, deposit_positions_fields
-from ...common import full_array_to_numpy, reshape_awkward, dynamic_chunking, awkward_to_flat_numpy
+from ...common import (
+    stable_sort,
+    stable_argsort,
+    full_array_to_numpy,
+    reshape_awkward,
+    dynamic_chunking,
+    awkward_to_flat_numpy,
+)
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -55,7 +62,7 @@ class ChunkInput(FuseBasePlugin):
     source_rate = straxen.URLConfig(
         default=1,
         type=(int, float),
-        help="Source rate used to generate event times"
+        help="Source rate used to generate event times in 1/s."
         "Use a value >0 to generate event times in fuse"
         "Use source_rate = 0 to use event times from the input file (only for csv input)",
     )
@@ -66,8 +73,15 @@ class ChunkInput(FuseBasePlugin):
         help="If True, the events will be spaced with a fixed time difference of 1/source_rate",
     )
 
+    subtract_first_interaction_time = straxen.URLConfig(
+        default=True,
+        type=bool,
+        help="If True, the time of the first interaction of each event is subtracted "
+        "when source_rate > 0, before the random sampled event time is added.",
+    )
+
     cut_delayed = straxen.URLConfig(
-        default=9e18,
+        default=1e18,
         type=(int, float),
         help="All interactions happening after this time (including the event time) will be cut",
     )
@@ -123,6 +137,7 @@ class ChunkInput(FuseBasePlugin):
             self.rng,
             separation_scale=self.separation_scale,
             event_rate=self.source_rate,
+            subtract_first_interaction_time=self.subtract_first_interaction_time,
             cut_delayed=self.cut_delayed,
             first_chunk_left=self.first_chunk_left,
             last_chunk_length=self.last_chunk_length,
@@ -175,6 +190,7 @@ class file_loader:
         random_number_generator,
         separation_scale=1e8,
         event_rate=1,
+        subtract_first_interaction_time=True,
         n_interactions_per_chunk=500,
         cut_delayed=4e12,
         first_chunk_left=1e6,
@@ -195,6 +211,7 @@ class file_loader:
         self.rng = random_number_generator
         self.separation_scale = separation_scale
         self.event_rate = event_rate / 1e9  # Conversion to ns
+        self.subtract_first_interaction_time = subtract_first_interaction_time
         self.n_interactions_per_chunk = n_interactions_per_chunk
         self.cut_delayed = cut_delayed
         self.last_chunk_length = np.int64(last_chunk_length)
@@ -259,9 +276,9 @@ class file_loader:
         interactions = interactions[m]
 
         # Sort interactions in events by time and subtract time of the first interaction
-        interactions = interactions[ak.argsort(interactions["t"])]
+        interactions = interactions[ak.argsort(interactions["t"], stable=True)]
 
-        if self.event_rate > 0:
+        if self.event_rate > 0 and self.subtract_first_interaction_time:
             interactions["t"] = interactions["t"] - interactions["t"][:, 0]
 
         # Adjust event times if necessary
@@ -286,7 +303,7 @@ class file_loader:
                 event_times = self.rng.uniform(
                     low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
                 ).astype(np.int64)
-                event_times = np.sort(event_times)
+                event_times = stable_sort(event_times)
 
             interactions["time"] = interactions["t"] + event_times
 
@@ -309,7 +326,7 @@ class file_loader:
         interaction_time = awkward_to_flat_numpy(interactions["time"])
 
         # First caclulate sort index for the interaction times
-        sort_idx = np.argsort(interaction_time)
+        sort_idx = stable_argsort(interaction_time)
         # and now make it an integer for strax time field
         interaction_time = interaction_time.astype(np.int64)
         # Sort the interaction times
@@ -376,7 +393,7 @@ class file_loader:
             current_chunk = current_chunk[select_times]
 
             # Sorting each chunk by time within the chunk
-            sort_chunk = np.argsort(current_chunk["time"])
+            sort_chunk = stable_argsort(current_chunk["time"])
             current_chunk = current_chunk[sort_chunk]
 
             if c_ix == unique_chunk_index_values[-1]:

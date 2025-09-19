@@ -28,8 +28,8 @@ kind_colors = dict(
 
 @numba.njit()
 def dynamic_chunking(data, scale, n_min):
-    idx_sort = np.argsort(data)
-    idx_undo_sort = np.argsort(idx_sort)
+    idx_sort = stable_argsort(data)
+    idx_undo_sort = stable_argsort(idx_sort)
 
     data_sorted = data[idx_sort]
 
