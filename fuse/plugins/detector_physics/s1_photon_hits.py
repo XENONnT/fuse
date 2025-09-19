@@ -111,7 +111,7 @@ class S1PhotonHits(FuseBasePlugin):
         )
         lcemap.__init__(lcemap.data)
         self.s1_lce_correction_map = lcemap
-    
+
     def compute(self, interactions_in_roi):
         # Just apply this to clusters with photons
         mask = interactions_in_roi["photons"] > 0
@@ -166,6 +166,3 @@ class S1PhotonHits(FuseBasePlugin):
         n_photon_hits = self.rng.binomial(n=n_photons, p=ly)
 
         return n_photon_hits
-
-
-
