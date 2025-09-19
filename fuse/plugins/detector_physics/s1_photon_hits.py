@@ -1,5 +1,6 @@
 import strax
 import straxen
+from copy import deepcopy
 
 import numpy as np
 
@@ -62,8 +63,8 @@ class S1PhotonHits(FuseBasePlugin):
         help="PMT gain model",
     )
 
-    s1_lce_correction_map = straxen.URLConfig(
-        default="lce_from_pattern_map://pattern_map://resource://simulation_config://"
+    s1_pattern_map = straxen.URLConfig(
+        default="pattern_map://resource://simulation_config://"
         "SIMULATION_CONFIG_FILE.json?"
         "&key=s1_pattern_map"
         "&fmt=pkl"
@@ -101,6 +102,15 @@ class S1PhotonHits(FuseBasePlugin):
         )
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from xedocs by default)
+
+        # Build LCE map from s1 pattern map
+        lcemap = deepcopy(self.s1_pattern_map)
+        # AT: this scaling with mast is redundant to `make_patternmap`, but keep it in for now
+        lcemap.data["map"] = np.sum(
+            lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=self.pmt_mask
+        )
+        lcemap.__init__(lcemap.data)
+        self.s1_lce_correction_map = lcemap
 
     def compute(self, interactions_in_roi):
         # Just apply this to clusters with photons
