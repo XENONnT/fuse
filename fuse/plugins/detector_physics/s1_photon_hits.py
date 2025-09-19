@@ -102,10 +102,7 @@ class S1PhotonHits(FuseBasePlugin):
 
         self.pmt_mask = np.array(self.gains) > 0  # Converted from to pe (from xedocs by default)
 
-        self.s1_lce_correction_map = lce_from_pattern_map(
-            self.s1_pattern_map,
-            self.pmt_mask
-        )
+        self.s1_lce_correction_map = lce_from_pattern_map(self.s1_pattern_map, self.pmt_mask)
 
     def compute(self, interactions_in_roi):
         # Just apply this to clusters with photons
