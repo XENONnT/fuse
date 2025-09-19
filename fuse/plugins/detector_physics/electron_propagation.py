@@ -155,7 +155,18 @@ class ElectronPropagation(FuseBasePlugin):
 class ElectronPropagationPerpWires(ElectronPropagation):
     """Plugin to simulate the propagation of electrons in the TPC to the gas
     interface, including the effect of the perpendicular wires on time and
-    position."""
+    position.
+    
+    - We use two 1D maps for the position shift, one for the left side of the
+      perpendicular wires and one for the right side. The need for two maps is to
+      have a sharp transition at the perpendicular wire position, that the interpolation
+      would otherwise smooth out. The position maps are just an offset, so we
+      add the offset to the x position in the rotated frame.
+
+    - We use two 1D maps for the time shift, one for the mean and one for the spread.
+      The time shift is applied as a random number drawn from a Gaussian with
+      mean and spread given by the maps.
+    """
 
     __version__ = "0.0.1"
 
@@ -260,11 +271,21 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         return positions, times
 
     def position_correction_pp_wire(self, positions):
+        """
+        Apply the position shift due to the perpendicular wires.
+        The map is defined in the rotated x frame, so we need to rotate the
+        positions to apply the correction, and then rotate back.
+        We pass the absolute value of x to the map, and then apply the
+        correction with the appropriate sign.
+        """
 
         x_rot, y_rot = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
 
         x_diff = np.zeros(positions.shape[0], dtype=positions.dtype)
+        # Get a mask close to wires
+        # it selects two regions, one with positive x_rot and one with negative x_rot
         mask_near_wires = self.get_near_wires_mask(positions)
+        # We split the mask in two, one for the left side of the wire and one for the right side
         mask_near_wires_left = mask_near_wires & (
             np.abs(x_rot) < self.position_correction_pp_wire_shift
         )
@@ -276,13 +297,20 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         x_rot_left = x_rot[mask_near_wires_left]
         x_rot_right = x_rot[mask_near_wires_right]
 
-        x_diff[mask_near_wires_left] = self.perp_wires_x_position_offset_1d_mean_left(x_rot_left)
-        x_diff[mask_near_wires_right] = self.perp_wires_x_position_offset_1d_mean_right(x_rot_right)
+        # We apply the position correction only to the electrons close to the wires
+        # passing the absolute value of x_rot to the maps
+        x_diff[mask_near_wires_left] = self.perp_wires_x_position_offset_1d_mean_left(
+            np.abs(x_rot_left)
+        )
+        x_diff[mask_near_wires_right] = self.perp_wires_x_position_offset_1d_mean_right(
+            np.abs(x_rot_right)
+        )
 
         x_diff = np.expand_dims(x_diff, axis=1)
+        # Add the offset to the x position in the rotated frame
         x_rot_shifted = x_rot + x_diff
 
-        # inverse rotation
+        # Inverse rotation to get back to the original frame
         x_obs_shifted, y_obs_shifted = rotate_axis(
             x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle_rad
         )
@@ -291,7 +319,7 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         return positions
 
     def time_correction_pp_wire(self, time, positions):
-        x_rot, y_rot = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
+        x_rot, _ = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
 
         x_extend = np.expand_dims(x_rot, axis=1)
         drift_time_perp_mean_r = self.perp_wires_drift_time_1d(x_extend)
@@ -304,7 +332,7 @@ class ElectronPropagationPerpWires(ElectronPropagation):
 
     def get_near_wires_mask(self, positions):
         """Returns a mask selecting the events near the perpendicular wires."""
-        x_rot, y_rot = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
+        x_rot, _ = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
         mask_near_wires = np.abs(x_rot) - self.perp_wire_x_pos < self.perp_wires_rot_x_mask[1]
         mask_near_wires &= np.abs(x_rot) - self.perp_wire_x_pos > -self.perp_wires_rot_x_mask[0]
         return mask_near_wires
