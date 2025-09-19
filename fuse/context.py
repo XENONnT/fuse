@@ -59,8 +59,8 @@ s1_simulation_plugins = [
 # Plugins to simulate S2 signals
 s2_simulation_plugins = [
     fuse.detector_physics.ElectronDrift,
+    fuse.detector_physics.ElectronPropagation,
     fuse.detector_physics.ElectronExtraction,
-    fuse.detector_physics.ElectronTiming,
     fuse.detector_physics.SecondaryScintillation,
     fuse.detector_physics.S2PhotonPropagation,
 ]
@@ -69,8 +69,8 @@ s2_simulation_plugins = [
 delayed_electron_simulation_plugins = [
     fuse.detector_physics.delayed_electrons.PhotoIonizationElectrons,
     fuse.detector_physics.delayed_electrons.DelayedElectronsDrift,
+    fuse.detector_physics.delayed_electrons.DelayedElectronPropagation,
     fuse.detector_physics.delayed_electrons.DelayedElectronsExtraction,
-    fuse.detector_physics.delayed_electrons.DelayedElectronsTiming,
     fuse.detector_physics.delayed_electrons.DelayedElectronsSecondaryScintillation,
     fuse.detector_physics.delayed_electrons.S1PhotonHitsEmpty,
 ]
@@ -78,12 +78,17 @@ delayed_electron_simulation_plugins = [
 # Plugins to merge delayed and regular electrons
 delayed_electron_merger_plugins = [
     fuse.detector_physics.delayed_electrons.DriftedElectronsMerger,
+    fuse.detector_physics.delayed_electrons.PropagatedElectronsMerger,
     fuse.detector_physics.delayed_electrons.ExtractedElectronsMerger,
-    fuse.detector_physics.delayed_electrons.ElectronTimingMerger,
     fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonsMerger,
     fuse.detector_physics.delayed_electrons.SecondaryScintillationPhotonSumMerger,
     fuse.detector_physics.delayed_electrons.MicrophysicsSummaryMerger,
     fuse.detector_physics.delayed_electrons.S1PhotonHitsMerger,
+]
+
+perpendicular_wire_shift_plugins = [
+    fuse.detector_physics.ElectronPropagationPerpWires,
+    fuse.detector_physics.delayed_electrons.DelayedElectronPropagationPerpWires,
 ]
 
 # Plugins to simulate PMTs and DAQ
@@ -198,6 +203,8 @@ def xenonnt_fuse_full_chain_simulation(
     )
     log.info(f"Using clustering method: {clustering_method}")
 
+    enable_perp_wire_electron_shift = sim_config.get("enable_perp_wire_electron_shift", False)
+
     # Create context and register plugins
     st = strax.Context(storage=output_folder, **common_opts)
     st.set_config(dict(check_raw_record_overlaps=True, **common_config))
@@ -209,7 +216,9 @@ def xenonnt_fuse_full_chain_simulation(
 
         extra_plugins.extend(cutax.EXTRA_PLUGINS)
 
-    for plugin_list in [
+    # Register all plugins
+    # The order here matters!
+    plugin_lists = [
         microphysics_plugins_clustering[clustering_method],
         microphysics_plugins_remaining,
         s1_simulation_plugins,
@@ -219,8 +228,18 @@ def xenonnt_fuse_full_chain_simulation(
         pmt_and_daq_plugins,
         truth_information_plugins,
         processing_plugins,
-        extra_plugins,
-    ]:
+    ]
+
+    # Perpendicular wire electron shift plugin
+    if enable_perp_wire_electron_shift:
+        log.info("Enabling perpendicular wire electron shift plugin.")
+        plugin_lists.append(perpendicular_wire_shift_plugins)
+
+    # Lastly, any extra plugins the user wants to add
+    # Needs to be last, in case it overrides any of the above
+    plugin_lists.append(extra_plugins)
+
+    for plugin_list in plugin_lists:
         for plugin in plugin_list:
             st.register(plugin)
 

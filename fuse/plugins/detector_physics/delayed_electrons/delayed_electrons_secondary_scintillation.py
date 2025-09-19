@@ -11,7 +11,7 @@ class DelayedElectronsSecondaryScintillation(SecondaryScintillation):
     """This class is used to simulate the extraction of electrons from the
     sources of electron afterpulses."""
 
-    __version__ = "0.0.1"
+    __version__ = "0.0.3"
 
     child_plugin = True
 
@@ -21,7 +21,6 @@ class DelayedElectronsSecondaryScintillation(SecondaryScintillation):
     depends_on = (
         "drifted_delayed_electrons",
         "extracted_delayed_electrons",
-        "delayed_electrons_time",
         "photo_ionization_electrons",
     )
 
