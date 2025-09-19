@@ -1,5 +1,6 @@
 import strax
 import straxen
+from copy import deepcopy
 
 import numpy as np
 
