@@ -64,8 +64,10 @@ def set_simulation_config_file(context, config_file_name):
                 )
 
             # Special case for the photoionization_modifier
+            # This is because unfortunately we do not track the photoionization
+            # version in the global version.. we use v3 as hardcoded default for now
             if option_key == "photoionization_modifier":
-                context.config[option_key] = option.default
+                context.config[option_key] = option.default.replace("ONLINE", "v3")
 
 
 @URLConfig.register("pattern_map")
