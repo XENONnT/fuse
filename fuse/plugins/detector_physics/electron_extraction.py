@@ -12,7 +12,7 @@ class ElectronExtraction(FuseBasePlugin):
     """Plugin to simulate the loss of electrons during the extraction of
     drifted electrons from the liquid into the gas phase."""
 
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"  # bumped: perf refactor
 
     depends_on = "electrons_at_interface"
     provides = "extracted_electrons"
@@ -99,42 +99,67 @@ class ElectronExtraction(FuseBasePlugin):
 
     def compute(self, individual_electrons):
 
-        position = np.array(
-            [individual_electrons["x_interface"], individual_electrons["y_interface"]]
-        ).T
+        N = individual_electrons.shape[0]
 
-        if self.ext_eff_from_map:
-            # Extraction efficiency is g2(x,y)/SE_gain(x,y)
-            rel_s2_cor = self.s2_correction_map(position)
-            # Doesn't always need to be flattened, but if s2_correction_map = False,
-            # then map is made from MC
-            rel_s2_cor = rel_s2_cor.flatten()
+        # Fast path: scalar probability (no maps)
+        if not self.ext_eff_from_map:
+            p = float(self.electron_extraction_yield)
+            if p <= 0.0:
+                return np.zeros(0, dtype=self.dtype)
+            if p >= 1.0:
+                idx = np.arange(N, dtype=np.int64)
+            else:
+                # Faster than binomial for large N
+                u = self.rng.random(N)
+                idx = np.flatnonzero(u < p)
+        else:
+            # Only build positions if we actually need maps
+            # shape: (N, 2)
+            position = np.column_stack(
+                (individual_electrons["x_interface"], individual_electrons["y_interface"])
+            ).astype(np.float32, copy=False)
+
+            # rel S2 correction (flatten for safety; maps sometimes return (N,1))
+            rel_s2_cor = self.s2_correction_map(position).astype(np.float32, copy=False).reshape(-1)
 
             if self.se_gain_from_map:
-                se_gains = self.se_gain_map(position)
+                se_gains = self.se_gain_map(position).astype(np.float32, copy=False).reshape(-1)
             else:
-                # Is in get_s2_light_yield map is scaled according to relative s2 correction
-                # We also need to do it here to have consistent g2
-                se_gains = rel_s2_cor * self.s2_secondary_sc_gain_mc
-            cy = self.g2_mean * rel_s2_cor / se_gains
-        else:
-            cy = self.electron_extraction_yield
+                # keep g2 consistent with MC scaling
+                se_gains = rel_s2_cor * float(self.s2_secondary_sc_gain_mc)
 
-        extraction_mask = self.rng.binomial(1, p=cy, size=position.shape[0]).astype(bool)
+            # cy = g2_mean * rel_s2_cor / se_gains
+            cy = (float(self.g2_mean) * rel_s2_cor) / se_gains
+            # be defensive: ensure 0<=p<=1 (maps can have tiny numerical wiggles)
+            np.clip(cy, 0.0, 1.0, out=cy)
 
-        result = np.zeros(np.sum(extraction_mask), dtype=self.dtype)
-        result["time"] = self.extraction_delay(individual_electrons[extraction_mask]["time"])
+            # Single RNG pass to build mask
+            u = self.rng.random(N).astype(np.float32, copy=False)
+            idx = np.flatnonzero(u < cy)
+
+        M = int(idx.size)
+        if M == 0:
+            return np.zeros(0, dtype=self.dtype)
+
+        # Allocate result once and fill via np.take (one indexed gather per field)
+        result = np.zeros(M, dtype=self.dtype)
+
+        times_sel = np.take(individual_electrons["time"], idx)
+        result["time"] = self.extraction_delay(times_sel)
         result["endtime"] = result["time"]
-        result["x_interface"] = individual_electrons[extraction_mask]["x_interface"]
-        result["y_interface"] = individual_electrons[extraction_mask]["y_interface"]
-        result["cluster_id"] = individual_electrons[extraction_mask]["cluster_id"]
+
+        result["x_interface"] = np.take(individual_electrons["x_interface"], idx).astype(
+            np.float32, copy=False
+        )
+        result["y_interface"] = np.take(individual_electrons["y_interface"], idx).astype(
+            np.float32, copy=False
+        )
+        result["cluster_id"] = np.take(individual_electrons["cluster_id"], idx)
 
         return result
 
-    def extraction_delay(
-        self,
-        electron_times,
-    ):
-        timing = self.rng.exponential(self.electron_trapping_time, size=electron_times.shape[0])
-
-        return electron_times + timing.astype(np.int64)
+    def extraction_delay(self, electron_times):
+        # Vectorized, deterministic via self.rng
+        # exponential() returns float64; cast once before adding
+        dt = self.rng.exponential(float(self.electron_trapping_time), size=electron_times.shape[0])
+        return electron_times + dt.astype(np.int64)
