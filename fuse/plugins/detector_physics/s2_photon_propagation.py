@@ -22,102 +22,6 @@ export, __all__ = strax.exporter()
 conversion_to_bar = 1 / constants.elementary_charge / 1e1
 
 
-# ----------------------------
-# Numba helpers (no RNG inside)
-# ----------------------------
-
-@njit(cache=True, fastmath=True)
-def _segment_ranges(n_per_row):
-    m = n_per_row.shape[0]
-    starts = np.empty(m, np.int64)
-    stops = np.empty(m, np.int64)
-    total = 0
-    for i in range(m):
-        k = int(n_per_row[i])
-        starts[i] = total
-        total += k
-        stops[i] = total
-    return starts, stops, total
-
-
-@njit(cache=True, fastmath=True)
-def draw_excitation_times(
-    inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap, samples_flat
-):
-    inv_cdf_len = len(inv_cdf_list[0])
-    timings = np.zeros(np.sum(nph))
-    upper_hist_ind = np.clip(hist_indices + 1, 0, len(inv_cdf_list) - 1)
-
-    starts, stops, _ = _segment_ranges(nph)
-
-    for i in range(nph.shape[0]):
-        hist_ind = hist_indices[i]
-        u_hist_ind = upper_hist_ind[i]
-        n = int(nph[i])
-        if n == 0:
-            continue
-
-        dngg = diff_nearest_gg[i]
-        # linear interpolation between nearest inv-CDFs (same as before)
-        interp_cdf = (inv_cdf_list[u_hist_ind] - inv_cdf_list[hist_ind]) * (dngg / d_gas_gap) + inv_cdf_list[hist_ind]
-
-        s = starts[i]; e = stops[i]
-        samples = samples_flat[s:e]  # in [0, inv_cdf_len-2)
-
-        fi = np.floor(samples).astype(np.int64)
-        # safe ceil capped at last valid index
-        ci = fi + (fi < (inv_cdf_len - 2))
-        t1 = interp_cdf[fi]
-        t2 = interp_cdf[ci]
-        T = (t2 - t1) * (samples - fi) + t1
-        # preserve original zero-mean re-centering per electron
-        T = T - T.mean()
-        timings[s:e] = T
-    return timings
-
-@njit(cache=True, fastmath=True)
-def _luminescence_timings_simple(
-    n,
-    dG,
-    E0,
-    r,
-    dr,
-    rr,
-    alpha,
-    uE,
-    p,
-    n_photons,
-    uniforms_flat  # in [0,1)
-):
-    emission_time = np.zeros(np.sum(n_photons), np.int64)
-    starts, stops, _ = _segment_ranges(n_photons)
-
-    for i in range(n):
-        npho = int(n_photons[i])
-        if npho == 0:
-            continue
-
-        # identical algebra, just hoisted into numba
-        dt_i = dr / (alpha * E0[i] * rr)
-        dy_i = E0[i] * rr / uE - 0.8 * p  # arXiv:physics/0702142
-        avgt = np.sum(np.cumsum(dt_i) * dy_i) / np.sum(dy_i)
-
-        j = 0
-        # first r <= dG[i]
-        while j < r.shape[0] and not (r[j] <= dG[i]):
-            j += 1
-
-        t = np.cumsum(dt_i[j:]) - avgt
-        y = np.cumsum(dy_i[j:])
-
-        s = starts[i]; e = stops[i]
-        probs = uniforms_flat[s:e]
-        # linear interp on monotonic CDF y/y[-1] → t
-        emission_time[s:e] = np.interp(probs, y / y[-1], t).astype(np.int64)
-
-    return emission_time
-
-
 @export
 class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     """Base plugin to simulate the propagation of S2 photons in the detector."""
@@ -833,3 +737,99 @@ def find_electron_split_index(
     for k in range(n_splits):
         out[k] = split_index[k] + 1
     return out
+
+
+# ----------------------------
+# Numba helpers (no RNG inside)
+# ----------------------------
+
+@njit(cache=True, fastmath=True)
+def _segment_ranges(n_per_row):
+    m = n_per_row.shape[0]
+    starts = np.empty(m, np.int64)
+    stops = np.empty(m, np.int64)
+    total = 0
+    for i in range(m):
+        k = int(n_per_row[i])
+        starts[i] = total
+        total += k
+        stops[i] = total
+    return starts, stops, total
+
+
+@njit(cache=True, fastmath=True)
+def draw_excitation_times(
+    inv_cdf_list, hist_indices, nph, diff_nearest_gg, d_gas_gap, samples_flat
+):
+    inv_cdf_len = len(inv_cdf_list[0])
+    timings = np.zeros(np.sum(nph))
+    upper_hist_ind = np.clip(hist_indices + 1, 0, len(inv_cdf_list) - 1)
+
+    starts, stops, _ = _segment_ranges(nph)
+
+    for i in range(nph.shape[0]):
+        hist_ind = hist_indices[i]
+        u_hist_ind = upper_hist_ind[i]
+        n = int(nph[i])
+        if n == 0:
+            continue
+
+        dngg = diff_nearest_gg[i]
+        # linear interpolation between nearest inv-CDFs (same as before)
+        interp_cdf = (inv_cdf_list[u_hist_ind] - inv_cdf_list[hist_ind]) * (dngg / d_gas_gap) + inv_cdf_list[hist_ind]
+
+        s = starts[i]; e = stops[i]
+        samples = samples_flat[s:e]  # in [0, inv_cdf_len-2)
+
+        fi = np.floor(samples).astype(np.int64)
+        # safe ceil capped at last valid index
+        ci = fi + (fi < (inv_cdf_len - 2))
+        t1 = interp_cdf[fi]
+        t2 = interp_cdf[ci]
+        T = (t2 - t1) * (samples - fi) + t1
+        # preserve original zero-mean re-centering per electron
+        T = T - T.mean()
+        timings[s:e] = T
+    return timings
+
+@njit(cache=True, fastmath=True)
+def _luminescence_timings_simple(
+    n,
+    dG,
+    E0,
+    r,
+    dr,
+    rr,
+    alpha,
+    uE,
+    p,
+    n_photons,
+    uniforms_flat  # in [0,1)
+):
+    emission_time = np.zeros(np.sum(n_photons), np.int64)
+    starts, stops, _ = _segment_ranges(n_photons)
+
+    for i in range(n):
+        npho = int(n_photons[i])
+        if npho == 0:
+            continue
+
+        # identical algebra, just hoisted into numba
+        dt_i = dr / (alpha * E0[i] * rr)
+        dy_i = E0[i] * rr / uE - 0.8 * p  # arXiv:physics/0702142
+        avgt = np.sum(np.cumsum(dt_i) * dy_i) / np.sum(dy_i)
+
+        j = 0
+        # first r <= dG[i]
+        while j < r.shape[0] and not (r[j] <= dG[i]):
+            j += 1
+
+        t = np.cumsum(dt_i[j:]) - avgt
+        y = np.cumsum(dy_i[j:])
+
+        s = starts[i]; e = stops[i]
+        probs = uniforms_flat[s:e]
+        # linear interp on monotonic CDF y/y[-1] → t
+        emission_time[s:e] = np.interp(probs, y / y[-1], t).astype(np.int64)
+
+    return emission_time
