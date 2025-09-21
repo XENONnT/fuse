@@ -392,21 +392,25 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         Simple, defensive: replace NaN/inf with 0 and clamp negative spreads to 0.
         """
         x_rot, _ = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
-        # We pass the absolute value of x to the maps
-        # because the maps are defined for |x|
-        x_extend = np.abs(x_rot[:, None])  # maps expect (N,1)
 
-        # Maps return µs
-        mean_us   = self.perp_wires_drift_time_1d(x_extend).flatten()
-        spread_us = self.perp_wires_drift_time_spread_1d(x_extend).flatten()
+        near  = self.get_near_wires_mask(positions)
 
-        # Make sure we never feed negative/NaN/inf into np.random.normal
-        np.nan_to_num(mean_us,   copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-        np.nan_to_num(spread_us, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-        spread_us = np.clip(spread_us, 0.0, None)   # forbid negative sigma
+        shift_ns = np.zeros_like(time, dtype=np.float32)
 
-        # Sample in µs, then convert to ns
-        shift_ns = self.rng.normal(loc=mean_us, scale=spread_us) * 1e3
+        if near.any():
+            # Let's evaluate the maps only where needed
+            # to save time from the slow interpolation
+            x_extend = np.abs(x_rot[near, None])  # maps expect (N,1)
+
+            mean_us   = self.perp_wires_drift_time_1d(x_extend).flatten()
+            spread_us = self.perp_wires_drift_time_spread_1d(x_extend).flatten()
+
+            # Make sure we never feed negative/NaN/inf into np.random.normal
+            np.nan_to_num(mean_us,   copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+            np.nan_to_num(spread_us, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+            spread_us = np.clip(spread_us, 0.0, None)   # forbid negative sigma
+            # Draw shifts in ns
+            shift_ns[near] = self.rng.normal(loc=mean_us, scale=spread_us) * 1e3
 
         return time + shift_ns
 
