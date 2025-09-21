@@ -62,7 +62,7 @@ class ElectronPropagation(FuseBasePlugin):
     """Plugin to simulate the propagation of electrons in the TPC to the gas
     interface."""
 
-    __version__ = "0.0.3"  # bumped due to performance refactor
+    __version__ = "0.0.2"  # bumped due to performance refactor
 
     depends_on = ("drifted_electrons", "microphysics_summary")
     provides = "electrons_at_interface"
@@ -351,68 +351,64 @@ class ElectronPropagationPerpWires(ElectronPropagation):
             positions = self.position_correction_pp_wire(positions)
         return positions, times
 
+
     def position_correction_pp_wire(self, positions):
-        """
-        Apply the position shift due to the perpendicular wires.
-        The map is defined in the rotated x frame, so we need to rotate the
-        positions to apply the correction, and then rotate back.
-        We pass the absolute value of x to the map, and then apply the
-        correction with the appropriate sign.
-        """
+        # Rotate to the wire-aligned frame
         x_rot, y_rot = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
 
-        x_diff = np.zeros(positions.shape[0], dtype=positions.dtype)
-        # Get a mask close to wires
-        # it selects two regions, one with positive x_rot and one with negative x_rot
-        mask_near_wires = self.get_near_wires_mask(positions)
-        # We split the mask in two, one for the left side of the wire and one for the right side
-        mask_near_wires_left = mask_near_wires & (
-            np.abs(x_rot) < self.position_correction_pp_wire_shift
-        )
-        mask_near_wires_right = mask_near_wires & (
-            np.abs(x_rot) >= self.position_correction_pp_wire_shift
-        )
+        # Precompute |x| once and the sign for mirroring
+        absx  = np.abs(x_rot)
+        sign  = np.where(x_rot >= 0, 1.0, -1.0)
 
-        x_rot = np.expand_dims(x_rot, axis=1)
-        x_rot_left = x_rot[mask_near_wires_left]
-        x_rot_right = x_rot[mask_near_wires_right]
+        # Build masks; only evaluate maps where needed
+        near  = self.get_near_wires_mask(positions)
+        left  = near & (absx <  self.position_correction_pp_wire_shift)
+        right = near & (absx >= self.position_correction_pp_wire_shift)
 
-        # Apply position correction only to electrons close to the wires
-        # passing the absolute value of x_rot to the maps
-        x_diff[mask_near_wires_left] = self.perp_wires_x_position_offset_1d_mean_left(
-            np.abs(x_rot_left)
-        )
-        x_diff[mask_near_wires_right] = self.perp_wires_x_position_offset_1d_mean_right(
-            np.abs(x_rot_right)
-        )
+        # Accumulate delta in rotated-x
+        x_diff = np.zeros_like(x_rot)
 
-        x_diff = np.expand_dims(x_diff, axis=1)
-        # Add the offset to the x position in the rotated frame
+        if left.any():
+            xin = absx[left][:, None]  # maps expect (N, 1)
+            mag = np.squeeze(self.perp_wires_x_position_offset_1d_mean_left(xin))
+            x_diff[left] = sign[left] * mag
+
+        if right.any():
+            xin = absx[right][:, None]
+            mag = np.squeeze(self.perp_wires_x_position_offset_1d_mean_right(xin))
+            x_diff[right] = sign[right] * mag
+
+        # Apply shift and rotate back
         x_rot_shifted = x_rot + x_diff
+        x_obs, y_obs  = rotate_axis(x_rot_shifted, y_rot, -self.perp_wire_angle_rad)
+        return np.column_stack((x_obs, y_obs))
 
-        # Inverse rotation to get back to the original frame
-        x_obs_shifted, y_obs_shifted = rotate_axis(
-            x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle_rad
-        )
-        positions = np.column_stack([x_obs_shifted, y_obs_shifted])
-
-        return positions
 
     def time_correction_pp_wire(self, time, positions):
         """
-        Current behavior: add only the mean time shift from the map (in us),
-        converted to ns. If you later want Gaussian smearing, sample with
-        self.rng.normal(mean, spread) here (deterministic).
+        Add mean time shift (µs) with Gaussian smearing (µs) from the
+        perpendicular-wire maps, convert to ns, and add to `time`.
+
+        Simple, defensive: replace NaN/inf with 0 and clamp negative spreads to 0.
         """
         x_rot, _ = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
+        # We pass the absolute value of x to the maps
+        # because the maps are defined for |x|
+        x_extend = np.abs(x_rot[:, None])  # maps expect (N,1)
 
-        x_extend = np.expand_dims(x_rot, axis=1)
-        drift_time_perp_mean_r = self.perp_wires_drift_time_1d(x_extend)  # in us
-        # drift_time_perp_spread_r = self.perp_wires_drift_time_spread_1d(x_extend)  # in us
+        # Maps return µs
+        mean_us   = self.perp_wires_drift_time_1d(x_extend).flatten()
+        spread_us = self.perp_wires_drift_time_spread_1d(x_extend).flatten()
 
-        # Deterministic: just add the mean (ns)
-        perp_time = drift_time_perp_mean_r.flatten().astype(np.float32) * 1e3  # ns
-        return time + perp_time
+        # Make sure we never feed negative/NaN/inf into np.random.normal
+        np.nan_to_num(mean_us,   copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        np.nan_to_num(spread_us, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        spread_us = np.clip(spread_us, 0.0, None)   # forbid negative sigma
+
+        # Sample in µs, then convert to ns
+        shift_ns = self.rng.normal(loc=mean_us, scale=spread_us) * 1e3
+
+        return time + shift_ns
 
     def get_near_wires_mask(self, positions):
         """Returns a mask selecting the events near the perpendicular wires."""

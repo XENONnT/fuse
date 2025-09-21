@@ -39,32 +39,6 @@ def _segment_ranges(n_per_row):
         stops[i] = total
     return starts, stops, total
 
-@njit(parallel=True, fastmath=True, cache=True)
-def _sample_channels_cdf(
-    cdf,                     # (Ne, C) row-wise CDF (monotonic, last=1)
-    n_photons,               # (Ne,) ints
-    uniforms_flat,           # (sum n_photons,)
-    out_channels,            # (sum n_photons,) int64
-    first_channel,           # usually 0
-):
-    starts, stops, _ = _segment_ranges(n_photons)
-    Ne, C = cdf.shape
-    for i in prange(Ne):
-        s = starts[i]; e = stops[i]
-        if s == e:
-            continue
-        # binary search per sample on row i
-        for j in range(s, e):
-            u = uniforms_flat[j]
-            lo = 0
-            hi = C - 1
-            while lo < hi:
-                mid = (lo + hi) >> 1
-                if cdf[i, mid] < u:
-                    lo = mid + 1
-                else:
-                    hi = mid
-            out_channels[j] = np.int16(first_channel + lo)
 
 @njit(cache=True, fastmath=True)
 def draw_excitation_times(
@@ -148,7 +122,7 @@ def _luminescence_timings_simple(
 class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     """Base plugin to simulate the propagation of S2 photons in the detector."""
 
-    __version__ = "0.4.3"  # unchanged physics; perf tweaks only
+    __version__ = "0.4.2"
 
     depends_on = (
         "merged_s2_photons",
@@ -605,7 +579,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 class S2PhotonPropagation(S2PhotonPropagationBase):
     """S2 photon propagation using Garfield gas-gap luminescence + optical propagation."""
 
-    __version__ = "0.2.1"  # unchanged physics; perf tweaks only
+    __version__ = "0.2.0"  # unchanged physics; perf tweaks only
 
     child_plugin = True
 
