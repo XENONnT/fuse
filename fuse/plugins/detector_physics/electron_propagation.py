@@ -8,55 +8,6 @@ from ...plugin import FuseBasePlugin
 export, __all__ = strax.exporter()
 
 
-# =========================
-# Numba helpers (no RNG)
-# =========================
-
-@njit(cache=True)
-def _build_ranges(n_electron):
-    """Return start/stop indices per interaction and total electrons."""
-    nint = n_electron.shape[0]
-    start_idx = np.empty(nint, np.int64)
-    stop_idx  = np.empty(nint, np.int64)
-    total = 0
-    for i in range(nint):
-        k = np.int64(n_electron[i])
-        start_idx[i] = total
-        total += k
-        stop_idx[i] = total
-    return start_idx, stop_idx, total  # total == N_electrons
-
-
-@njit(parallel=True, fastmath=True, cache=True)
-def rotate_radial_azimuthal_to_xy_inplace(
-    n_electron_per_int,   # (N_int,) int64
-    theta_per_int,        # (N_int,) float32/64
-    hr,                   # (N_elec,) float32/64   radial kicks
-    ha,                   # (N_elec,) float32/64   azimuthal kicks
-    out_dxdy              # (N_elec,2) float32/64  preallocated
-):
-    """Fast block-rotation (hr, ha) -> (dx, dy), per interaction angle."""
-    start_idx, stop_idx, _ = _build_ranges(n_electron_per_int)
-    nint = n_electron_per_int.shape[0]
-
-    for k in prange(nint):
-        s = start_idx[k]
-        e = stop_idx[k]
-        th = theta_per_int[k]
-        c  = np.cos(th)
-        sn = np.sin(th)
-        for j in range(s, e):
-            r = hr[j]
-            a = ha[j]
-            # (radial, azimuthal) -> (x, y)
-            out_dxdy[j, 0] = r * c + a * sn
-            out_dxdy[j, 1] = -r * sn + a * c
-
-
-# =========================
-# Plugins
-# =========================
-
 @export
 class ElectronPropagation(FuseBasePlugin):
     """Plugin to simulate the propagation of electrons in the TPC to the gas
@@ -439,3 +390,47 @@ def rotate_axis(x_obs, y_obs, angle):
     x_rot = np.cos(angle) * x_obs - np.sin(angle) * y_obs
     y_rot = np.sin(angle) * x_obs + np.cos(angle) * y_obs
     return x_rot, y_rot
+
+# =========================
+# Numba helpers (no RNG)
+# =========================
+
+@njit(cache=True)
+def _build_ranges(n_electron):
+    """Return start/stop indices per interaction and total electrons."""
+    nint = n_electron.shape[0]
+    start_idx = np.empty(nint, np.int64)
+    stop_idx  = np.empty(nint, np.int64)
+    total = 0
+    for i in range(nint):
+        k = np.int64(n_electron[i])
+        start_idx[i] = total
+        total += k
+        stop_idx[i] = total
+    return start_idx, stop_idx, total  # total == N_electrons
+
+
+@njit(parallel=True, fastmath=True, cache=True)
+def rotate_radial_azimuthal_to_xy_inplace(
+    n_electron_per_int,   # (N_int,) int64
+    theta_per_int,        # (N_int,) float32/64
+    hr,                   # (N_elec,) float32/64   radial kicks
+    ha,                   # (N_elec,) float32/64   azimuthal kicks
+    out_dxdy              # (N_elec,2) float32/64  preallocated
+):
+    """Fast block-rotation (hr, ha) -> (dx, dy), per interaction angle."""
+    start_idx, stop_idx, _ = _build_ranges(n_electron_per_int)
+    nint = n_electron_per_int.shape[0]
+
+    for k in prange(nint):
+        s = start_idx[k]
+        e = stop_idx[k]
+        th = theta_per_int[k]
+        c  = np.cos(th)
+        sn = np.sin(th)
+        for j in range(s, e):
+            r = hr[j]
+            a = ha[j]
+            # (radial, azimuthal) -> (x, y)
+            out_dxdy[j, 0] = r * c + a * sn
+            out_dxdy[j, 1] = -r * sn + a * c
