@@ -421,32 +421,3 @@ class ElectronDrift(FuseBasePlugin):
         else:
             drift_v_LXe = self.drift_velocity_liquid
         return drift_v_LXe
-
-
-
-
-
-        # # if pp wire s2 width simulation (substract):
-        # drift_time_mean = (
-        #     drift_time_below_gate + drift_time_above_gate - (3.8 / drift_velocity_below_gate)
-        # )
-
-        # drift_time_mean = np.clip(drift_time_mean, 0, np.inf)
-
-        # drift_time_spread_38mm = (
-        #     2
-        #     * diffusion_constant_longitudinal
-        #     * (3.8 / drift_velocity_below_gate)
-        #     / drift_velocity_below_gate**2
-        # )
-        # drift_time_spread_squared = (
-        #     drift_time_spread_below_gate_squared
-        #     + drift_time_spread_above_gate_squared
-        #     - drift_time_spread_38mm
-        # )
-
-        # # Clip negative values to zero before taking the sqrt
-        # drift_time_spread_squared = np.clip(drift_time_spread_squared, 0, np.inf)
-
-
-        # drift_time_spread = np.sqrt(drift_time_spread_squared)
