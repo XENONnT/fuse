@@ -755,7 +755,7 @@ def draw_excitation_times(
         e = stops[i]
         samples = samples_flat[s:e]  # in [0, inv_cdf_len-2)
 
-        fi = np.floor(samples)
+        fi = np.floor(samples).astype(np.int64)
         # safe ceil capped at last valid index
         ci = fi + (fi < (inv_cdf_len - 2))
         t1 = interp_cdf[fi]
