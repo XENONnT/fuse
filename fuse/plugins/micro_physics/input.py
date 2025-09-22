@@ -12,6 +12,8 @@ from numba import njit
 
 from ...dtypes import g4_fields, primary_positions_fields, deposit_positions_fields
 from ...common import (
+    stable_sort,
+    stable_argsort,
     full_array_to_numpy,
     reshape_awkward,
     dynamic_chunking,
@@ -78,7 +80,7 @@ class ChunkInput(FuseBasePlugin):
     source_rate = straxen.URLConfig(
         default=1,
         type=(int, float),
-        help="Source rate used to generate event times"
+        help="Source rate used to generate event times in 1/s."
         "Use a value >0 to generate event times in fuse"
         "Use source_rate = 0 to use event times from the input file (only for csv input)",
     )
@@ -89,8 +91,15 @@ class ChunkInput(FuseBasePlugin):
         help="If True, the events will be spaced with a fixed time difference of 1/source_rate",
     )
 
+    subtract_first_interaction_time = straxen.URLConfig(
+        default=True,
+        type=bool,
+        help="If True, the time of the first interaction of each event is subtracted "
+        "when source_rate > 0, before the random sampled event time is added.",
+    )
+
     cut_delayed = straxen.URLConfig(
-        default=9e18,
+        default=1e18,
         type=(int, float),
         help="All interactions happening after this time (including the event time) will be cut",
     )
@@ -152,6 +161,7 @@ class ChunkInput(FuseBasePlugin):
             self.rng,
             separation_scale=self.separation_scale,
             event_rate=self.source_rate,
+            subtract_first_interaction_time=self.subtract_first_interaction_time,
             cut_delayed=self.cut_delayed,
             first_chunk_left=self.first_chunk_left,
             last_chunk_length=self.last_chunk_length,
@@ -227,6 +237,8 @@ class file_loader:
         separation_scale=1e8,
         event_rate=1,
         file_size_limit=500,
+        subtract_first_interaction_time=True,
+        n_interactions_per_chunk=500,
         cut_delayed=4e12,
         first_chunk_left=1e6,
         last_chunk_length=1e8,
@@ -248,6 +260,8 @@ class file_loader:
         self.separation_scale = separation_scale
         self.event_rate = event_rate / 1e9  # Conversion to ns
         self.file_size_limit = file_size_limit
+        self.subtract_first_interaction_time = subtract_first_interaction_time
+        self.n_interactions_per_chunk = n_interactions_per_chunk
         self.cut_delayed = cut_delayed
         self.last_chunk_length = np.int64(last_chunk_length)
         self.first_chunk_left = np.int64(first_chunk_left)
@@ -318,7 +332,7 @@ class file_loader:
             global_min_time = min_time_TPC
 
         # Sort interactions in events by time and subtract time of the first interaction
-        interactions = interactions[ak.argsort(interactions["t"])]
+        interactions = interactions[ak.argsort(interactions["t"], stable=True)]
 
         # Remove the global min time from the interactions
         if self.event_rate > 0:
@@ -352,7 +366,7 @@ class file_loader:
                 event_times = self.rng.uniform(
                     low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
                 ).astype(np.int64)
-                event_times = np.sort(event_times)
+                event_times = stable_sort(event_times)
 
             interactions["time"] = interactions["t"] + event_times
 
@@ -405,7 +419,7 @@ class file_loader:
         # Make into a flat numpy array
         interaction_time = awkward_to_flat_numpy(interactions["time"])
         # First caclulate sort index for the interaction times
-        sort_idx = np.argsort(interaction_time)
+        sort_idx = stable_argsort(interaction_time)
         # and now make it an integer for strax time field
         interaction_time = interaction_time.astype(np.int64)
         # Sort the interaction times
@@ -414,7 +428,7 @@ class file_loader:
         # Do the same for the NV interactions\
         if self.neutron_veto_output:
             nv_interaction_time = awkward_to_flat_numpy(nv_interactions["time"])
-            nv_sort_idx = np.argsort(nv_interaction_time)
+            nv_sort_idx = stable_argsort(nv_interaction_time)
             nv_interaction_time = nv_interaction_time.astype(np.int64)
             nv_interaction_time = nv_interaction_time[nv_sort_idx]
 
@@ -493,7 +507,7 @@ class file_loader:
                 current_chunk = current_chunk[select_times]
 
                 # Sorting each chunk by time within the chunk
-                sort_chunk = np.argsort(current_chunk["time"])
+                sort_chunk = stable_argsort(current_chunk["time"])
                 current_chunk = current_chunk[sort_chunk]
 
                 if c_ix == unique_chunk_index_values[-1]:
@@ -510,7 +524,7 @@ class file_loader:
                 np.zeros(len(interaction_time)), np.ones(len(nv_interaction_time))
             )
 
-            sort_idx = np.argsort(combined_times)
+            sort_idx = stable_argsort(combined_times)
             combined_times = combined_times[sort_idx]
             combined_types = combined_types[sort_idx]
             combined_time_gaps = combined_times[1:] - combined_times[:-1]
@@ -598,10 +612,10 @@ class file_loader:
                 current_chunk_nv = current_chunk_nv[select_times_nv]
 
                 # Sorting each chunk by time within the chunk
-                sort_chunk = np.argsort(current_chunk["time"])
+                sort_chunk = stable_argsort(current_chunk["time"])
                 current_chunk = current_chunk[sort_chunk]
 
-                sort_chunk_nv = np.argsort(current_chunk_nv["time"])
+                sort_chunk_nv = stable_argsort(current_chunk_nv["time"])
                 current_chunk_nv = current_chunk_nv[sort_chunk_nv]
 
                 if c_ix == unique_combined_chunk_index_values[-1]:

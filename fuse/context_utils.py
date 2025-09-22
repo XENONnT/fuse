@@ -65,8 +65,10 @@ def set_simulation_config_file(context, config_file_name):
                 )
 
             # Special case for the photoionization_modifier
+            # This is because unfortunately we do not track the photoionization
+            # version in the global version.. we use v3 as hardcoded default for now
             if option_key == "photoionization_modifier":
-                context.config[option_key] = option.default
+                context.config[option_key] = option.default.replace("ONLINE", "v3")
 
 
 @URLConfig.register("pattern_map")
@@ -87,6 +89,9 @@ def pattern_map(map_data, pmt_mask, method="WeightedNearestNeighbors"):
             map_data["map"].shape[-1] == pmt_mask.shape[0]
         ), "Error! Pattern map and PMT gains must have same dimensions!"
         map_data["map"][..., ~pmt_mask] = 0.0
+
+    log.debug(f"Interpolating pattern map '{map_data['name']}' with method '{method}'")
+
     return straxen.InterpolatingMap(map_data, method=method)
 
 
@@ -179,16 +184,6 @@ def overwrite_map_from_config(
 
             if any(matching_keys):
                 context.set_config({key: config[resource_keys[np.argwhere(matching_keys)[0][0]]]})
-
-
-@URLConfig.register("lce_from_pattern_map")
-def lce_from_pattern_map(map, pmt_mask):
-    """Build a S1 lce correction map from a S1 pattern map."""
-
-    lcemap = deepcopy(map)
-    lcemap.data["map"] = np.sum(lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=pmt_mask)
-    lcemap.__init__(lcemap.data)
-    return lcemap
 
 
 def apply_mc_overrides(context, config_file):

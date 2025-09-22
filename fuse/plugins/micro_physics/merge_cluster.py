@@ -1,6 +1,7 @@
 import strax
 import straxen
 import numpy as np
+import numba
 
 from ...dtypes import (
     primary_positions_fields,
@@ -9,6 +10,7 @@ from ...dtypes import (
     cluster_misc_fields,
 )
 from ...plugin import FuseBasePlugin
+from ...common import stable_sort
 
 export, __all__ = strax.exporter()
 
@@ -27,7 +29,7 @@ class MergeCluster(FuseBasePlugin):
     interaction.
     """
 
-    __version__ = "0.3.2"
+    __version__ = "0.3.3"
     depends_on = ("geant4_interactions", "cluster_index")
     provides = "clustered_interactions"
     data_kind = "clustered_interactions"
@@ -58,58 +60,162 @@ class MergeCluster(FuseBasePlugin):
         if len(geant4_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        result = np.zeros(len(np.unique(geant4_interactions["cluster_ids"])), dtype=self.dtype)
-        result = cluster_and_classify(result, geant4_interactions, self.tag_cluster_by)
-
-        result["endtime"] = result["time"]
-
-        return result
-
-
-# @numba.njit()
-def cluster_and_classify(result, interactions, tag_cluster_by):
-    interaction_cluster = [
-        interactions[interactions["cluster_ids"] == i]
-        for i in np.unique(interactions["cluster_ids"])
-    ]
-
-    for i, cluster in enumerate(interaction_cluster):
-        result[i]["x"] = np.average(cluster["x"], weights=cluster["ed"])
-        result[i]["y"] = np.average(cluster["y"], weights=cluster["ed"])
-        result[i]["z"] = np.average(cluster["z"], weights=cluster["ed"])
-        result[i]["time"] = np.average(cluster["time"], weights=cluster["ed"])
-        result[i]["ed"] = np.sum(cluster["ed"])
-
-        if tag_cluster_by == "energy":
-            main_interaction_index = np.argmax(cluster["ed"])
-        elif tag_cluster_by == "time":
-            main_interaction_index = np.argmin(cluster["time"])
+        if self.tag_cluster_by == "energy":
+            cluster_by_energy = True
+        elif self.tag_cluster_by == "time":
+            cluster_by_energy = False
         else:
             raise ValueError("tag_cluster_by must be 'energy' or 'time'")
 
-        A, Z, nestid = classify(
-            cluster["type"][main_interaction_index],
-            cluster["parenttype"][main_interaction_index],
-            cluster["creaproc"][main_interaction_index],
-            cluster["edproc"][main_interaction_index],
-        )
-        result[i]["A"] = A
-        result[i]["Z"] = Z
-        result[i]["nestid"] = nestid
-        result[i]["x_pri"] = cluster["x_pri"][main_interaction_index]
-        result[i]["y_pri"] = cluster["y_pri"][main_interaction_index]
-        result[i]["z_pri"] = cluster["z_pri"][main_interaction_index]
-        result[i]["eventid"] = cluster["eventid"][main_interaction_index]
+        # Need to sort clusters first by cluster id
+        geant4_interactions_sorted = stable_sort(geant4_interactions, order="cluster_ids")
+        geant4_ids = np.unique(geant4_interactions_sorted["cluster_ids"])
 
-        # Get cluster id from and save it!
-        result[i]["cluster_id"] = cluster["cluster_ids"][main_interaction_index]
+        result = np.zeros(len(geant4_ids), dtype=self.dtype)
+        result = cluster_and_classify(result, geant4_interactions_sorted, cluster_by_energy)
 
-    return result
+        result["endtime"] = result["time"]
+
+        return stable_sort(result, order="time")
+
+
+@numba.njit
+def cluster_and_classify(results, interactions, tag_cluster_by_energy):
+    event_i = 0
+    current_id = interactions[0]["cluster_ids"]
+
+    weighted_x = 0
+    weighted_y = 0
+    weighted_z = 0
+    weighted_t = 0
+    weighted_time = 0
+    sum_ed = 0
+
+    largest_ed = 0
+    smallest_time = 9223372036854775807  # Int64 inf
+    main_interaction_index = 0
+
+    A = 0
+    Z = 0
+    nestid = 0
+    x_pri = 0
+    y_pri = 0
+    z_pri = 0
+    eventid = 0
+    cluster_id = 0
+
+    for cluster_i, cluster in enumerate(interactions):
+
+        _is_new_cluster = current_id < cluster["cluster_ids"]
+        if _is_new_cluster:
+            # First store results of currten cluster:
+            results[event_i]["x"] = weighted_x / sum_ed
+            results[event_i]["y"] = weighted_y / sum_ed
+            results[event_i]["z"] = weighted_z / sum_ed
+            results[event_i]["t"] = weighted_t / sum_ed
+            results[event_i]["time"] = weighted_time / sum_ed
+            results[event_i]["ed"] = sum_ed
+
+            # Only call this function onces since it has to handle strings...
+            A, Z, nestid = classify(
+                interactions["type"][main_interaction_index],
+                interactions["parenttype"][main_interaction_index],
+                interactions["creaproc"][main_interaction_index],
+                interactions["edproc"][main_interaction_index],
+            )
+
+            results[event_i]["A"] = A
+            results[event_i]["Z"] = Z
+            results[event_i]["nestid"] = nestid
+            results[event_i]["x_pri"] = x_pri
+            results[event_i]["y_pri"] = y_pri
+            results[event_i]["z_pri"] = z_pri
+            results[event_i]["eventid"] = eventid
+            results[event_i]["cluster_id"] = cluster_id
+
+            # Now prepare buffer for new cluster:
+            event_i += 1
+            current_id = cluster["cluster_ids"]
+
+            # use zero here to compute average on the fly
+            weighted_x = 0
+            weighted_y = 0
+            weighted_z = 0
+            weighted_t = 0
+            weighted_time = 0
+            sum_ed = 0
+
+            # Set unsued value as buffer:
+            main_interaction_index = 0
+            largest_ed = 0
+            smallest_time = 9223372036854775807  # Int64 inf
+            A = 0
+            Z = 0
+            nestid = 0
+            x_pri = 0
+            y_pri = 0
+            z_pri = 0
+            eventid = 0
+            cluster_id = 0
+
+        weighted_x += cluster["x"] * cluster["ed"]
+        weighted_y += cluster["y"] * cluster["ed"]
+        weighted_z += cluster["z"] * cluster["ed"]
+        weighted_t += cluster["t"] * cluster["ed"]
+        weighted_time += cluster["time"] * cluster["ed"]
+        sum_ed += cluster["ed"]
+
+        largest_ed = max(largest_ed, cluster["ed"])
+        smallest_time = min(smallest_time, cluster["time"])
+
+        if tag_cluster_by_energy and (cluster["ed"] == largest_ed):
+            main_interaction_index = cluster_i
+            eventid = cluster["eventid"]
+            cluster_id = cluster["cluster_ids"]
+            x_pri = cluster["x_pri"]
+            y_pri = cluster["y_pri"]
+            z_pri = cluster["z_pri"]
+
+        elif not tag_cluster_by_energy and smallest_time == cluster["time"]:
+            main_interaction_index = cluster_i
+            eventid = cluster["eventid"]
+            cluster_id = cluster["cluster_ids"]
+            x_pri = cluster["x_pri"]
+            y_pri = cluster["y_pri"]
+            z_pri = cluster["z_pri"]
+
+    # Done with looping store last result:
+    results[event_i]["x"] = weighted_x / sum_ed
+    results[event_i]["y"] = weighted_y / sum_ed
+    results[event_i]["z"] = weighted_z / sum_ed
+    results[event_i]["t"] = weighted_t / sum_ed
+    results[event_i]["time"] = weighted_time / sum_ed
+    results[event_i]["ed"] = sum_ed
+
+    # Only call this function onces since it has to handle strings...
+    A, Z, nestid = classify(
+        interactions["type"][main_interaction_index],
+        interactions["parenttype"][main_interaction_index],
+        interactions["creaproc"][main_interaction_index],
+        interactions["edproc"][main_interaction_index],
+    )
+
+    results[event_i]["A"] = A
+    results[event_i]["Z"] = Z
+    results[event_i]["nestid"] = nestid
+    results[event_i]["x_pri"] = x_pri
+    results[event_i]["y_pri"] = y_pri
+    results[event_i]["z_pri"] = z_pri
+    results[event_i]["eventid"] = eventid
+    results[event_i]["cluster_id"] = cluster_id
+
+    return results
 
 
 infinity = np.iinfo(np.int8).max
 
 
+@numba.njit
 def classify(types, parenttype, creaproc, edproc):
     "Function to classify a cluster according to its main interaction"
 
