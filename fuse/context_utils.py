@@ -185,16 +185,6 @@ def overwrite_map_from_config(
                 context.set_config({key: config[resource_keys[np.argwhere(matching_keys)[0][0]]]})
 
 
-@URLConfig.register("lce_from_pattern_map")
-def lce_from_pattern_map(map, pmt_mask):
-    """Build a S1 lce correction map from a S1 pattern map."""
-
-    lcemap = deepcopy(map)
-    lcemap.data["map"] = np.sum(lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=pmt_mask)
-    lcemap.__init__(lcemap.data)
-    return lcemap
-
-
 def apply_mc_overrides(context, config_file):
     """Apply config overrides from 'mc_overrides' using from_config."""
     try:
