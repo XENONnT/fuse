@@ -211,8 +211,7 @@ def apply_mc_overrides(context, config_file):
 @URLConfig.register("nveto_pmt_qe")
 def nveto_pmt_qe_dict(data):
     """Get NV PMT quantum efficiecny values and interpolate."""
-    # with open(Q_E_nveto_file,'r') as f:
-    #    data = json.loads(f.read())
+
     QE_array_n = []
     # nVeto
     for i in np.arange(2000, 2120):
@@ -224,17 +223,19 @@ def nveto_pmt_qe_dict(data):
                 fill_value=0,
             )
         )
-    # Watertank_QE
+
     pmt_id = list(np.arange(2000, 2120))
     QE_array = QE_array_n
-    pd_dict = {"pmt_id": pmt_id, "QE": QE_array}
-    return pd_dict
+
+    return QE_array
+    # pd_dict = {"pmt_id": pmt_id, "QE": QE_array}
+    
+    # return pd_dict
 
 
-@URLConfig.register("nveto_spe_sr1")
-def nveto_spe_sr1_dict(data_spe):
+@URLConfig.register("nveto_spe")
+def nveto_spe_dict(data_spe):
     """Get dictionary with NV SPE parameters."""
-    # with open(file_spe_model, 'r') as f:
-    #    data_spe = json.load(f)
+
     data_dict = {entry["pmtID"]: entry for entry in data_spe}
     return data_dict
