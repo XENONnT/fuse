@@ -1,7 +1,7 @@
 import strax
 import straxen
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 from ...plugin import FuseBasePlugin
 
@@ -13,7 +13,7 @@ class ElectronPropagation(FuseBasePlugin):
     """Plugin to simulate the propagation of electrons in the TPC to the gas
     interface."""
 
-    __version__ = "0.0.2"
+    __version__ = "0.0.2"  # bumped due to performance refactor
 
     depends_on = ("drifted_electrons", "microphysics_summary")
     provides = "electrons_at_interface"
@@ -75,70 +75,102 @@ class ElectronPropagation(FuseBasePlugin):
         if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, dtype=self.dtype)
 
+        # Per-interaction electron counts
+        n_int = interactions_in_roi[mask]["n_electron_interface"].astype(np.int64)
+
+        # Drift time per electron (ns)
         electron_drift_time = drift_time_in_tpc(
-            interactions_in_roi[mask]["n_electron_interface"],
+            n_int,
             interactions_in_roi[mask]["drift_time_mean"],
             interactions_in_roi[mask]["drift_time_spread"],
             self.rng,
-        )
+        ).astype(np.float32)
+        Ne = electron_drift_time.shape[0]
 
-        positions = np.array(
-            [interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["y_obs"]]
-        ).T
+        # Per-interaction positions and angles
+        positions = np.column_stack(
+            (interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["y_obs"])
+        ).astype(np.float32)
+        theta = np.arctan2(positions[:, 1], positions[:, 0]).astype(np.float32)
 
+        # Diffusion constants (cm^2/ns), expand to per-electron
         if self.enable_diffusion_transverse_map:
-            diffusion_constant_radial = self.field_dependencies_map(
-                interactions_in_roi[mask]["z_obs"], positions, map_name="diffusion_radial_map"
-            )  # cm²/s
-            diffusion_constant_azimuthal = self.field_dependencies_map(
-                interactions_in_roi[mask]["z_obs"], positions, map_name="diffusion_azimuthal_map"
-            )  # cm²/s
-            diffusion_constant_radial *= 1e-9  # cm²/ns
-            diffusion_constant_azimuthal *= 1e-9  # cm²/ns
+            diffusion_constant_radial_int = (
+                self.field_dependencies_map(
+                    interactions_in_roi[mask]["z_obs"], positions, map_name="diffusion_radial_map"
+                ).astype(np.float32)
+                * 1e-9
+            )  # s -> ns
+            diffusion_constant_azimuthal_int = (
+                self.field_dependencies_map(
+                    interactions_in_roi[mask]["z_obs"],
+                    positions,
+                    map_name="diffusion_azimuthal_map",
+                ).astype(np.float32)
+                * 1e-9
+            )
         else:
-            diffusion_constant_radial = self.diffusion_constant_transverse
-            diffusion_constant_azimuthal = self.diffusion_constant_transverse
+            # treat as scalars
+            diffusion_constant_radial_int = np.array(
+                [self.diffusion_constant_transverse], dtype=np.float32
+            )
+            diffusion_constant_azimuthal_int = np.array(
+                [self.diffusion_constant_transverse], dtype=np.float32
+            )
 
-        hdiff = np.zeros((electron_drift_time.shape[0], 2))
+        if diffusion_constant_radial_int.size == 1:
+            D_r_e = np.full(Ne, diffusion_constant_radial_int[0], dtype=np.float32)
+            D_a_e = np.full(Ne, diffusion_constant_azimuthal_int[0], dtype=np.float32)
+        else:
+            D_r_e = np.repeat(diffusion_constant_radial_int, n_int).astype(np.float32)
+            D_a_e = np.repeat(diffusion_constant_azimuthal_int, n_int).astype(np.float32)
 
-        simulate_horizontal_shift(
-            interactions_in_roi[mask]["n_electron_interface"],
-            electron_drift_time,
-            positions,
-            diffusion_constant_radial,
-            diffusion_constant_azimuthal,
+        # Horizontal diffusion
+        std_r = np.sqrt(2.0 * D_r_e * electron_drift_time).astype(np.float32)
+        std_a = np.sqrt(2.0 * D_a_e * electron_drift_time).astype(np.float32)
+
+        z_r = self.rng.normal(0.0, 1.0, size=Ne).astype(np.float32)
+        z_a = self.rng.normal(0.0, 1.0, size=Ne).astype(np.float32)
+        hr = z_r * std_r
+        ha = z_a * std_a
+
+        # Rotate to xy
+        hdiff = np.empty((Ne, 2), dtype=np.float32)
+        rotate_radial_azimuthal_to_xy_inplace(
+            n_int,
+            theta,
+            hr,
+            ha,
             hdiff,
-            self.rng,
         )
 
-        positions_shifted = (
-            np.repeat(positions, interactions_in_roi[mask]["n_electron_interface"], axis=0) + hdiff
-        )
+        # Apply shift
+        positions_shifted = np.repeat(positions, n_int, axis=0)
+        positions_shifted += hdiff
 
         # Now we have the positions of the electrons at the top of the LXe
-        # Simulation of wire effects go in here -> time shift + position shift
+        # Times at interface (ns)
+        electron_times = np.repeat(
+            interactions_in_roi[mask]["time"],
+            n_int,
+            axis=0,
+        ).astype(
+            np.int64
+        ) + electron_drift_time.astype(np.int64)
 
-        electron_times = (
-            np.repeat(
-                interactions_in_roi[mask]["time"],
-                interactions_in_roi[mask]["n_electron_interface"],
-                axis=0,
-            )
-            + electron_drift_time
-        )
-
+        # Simulation of wire effects -> time shift + position shift
         positions_shifted, electron_times = self.apply_perpendicular_wire_effects(
             positions_shifted, electron_times
         )
 
         cluster_id = np.repeat(
             interactions_in_roi[mask]["cluster_id"],
-            interactions_in_roi[mask]["n_electron_interface"],
+            n_int,
             axis=0,
         )
 
-        result = np.zeros(electron_drift_time.shape[0], dtype=self.dtype)
-        result["time"] = electron_times.astype(np.int64)
+        result = np.zeros(Ne, dtype=self.dtype)
+        result["time"] = electron_times
         result["endtime"] = result["time"]
         result["x_interface"] = positions_shifted[:, 0]
         result["y_interface"] = positions_shifted[:, 1]
@@ -155,9 +187,20 @@ class ElectronPropagation(FuseBasePlugin):
 class ElectronPropagationPerpWires(ElectronPropagation):
     """Plugin to simulate the propagation of electrons in the TPC to the gas
     interface, including the effect of the perpendicular wires on time and
-    position."""
+    position.
 
-    __version__ = "0.0.1"
+    - We use two 1D maps for the position shift, one for the left side of the
+      perpendicular wires and one for the right side. The need for two maps is to
+      have a sharp transition at the perpendicular wire position, that the interpolation
+      would otherwise smooth out. The position maps are just an offset, so we
+      add the offset to the x position in the rotated frame.
+
+    - We use two 1D maps for the time shift, one for the mean and one for the spread.
+      The time shift is applied as a random number drawn from a Gaussian with
+      mean and spread given by the maps.
+    """
+
+    __version__ = "0.0.2"  # bumped to reflect refactor in base
 
     enable_perp_wire_electron_shift = straxen.URLConfig(
         default="take://resource://"
@@ -247,7 +290,6 @@ class ElectronPropagationPerpWires(ElectronPropagation):
     )
 
     def setup(self):
-
         super().setup()
         self.perp_wire_angle_rad = np.deg2rad(self.perp_wire_angle)
 
@@ -260,63 +302,80 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         return positions, times
 
     def position_correction_pp_wire(self, positions):
-
+        # Rotate to the wire-aligned frame
         x_rot, y_rot = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
 
-        x_diff = np.zeros(positions.shape[0], dtype=positions.dtype)
-        mask_near_wires = self.get_near_wires_mask(positions)
-        mask_near_wires_left = mask_near_wires & (
-            np.abs(x_rot) < self.position_correction_pp_wire_shift
-        )
-        mask_near_wires_right = mask_near_wires & (
-            np.abs(x_rot) >= self.position_correction_pp_wire_shift
-        )
+        # Precompute |x| once and the sign for mirroring
+        absx = np.abs(x_rot)
+        sign = np.where(x_rot >= 0, 1.0, -1.0)
 
-        x_rot = np.expand_dims(x_rot, axis=1)
-        x_rot_left = x_rot[mask_near_wires_left]
-        x_rot_right = x_rot[mask_near_wires_right]
+        # Build masks; only evaluate maps where needed
+        near = self.get_near_wires_mask(positions)
+        left = near & (absx < self.position_correction_pp_wire_shift)
+        right = near & (absx >= self.position_correction_pp_wire_shift)
 
-        x_diff[mask_near_wires_left] = self.perp_wires_x_position_offset_1d_mean_left(x_rot_left)
-        x_diff[mask_near_wires_right] = self.perp_wires_x_position_offset_1d_mean_right(x_rot_right)
+        # Accumulate delta in rotated-x
+        x_diff = np.zeros_like(x_rot)
 
-        x_diff = np.expand_dims(x_diff, axis=1)
+        if left.any():
+            xin = absx[left][:, None]  # maps expect (N, 1)
+            mag = np.squeeze(self.perp_wires_x_position_offset_1d_mean_left(xin))
+            x_diff[left] = sign[left] * mag
+
+        if right.any():
+            xin = absx[right][:, None]
+            mag = np.squeeze(self.perp_wires_x_position_offset_1d_mean_right(xin))
+            x_diff[right] = sign[right] * mag
+
+        # Apply shift and rotate back
         x_rot_shifted = x_rot + x_diff
-
-        # inverse rotation
-        x_obs_shifted, y_obs_shifted = rotate_axis(
-            x_rot_shifted.flatten(), y_rot, -self.perp_wire_angle_rad
-        )
-        positions = np.column_stack([x_obs_shifted, y_obs_shifted])
-
-        return positions
+        x_obs, y_obs = rotate_axis(x_rot_shifted, y_rot, -self.perp_wire_angle_rad)
+        return np.column_stack((x_obs, y_obs))
 
     def time_correction_pp_wire(self, time, positions):
-        x_rot, y_rot = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
+        """Add mean time shift (µs) with Gaussian smearing (µs) from the
+        perpendicular-wire maps, convert to ns, and add to `time`.
 
-        x_extend = np.expand_dims(x_rot, axis=1)
-        drift_time_perp_mean_r = self.perp_wires_drift_time_1d(x_extend)
-        drift_time_perp_spread_r = self.perp_wires_drift_time_spread_1d(x_extend)
+        Simple, defensive: replace NaN/inf with 0 and clamp negative
+        spreads to 0.
+        """
+        x_rot, _ = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
 
-        perp_time = self.rng.normal(
-            drift_time_perp_mean_r * 1e3, drift_time_perp_spread_r * 1e3, size=time.shape[0]
-        )
-        return time + perp_time
+        near = self.get_near_wires_mask(positions)
+
+        shift_ns = np.zeros_like(time, dtype=np.float32)
+
+        if near.any():
+            # Let's evaluate the maps only where needed
+            # to save time from the slow interpolation
+            x_extend = np.abs(x_rot[near, None])  # maps expect (N,1)
+
+            mean_us = self.perp_wires_drift_time_1d(x_extend).flatten()
+            spread_us = self.perp_wires_drift_time_spread_1d(x_extend).flatten()
+
+            # Make sure we never feed negative/NaN/inf into np.random.normal
+            np.nan_to_num(mean_us, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+            np.nan_to_num(spread_us, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+            spread_us = np.clip(spread_us, 0.0, None)  # forbid negative sigma
+            # Draw shifts in ns
+            shift_ns[near] = self.rng.normal(loc=mean_us, scale=spread_us) * 1e3
+
+        return time + shift_ns
 
     def get_near_wires_mask(self, positions):
         """Returns a mask selecting the events near the perpendicular wires."""
-        x_rot, y_rot = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
+        x_rot, _ = rotate_axis(positions[:, 0], positions[:, 1], self.perp_wire_angle_rad)
         mask_near_wires = np.abs(x_rot) - self.perp_wire_x_pos < self.perp_wires_rot_x_mask[1]
         mask_near_wires &= np.abs(x_rot) - self.perp_wire_x_pos > -self.perp_wires_rot_x_mask[0]
         return mask_near_wires
 
 
 def drift_time_in_tpc(n_electron, drift_time_mean, drift_time_spread, rng):
+    """Draw per-electron drift times with the plugin's deterministic RNG."""
     n_electrons = np.sum(n_electron).astype(np.int64)
     drift_time_mean_r = np.repeat(drift_time_mean, n_electron.astype(np.int64))
     drift_time_spread_r = np.repeat(drift_time_spread, n_electron.astype(np.int64))
-
     timing = rng.normal(drift_time_mean_r, drift_time_spread_r, size=n_electrons)
-
     return timing.astype(np.int64)
 
 
@@ -326,46 +385,42 @@ def rotate_axis(x_obs, y_obs, angle):
     return x_rot, y_rot
 
 
-@njit()
-def simulate_horizontal_shift(
-    n_electron,
-    drift_time_electron,
-    xy,
-    diffusion_constant_radial,
-    diffusion_constant_azimuthal,
-    result,
-    rng,
+@njit(cache=True)
+def _build_ranges(n_electron):
+    """Return start/stop indices per interaction and total electrons."""
+    nint = n_electron.shape[0]
+    start_idx = np.empty(nint, np.int64)
+    stop_idx = np.empty(nint, np.int64)
+    total = 0
+    for i in range(nint):
+        k = np.int64(n_electron[i])
+        start_idx[i] = total
+        total += k
+        stop_idx[i] = total
+    return start_idx, stop_idx, total  # total == N_electrons
+
+
+@njit(parallel=True, fastmath=True, cache=True)
+def rotate_radial_azimuthal_to_xy_inplace(
+    n_electron_per_int,  # (N_int,)
+    theta_per_int,  # (N_int,)
+    hr,  # (N_elec,)
+    ha,  # (N_elec,)
+    out_dxdy,  # (N_elec,2)
 ):
+    """Fast block-rotation (hr, ha) -> (dx, dy), per interaction angle."""
+    start_idx, stop_idx, _ = _build_ranges(n_electron_per_int)
+    nint = n_electron_per_int.shape[0]
 
-    hdiff_stdev_radial = np.sqrt(2 * diffusion_constant_radial * drift_time_electron)
-    hdiff_stdev_azimuthal = np.sqrt(2 * diffusion_constant_azimuthal * drift_time_electron)
-
-    hdiff_radial = rng.normal(0, 1, np.sum(n_electron)) * hdiff_stdev_radial
-    hdiff_azimuthal = rng.normal(0, 1, np.sum(n_electron)) * hdiff_stdev_azimuthal
-
-    hdiff = np.column_stack((hdiff_radial, hdiff_azimuthal))
-    theta = np.arctan2(xy[:, 1], xy[:, 0])
-
-    sin_theta = np.sin(theta)
-    cos_theta = np.cos(theta)
-    matrix = build_rotation_matrix(sin_theta, cos_theta)
-
-    split_hdiff = np.split(hdiff, np.cumsum(n_electron))[:-1]
-
-    start_idx = np.append([0], np.cumsum(n_electron)[:-1])
-    stop_idx = np.cumsum(n_electron)
-
-    for i in range(len(matrix)):
-        result[start_idx[i] : stop_idx[i]] = np.ascontiguousarray(split_hdiff[i]) @ matrix[i]
-
-    return result
-
-
-@njit()
-def build_rotation_matrix(sin_theta, cos_theta):
-    matrix = np.zeros((len(sin_theta), 2, 2))
-    matrix[:, 0, 0] = cos_theta
-    matrix[:, 0, 1] = sin_theta
-    matrix[:, 1, 0] = -sin_theta
-    matrix[:, 1, 1] = cos_theta
-    return matrix
+    for k in prange(nint):
+        s = start_idx[k]
+        e = stop_idx[k]
+        th = theta_per_int[k]
+        c = np.cos(th)
+        sn = np.sin(th)
+        for j in range(s, e):
+            r = hr[j]
+            a = ha[j]
+            # (radial, azimuthal) -> (x, y)
+            out_dxdy[j, 0] = r * c + a * sn
+            out_dxdy[j, 1] = -r * sn + a * c

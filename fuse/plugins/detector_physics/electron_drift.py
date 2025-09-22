@@ -41,9 +41,7 @@ class ElectronDrift(FuseBasePlugin):
         ),
     ] + strax.time_fields
 
-    save_when = strax.SaveWhen.ALWAYS
-
-    # Config options
+    save_when = strax.SaveWhen.TARGET
 
     drift_velocity_liquid = straxen.URLConfig(
         default="take://resource://"
@@ -297,7 +295,7 @@ class ElectronDrift(FuseBasePlugin):
         """
         positions = np.array([x, y, z]).T
         dr_pre = self.fdc_map_fuse(positions)
-        for i_iter in range(6):  # 6 iterations seems to work
+        for _ in range(6):  # 6 iterations seems to work
             dr = 0.5 * self.fdc_map_fuse(positions) + 0.5 * dr_pre  # Average between iter
 
             r_obs = np.sqrt(x**2 + y**2) - dr
@@ -404,35 +402,6 @@ class ElectronDrift(FuseBasePlugin):
         drift_time_spread = np.sqrt(
             drift_time_spread_below_gate_squared + drift_time_spread_above_gate_squared
         )
-
-        # if pp wire s2 width simulation (substract ):
-        drift_time_mean = (
-            drift_time_below_gate + drift_time_above_gate - (3.8 / drift_velocity_below_gate)
-        )
-
-        drift_time_mean = np.clip(drift_time_mean, 0, np.inf)
-
-        drift_time_spread_38mm = (
-            2
-            * diffusion_constant_longitudinal
-            * (3.8 / drift_velocity_below_gate)
-            / drift_velocity_below_gate**2
-        )
-        # drift_time_spread = np.sqrt(
-        #     drift_time_spread_below_gate_squared
-        #     + drift_time_spread_above_gate_squared
-        #     - drift_time_spread_38mm
-        # )
-        drift_time_spread_squared = (
-            drift_time_spread_below_gate_squared
-            + drift_time_spread_above_gate_squared
-            - drift_time_spread_38mm
-        )
-
-        # Clip negative values to zero before taking the sqrt
-        drift_time_spread_squared = np.clip(drift_time_spread_squared, 0, np.inf)
-
-        drift_time_spread = np.sqrt(drift_time_spread_squared)
 
         return drift_time_mean, drift_time_spread
 
