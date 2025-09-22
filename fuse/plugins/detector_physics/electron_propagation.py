@@ -385,7 +385,6 @@ def rotate_axis(x_obs, y_obs, angle):
     return x_rot, y_rot
 
 
-
 @njit(cache=True)
 def _build_ranges(n_electron):
     """Return start/stop indices per interaction and total electrons."""
@@ -403,11 +402,11 @@ def _build_ranges(n_electron):
 
 @njit(parallel=True, fastmath=True, cache=True)
 def rotate_radial_azimuthal_to_xy_inplace(
-    n_electron_per_int,   # (N_int,)
-    theta_per_int,        # (N_int,)
-    hr,                   # (N_elec,)
-    ha,                   # (N_elec,)
-    out_dxdy              # (N_elec,2)
+    n_electron_per_int,  # (N_int,)
+    theta_per_int,  # (N_int,)
+    hr,  # (N_elec,)
+    ha,  # (N_elec,)
+    out_dxdy,  # (N_elec,2)
 ):
     """Fast block-rotation (hr, ha) -> (dx, dy), per interaction angle."""
     start_idx, stop_idx, _ = _build_ranges(n_electron_per_int)

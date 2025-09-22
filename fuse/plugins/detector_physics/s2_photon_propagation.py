@@ -21,6 +21,7 @@ export, __all__ = strax.exporter()
 
 conversion_to_bar = 1 / constants.elementary_charge / 1e1
 
+
 @export
 class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     """Base plugin to simulate the propagation of S2 photons in the
@@ -43,42 +44,41 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     # Shared config
     p_double_pe_emision = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=p_double_pe_emision",
+        "&fmt=json&take=p_double_pe_emision",
         type=(int, float),
         cache=True,
         help="Probability of double photo-electron emission",
     )
     pmt_transit_time_spread = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=pmt_transit_time_spread",
+        "&fmt=json&take=pmt_transit_time_spread",
         type=(int, float),
         cache=True,
         help="Spread of the PMT transit times [ns]",
     )
     pmt_transit_time_mean = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=pmt_transit_time_mean",
+        "&fmt=json&take=pmt_transit_time_mean",
         type=(int, float),
         cache=True,
         help="Mean of the PMT transit times [ns]",
     )
     pmt_circuit_load_resistor = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=pmt_circuit_load_resistor",
+        "&fmt=json&take=pmt_circuit_load_resistor",
         type=(int, float),
         cache=True,
         help="PMT circuit load resistor [kg m^2/(s^3 A)]",
     )
     digitizer_bits = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=digitizer_bits",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?" "&fmt=json&take=digitizer_bits",
         type=(int, float),
         cache=True,
         help="Number of bits of the digitizer boards",
     )
     digitizer_voltage_range = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=digitizer_voltage_range",
+        "&fmt=json&take=digitizer_voltage_range",
         type=(int, float),
         cache=True,
         help="Voltage range of the digitizer boards [V]",
@@ -96,12 +96,12 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     )
     photon_area_distribution = straxen.URLConfig(
         default="simple_load://resource://simulation_config://SIMULATION_CONFIG_FILE.json?"
-                "&key=photon_area_distribution&fmt=csv",
+        "&key=photon_area_distribution&fmt=csv",
         cache=True,
         help="Photon area distribution",
     )
 
-    # S2 specific configs 
+    # S2 specific configs
     phase_s2 = straxen.URLConfig(default="gas", help="Phase of the S2 producing region")
     tpc_length = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?&fmt=json&take=tpc_length",
@@ -129,13 +129,13 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     )
     field_dependencies_map_tmp = straxen.URLConfig(
         default="itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?"
-                "&key=field_dependencies_map&fmt=json.gz&method=WeightedNearestNeighbors",
+        "&key=field_dependencies_map&fmt=json.gz&method=WeightedNearestNeighbors",
         cache=True,
         help="Map for the electric field dependencies",
     )
     s2_mean_area_fraction_top = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=s2_mean_area_fraction_top",
+        "&fmt=json&take=s2_mean_area_fraction_top",
         type=(int, float),
         cache=True,
         help="Mean S2 area fraction top",
@@ -162,42 +162,42 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     )
     singlet_fraction_gas = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=singlet_fraction_gas",
+        "&fmt=json&take=singlet_fraction_gas",
         type=(int, float),
         cache=True,
         help="Fraction of singlet states in GXe",
     )
     triplet_lifetime_gas = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=triplet_lifetime_gas",
+        "&fmt=json&take=triplet_lifetime_gas",
         type=(int, float),
         cache=True,
         help="Liftetime of triplet states in GXe [ns]",
     )
     singlet_lifetime_gas = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=singlet_lifetime_gas",
+        "&fmt=json&take=singlet_lifetime_gas",
         type=(int, float),
         cache=True,
         help="Liftetime of singlet states in GXe [ns]",
     )
     triplet_lifetime_liquid = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=triplet_lifetime_liquid",
+        "&fmt=json&take=triplet_lifetime_liquid",
         type=(int, float),
         cache=True,
         help="Liftetime of triplet states in LXe [ns]",
     )
     singlet_lifetime_liquid = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=singlet_lifetime_liquid",
+        "&fmt=json&take=singlet_lifetime_liquid",
         type=(int, float),
         cache=True,
         help="Liftetime of singlet states in LXe [ns]",
     )
     s2_secondary_sc_gain_mc = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=s2_secondary_sc_gain",
+        "&fmt=json&take=s2_secondary_sc_gain",
         type=(int, float),
         cache=True,
         help="Secondary scintillation gain [PE/e-]",
@@ -331,30 +331,27 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         res = strax.sort_by_time(res)
         return res
 
-
     def photon_channels(self, positions, n_photons):
-        """
-        Blocked, memory-capped channel sampling:
-        1) pattern map -> pad to full TPC PMTs if needed
-        2) optional AFT smearing (skewnorm) — unchanged math
-        3) row-normalize
-        4) in-place CDF (cumsum)
-        5) per-row searchsorted for uniforms
-        Returns int16 array of length sum(n_photons).
+        """Blocked, memory-capped channel sampling:
+
+        1) pattern map -> pad to full TPC PMTs if needed 2) optional AFT
+        smearing (skewnorm) — unchanged math 3) row-normalize 4) in-
+        place CDF (cumsum) 5) per-row searchsorted for uniforms Returns
+        int16 array of length sum(n_photons).
         """
         total = int(np.sum(n_photons))
         out = np.empty(total, dtype=np.int16)
 
         # decide electron block size from mem cap: one (Ne x C) buffer
         C_full = self.n_tpc_pmts
-        bytes_per = 4 
+        bytes_per = 4
         # default to ~128MB if not set
         mem_cap = getattr(self, "_mem_cap_bytes", 128 * (1024**2))
         max_ne = max(1, mem_cap // (C_full * bytes_per))
 
         # prefix-map electron -> photon slice [start, stop)
         starts = np.empty(len(n_photons), np.int64)
-        stops  = np.empty(len(n_photons), np.int64)
+        stops = np.empty(len(n_photons), np.int64)
         s = 0
         for i, k in enumerate(n_photons):
             starts[i] = s
@@ -382,10 +379,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                 sum_top = pattern[:, self._top_idx].sum(axis=1)
                 sum_all = pattern.sum(axis=1)
                 cur_aft = np.divide(
-                    sum_top, 
-                    sum_all, 
-                    out=np.zeros_like(sum_top), 
-                    where=sum_all != 0
+                    sum_top, sum_all, out=np.zeros_like(sum_top), where=sum_all != 0
                 )
 
                 new_aft = cur_aft * skewnorm.rvs(
@@ -395,16 +389,10 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
                 with np.errstate(divide="ignore", invalid="ignore"):
                     scale_top = np.divide(
-                        new_aft, 
-                        cur_aft, 
-                        out=np.ones_like(new_aft), 
-                        where=cur_aft > 0
+                        new_aft, cur_aft, out=np.ones_like(new_aft), where=cur_aft > 0
                     )
                     scale_bot = np.divide(
-                        1 - new_aft,
-                        1 - cur_aft, 
-                        out=np.ones_like(new_aft), 
-                        where=cur_aft < 1
+                        1 - new_aft, 1 - cur_aft, out=np.ones_like(new_aft), where=cur_aft < 1
                     )
 
                 pattern[:, self._top_idx] *= scale_top[:, None]
@@ -420,7 +408,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
             # 5) per-electron sampling into global 'out'
             for ii in range(i0, i1):
-                s = starts[ii]; e = stops[ii]
+                s = starts[ii]
+                e = stops[ii]
                 if s == e:
                     continue
                 u = self.rng.random(e - s)  # [0,1)
@@ -438,7 +427,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             t1, t3 = 0, 0
 
         delay = self.rng.choice([t1, t3], size, replace=True, p=[singlet_ratio, 1 - singlet_ratio])
-        return (self.rng.exponential(1, size) * delay)
+        return self.rng.exponential(1, size) * delay
 
     def photon_timings(self, positions, n_photons, _photon_channels):
         raise NotImplementedError
@@ -455,21 +444,21 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 
     s2_luminescence_map = straxen.URLConfig(
         default="simple_load://resource://simulation_config://SIMULATION_CONFIG_FILE.json?"
-                "&key=s2_luminescence_gg&fmt=npy",
+        "&key=s2_luminescence_gg&fmt=npy",
         cache=True,
         help="Luminescence map for S2 Signals",
     )
 
     garfield_gas_gap_map = straxen.URLConfig(
         default="itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?"
-                "&key=garfield_gas_gap_map&fmt=json",
+        "&key=garfield_gas_gap_map&fmt=json",
         cache=True,
         help="Garfield gas gap map",
     )
 
     s2_optical_propagation_spline = straxen.URLConfig(
         default="itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?"
-                "&key=s2_time_spline&fmt=json.gz&method=RegularGridInterpolator",
+        "&key=s2_time_spline&fmt=json.gz&method=RegularGridInterpolator",
         cache=True,
         help="Spline for the optical propagation of S2 signals",
     )
@@ -484,8 +473,7 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
     def photon_timings(self, positions, n_photons, _photon_channels):
         _photon_timings = self.luminescence_timings_garfield_gasgap(positions, n_photons)
         _photon_timings += self.singlet_triplet_delays(
-            len(_photon_timings),
-            self.singlet_fraction_gas
+            len(_photon_timings), self.singlet_fraction_gas
         )
         _photon_timings += self.optical_propagation(_photon_channels)
         return _photon_timings
@@ -520,16 +508,12 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 
         is_top = channels < self.n_top_pmts
         if is_top.any():
-            prop_time[is_top] = self.s2_optical_propagation_spline(
-                u_rand[is_top], 
-                map_name="top"
-            )
+            prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name="top")
 
         is_bottom = ~is_top
         if is_bottom.any():
             prop_time[is_bottom] = self.s2_optical_propagation_spline(
-                u_rand[is_bottom], 
-                map_name="bottom"
+                u_rand[is_bottom], map_name="bottom"
             )
 
         return prop_time
@@ -545,84 +529,80 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     child_plugin = True
 
     pressure = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=pressure",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?" "&fmt=json&take=pressure",
         type=(int, float),
         cache=True,
         help="Pressure of liquid xenon [bar/e]",
     )
     temperature = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=temperature",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?" "&fmt=json&take=temperature",
         type=(int, float),
         cache=True,
         help="Temperature of liquid xenon [K]",
     )
     gas_drift_velocity_slope = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=gas_drift_velocity_slope",
+        "&fmt=json&take=gas_drift_velocity_slope",
         type=(int, float),
         cache=True,
         help="gas_drift_velocity_slope",
     )
     enable_gas_gap_warping = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=enable_gas_gap_warping",
+        "&fmt=json&take=enable_gas_gap_warping",
         type=bool,
         cache=True,
         help="enable_gas_gap_warping",
     )
     elr_gas_gap_length = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=elr_gas_gap_length",
+        "&fmt=json&take=elr_gas_gap_length",
         type=(int, float),
         cache=True,
         help="elr_gas_gap_length",
     )
     gas_gap_map = straxen.URLConfig(
         default="simple_load://resource://simulation_config://SIMULATION_CONFIG_FILE.json?"
-                "&key=gas_gap_map&fmt=pkl",
+        "&key=gas_gap_map&fmt=pkl",
         cache=True,
         help="gas_gap_map",
     )
     anode_field_domination_distance = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=anode_field_domination_distance",
+        "&fmt=json&take=anode_field_domination_distance",
         type=(int, float),
         cache=True,
         help="anode_field_domination_distance",
     )
     anode_wire_radius = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=anode_wire_radius",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?" "&fmt=json&take=anode_wire_radius",
         type=(int, float),
         cache=True,
         help="anode_wire_radius",
     )
     gate_to_anode_distance = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=gate_to_anode_distance",
+        "&fmt=json&take=gate_to_anode_distance",
         type=(int, float),
         cache=True,
         help="Top of gate to bottom of anode [cm]",
     )
     anode_voltage = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=anode_voltage",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?" "&fmt=json&take=anode_voltage",
         type=(int, float),
         cache=True,
         help="Voltage of anode [V]",
     )
     lxe_dielectric_constant = straxen.URLConfig(
         default="take://resource://SIMULATION_CONFIG_FILE.json?"
-                "&fmt=json&take=lxe_dielectric_constant",
+        "&fmt=json&take=lxe_dielectric_constant",
         type=(int, float),
         cache=True,
         help="lxe_dielectric_constant",
     )
     s2_optical_propagation_spline = straxen.URLConfig(
         default="itp_map://resource://simulation_config://SIMULATION_CONFIG_FILE.json?"
-                "&key=s2_time_spline&fmt=json.gz&method=RegularGridInterpolator",
+        "&key=s2_time_spline&fmt=json.gz&method=RegularGridInterpolator",
         cache=True,
         help="Spline for the optical propagation of S2 signals",
     )
@@ -635,8 +615,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     def photon_timings(self, positions, n_photons, _photon_channels):
         _photon_timings = self.luminescence_timings_simple(positions, n_photons)
         _photon_timings += self.singlet_triplet_delays(
-            len(_photon_timings), 
-            self.singlet_fraction_gas
+            len(_photon_timings), self.singlet_fraction_gas
         )
         _photon_timings += self.optical_propagation(_photon_channels)
         return _photon_timings
@@ -694,16 +673,12 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
 
         is_top = channels < self.n_top_pmts
         if is_top.any():
-            prop_time[is_top] = self.s2_optical_propagation_spline(
-                u_rand[is_top], 
-                map_name="top"
-            )
+            prop_time[is_top] = self.s2_optical_propagation_spline(u_rand[is_top], map_name="top")
 
         is_bottom = ~is_top
         if is_bottom.any():
             prop_time[is_bottom] = self.s2_optical_propagation_spline(
-                u_rand[is_bottom], 
-                map_name="bottom"
+                u_rand[is_bottom], map_name="bottom"
             )
 
         return prop_time
@@ -772,9 +747,9 @@ def draw_excitation_times(
 
         dngg = diff_nearest_gg[i]
         # linear interpolation between nearest inv-CDFs (same as before)
-        interp_cdf = (
-            inv_cdf_list[u_hist_ind] - inv_cdf_list[hist_ind]
-        ) * (dngg / d_gas_gap) + inv_cdf_list[hist_ind]
+        interp_cdf = (inv_cdf_list[u_hist_ind] - inv_cdf_list[hist_ind]) * (
+            dngg / d_gas_gap
+        ) + inv_cdf_list[hist_ind]
 
         s = starts[i]
         e = stops[i]
