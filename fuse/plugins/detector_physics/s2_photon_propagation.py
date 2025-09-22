@@ -24,7 +24,8 @@ conversion_to_bar = 1 / constants.elementary_charge / 1e1
 
 @export
 class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
-    """Base plugin to simulate the propagation of S2 photons in the detector."""
+    """Base plugin to simulate the propagation of S2 photons in the
+    detector."""
 
     __version__ = "0.4.2"
 
@@ -80,9 +81,11 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
     n_top_pmts = straxen.URLConfig(type=int, help="Number of PMTs on top array")
     n_tpc_pmts = straxen.URLConfig(type=int, help="Number of PMTs in the TPC")
     gain_model_mc = straxen.URLConfig(
-        default=("list-to-array://xedocs://pmt_area_to_pes"
-                 "?as_list=True&sort=pmt&detector=tpc"
-                 "&run_id=plugin.run_id&version=ONLINE&attr=value"),
+        default=(
+            "list-to-array://xedocs://pmt_area_to_pes"
+            "?as_list=True&sort=pmt&detector=tpc"
+            "&run_id=plugin.run_id&version=ONLINE&attr=value"
+        ),
         infer_type=False,
         help="PMT gain model",
     )
@@ -130,14 +133,16 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         help="Mean S2 area fraction top",
     )
     s2_pattern_map = straxen.URLConfig(
-        default=("s2_aft_scaling://pattern_map://resource://simulation_config://"
-                 "SIMULATION_CONFIG_FILE.json?&key=s2_pattern_map&fmt=pkl"
-                 "&pmt_mask=plugin.pmt_mask"
-                 "&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top"
-                 "&n_tpc_pmts=plugin.n_tpc_pmts"
-                 "&n_top_pmts=plugin.n_top_pmts"
-                 "&turned_off_pmts=plugin.turned_off_pmts"
-                 "&method=plugin.s2_pattern_map_interpolation_method"),
+        default=(
+            "s2_aft_scaling://pattern_map://resource://simulation_config://"
+            "SIMULATION_CONFIG_FILE.json?&key=s2_pattern_map&fmt=pkl"
+            "&pmt_mask=plugin.pmt_mask"
+            "&s2_mean_area_fraction_top=plugin.s2_mean_area_fraction_top"
+            "&n_tpc_pmts=plugin.n_tpc_pmts"
+            "&n_top_pmts=plugin.n_top_pmts"
+            "&turned_off_pmts=plugin.turned_off_pmts"
+            "&method=plugin.s2_pattern_map_interpolation_method"
+        ),
         cache=True,
         help="S2 pattern map",
     )
@@ -220,8 +225,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         self._top_idx = np.arange(self.n_top_pmts)
         self._bot_idx = np.arange(self.n_top_pmts, self.n_tpc_pmts)
 
-        self._mem_cap_bytes = int(256 * 1024**2)   # ~256 MB for Ne×C scratch
-        self._max_electrons_block = None           # computed lazily per chunk
+        self._mem_cap_bytes = int(256 * 1024**2)  # ~256 MB for Ne×C scratch
+        self._max_electrons_block = None  # computed lazily per chunk
 
     def compute(self, individual_electrons, start, end):
 
@@ -263,7 +268,6 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             last_start = chunk_end
             yield chunk
 
-        
     def compute_chunk(self, electron_group):
         # stable order (unchanged)
         sort_index_eg = stable_argsort(electron_group["cluster_id"])
@@ -274,10 +278,12 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
         # prefix map electron -> photon slice [starts, stops)
         starts = np.empty(len(nph), np.int64)
-        stops  = np.empty(len(nph), np.int64)
+        stops = np.empty(len(nph), np.int64)
         s = 0
         for i, k in enumerate(nph):
-            starts[i] = s; s += int(k); stops[i] = s
+            starts[i] = s
+            s += int(k)
+            stops[i] = s
         total = int(s)
 
         # choose block size from mem cap (one float32 Ne×C buffer)
@@ -293,8 +299,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
             pos_blk = pos[i0:i1]
             nph_blk = nph[i0:i1]
-            st_blk  = starts[i0:i1]
-            en_blk  = stops[i0:i1]
+            st_blk = starts[i0:i1]
+            en_blk = stops[i0:i1]
 
             # ---- channels (pattern -> CDF in-place) ----
             pattern = self.s2_pattern_map(pos_blk).astype(np.float32, copy=False)
@@ -308,14 +314,20 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             if self.s2_aft_sigma != 0:
                 sum_top = pattern[:, self._top_idx].sum(axis=1)
                 sum_all = pattern.sum(axis=1)
-                cur_aft = np.divide(sum_top, sum_all, out=np.zeros_like(sum_top), where=sum_all != 0)
+                cur_aft = np.divide(
+                    sum_top, sum_all, out=np.zeros_like(sum_top), where=sum_all != 0
+                )
                 new_aft = cur_aft * skewnorm.rvs(
                     loc=1.0, scale=self.s2_aft_sigma, a=self.s2_aft_skewness, size=cur_aft.shape[0]
                 )
                 new_aft = np.clip(new_aft, 0.0, 1.0)
                 with np.errstate(divide="ignore", invalid="ignore"):
-                    scale_top = np.divide(new_aft, cur_aft, out=np.ones_like(new_aft), where=cur_aft > 0)
-                    scale_bot = np.divide(1 - new_aft, 1 - cur_aft, out=np.ones_like(new_aft), where=cur_aft < 1)
+                    scale_top = np.divide(
+                        new_aft, cur_aft, out=np.ones_like(new_aft), where=cur_aft > 0
+                    )
+                    scale_bot = np.divide(
+                        1 - new_aft, 1 - cur_aft, out=np.ones_like(new_aft), where=cur_aft < 1
+                    )
                 pattern[:, self._top_idx] *= scale_top[:, None]
                 pattern[:, self._bot_idx] *= scale_bot[:, None]
 
@@ -335,7 +347,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                 # vectorized searchsorted on single row
                 row = pattern[r]
                 idx = np.searchsorted(row, u, side="left").astype(np.int16, copy=False)
-                out_ch[off:off+m] = idx
+                out_ch[off : off + m] = idx
                 off += m
 
             # ---- timings for this block (subclass method; unchanged physics) ----
@@ -369,10 +381,10 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             res_blk = build_photon_propagation_output(
                 dtype=self.dtype,
                 _photon_timings=t_rel.astype(np.int64, copy=False),
-                _photon_channels=out_ch,                     # int16
+                _photon_channels=out_ch,  # int16
                 _photon_gains=g.astype(np.int32, copy=False),
                 _photon_is_dpe=is_dpe,
-                _cluster_id=cl_blk,                          # int32
+                _cluster_id=cl_blk,  # int32
                 photon_type=2,
             )
             res_blk = res_blk[res_blk["channel"] >= 0]
@@ -397,12 +409,12 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         # (same logic as your njit helper)
         n_ph = n_photons.astype(np.int64, copy=False)
         starts = np.empty(len(n_ph), np.int64)
-        stops  = np.empty(len(n_ph), np.int64)
+        stops = np.empty(len(n_ph), np.int64)
         s = 0
         for i, k in enumerate(n_ph):
             starts[i] = s
             s += int(k)
-            stops[i]  = s
+            stops[i] = s
 
         for i0 in range(0, len(positions), max_ne):
             i1 = min(i0 + max_ne, len(positions))
@@ -424,14 +436,20 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             if self.s2_aft_sigma != 0:
                 sum_top = pattern[:, self._top_idx].sum(axis=1)
                 sum_all = pattern.sum(axis=1)
-                cur_aft = np.divide(sum_top, sum_all, out=np.zeros_like(sum_top), where=sum_all != 0)
+                cur_aft = np.divide(
+                    sum_top, sum_all, out=np.zeros_like(sum_top), where=sum_all != 0
+                )
                 new_aft = cur_aft * skewnorm.rvs(
                     loc=1.0, scale=self.s2_aft_sigma, a=self.s2_aft_skewness, size=cur_aft.shape[0]
                 )
                 new_aft = np.clip(new_aft, 0.0, 1.0)
                 with np.errstate(divide="ignore", invalid="ignore"):
-                    scale_top = np.divide(new_aft, cur_aft, out=np.ones_like(new_aft), where=cur_aft > 0)
-                    scale_bot = np.divide(1 - new_aft, 1 - cur_aft, out=np.ones_like(new_aft), where=cur_aft < 1)
+                    scale_top = np.divide(
+                        new_aft, cur_aft, out=np.ones_like(new_aft), where=cur_aft > 0
+                    )
+                    scale_bot = np.divide(
+                        1 - new_aft, 1 - cur_aft, out=np.ones_like(new_aft), where=cur_aft < 1
+                    )
                 pattern[:, self._top_idx] *= scale_top[:, None]
                 pattern[:, self._bot_idx] *= scale_bot[:, None]
 
@@ -481,7 +499,8 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
 
 @export
 class S2PhotonPropagation(S2PhotonPropagationBase):
-    """S2 photon propagation using Garfield gas-gap luminescence + optical propagation."""
+    """S2 photon propagation using Garfield gas-gap luminescence + optical
+    propagation."""
 
     __version__ = "0.2.0"  # unchanged physics; perf tweaks only
 
@@ -514,7 +533,9 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 
     def photon_timings(self, positions, n_photons, _photon_channels):
         _photon_timings = self.luminescence_timings_garfield_gasgap(positions, n_photons)
-        _photon_timings += self.singlet_triplet_delays(len(_photon_timings), self.singlet_fraction_gas)
+        _photon_timings += self.singlet_triplet_delays(
+            len(_photon_timings), self.singlet_fraction_gas
+        )
         _photon_timings += self.optical_propagation(_photon_channels)
         return _photon_timings
 
@@ -552,14 +573,17 @@ class S2PhotonPropagation(S2PhotonPropagationBase):
 
         is_bottom = ~is_top
         if is_bottom.any():
-            prop_time[is_bottom] = self.s2_optical_propagation_spline(u_rand[is_bottom], map_name="bottom")
+            prop_time[is_bottom] = self.s2_optical_propagation_spline(
+                u_rand[is_bottom], map_name="bottom"
+            )
 
         return prop_time
 
 
 @export
 class S2PhotonPropagationSimple(S2PhotonPropagationBase):
-    """S2 photon propagation using simple luminescence model + optical propagation."""
+    """S2 photon propagation using simple luminescence model + optical
+    propagation."""
 
     __version__ = "0.1.1"  # unchanged physics; perf tweaks only
 
@@ -643,7 +667,9 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
 
     def photon_timings(self, positions, n_photons, _photon_channels):
         _photon_timings = self.luminescence_timings_simple(positions, n_photons)
-        _photon_timings += self.singlet_triplet_delays(len(_photon_timings), self.singlet_fraction_gas)
+        _photon_timings += self.singlet_triplet_delays(
+            len(_photon_timings), self.singlet_fraction_gas
+        )
         _photon_timings += self.optical_propagation(_photon_channels)
         return _photon_timings
 
@@ -704,10 +730,12 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
 
         is_bottom = ~is_top
         if is_bottom.any():
-            prop_time[is_bottom] = self.s2_optical_propagation_spline(u_rand[is_bottom], map_name="bottom")
+            prop_time[is_bottom] = self.s2_optical_propagation_spline(
+                u_rand[is_bottom], map_name="bottom"
+            )
 
         return prop_time
-    
+
 
 @njit(cache=True)
 def find_electron_split_index(
@@ -743,6 +771,7 @@ def find_electron_split_index(
 # Numba helpers (no RNG inside)
 # ----------------------------
 
+
 @njit(cache=True, fastmath=True)
 def _segment_ranges(n_per_row):
     m = n_per_row.shape[0]
@@ -776,9 +805,12 @@ def draw_excitation_times(
 
         dngg = diff_nearest_gg[i]
         # linear interpolation between nearest inv-CDFs (same as before)
-        interp_cdf = (inv_cdf_list[u_hist_ind] - inv_cdf_list[hist_ind]) * (dngg / d_gas_gap) + inv_cdf_list[hist_ind]
+        interp_cdf = (inv_cdf_list[u_hist_ind] - inv_cdf_list[hist_ind]) * (
+            dngg / d_gas_gap
+        ) + inv_cdf_list[hist_ind]
 
-        s = starts[i]; e = stops[i]
+        s = starts[i]
+        e = stops[i]
         samples = samples_flat[s:e]  # in [0, inv_cdf_len-2)
 
         fi = np.floor(samples).astype(np.int64)
@@ -792,19 +824,10 @@ def draw_excitation_times(
         timings[s:e] = T
     return timings
 
+
 @njit(cache=True, fastmath=True)
 def _luminescence_timings_simple(
-    n,
-    dG,
-    E0,
-    r,
-    dr,
-    rr,
-    alpha,
-    uE,
-    p,
-    n_photons,
-    uniforms_flat  # in [0,1)
+    n, dG, E0, r, dr, rr, alpha, uE, p, n_photons, uniforms_flat  # in [0,1)
 ):
     emission_time = np.zeros(np.sum(n_photons), np.int64)
     starts, stops, _ = _segment_ranges(n_photons)
@@ -827,7 +850,8 @@ def _luminescence_timings_simple(
         t = np.cumsum(dt_i[j:]) - avgt
         y = np.cumsum(dy_i[j:])
 
-        s = starts[i]; e = stops[i]
+        s = starts[i]
+        e = stops[i]
         probs = uniforms_flat[s:e]
         # linear interp on monotonic CDF y/y[-1] → t
         emission_time[s:e] = np.interp(probs, y / y[-1], t).astype(np.int64)
