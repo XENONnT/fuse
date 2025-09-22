@@ -117,13 +117,13 @@ class ElectronExtraction(FuseBasePlugin):
             # shape: (N, 2)
             position = np.column_stack(
                 (individual_electrons["x_interface"], individual_electrons["y_interface"])
-            ).astype(np.float32, copy=False)
+            )
 
             # rel S2 correction (flatten for safety; maps sometimes return (N,1))
-            rel_s2_cor = self.s2_correction_map(position).astype(np.float32, copy=False).reshape(-1)
+            rel_s2_cor = self.s2_correction_map(position).reshape(-1)
 
             if self.se_gain_from_map:
-                se_gains = self.se_gain_map(position).astype(np.float32, copy=False).reshape(-1)
+                se_gains = self.se_gain_map(position).reshape(-1)
             else:
                 # keep g2 consistent with MC scaling
                 se_gains = rel_s2_cor * float(self.s2_secondary_sc_gain_mc)
@@ -134,7 +134,7 @@ class ElectronExtraction(FuseBasePlugin):
             np.clip(cy, 0.0, 1.0, out=cy)
 
             # Single RNG pass to build mask
-            u = self.rng.random(N).astype(np.float32, copy=False)
+            u = self.rng.random(N)
             idx = np.flatnonzero(u < cy)
 
         M = int(idx.size)
@@ -148,12 +148,8 @@ class ElectronExtraction(FuseBasePlugin):
         result["time"] = self.extraction_delay(times_sel)
         result["endtime"] = result["time"]
 
-        result["x_interface"] = np.take(individual_electrons["x_interface"], idx).astype(
-            np.float32, copy=False
-        )
-        result["y_interface"] = np.take(individual_electrons["y_interface"], idx).astype(
-            np.float32, copy=False
-        )
+        result["x_interface"] = np.take(individual_electrons["x_interface"], idx)
+        result["y_interface"] = np.take(individual_electrons["y_interface"], idx)
         result["cluster_id"] = np.take(individual_electrons["cluster_id"], idx)
 
         return result
@@ -162,4 +158,4 @@ class ElectronExtraction(FuseBasePlugin):
         # Vectorized, deterministic via self.rng
         # exponential() returns float64; cast once before adding
         dt = self.rng.exponential(float(self.electron_trapping_time), size=electron_times.shape[0])
-        return electron_times + dt.astype(np.int64)
+        return electron_times + dt

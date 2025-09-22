@@ -78,10 +78,7 @@ class ElectronPropagation(FuseBasePlugin):
         # Per-interaction electron counts
         n_int = interactions_in_roi[mask]["n_electron_interface"].astype(np.int64)
 
-        # -----------------------------
         # Drift time per electron (ns)
-        # Use your deterministic RNG from FuseBasePlugin
-        # -----------------------------
         electron_drift_time = drift_time_in_tpc(
             n_int,
             interactions_in_roi[mask]["drift_time_mean"],
@@ -96,9 +93,7 @@ class ElectronPropagation(FuseBasePlugin):
         ).astype(np.float32)
         theta = np.arctan2(positions[:, 1], positions[:, 0]).astype(np.float32)
 
-        # -----------------------------
         # Diffusion constants (cm^2/ns), expand to per-electron
-        # -----------------------------
         if self.enable_diffusion_transverse_map:
             diffusion_constant_radial_int = (
                 self.field_dependencies_map(
@@ -130,10 +125,7 @@ class ElectronPropagation(FuseBasePlugin):
             D_r_e = np.repeat(diffusion_constant_radial_int, n_int).astype(np.float32)
             D_a_e = np.repeat(diffusion_constant_azimuthal_int, n_int).astype(np.float32)
 
-        # -----------------------------
-        # Horizontal diffusion kicks (deterministic: from self.rng)
-        # std = sqrt(2 * D * t)
-        # -----------------------------
+        # Horizontal diffusion
         std_r = np.sqrt(2.0 * D_r_e * electron_drift_time).astype(np.float32)
         std_a = np.sqrt(2.0 * D_a_e * electron_drift_time).astype(np.float32)
 
@@ -142,7 +134,7 @@ class ElectronPropagation(FuseBasePlugin):
         hr = z_r * std_r
         ha = z_a * std_a
 
-        # Rotate to xy with Numba (fast)
+        # Rotate to xy
         hdiff = np.empty((Ne, 2), dtype=np.float32)
         rotate_radial_azimuthal_to_xy_inplace(
             n_int,
@@ -378,11 +370,6 @@ class ElectronPropagationPerpWires(ElectronPropagation):
         return mask_near_wires
 
 
-# =========================
-# Helpers
-# =========================
-
-
 def drift_time_in_tpc(n_electron, drift_time_mean, drift_time_spread, rng):
     """Draw per-electron drift times with the plugin's deterministic RNG."""
     n_electrons = np.sum(n_electron).astype(np.int64)
@@ -397,10 +384,6 @@ def rotate_axis(x_obs, y_obs, angle):
     y_rot = np.sin(angle) * x_obs + np.cos(angle) * y_obs
     return x_rot, y_rot
 
-
-# =========================
-# Numba helpers (no RNG)
-# =========================
 
 
 @njit(cache=True)
@@ -420,11 +403,11 @@ def _build_ranges(n_electron):
 
 @njit(parallel=True, fastmath=True, cache=True)
 def rotate_radial_azimuthal_to_xy_inplace(
-    n_electron_per_int,  # (N_int,) int64
-    theta_per_int,  # (N_int,) float32/64
-    hr,  # (N_elec,) float32/64   radial kicks
-    ha,  # (N_elec,) float32/64   azimuthal kicks
-    out_dxdy,  # (N_elec,2) float32/64  preallocated
+    n_electron_per_int,   # (N_int,)
+    theta_per_int,        # (N_int,)
+    hr,                   # (N_elec,)
+    ha,                   # (N_elec,)
+    out_dxdy              # (N_elec,2)
 ):
     """Fast block-rotation (hr, ha) -> (dx, dy), per interaction angle."""
     start_idx, stop_idx, _ = _build_ranges(n_electron_per_int)
