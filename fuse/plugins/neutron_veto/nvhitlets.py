@@ -11,6 +11,7 @@ from ...dtypes import neutron_veto_hitlet_dtype
 
 export, __all__ = strax.exporter()
 
+
 @export
 class NeutronVetoHitlets(FuseBasePlugin):
     """Plugin to simulate the Neutron Veto to hitlets.
@@ -90,7 +91,7 @@ class NeutronVetoHitlets(FuseBasePlugin):
         pmthits = pmthits[mask]
 
         self.log.debug("Applying QE")
-        # Applying Quantum efficiency for each pmt 
+        # Applying Quantum efficiency for each pmt
         # --- super super slow.....
         # qe = 1e-2 * np.vectorize(self.QE_E)(pmthits["pmthitEnergy"], pmthits["pmthitID"])
 
@@ -102,21 +103,19 @@ class NeutronVetoHitlets(FuseBasePlugin):
             mask_id = pmthits["pmthitID"] == uid
             qe[mask_id] = 1e-2 * QE_E(pmthits["pmthitEnergy"][mask_id], uid, NVeto_PMT_QE)
 
-        
         self.log.debug("Applying CE")
         # Applying effective collection efficiency
         qe *= self.ce_scaling
-        
+
         # Applying acceptance per pmt: for the approach in which SPE PDF has already applied a threshold for low charges
         self.log.debug("Applying per pmt acceptance")
-        # also very slow, think this is a bottleneck of the URLConfigs, it is not very efficient to call them in a loop many times. 
+        # also very slow, think this is a bottleneck of the URLConfigs, it is not very efficient to call them in a loop many times.
         # qe = qe * np.vectorize(self.get_acceptance)(pmthits["pmthitID"])
 
         NV_SPE = self.nveto_spe_parameters
         acceptance_dict = {k: v["acceptance"] for k, v in NV_SPE.items()}
         qe = qe * np.vectorize(acceptance_dict.get)(pmthits["pmthitID"])
 
-        
         self.log.debug("Binomial sampling")
         # Generate a photoelectron based on (binomial) conversion probability qe*eCE*spe_acc
         pe = np.array([np.random.binomial(1, j, 1)[0] for j in qe])
@@ -132,10 +131,12 @@ class NeutronVetoHitlets(FuseBasePlugin):
         unique_ids = np.unique(pmthits["pmthitID"])
         for uid in unique_ids:
             mask_id = pmthits["pmthitID"] == uid
-            
+
             # Just call the random choice once per PMT ID
             SPE_channel = NV_SPE.get(uid)
-            spe_charge[mask_id] = self.rng.choice(SPE_channel["pe"], p = SPE_channel["SPE_values"], size=np.sum(mask_id))
+            spe_charge[mask_id] = self.rng.choice(
+                SPE_channel["pe"], p=SPE_channel["SPE_values"], size=np.sum(mask_id)
+            )
         pmthits["pe_area"] = spe_charge
 
         # 3. Creating hitlet times
@@ -153,7 +154,7 @@ class NeutronVetoHitlets(FuseBasePlugin):
 
         elif self.stack_hitlets:
             self.log.debug("Looking for stacked hitlets")
-            
+
             arr_c_evt = []
             for i in np.unique(pmthits["evtid"]):
                 arr_evt = pmthits[pmthits["evtid"] == i]
@@ -181,7 +182,7 @@ class NeutronVetoHitlets(FuseBasePlugin):
     #     ind = ID - 2000
     #     qe = self.nveto_pmt_qe[ind](WL)
     #     # qe = self.nveto_pmt_qe["QE"][ind](WL)
-        
+
     #     return qe
 
     # def get_acceptance(self, ID):
@@ -206,6 +207,7 @@ class NeutronVetoHitlets(FuseBasePlugin):
 def energy_to_wavelenght(E):
     Joules_to_eV = 1.602 * 1e-19
     return 1e9 * const.h * const.c / (E * Joules_to_eV)
+
 
 def QE_E(E, ID, nveto_pmt_qe):
     WL = energy_to_wavelenght(E)

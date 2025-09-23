@@ -224,7 +224,7 @@ def nveto_pmt_qe_dict(data):
 
     return QE_array
     # pd_dict = {"pmt_id": pmt_id, "QE": QE_array}
-    
+
     # return pd_dict
 
 
