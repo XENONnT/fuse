@@ -41,9 +41,7 @@ class ElectronDrift(FuseBasePlugin):
         ),
     ] + strax.time_fields
 
-    save_when = strax.SaveWhen.ALWAYS
-
-    # Config options
+    save_when = strax.SaveWhen.TARGET
 
     drift_velocity_liquid = straxen.URLConfig(
         default="take://resource://"
@@ -297,7 +295,7 @@ class ElectronDrift(FuseBasePlugin):
         """
         positions = np.array([x, y, z]).T
         dr_pre = self.fdc_map_fuse(positions)
-        for i_iter in range(6):  # 6 iterations seems to work
+        for _ in range(6):  # 6 iterations seems to work
             dr = 0.5 * self.fdc_map_fuse(positions) + 0.5 * dr_pre  # Average between iter
 
             r_obs = np.sqrt(x**2 + y**2) - dr
@@ -386,6 +384,7 @@ class ElectronDrift(FuseBasePlugin):
         drift_time_above_gate = self.drift_time_gate
 
         drift_time_mean = drift_time_below_gate + drift_time_above_gate
+
         drift_time_mean = np.clip(drift_time_mean, 0, np.inf)
 
         drift_time_spread_below_gate_squared = (
