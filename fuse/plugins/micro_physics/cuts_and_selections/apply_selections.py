@@ -23,7 +23,6 @@ class SelectionMerger(FuseBasePlugin):
 
     provides = "interactions_in_roi"
     data_kind = "interactions_in_roi"
-    __version__ = "0.0.1"
 
     dtype = (
         cluster_positions_fields
