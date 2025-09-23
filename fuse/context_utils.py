@@ -3,6 +3,7 @@ import strax
 import straxen
 from straxen import URLConfig
 from copy import deepcopy
+from scipy import interpolate
 import logging
 
 logging.basicConfig(handlers=[logging.StreamHandler()])
@@ -200,3 +201,36 @@ def apply_mc_overrides(context, config_file):
             log.debug(f"[mc_overrides] Set '{key}' to '{value}'")
     except Exception as e:
         raise ValueError(f"[mc_overrides] Failed to apply overrides from {config_file}: {e}") from e
+
+
+@URLConfig.register("nveto_pmt_qe")
+def nveto_pmt_qe_dict(data):
+    """Get NV PMT quantum efficiecny values and interpolate."""
+
+    QE_array_n = []
+    # nVeto
+    for i in np.arange(2000, 2120):
+        QE_array_n.append(
+            interpolate.interp1d(
+                data["nv_pmt_qe_wavelength"],
+                data["nv_pmt_qe"][str(i)],
+                bounds_error=False,
+                fill_value=0,
+            )
+        )
+
+    pmt_id = list(np.arange(2000, 2120))
+    QE_array = QE_array_n
+
+    return QE_array
+    # pd_dict = {"pmt_id": pmt_id, "QE": QE_array}
+
+    # return pd_dict
+
+
+@URLConfig.register("nveto_spe")
+def nveto_spe_dict(data_spe):
+    """Get dictionary with NV SPE parameters."""
+
+    data_dict = {entry["pmtID"]: entry for entry in data_spe}
+    return data_dict
