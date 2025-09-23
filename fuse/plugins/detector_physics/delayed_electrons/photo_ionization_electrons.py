@@ -21,13 +21,12 @@ class PhotoIonizationElectrons(FuseBasePlugin):
     scaled using the config option photoionization_modifier.
     """
 
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     depends_on = (
         "s2_photons_sum",
-        "extracted_electrons",
         "s2_photons",
-        "electron_time",
+        "extracted_electrons",
         "microphysics_summary",
     )
     provides = "photo_ionization_electrons"
