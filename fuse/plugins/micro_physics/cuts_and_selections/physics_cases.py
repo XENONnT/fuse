@@ -34,13 +34,9 @@ class EnergyCut(strax.CutPlugin):
 
         energies = build_energies(clustered_interactions)
 
-        self.log.info(
-            f"Applying energy cut: {self.min_energy} keV < E < {self.max_energy} keV"
-        )
+        self.log.info(f"Applying energy cut: {self.min_energy} keV < E < {self.max_energy} keV")
 
-        self.log.info(
-            f"Event energies range from {np.min(energies)} keV to {np.max(energies)} keV"
-        )
+        self.log.info(f"Event energies range from {np.min(energies)} keV to {np.max(energies)} keV")
 
         mask = energies < self.max_energy
         mask = mask & (energies > self.min_energy)

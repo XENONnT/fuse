@@ -14,6 +14,7 @@ from ....dtypes import (
 
 export, __all__ = strax.exporter()
 
+
 @export
 class SelectionMerger(FuseBasePlugin):
     """Merge cuts/selections and stamp per-volume constants.
@@ -41,7 +42,8 @@ class SelectionMerger(FuseBasePlugin):
 
     @staticmethod
     def _eval_logic(arr, expr: str) -> np.ndarray:
-        """Tiny evaluator for '&', '|', '~', and parentheses over boolean fields."""
+        """Tiny evaluator for '&', '|', '~', and parentheses over boolean
+        fields."""
         # Build an environment from available boolean-likes.
         # (We expose ALL fields; the expression must reference valid names.)
         env = {name: arr[name].astype(bool, copy=False) for name in arr.dtype.names}
@@ -65,6 +67,7 @@ class SelectionMerger(FuseBasePlugin):
         out = np.empty(len(reduced), dtype=self.dtype)
         strax.copy_to_buffer(reduced, out, "_copy_selected")
         return out
+
 
 @export
 class LowEnergySimulation(SelectionMerger):

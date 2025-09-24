@@ -24,11 +24,7 @@ class VolumeProperties(FuseBasePlugin):
 
     __version__ = "0.0.5"
 
-
-    dtype = (
-        volume_properties_fields
-        + strax.time_fields
-    )
+    dtype = volume_properties_fields + strax.time_fields
 
     # Define the TPC volume
     xenonnt_z_cathode = straxen.URLConfig(
@@ -95,7 +91,6 @@ class VolumeProperties(FuseBasePlugin):
         help="No S2s from below the cathode",
     )
 
-
     xenonnt_z_top_pmts = straxen.URLConfig(
         default=7.3936,  # cm
         type=(int, float),
@@ -132,7 +127,7 @@ class VolumeProperties(FuseBasePlugin):
             interactions["x"], interactions["y"], interactions["z"], min_z, max_z, max_r
         )
         return mask
-    
+
     def compute(self, clustered_interactions):
 
         if len(clustered_interactions) == 0:
@@ -182,6 +177,7 @@ class VolumeProperties(FuseBasePlugin):
             result["create_S2"][mask_gas_phase] = bool(self.create_S2_xenonnt_gas_phase)
 
         return result
+
 
 @numba.njit
 def in_cylinder(x, y, z, min_z, max_z, max_r):

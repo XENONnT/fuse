@@ -47,7 +47,7 @@ microphysics_plugins_remaining = [
     fuse.micro_physics.ElectricField,
     fuse.micro_physics.NestYields,
     fuse.micro_physics.MicroPhysicsSummary,
-    fuse.micro_physics.VolumeProperties
+    fuse.micro_physics.VolumeProperties,
 ]
 
 # Plugins to simulate S1 signals
