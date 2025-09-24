@@ -92,4 +92,3 @@ class DefaultSimulation(SelectionMerger):
 
     selection_logic = "volume_selection"
     child_plugin = True
-
