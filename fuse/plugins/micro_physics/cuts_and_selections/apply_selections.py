@@ -25,7 +25,7 @@ class SelectionMerger(FuseBasePlugin):
         "volume_selection & energy_range_cut"
     """
 
-    __version__ = "0.7.0"
+    __version__ = "1.0.0"
     save_when = strax.SaveWhen.TARGET
     depensds_on = ("clustered_interactions",)
     provides = "interactions_in_roi"
@@ -73,7 +73,6 @@ class SelectionMerger(FuseBasePlugin):
 
 @export
 class LowEnergySimulation(SelectionMerger):
-    __version__ = "0.8.0"
     depends_on = (
         "clustered_interactions",
         "volume_selection",
@@ -81,14 +80,16 @@ class LowEnergySimulation(SelectionMerger):
     )
 
     selection_logic = "volume_selection & energy_range_cut"
+    child_plugin = True
 
 
 @export
 class DefaultSimulation(SelectionMerger):
-    __version__ = "0.9.0"
     depends_on = (
         "clustered_interactions",
         "volume_selection",
     )
 
     selection_logic = "volume_selection"
+    child_plugin = True
+
