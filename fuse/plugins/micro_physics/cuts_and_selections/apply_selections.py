@@ -1,5 +1,4 @@
 import strax
-import straxen
 import numpy as np
 
 from ....plugin import FuseBasePlugin
@@ -18,9 +17,11 @@ export, __all__ = strax.exporter()
 @export
 class SelectionMerger(FuseBasePlugin):
     """Merge cuts/selections and stamp per-volume constants.
-
-    Subclasses set:
-      - LOGIC: boolean expression in terms of field names (e.g. ("AND", "tpc_selection", "energy_range_cut"))
+    The selection logic is given as a string expression over boolean fields
+    in the `clustered_interactions` data. The expression may use '&', '|', '~',
+    and parentheses. For example, to select interactions in the fiducial volume
+    and with energy between 1 and 10 keV, use: 
+        "volume_selection & energy_range_cut"
     """
 
     __version__ = "0.7.0"

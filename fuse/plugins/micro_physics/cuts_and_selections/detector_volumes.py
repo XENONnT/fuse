@@ -1,7 +1,5 @@
 import strax
-import straxen
 import logging
-import numba
 import numpy as np
 
 from ....common import VOLUMES_IDS
