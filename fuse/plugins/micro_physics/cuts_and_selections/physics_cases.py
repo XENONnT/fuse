@@ -9,11 +9,9 @@ class EnergyCut(strax.CutPlugin):
 
     depends_on = [
         "clustered_interactions",
-        "tpc_selection",
-        "below_cathode_selection",
     ]
 
-    __version__ = "0.0.1"
+    __version__ = "0.0.3"
 
     provides = "energy_range_cut"
     cut_name = "energy_range_cut"
@@ -34,17 +32,16 @@ class EnergyCut(strax.CutPlugin):
 
     def cut_by(self, clustered_interactions):
 
-        energies = -np.ones(len(clustered_interactions))
+        energies = build_energies(clustered_interactions)
 
-        volume_mask = (
-            clustered_interactions["tpc_selection"]
-            | clustered_interactions["below_cathode_selection"]
-        )
+        self.log.info(f"Applying energy cut: {self.min_energy} keV < E < {self.max_energy} keV")
 
-        energies[volume_mask] = build_energies(clustered_interactions[volume_mask])
+        self.log.info(f"Event energies range from {np.min(energies)} keV to {np.max(energies)} keV")
 
         mask = energies < self.max_energy
         mask = mask & (energies > self.min_energy)
+
+        self.log.info(f"Keeping {np.sum(mask)} out of {len(mask)} events")
 
         return mask
 

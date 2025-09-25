@@ -8,6 +8,7 @@ from ....dtypes import (
     cluster_positions_fields,
     cluster_id_fields,
     cluster_misc_fields,
+    volume_properties_fields,
 )
 
 export, __all__ = strax.exporter()
@@ -15,101 +16,79 @@ export, __all__ = strax.exporter()
 
 @export
 class SelectionMerger(FuseBasePlugin):
-    """Base class for cut and selection merger plugins."""
+    """Merge cuts/selections and stamp per-volume constants.
 
-    __version__ = "0.0.1"
+    The selection logic is given as a string expression over boolean fields
+    in the `clustered_interactions` data. The expression may use '&', '|', '~',
+    and parentheses. For example, to select interactions in the fiducial volume
+    and with energy between 1 and 10 keV, use:
+        "volume_selection & energy_range_cut"
+    """
 
+    __version__ = "1.0.0"
     save_when = strax.SaveWhen.TARGET
-
+    depensds_on = ("clustered_interactions",)
     provides = "interactions_in_roi"
     data_kind = "interactions_in_roi"
-    __version__ = "0.0.1"
+
+    selection_logic = "volume_selection"
 
     dtype = (
         cluster_positions_fields
         + cluster_id_fields
         + cluster_misc_fields
         + primary_positions_fields
+        + volume_properties_fields
         + strax.time_fields
     )
 
-    def setup(self):
-        # I can get the conditions in the volumes from the plugin lineage!
-        self.selections_the_plugin_depends_on = [p for p in self.depends_on if "_selection" in p]
-        self.cuts_the_plugin_depends_on = [p for p in self.depends_on if "_cut" in p]
-        self.cuts_and_selections = (
-            self.selections_the_plugin_depends_on + self.cuts_the_plugin_depends_on
-        )
-        self.volume_names = [p[:-10] for p in self.selections_the_plugin_depends_on]
-
-        self.density_dict = {}
-        self.create_s2_dict = {}
-        for volume in self.volume_names:
-            self.density_dict[volume] = self.lineage[f"{volume}_selection"][2][
-                f"xenon_density_{volume}"
-            ]
-            self.create_s2_dict[volume] = self.lineage[f"{volume}_selection"][2][
-                f"create_S2_xenonnt_{volume}"
-            ]
+    @staticmethod
+    def _eval_logic(arr, expr: str) -> np.ndarray:
+        """Tiny evaluator for '&', '|', '~', and parentheses over boolean
+        fields."""
+        # Build an environment from available boolean-likes.
+        # (We expose ALL fields; the expression must reference valid names.)
+        env = {name: arr[name].astype(bool, copy=False) for name in arr.dtype.names}
+        # Safe eval: strip builtins.
+        out = eval(expr, {"__builtins__": None}, env)
+        # Normalize to a 1D boolean numpy array
+        return np.asarray(out, dtype=np.bool_)
 
     def compute(self, clustered_interactions):
+        if len(clustered_interactions) == 0:
+            return np.zeros(0, dtype=self.dtype)
 
-        combined_selection = get_accumulated_bool(clustered_interactions[self.cuts_and_selections])
+        self.log.debug(f"Applying selection logic: {self.selection_logic}")
 
-        reduced_data = clustered_interactions[combined_selection]
+        mask = self._eval_logic(clustered_interactions, self.selection_logic)
+        if not mask.any():
+            return np.zeros(0, dtype=self.dtype)
 
-        for volume in self.volume_names:
-            reduced_data["create_S2"] = np.where(
-                reduced_data[f"{volume}_selection"],
-                self.create_s2_dict[volume],
-                reduced_data["create_S2"],
-            )
-
-            reduced_data["xe_density"] = np.where(
-                reduced_data[f"{volume}_selection"],
-                self.density_dict[volume],
-                reduced_data["xe_density"],
-            )
-
-        data = np.zeros(len(reduced_data), dtype=self.dtype)
-        strax.copy_to_buffer(reduced_data, data, "_remove_cuts_and_selections")
-
-        return data
-
-
-def get_accumulated_bool(array):
-    """Computes accumulated boolean over all cuts and selections.
-
-    :param array: Array containing merged cuts.
-    """
-    fields = array.dtype.names
-    fields = np.array([f for f in fields if f not in ("time", "endtime")])
-
-    res = np.zeros(len(array), np.bool_)
-    # Modified from the default code
-    for field in fields:
-        if field.endswith("_selection"):
-            res |= array[field]
-
-    for field in fields:
-        if field.endswith("_cut"):
-            res &= array[field]
-
-    return res
+        # Filter and project to final dtype (drops predicate fields automatically)
+        reduced = clustered_interactions[mask]
+        out = np.empty(len(reduced), dtype=self.dtype)
+        strax.copy_to_buffer(reduced, out, "_copy_selected")
+        return out
 
 
 @export
 class LowEnergySimulation(SelectionMerger):
-    __version__ = "0.0.1"
-    depends_on = [
+    depends_on = (
         "clustered_interactions",
-        "tpc_selection",
-        "below_cathode_selection",
+        "volume_selection",
         "energy_range_cut",
-    ]
+    )
+
+    selection_logic = "volume_selection & energy_range_cut"
+    child_plugin = True
 
 
 @export
 class DefaultSimulation(SelectionMerger):
-    __version__ = "0.0.2"
-    depends_on = ("clustered_interactions", "tpc_selection", "below_cathode_selection")
+    depends_on = (
+        "clustered_interactions",
+        "volume_selection",
+    )
+
+    selection_logic = "volume_selection"
+    child_plugin = True

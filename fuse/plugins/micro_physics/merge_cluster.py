@@ -29,7 +29,7 @@ class MergeCluster(FuseBasePlugin):
     interaction.
     """
 
-    __version__ = "0.3.3"
+    __version__ = "0.4.0"
     depends_on = ("geant4_interactions", "cluster_index")
     provides = "clustered_interactions"
     data_kind = "clustered_interactions"
