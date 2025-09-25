@@ -51,7 +51,9 @@ class TestPluginRandomSeeds(unittest.TestCase):
         shutil.rmtree(self.temp_dir.name)
         os.makedirs(self.temp_dir.name)
 
-    @timeout_decorator.timeout(TIMEOUT * 4, exception_message="test_if_plugins_get_user_seed timed out")
+    @timeout_decorator.timeout(
+        TIMEOUT * 4, exception_message="test_if_plugins_get_user_seed timed out"
+    )
     def test_if_plugins_get_user_seed(self):
         self.test_context.set_config(
             {
