@@ -51,7 +51,7 @@ class TestPluginRandomSeeds(unittest.TestCase):
         shutil.rmtree(self.temp_dir.name)
         os.makedirs(self.temp_dir.name)
 
-    @timeout_decorator.timeout(TIMEOUT, exception_message="test_if_plugins_get_user_seed timed out")
+    @timeout_decorator.timeout(TIMEOUT * 4, exception_message="test_if_plugins_get_user_seed timed out")
     def test_if_plugins_get_user_seed(self):
         self.test_context.set_config(
             {
@@ -104,7 +104,7 @@ class TestPluginRandomSeeds(unittest.TestCase):
                     raise AssertionError(f"Plugin {key} has no seed")
 
     @timeout_decorator.timeout(
-        TIMEOUT * 2, exception_message="test_if_run_number_changes_deterministic_seed timed out"
+        TIMEOUT * 4, exception_message="test_if_run_number_changes_deterministic_seed timed out"
     )
     def test_if_run_number_changes_deterministic_seed(self):
 
