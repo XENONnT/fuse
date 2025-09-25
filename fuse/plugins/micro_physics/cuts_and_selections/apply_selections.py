@@ -80,7 +80,6 @@ class DefaultSimulation(SelectionMerger):
     selection_logic = "volume_selection"
 
 
-
 @export
 class LowEnergySimulation(SelectionMerger):
     depends_on = (
