@@ -27,7 +27,7 @@ class SelectionMerger(FuseBasePlugin):
 
     __version__ = "1.0.0"
     save_when = strax.SaveWhen.TARGET
-    depensds_on = ("clustered_interactions",)
+    depends_on = ("clustered_interactions", "volume_properties")
     provides = "interactions_in_roi"
     data_kind = "interactions_in_roi"
 
@@ -58,37 +58,36 @@ class SelectionMerger(FuseBasePlugin):
         if len(clustered_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        self.log.debug(f"Applying selection logic: {self.selection_logic}")
-
         mask = self._eval_logic(clustered_interactions, self.selection_logic)
         if not mask.any():
             return np.zeros(0, dtype=self.dtype)
 
         # Filter and project to final dtype (drops predicate fields automatically)
         reduced = clustered_interactions[mask]
-        out = np.empty(len(reduced), dtype=self.dtype)
+        out = np.zeros((len(reduced),), dtype=self.dtype)
         strax.copy_to_buffer(reduced, out, "_copy_selected")
         return out
-
-
-@export
-class LowEnergySimulation(SelectionMerger):
-    depends_on = (
-        "clustered_interactions",
-        "volume_selection",
-        "energy_range_cut",
-    )
-
-    selection_logic = "volume_selection & energy_range_cut"
-    child_plugin = True
 
 
 @export
 class DefaultSimulation(SelectionMerger):
     depends_on = (
         "clustered_interactions",
+        "volume_properties",
         "volume_selection",
     )
-
+    __version__ = "1.0.2"
     selection_logic = "volume_selection"
-    child_plugin = True
+
+
+
+@export
+class LowEnergySimulation(SelectionMerger):
+    depends_on = (
+        "clustered_interactions",
+        "volume_properties",
+        "volume_selection",
+        "energy_range_cut",
+    )
+    __version__ = "1.0.1"
+    selection_logic = "volume_selection & energy_range_cut"
