@@ -16,8 +16,11 @@ from .microphysics_summary import *
 from . import yields
 from .yields import *
 
-from . import detector_volumes
-from .detector_volumes import *
+from . import volume_properties
+from .volume_properties import *
+
+from . import cuts_and_selections
+from .cuts_and_selections import *
 
 from . import lineage_cluster
 from .lineage_cluster import *
