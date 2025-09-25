@@ -27,10 +27,13 @@ class SelectionMerger(FuseBasePlugin):
 
     __version__ = "1.0.0"
     save_when = strax.SaveWhen.TARGET
+<<<<<<< HEAD
     depends_on = (
         "clustered_interactions",
         "volume_properties",
     )
+=======
+>>>>>>> 7686c82 (fix deps)
     provides = "interactions_in_roi"
     data_kind = "interactions_in_roi"
 
