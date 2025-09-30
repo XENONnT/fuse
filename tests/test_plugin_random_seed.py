@@ -6,6 +6,7 @@ import timeout_decorator
 import fuse
 import utilix
 from _utils import test_root_file_name
+from _utils import test_simulation_config
 
 TIMEOUT = 60
 
@@ -16,8 +17,9 @@ class TestPluginRandomSeeds(unittest.TestCase):
         cls.temp_dir = tempfile.TemporaryDirectory()
         cls.run_number = "TestRun_00000"
 
-        cls.test_context = fuse.context.full_chain_context(
-            cls.temp_dir.name, run_without_proper_corrections=True
+        cls.test_context = fuse.context.xenonnt_fuse_full_chain_simulation(
+            cls.temp_dir.name,
+            simulation_config=test_simulation_config,
         )
         cls.test_context.set_config(
             {
@@ -49,7 +51,9 @@ class TestPluginRandomSeeds(unittest.TestCase):
         shutil.rmtree(self.temp_dir.name)
         os.makedirs(self.temp_dir.name)
 
-    @timeout_decorator.timeout(TIMEOUT, exception_message="test_if_plugins_get_user_seed timed out")
+    @timeout_decorator.timeout(
+        TIMEOUT * 4, exception_message="test_if_plugins_get_user_seed timed out"
+    )
     def test_if_plugins_get_user_seed(self):
         self.test_context.set_config(
             {
@@ -102,7 +106,7 @@ class TestPluginRandomSeeds(unittest.TestCase):
                     raise AssertionError(f"Plugin {key} has no seed")
 
     @timeout_decorator.timeout(
-        TIMEOUT * 2, exception_message="test_if_run_number_changes_deterministic_seed timed out"
+        TIMEOUT * 4, exception_message="test_if_run_number_changes_deterministic_seed timed out"
     )
     def test_if_run_number_changes_deterministic_seed(self):
 

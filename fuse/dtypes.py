@@ -41,20 +41,24 @@ cluster_id_fields = [
 ]
 
 csv_cluster_misc_fields = [
-    (("Time of the interaction", "t"), np.int64),
     (("Geant4 event ID", "eventid"), np.int32),
+    (("Time of the interaction [ns]", "t"), np.int64),
 ]
 
 
 cluster_misc_fields = [
+    (("Geant4 event ID", "eventid"), np.int32),
+    (("Geant4 track ID", "trackid"), np.int16),
+    (("Time of the interaction [ns]", "t"), np.float64),
     (("Mass number of the interacting particle", "A"), np.int16),
     (("Charge number of the interacting particle", "Z"), np.int16),
-    (("Geant4 event ID", "eventid"), np.int32),
+]
+
+volume_properties_fields = [
     (("Xenon density at the cluster position", "xe_density"), np.float32),
     (("ID of the volume in which the cluster occured", "vol_id"), np.int8),
     (("Flag indicating if a cluster can create a S2 signal", "create_S2"), np.bool_),
 ]
-
 
 quanta_fields = [
     (("Number of photons at interaction position", "photons"), np.int32),

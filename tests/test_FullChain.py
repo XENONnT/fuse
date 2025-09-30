@@ -6,6 +6,7 @@ import timeout_decorator
 import fuse
 import utilix
 from _utils import test_root_file_name
+from _utils import test_simulation_config
 
 TIMEOUT = 240
 
@@ -17,8 +18,9 @@ class TestFullChainBase(unittest.TestCase):
     def setUpClass(cls):
         cls.temp_dir = tempfile.TemporaryDirectory()
 
-        cls.test_context = fuse.context.full_chain_context(
-            output_folder=cls.temp_dir.name, run_without_proper_corrections=True
+        cls.test_context = fuse.context.xenonnt_fuse_full_chain_simulation(
+            output_folder=cls.temp_dir.name,
+            simulation_config=test_simulation_config,
         )
 
         cls.test_context.set_config(
@@ -62,13 +64,13 @@ class TestFullChain(TestFullChainBase):
     def test_ElectronDrift(self):
         self.test_context.make(self.run_number, "drifted_electrons")
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message="ElectronPropagation timed out")
+    def test_ElectronPropagation(self):
+        self.test_context.make(self.run_number, "electrons_at_interface")
+
     @timeout_decorator.timeout(TIMEOUT, exception_message="ElectronExtraction timed out")
     def test_ElectronExtraction(self):
         self.test_context.make(self.run_number, "extracted_electrons")
-
-    @timeout_decorator.timeout(TIMEOUT, exception_message="ElectronTiming timed out")
-    def test_ElectronTiming(self):
-        self.test_context.make(self.run_number, "electron_time")
 
     @timeout_decorator.timeout(TIMEOUT, exception_message="SecondaryScintillation timed out")
     def test_SecondaryScintillation(self):

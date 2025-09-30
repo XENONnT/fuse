@@ -8,6 +8,12 @@ from numba.extending import register_jitable
 # Lets wait 10 minutes for the plugin to finish
 FUSE_PLUGIN_TIMEOUT = 600
 
+VOLUMES_IDS = {
+    "undefined": 0,
+    "tpc": 1,
+    "below_cathode": 2,
+    "gas_phase": 3,
+}
 
 kind_colors = dict(
     geant4_interactions="#40C4F3",
@@ -28,8 +34,8 @@ kind_colors = dict(
 
 @numba.njit()
 def dynamic_chunking(data, scale, n_min):
-    idx_sort = np.argsort(data)
-    idx_undo_sort = np.argsort(idx_sort)
+    idx_sort = stable_argsort(data)
+    idx_undo_sort = stable_argsort(idx_sort)
 
     data_sorted = data[idx_sort]
 

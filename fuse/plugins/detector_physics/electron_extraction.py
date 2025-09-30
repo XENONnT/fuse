@@ -12,16 +12,18 @@ class ElectronExtraction(FuseBasePlugin):
     """Plugin to simulate the loss of electrons during the extraction of
     drifted electrons from the liquid into the gas phase."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
-    depends_on = ("microphysics_summary", "drifted_electrons")
+    depends_on = "electrons_at_interface"
     provides = "extracted_electrons"
-    data_kind = "interactions_in_roi"
+    data_kind = "individual_electrons"
 
-    save_when = strax.SaveWhen.ALWAYS
+    save_when = strax.SaveWhen.TARGET
 
     dtype = [
-        (("Number of electrons extracted into the gas phase", "n_electron_extracted"), np.int32),
+        (("x position of the electron at the interface [cm]", "x_interface"), np.float32),
+        (("y position of the electron at the interface [cm]", "y_interface"), np.float32),
+        (("ID of the cluster creating the electron", "cluster_id"), np.int32),
     ] + strax.time_fields
 
     # Config options
@@ -86,43 +88,74 @@ class ElectronExtraction(FuseBasePlugin):
         help="Map of the single electron gain",
     )
 
-    def compute(self, interactions_in_roi):
-        # Just apply this to clusters with photons
-        mask = interactions_in_roi["electrons"] > 0
+    electron_trapping_time = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=electron_trapping_time",
+        type=(int, float),
+        cache=True,
+        help="Time scale electrons are trapped at the liquid gas interface",
+    )
 
-        if len(interactions_in_roi[mask]) == 0:
-            empty_result = np.zeros(len(interactions_in_roi), self.dtype)
-            empty_result["time"] = interactions_in_roi["time"]
-            empty_result["endtime"] = interactions_in_roi["endtime"]
-            return empty_result
+    def compute(self, individual_electrons):
 
-        x = interactions_in_roi[mask]["x_obs"]
-        y = interactions_in_roi[mask]["y_obs"]
+        N = individual_electrons.shape[0]
 
-        xy_int = np.array([x, y]).T  # maps are in R_true, so orginal position should be here
+        # Fast path: scalar probability (no maps)
+        if not self.ext_eff_from_map:
+            p = float(self.electron_extraction_yield)
+            if p <= 0.0:
+                return np.zeros(0, dtype=self.dtype)
+            if p >= 1.0:
+                idx = np.arange(N, dtype=np.int64)
+            else:
+                # Faster than binomial for large N
+                u = self.rng.random(N)
+                idx = np.flatnonzero(u < p)
+        else:
+            # Only build positions if we actually need maps
+            # shape: (N, 2)
+            position = np.column_stack(
+                (individual_electrons["x_interface"], individual_electrons["y_interface"])
+            )
 
-        if self.ext_eff_from_map:
-            # Extraction efficiency is g2(x,y)/SE_gain(x,y)
-            rel_s2_cor = self.s2_correction_map(xy_int)
-            # Doesn't always need to be flattened, but if s2_correction_map = False,
-            # then map is made from MC
-            rel_s2_cor = rel_s2_cor.flatten()
+            # rel S2 correction (flatten for safety; maps sometimes return (N,1))
+            rel_s2_cor = self.s2_correction_map(position).reshape(-1)
 
             if self.se_gain_from_map:
-                se_gains = self.se_gain_map(xy_int)
+                se_gains = self.se_gain_map(position).reshape(-1)
             else:
-                # Is in get_s2_light_yield map is scaled according to relative s2 correction
-                # We also need to do it here to have consistent g2
-                se_gains = rel_s2_cor * self.s2_secondary_sc_gain_mc
-            cy = self.g2_mean * rel_s2_cor / se_gains
-        else:
-            cy = self.electron_extraction_yield
+                # keep g2 consistent with MC scaling
+                se_gains = rel_s2_cor * float(self.s2_secondary_sc_gain_mc)
 
-        n_electron = self.rng.binomial(n=interactions_in_roi[mask]["n_electron_interface"], p=cy)
+            # cy = g2_mean * rel_s2_cor / se_gains
+            cy = (float(self.g2_mean) * rel_s2_cor) / se_gains
+            # be defensive: ensure 0<=p<=1 (maps can have tiny numerical wiggles)
+            np.clip(cy, 0.0, 1.0, out=cy)
 
-        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
-        result["n_electron_extracted"][mask] = n_electron
-        result["time"] = interactions_in_roi["time"]
-        result["endtime"] = interactions_in_roi["endtime"]
+            # Single RNG pass to build mask
+            u = self.rng.random(N)
+            idx = np.flatnonzero(u < cy)
+
+        M = int(idx.size)
+        if M == 0:
+            return np.zeros(0, dtype=self.dtype)
+
+        # Allocate result once and fill via np.take (one indexed gather per field)
+        result = np.zeros(M, dtype=self.dtype)
+
+        times_sel = np.take(individual_electrons["time"], idx)
+        result["time"] = self.extraction_delay(times_sel)
+        result["endtime"] = result["time"]
+
+        result["x_interface"] = np.take(individual_electrons["x_interface"], idx)
+        result["y_interface"] = np.take(individual_electrons["y_interface"], idx)
+        result["cluster_id"] = np.take(individual_electrons["cluster_id"], idx)
 
         return result
+
+    def extraction_delay(self, electron_times):
+        # Vectorized, deterministic via self.rng
+        # exponential() returns float64; cast once before adding
+        dt = self.rng.exponential(float(self.electron_trapping_time), size=electron_times.shape[0])
+        return electron_times + dt
