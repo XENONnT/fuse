@@ -657,7 +657,7 @@ class MigdalYields(NestYields):
 
         # Initialise Truth variables
         has_migdal = False
-        m_photons = m_electrons = m_excitons =  0
+        m_photons = m_electrons = m_excitons = 0
         electron_energy = binding_e = em_energy = 0
         orbital = None
 
