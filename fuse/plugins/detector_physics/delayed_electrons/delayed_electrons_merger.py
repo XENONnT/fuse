@@ -18,6 +18,18 @@ class DriftedElectronsMerger(VerticalMergerPlugin):
 
 
 @export
+class PropagatedElectronsMerger(VerticalMergerPlugin):
+    """Plugin which concatenates the output of the regular and delayed electron
+    propagation plugins."""
+
+    depends_on = ("electrons_at_interface", "delayed_electrons_at_interface")
+
+    provides = "merged_electrons_at_interface"
+    data_kind = "individual_electrons"
+    __version__ = "0.0.1"
+
+
+@export
 class ExtractedElectronsMerger(VerticalMergerPlugin):
     """Plugin which concatenates the output of the regular and delayed electron
     extraction plugins."""
@@ -25,8 +37,8 @@ class ExtractedElectronsMerger(VerticalMergerPlugin):
     depends_on = ("extracted_electrons", "extracted_delayed_electrons")
 
     provides = "merged_extracted_electrons"
-    data_kind = "interactions_in_roi"
-    __version__ = "0.0.1"
+    data_kind = "individual_electrons"
+    __version__ = "0.0.2"
 
 
 @export
@@ -50,18 +62,6 @@ class SecondaryScintillationPhotonSumMerger(VerticalMergerPlugin):
 
     provides = "merged_s2_photons_sum"
     data_kind = "interactions_in_roi"
-    __version__ = "0.0.1"
-
-
-@export
-class ElectronTimingMerger(VerticalMergerPlugin):
-    """Plugin which concatenates the output of the regular and delayed electron
-    timing plugins."""
-
-    depends_on = ("electron_time", "delayed_electrons_time")
-
-    provides = "merged_electron_time"
-    data_kind = "individual_electrons"
     __version__ = "0.0.1"
 
 

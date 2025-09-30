@@ -12,7 +12,9 @@ The microphysics simulation is performed in 9 plugins. These are listed below.
    plugins/micro_physics/MergeCluster
    plugins/micro_physics/XENONnT_TPC
    plugins/micro_physics/XENONnT_BelowCathode
-   plugins/micro_physics/VolumesMerger
+   plugins/micro_physics/VolumeProperties
+   plugins/micro_physics/VolumeSelection
+   plugins/micro_physics/DefaultSimulation
    plugins/micro_physics/ElectricField
    plugins/micro_physics/NestYields
    plugins/micro_physics/MicroPhysicsSummary
