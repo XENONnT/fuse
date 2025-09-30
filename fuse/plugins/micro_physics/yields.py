@@ -515,7 +515,7 @@ class MigdalYields(NestYields):
             "4d": 0.07166829,
             "5s": 0.02748725,
             "5p-": 0.01340357,
-            "5p": 0.0119677
+            "5p": 0.0119677,
         },
         type=dict,
         help="Binding energies corresponding to Xenon atomic orbitals in keV. "
@@ -525,10 +525,22 @@ class MigdalYields(NestYields):
     considered_orbitals = straxen.URLConfig(
         default=[
             "1s",
-            "2s", "2p-", "2p",
-            "3s", "3p-", "3p", "3d-", "3d",
-            "4s", "4p-", "4p", "4d-", "4d",
-            "5s", "5p-", "5p"
+            "2s",
+            "2p-",
+            "2p",
+            "3s",
+            "3p-",
+            "3p",
+            "3d-",
+            "3d",
+            "4s",
+            "4p-",
+            "4p",
+            "4d-",
+            "4d",
+            "5s",
+            "5p-",
+            "5p",
         ],
         type=list,
         help="List of orbitals to allow Migdal events from.",
@@ -653,7 +665,7 @@ class MigdalYields(NestYields):
                 binding_e = self.xenon_binding_energies[orbital]
                 electron_energy = self.get_electron_energy(v, orbital)
 
-                # TODO: Currently assuming that all of the binding energy 
+                # TODO: Currently assuming that all of the binding energy
                 # is released as beta radiation.
                 # Auger electrons and X-rays might disagree
                 em_energy = electron_energy + binding_e
@@ -769,7 +781,7 @@ class MigdalYields(NestYields):
         """Applies a logarithmic transformation to two input arrays or values.
 
         Reshapes and concatenates the inputs into a 2D array, then computes the natural logarithm
-        of each element. 
+        of each element.
         This ensures compatibility with functions requiring a 2D array with two columns.
 
         Parameters
