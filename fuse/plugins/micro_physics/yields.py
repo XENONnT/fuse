@@ -5,7 +5,7 @@ import nestpy
 import strax
 import straxen
 
-from ...dtypes import quanta_fields, cluster_id_fields
+from ...dtypes import quanta_fields
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -26,7 +26,7 @@ class NestYields(FuseBasePlugin):
     provides = "quanta"
     data_kind = "interactions_in_roi"
 
-    dtype = strax.time_fields + cluster_id_fields + quanta_fields
+    dtype = quanta_fields + strax.time_fields
 
     save_when = strax.SaveWhen.TARGET
 
@@ -133,9 +133,6 @@ class NestYields(FuseBasePlugin):
         result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
         result["time"] = interactions_in_roi["time"]
         result["endtime"] = interactions_in_roi["endtime"]
-        result["cluster_id"] = interactions_in_roi["cluster_id"]
-        result["ed"] = interactions_in_roi["ed"]
-        result["nestid"] = interactions_in_roi["nestid"]
 
         # Generate quanta:
         if len(interactions_in_roi) > 0:
@@ -462,9 +459,8 @@ class MigdalYields(NestYields):
 
     provides = ("quanta", "migdal_truth")
 
-    common_dtypes = strax.time_fields + cluster_id_fields
-    quanta_dtypes = common_dtypes + quanta_fields
-    truth_dtype = common_dtypes + [
+    quanta_dtypes = strax.time_fields + quanta_fields
+    truth_dtype = strax.time_fields + [
         (("This cluster contains a Migdal effect", "has_migdal"), np.bool_),
         (
             ("Number of photons at interaction position caused by Migdal effect", "migdal_photons"),
@@ -496,26 +492,44 @@ class MigdalYields(NestYields):
     data_kind = {data_type: "interactions_in_roi" for data_type in provides}
 
     xenon_mass = straxen.URLConfig(
-        default="simple_load://simulation_config://"
-        "SIMULATION_CONFIG_FILE.json?"
-        "&key=xenon_mass",
+        default=122298655.19,
         type=(int, float),
         help="Standard atomic weight of Xenon atom in keV",
     )
 
     xenon_binding_energies = straxen.URLConfig(
-        default="simple_load://simulation_config://"
-        "SIMULATION_CONFIG_FILE.json?"
-        "&key=xenon_binding_energies",
+        default={
+            "1s": 34.75594,
+            "2s": 5.509354,
+            "2p-": 5.161449,
+            "2p": 4.835587,
+            "3s": 1.170374,
+            "3p-": 1.02478,
+            "3p": 0.9612494,
+            "3d-": 0.7081319,
+            "3d": 0.6948998,
+            "4s": 0.2293898,
+            "4p-": 0.1755814,
+            "4p": 0.1628001,
+            "4d-": 0.07377911,
+            "4d": 0.07166829,
+            "5s": 0.02748725,
+            "5p-": 0.01340357,
+            "5p": 0.0119677
+        },
         type=dict,
         help="Binding energies corresponding to Xenon atomic orbitals in keV. "
         "From https://journals.aps.org/prd/abstract/10.1103/PhysRevD.107.035032",
     )
 
     considered_orbitals = straxen.URLConfig(
-        default="simple_load://simulation_config://"
-        "SIMULATION_CONFIG_FILE.json?"
-        "&key=considered_orbitals",
+        default=[
+            "1s",
+            "2s", "2p-", "2p",
+            "3s", "3p-", "3p", "3d-", "3d",
+            "4s", "4p-", "4p", "4d-", "4d",
+            "5s", "5p-", "5p"
+        ],
         type=list,
         help="List of orbitals to allow Migdal events from.",
     )
@@ -529,11 +543,9 @@ class MigdalYields(NestYields):
     )
 
     force_migdal = straxen.URLConfig(
-        default="simple_load://simulation_config://"
-        "SIMULATION_CONFIG_FILE.json?"
-        "&key=force_migdal",
+        default=False,
         type=bool,
-        help="Cause every nuclear recoil to be accompained by a Migdal effect.",
+        help="Cause every nuclear recoil to be accompained by a Migdal ionisation.",
     )
 
     def setup(self):
@@ -555,9 +567,6 @@ class MigdalYields(NestYields):
                 result = np.zeros(len(interactions_in_roi), dtype=self.dtype[data_type])
                 result["time"] = interactions_in_roi["time"]
                 result["endtime"] = interactions_in_roi["endtime"]
-                result["cluster_id"] = interactions_in_roi["cluster_id"]
-                result["ed"] = interactions_in_roi["ed"]
-                result["nestid"] = interactions_in_roi["nestid"]
 
             results[data_type] = result
 
@@ -644,7 +653,8 @@ class MigdalYields(NestYields):
                 binding_e = self.xenon_binding_energies[orbital]
                 electron_energy = self.get_electron_energy(v, orbital)
 
-                # TODO: Currently assuming that all of the binding energy is released as beta radiation.
+                # TODO: Currently assuming that all of the binding energy 
+                # is released as beta radiation.
                 # Auger electrons and X-rays might disagree
                 em_energy = electron_energy + binding_e
 
@@ -759,7 +769,8 @@ class MigdalYields(NestYields):
         """Applies a logarithmic transformation to two input arrays or values.
 
         Reshapes and concatenates the inputs into a 2D array, then computes the natural logarithm
-        of each element. This ensures compatibility with functions requiring a 2D array with two columns.
+        of each element. 
+        This ensures compatibility with functions requiring a 2D array with two columns.
 
         Parameters
         ----------
