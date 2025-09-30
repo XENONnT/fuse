@@ -454,7 +454,7 @@ class BBF_quanta_generator:
 
 @export
 class MigdalYields(NestYields):
-    __version__ = "0.0.1-alpha"
+    __version__ = "0.0.1"
     child_plugin = True
 
     provides = ("quanta", "migdal_truth")
@@ -480,7 +480,9 @@ class MigdalYields(NestYields):
             ),
             np.int32,
         ),
-        (("Energy of Migdal electron", "migdal_energy"), np.float32),
+        (("Energy of Migdal electron", "migdal_electron_energy"), np.float32),
+        (("Binding Energy of orbital of origin", "migdal_binding_energy"), np.float32),
+        (("Total deposited ER energy", "migdal_deposited_energy"), np.float32),
         (("Orbital of Migdal electron", "migdal_orbital"), ">U3"),
     ]
 
@@ -564,7 +566,7 @@ class MigdalYields(NestYields):
         super().setup()
 
         self.vectorized_get_quanta = np.vectorize(
-            self.get_quanta, otypes=[int, int, int, bool, int, int, int, float, str]
+            self.get_quanta, otypes=[int, int, int, bool, int, int, int, float, float, float, str]
         )
 
     def compute(self, interactions_in_roi):
@@ -603,7 +605,9 @@ class MigdalYields(NestYields):
                 migdal_photons,
                 migdal_electrons,
                 migdal_excitons,
-                migdal_energy,
+                migdal_electron_energy,
+                migdal_binding_energy,
+                migdal_deposited_energy,
                 migdal_orbital,
             ) = self.vectorized_get_quanta(
                 interactions_in_roi["ed"],
@@ -622,7 +626,9 @@ class MigdalYields(NestYields):
             results["migdal_truth"]["migdal_photons"] = migdal_photons
             results["migdal_truth"]["migdal_electrons"] = migdal_electrons
             results["migdal_truth"]["migdal_excitons"] = migdal_excitons
-            results["migdal_truth"]["migdal_energy"] = migdal_energy
+            results["migdal_truth"]["migdal_electron_energy"] = migdal_electron_energy
+            results["migdal_truth"]["migdal_binding_energy"] = migdal_binding_energy
+            results["migdal_truth"]["migdal_deposited_energy"] = migdal_deposited_energy
             results["migdal_truth"]["migdal_orbital"] = migdal_orbital
         else:
             results["quanta"]["photons"] = np.empty(0)
@@ -633,7 +639,9 @@ class MigdalYields(NestYields):
             results["migdal_truth"]["migdal_photons"] = np.empty(0)
             results["migdal_truth"]["migdal_electrons"] = np.empty(0)
             results["migdal_truth"]["migdal_excitons"] = np.empty(0)
-            results["migdal_truth"]["migdal_energy"] = np.empty(0)
+            results["migdal_truth"]["migdal_electron_energy"] = np.empty(0)
+            results["migdal_truth"]["migdal_binding_energy"] = np.empty(0)
+            results["migdal_truth"]["migdal_deposited_energy"] = np.empty(0)
             results["migdal_truth"]["migdal_orbital"] = np.empty(0)
 
         # Unlock the nest random generator seed again
@@ -649,7 +657,8 @@ class MigdalYields(NestYields):
 
         # Initialise Truth variables
         has_migdal = False
-        m_photons = m_electrons = m_excitons = em_energy = 0
+        m_photons = m_electrons = m_excitons =  0
+        electron_energy = binding_e = em_energy = 0
         orbital = None
 
         # If the event is a NR, add migdal
@@ -687,6 +696,8 @@ class MigdalYields(NestYields):
             m_photons,
             m_electrons,
             m_excitons,
+            electron_energy,
+            binding_e,
             em_energy,
             orbital,
         )
