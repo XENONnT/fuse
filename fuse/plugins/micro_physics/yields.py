@@ -23,7 +23,7 @@ class NestYields(FuseBasePlugin):
     __version__ = "0.2.3"
 
     depends_on = ("interactions_in_roi", "electric_field_values")
-    provides = ("quanta", )
+    provides = ("quanta",)
     data_kind = {"quanta": "interactions_in_roi"}
 
     dtype = quanta_fields + strax.time_fields
