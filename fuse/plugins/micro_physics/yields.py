@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from typing import Tuple
 
 import nestpy
 import strax
@@ -23,7 +24,8 @@ class NestYields(FuseBasePlugin):
     __version__ = "0.2.3"
 
     depends_on = ("interactions_in_roi", "electric_field_values")
-    provides = "quanta"
+    # use a tuple for type consistency with other yields plugins inheriting
+    provides: Tuple[str, ...] = ("quanta",)
     data_kind = "interactions_in_roi"
 
     dtype = quanta_fields + strax.time_fields
