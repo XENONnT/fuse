@@ -18,7 +18,7 @@ class NestYields(FuseBasePlugin):
     """Plugin that calculates the number of photons, electrons and excitons
     produced by energy deposit using nestpy."""
 
-    __version__ = "0.2.3"
+    __version__ = "0.3.0"
 
     depends_on = ("interactions_in_roi", "electric_field_values")
     provides = "quanta"
@@ -51,10 +51,18 @@ class NestYields(FuseBasePlugin):
         default="take://resource://"
         "SIMULATION_CONFIG_FILE.json?&fmt=json"
         "&take=nest_er_yields_parameters",
-        type=list,
+        type=(int, list),
         help="Set to modify default NEST ER yields parameters. Use -1 to keep default value. \
         From NEST code https://github.com/NESTCollaboration/nest/blob/v2.4.0/src/NEST.cpp \
         Used in the calcuations of BetaYieldsGR.",
+    )
+
+    nest_nr_yields_parameters = straxen.URLConfig(
+        default="take://resource://"
+        "SIMULATION_CONFIG_FILE.json?&fmt=json"
+        "&take=nest_nr_yields_parameters",
+        type=(int, list),
+        help="Set to modify default NEST NR yields parameters. Use -1 to keep default value.",
     )
 
     fix_gamma_yield_field = straxen.URLConfig(
@@ -77,10 +85,28 @@ class NestYields(FuseBasePlugin):
         self.vectorized_get_quanta = np.vectorize(self.get_quanta)
         self.updated_nest_width_parameters = self.update_nest_width_parameters()
 
-        # Set the elements of the list so we do not run into problems with the vectorized function
-        self.nest_er_yields_parameters_list = [
-            float(element) for element in self.nest_er_yields_parameters
-        ]
+
+        # Change NR and ER yields to best fit: 
+        if hasattr(self.nest_er_yields_parameters, '__len__'):
+            # Set the elements of the list so we do not run into problems with the vectorized function
+            self.nest_er_yields_parameters_list = [
+                float(element) for element in self.nest_er_yields_parameters
+            ]
+        elif self.nest_er_yields_parameters == -1:
+            self.nest_er_yields_parameters_list = nestpy.default_er_yields_params()
+        else:
+            raise ValueError('Not supported setting for nest_er_yields_parameters!')    
+
+        
+        if hasattr(self.nest_nr_yields_parameters, '__len__'):
+            self.nest_nr_yields_parameters_list = [
+                float(element) for element in self.nest_nr_yields_parameters
+            ]
+        elif self.nest_nr_yields_parameters == -1:
+            self.nest_nr_yields_parameters_list = nestpy.default_nr_yields_params()
+        else:
+            raise ValueError('Not supported setting for nest_nr_yields_parameters!') 
+        
 
     def update_nest_width_parameters(self):
 
@@ -207,6 +233,7 @@ class NestYields(FuseBasePlugin):
             Z=Z,
             density=density,
             ERYieldsParam=self.nest_er_yields_parameters_list,
+            nuisance_parameters=self.nuisance_parameters_list
         )
 
         return yields_result
