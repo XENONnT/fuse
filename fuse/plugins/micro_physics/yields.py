@@ -233,7 +233,7 @@ class NestYields(FuseBasePlugin):
             Z=Z,
             density=density,
             ERYieldsParam=self.nest_er_yields_parameters_list,
-            nuisance_parameters=self.nuisance_parameters_list
+            nuisance_parameters=self.nest_nr_yields_parameters_list
         )
 
         return yields_result
