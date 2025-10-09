@@ -85,9 +85,8 @@ class NestYields(FuseBasePlugin):
         self.vectorized_get_quanta = np.vectorize(self.get_quanta)
         self.updated_nest_width_parameters = self.update_nest_width_parameters()
 
-
-        # Change NR and ER yields to best fit: 
-        if hasattr(self.nest_er_yields_parameters, '__len__'):
+        # Change NR and ER yields to best fit:
+        if hasattr(self.nest_er_yields_parameters, "__len__"):
             # Set the elements of the list so we do not run into problems with the vectorized function
             self.nest_er_yields_parameters_list = [
                 float(element) for element in self.nest_er_yields_parameters
@@ -95,18 +94,16 @@ class NestYields(FuseBasePlugin):
         elif self.nest_er_yields_parameters == -1:
             self.nest_er_yields_parameters_list = nestpy.default_er_yields_params()
         else:
-            raise ValueError('Not supported setting for nest_er_yields_parameters!')    
+            raise ValueError("Not supported setting for nest_er_yields_parameters!")
 
-        
-        if hasattr(self.nest_nr_yields_parameters, '__len__'):
+        if hasattr(self.nest_nr_yields_parameters, "__len__"):
             self.nest_nr_yields_parameters_list = [
                 float(element) for element in self.nest_nr_yields_parameters
             ]
         elif self.nest_nr_yields_parameters == -1:
             self.nest_nr_yields_parameters_list = nestpy.default_nr_yields_params()
         else:
-            raise ValueError('Not supported setting for nest_nr_yields_parameters!') 
-        
+            raise ValueError("Not supported setting for nest_nr_yields_parameters!")
 
     def update_nest_width_parameters(self):
 
@@ -233,7 +230,7 @@ class NestYields(FuseBasePlugin):
             Z=Z,
             density=density,
             ERYieldsParam=self.nest_er_yields_parameters_list,
-            nuisance_parameters=self.nest_nr_yields_parameters_list
+            nuisance_parameters=self.nest_nr_yields_parameters_list,
         )
 
         return yields_result
