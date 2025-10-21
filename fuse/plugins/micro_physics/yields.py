@@ -1,3 +1,4 @@
+from immutabledict import immutabledict
 import numpy as np
 import pandas as pd
 
@@ -490,6 +491,11 @@ class MigdalYields(NestYields):
         "quanta": quanta_dtypes,
         "migdal_truth": truth_dtype,
     }
+
+    save_when = immutabledict(
+        quanta=strax.SaveWhen.ALWAYS,
+        migdal_truth=strax.SaveWhen.ALWAYS,
+    )
 
     data_kind = {data_type: "interactions_in_roi" for data_type in provides}
 
