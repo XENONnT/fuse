@@ -118,7 +118,7 @@ class ChunkInput(FuseBasePlugin):
 
     maximal_er_energy = straxen.URLConfig(
         default=10,
-        type=(int,float),
+        type=(int, float),
         help="Filter only nuclear recoil events (maximum ER energy deposit 10 keV)",
     )
 
