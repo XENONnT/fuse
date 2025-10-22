@@ -490,10 +490,28 @@ class file_loader:
             entry_start=start_index,
             entry_stop=stop_index,
         )
+        
+        # Check if there are multiple primaries per event
+        n_primaries = ak.num(xyz_pri["x_pri"], axis=1)
+        n_multi = np.sum(n_primaries > 1)
 
-        interactions["x_pri"] = ak.broadcast_arrays(xyz_pri["x_pri"], interactions["x"])[0]
-        interactions["y_pri"] = ak.broadcast_arrays(xyz_pri["y_pri"], interactions["x"])[0]
-        interactions["z_pri"] = ak.broadcast_arrays(xyz_pri["z_pri"], interactions["x"])[0]
+        if n_multi > 0:
+            self.log.warning(
+                f"Found {n_multi} events with more than one primary position. "
+                "Only the first (x_pri, y_pri, z_pri) set will be used."
+            )
+
+        x_pri_first = ak.firsts(xyz_pri["x_pri"])
+        y_pri_first = ak.firsts(xyz_pri["y_pri"])
+        z_pri_first = ak.firsts(xyz_pri["z_pri"])
+
+        x_pri_first = ak.fill_none(x_pri_first, np.nan)
+        y_pri_first = ak.fill_none(y_pri_first, np.nan)
+        z_pri_first = ak.fill_none(z_pri_first, np.nan)
+
+        interactions["x_pri"] = ak.broadcast_arrays(x_pri_first, interactions["x"])[0]
+        interactions["y_pri"] = ak.broadcast_arrays(y_pri_first, interactions["x"])[0]
+        interactions["z_pri"] = ak.broadcast_arrays(z_pri_first, interactions["x"])[0]
 
         return interactions, n_simulated_events, start_index, stop_index
 
