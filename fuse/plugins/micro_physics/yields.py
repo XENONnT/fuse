@@ -694,7 +694,8 @@ class MigdalYields(NestYields):
         has_migdal = False
         m_photons = m_electrons = m_excitons = 0
         electron_energy = binding_e = em_energy = 0
-        orbital = 0
+        orbital = None
+        orbital_encoding = 0
 
         # If the event is a NR, add migdal
         if model == 0:
