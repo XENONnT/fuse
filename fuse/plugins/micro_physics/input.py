@@ -490,7 +490,7 @@ class file_loader:
             entry_start=start_index,
             entry_stop=stop_index,
         )
-        
+
         # Check if there are multiple primaries per event
         n_primaries = ak.num(xyz_pri["x_pri"], axis=1)
         n_multi = np.sum(n_primaries > 1)
