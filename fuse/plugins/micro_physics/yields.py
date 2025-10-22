@@ -487,7 +487,10 @@ class MigdalYields(NestYields):
         (("Binding Energy of orbital of origin (keV)", "migdal_binding_energy"), np.float32),
         (("Total deposited ER energy (keV)", "migdal_deposited_energy"), np.float32),
         (
-            ("Orbital of Migdal electron (first digit, n; second digit, l; sign, s=±1/2)", "migdal_orbital"), 
+            (
+                "Orbital of Migdal electron (first digit, n; second digit, l; sign, s=±1/2)",
+                "migdal_orbital",
+            ),
             np.int16,
         ),
     ]
