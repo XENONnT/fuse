@@ -457,7 +457,7 @@ class BBF_quanta_generator:
 
 @export
 class MigdalYields(NestYields):
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
     child_plugin = True
 
     provides = ("quanta", "migdal_truth")
@@ -483,10 +483,13 @@ class MigdalYields(NestYields):
             ),
             np.int32,
         ),
-        (("Energy of Migdal electron", "migdal_electron_energy"), np.float32),
-        (("Binding Energy of orbital of origin", "migdal_binding_energy"), np.float32),
-        (("Total deposited ER energy", "migdal_deposited_energy"), np.float32),
-        (("Orbital of Migdal electron", "migdal_orbital"), ">U3"),
+        (("Energy of Migdal electron (keV)", "migdal_electron_energy"), np.float32),
+        (("Binding Energy of orbital of origin (keV)", "migdal_binding_energy"), np.float32),
+        (("Total deposited ER energy (keV)", "migdal_deposited_energy"), np.float32),
+        (
+            ("Orbital of Migdal electron (first digit, n; second digit, l; sign, s=±1/2)", "migdal_orbital"), 
+            np.int16,
+        ),
     ]
 
     dtype = {
@@ -530,6 +533,30 @@ class MigdalYields(NestYields):
         type=dict,
         help="Binding energies corresponding to Xenon atomic orbitals in keV. "
         "From https://journals.aps.org/prd/abstract/10.1103/PhysRevD.107.035032",
+    )
+
+    xenon_orbital_encodings = straxen.URLConfig(
+        default={
+            "1s": 10,
+            "2s": 20,
+            "2p-": -21,
+            "2p": 21,
+            "3s": 30,
+            "3p-": -31,
+            "3p": 31,
+            "3d-": -32,
+            "3d": 32,
+            "4s": 40,
+            "4p-": -41,
+            "4p": 41,
+            "4d-": -42,
+            "4d": 42,
+            "5s": 50,
+            "5p-": -51,
+            "5p": 51,
+        },
+        type=dict,
+        help="Orbital of Migdal electron (first digit, n; second digit, l; sign, s=±1/2)",
     )
 
     considered_orbitals = straxen.URLConfig(
@@ -667,7 +694,7 @@ class MigdalYields(NestYields):
         has_migdal = False
         m_photons = m_electrons = m_excitons = 0
         electron_energy = binding_e = em_energy = 0
-        orbital = None
+        orbital = 0
 
         # If the event is a NR, add migdal
         if model == 0:
@@ -681,6 +708,7 @@ class MigdalYields(NestYields):
 
                 binding_e = self.xenon_binding_energies[orbital]
                 electron_energy = self.get_electron_energy(v, orbital)
+                orbital_encoding = self.xenon_orbital_encodings[orbital]
 
                 # TODO: Currently assuming that all of the binding energy
                 # is released as beta radiation.
@@ -707,7 +735,7 @@ class MigdalYields(NestYields):
             electron_energy,
             binding_e,
             em_energy,
-            orbital,
+            orbital_encoding,
         )
 
     def get_electron_energy(self, v, orbital):
