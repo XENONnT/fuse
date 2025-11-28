@@ -16,7 +16,7 @@ class ElectronExtraction(FuseBasePlugin):
 
     depends_on = "electrons_at_interface"
     provides = "extracted_electrons"
-    data_kind = "individual_electrons"
+    data_kind = "extracted_electrons"
 
     save_when = strax.SaveWhen.TARGET
 
