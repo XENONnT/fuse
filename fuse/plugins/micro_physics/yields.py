@@ -458,7 +458,7 @@ class BBF_quanta_generator:
 
 @export
 class MigdalYields(NestYields):
-    __version__ = "0.0.2"
+    __version__ = "0.1.0"
     child_plugin = True
 
     provides = ("quanta", "migdal_truth")
