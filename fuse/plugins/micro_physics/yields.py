@@ -1,6 +1,7 @@
 from immutabledict import immutabledict
 import numpy as np
 import pandas as pd
+from scipy.interpolate import CubicSpline, RectBivariateSpline
 from typing import Tuple, Union, Dict
 
 import nestpy
@@ -578,20 +579,32 @@ class MigdalYields(NestYields):
             "4p",
             "4d-",
             "4d",
-            "5s",
-            "5p-",
-            "5p",
+            # "5s",
+            # "5p-",
+            # "5p",
         ],
         type=list,
         help="List of orbitals to allow Migdal events from.",
     )
 
-    distribution_manager = straxen.URLConfig(
+    migdal_probability_tables = straxen.URLConfig(
         default="simple_load://resource://"
-        "Migdal_probability_distribution_interpolators.pkl?"
-        "&fmt=pkl",
-        help="Interpolators for the Migdal distribution functions. "
-        "Migdal class instance from https://github.com/petercox/Migdal/blob/v1.0.0/Migdal.py .\n",
+        "migdal_porbability_tables.json?"
+        "&fmt=json",
+        help="Single-ionisation dipole and exclusive probability tables"
+        " from https://github.com/petercox/Migdal/blob/v1.0.0/Migdal.py .\n",
+    )
+
+    dipole = straxen.URLConfig(
+        default=False,
+        type=bool,
+        help="Use dipole approximation probability tables instead of exclusive probability ones."
+    )
+
+    log_scale_probability_tables = straxen.URLConfig(
+        default=True,
+        type=bool,
+        help=""
     )
 
     force_migdal = straxen.URLConfig(
@@ -599,9 +612,16 @@ class MigdalYields(NestYields):
         type=bool,
         help="Cause every nuclear recoil to be accompained by a Migdal ionisation.",
     )
-
+    
     def setup(self):
         super().setup()
+
+        self.distribution_manager = self.Migdal(
+            self.migdal_probability_tables, 
+            parentClass=self,
+            dipole=self.dipole,
+            log_scale=self.log_scale_probability_tables
+        )
 
         self.vectorized_get_quanta = np.vectorize(
             self.get_quanta, otypes=[int, int, int, bool, int, int, int, float, float, float, str]
@@ -798,7 +818,7 @@ class MigdalYields(NestYields):
 
         # Compute total probability of having a Migdal ionisation from considered shells
         for orbital in self.considered_orbitals:
-            _probability = self.distribution_manager.pI1(np.log(v), orbital)
+            _probability = self.distribution_manager.pI1(v, orbital)
             _probability = np.where(
                 np.isnan(_probability),
                 0,
@@ -851,3 +871,267 @@ class MigdalYields(NestYields):
         b = np.atleast_1d(b).reshape(-1, 1)
         arr = np.concatenate((a, b), axis=1)
         return np.log(arr)
+
+
+    class Migdal:
+        """Class to store/access differential Migdal probabilities."""
+
+        ##################################################
+        # Nested interpolator classes
+        ##################################################
+
+        class DipoleInterpolator:
+            """Callable class for dipole differential probability interpolation."""
+            
+            __slots__ = ('spline', 'ln_v0')
+            
+            def __init__(self, ln_energies, dPdE, ln_v0):
+                self.spline = CubicSpline(ln_energies, dPdE, extrapolate=False)
+                self.ln_v0 = ln_v0
+            
+            def __call__(self, lnx):
+                return 2 * lnx[:, 1] - 2 * self.ln_v0 + self.spline(lnx[:, 0])
+
+        class DipoleIntegratedInterpolator:
+            """Callable class for dipole integrated probability interpolation."""
+            
+            __slots__ = ('integral', 'ln_v0')
+            
+            def __init__(self, ln_energies, energies, dPdE, ln_emin, ln_emax, ln_v0):
+                integrand = energies * dPdE
+                spline = CubicSpline(ln_energies, integrand)
+                self.integral = np.log(spline.integrate(ln_emin, ln_emax))
+                self.ln_v0 = ln_v0
+            
+            def __call__(self, lnv):
+                return 2 * lnv - 2 * self.ln_v0 + self.integral
+
+        ##################################################
+
+        def __init__(self, migdal_probability_tables, parentClass,
+                     dipole=False, log_scale=False):
+            """
+            Initialize Migdal probability calculator.
+            
+            Parameters
+            ----------
+            migdal_probability_tables : dict
+                Probability tables interpolate over
+            parent_class : MigdalYields
+                Initialised parent instance of MigdalYields
+            dipole : bool
+                Use dipole approximation
+            log_scale : bool
+                Use logarithmic scaling for exclusive probabilities
+            """
+            self.dipole = dipole
+            self.log_scale = log_scale
+
+            self.ORBITALS = parentClass.xenon_binding_energies
+            
+            self.emin = 1.0e-4  # keV
+            self.emax = 20.0  # keV
+            
+            # Load probability tables once
+            self._probability_tables = migdal_probability_tables
+            
+            # Cache for interpolators
+            self._dpI1 = None
+            self._pI1 = None
+            
+            # Load probabilities
+            self.load_probabilities()
+
+        ##################################################
+
+        def dpI1(self, points, orbital=None):
+            """
+            Returns differential probability for single ionisation without excitation.
+            
+            Parameters
+            ----------
+            points : ndarray
+                2D array of shape (n, 2) with log(energy) and log(velocity)
+            orbital : str
+                Orbital name (e.g., "1s", "2p")
+                
+            Returns
+            -------
+            ndarray
+                Differential probabilities
+            """
+            if self._dpI1 is None:
+                raise RuntimeError("Probabilities not loaded. Call load_probabilities() first.")
+            
+            if orbital not in self.ORBITALS:
+                raise KeyError(f"'{orbital}' is not a valid orbital. Valid orbitals: {list(self.ORBITALS.keys())}")
+            
+            # Handle different interpolator types
+            interpolator = self._dpI1[orbital]
+            if hasattr(interpolator, 'ev'):  # RectBivariateSpline
+                result = interpolator.ev(points[:, 0], points[:, 1])
+            else:  # Custom interpolator
+                result = interpolator(points)
+            
+            return np.exp(result)
+
+        ##################################################
+
+        def pI1(self, velocities, orbital=None):
+            """
+            Returns integrated probability for single ionisation without excitation.
+            
+            Parameters
+            ----------
+            points : ndarray
+                1D or 2D array of velocity values
+            orbital : str
+                Orbital name
+                
+            Returns
+            -------
+            ndarray
+                Integrated probabilities
+            """
+            if self._pI1 is None:
+                raise RuntimeError("Probabilities not loaded. Call load_probabilities() first.")
+            
+            if orbital not in self.ORBITALS:
+                raise KeyError(f"'{orbital}' is not a valid orbital.")
+
+            v = np.asarray(velocities)
+            lnv = np.log(v)
+
+            log_p = self._pI1[orbital](lnv)
+            p = np.exp(log_p)
+
+            # Preserve scalar input -> scalar output
+            if np.isscalar(velocities):
+                return p.item()
+            
+            return p
+
+        ##################################################
+
+        def load_probabilities(self):
+            """Initialize probabilities for all orbitals."""
+            self._dpI1 = {}
+            self._pI1 = {}
+            
+            for orbital in self.ORBITALS.keys():
+                self._dpI1[orbital] = self._create_interpolator(orbital, integrated=False)
+                self._pI1[orbital] = self._create_interpolator(orbital, integrated=True)
+
+        ##################################################
+
+        def _create_interpolator(self, orbital, integrated=False):
+            """
+            Create interpolator for a specific orbital.
+            
+            Parameters
+            ----------
+            orbital : str
+                Orbital name
+            integrated : bool
+                Whether to create integrated probability interpolator
+                
+            Returns
+            -------
+            callable
+                Interpolator function
+            """
+            # Determine probability type
+            prob_type = "dipole" if self.dipole else "exclusive"
+            if not self.dipole and self.log_scale:
+                prob_type += "_log"
+            
+            # Extract data from tables
+            orbital_data = self._probability_tables[prob_type][orbital]
+            ne = int(orbital_data["n_energies"])
+            nv = int(orbital_data["n_velocities"])
+            
+            energies = np.unique(np.array(orbital_data["energies"]))
+            velocities = np.unique(np.array(orbital_data["velocities"]))
+            probabilities = np.array(orbital_data["probabilities"])
+            
+            # Precompute log values
+            ln_energies = np.log(energies)
+            ln_velocities = np.log(velocities)
+            ln_emin = np.log(self.emin)
+            ln_emax = np.log(self.emax)
+            
+            if not integrated:
+                return self._create_differential_interpolator(
+                    ln_energies, ln_velocities, probabilities, ne, nv
+                )
+            else:
+                return self._create_integrated_interpolator(
+                    ln_energies, ln_velocities, energies, probabilities, 
+                    ne, nv, ln_emin, ln_emax
+                )
+
+        ##################################################
+
+        def _create_differential_interpolator(self, ln_energies, ln_velocities, 
+                                            probabilities, ne, nv):
+            """Create differential probability interpolator."""
+            log_probs = np.log(probabilities)
+            
+            if self.dipole:
+                return self.DipoleInterpolator(ln_energies, log_probs, ln_velocities[0])
+            else:
+                log_probs_2d = log_probs.reshape((ne, nv))
+                return RectBivariateSpline(ln_energies, ln_velocities, log_probs_2d, kx=3, ky=3)
+
+        ##################################################
+
+        def _create_integrated_interpolator(self, ln_energies, ln_velocities, 
+                                        energies, probabilities, ne, nv, 
+                                        ln_emin, ln_emax):
+            """Create integrated probability interpolator."""
+            if self.dipole:
+                return self.DipoleIntegratedInterpolator(
+                    ln_energies, energies, probabilities, ln_emin, ln_emax, ln_velocities[0]
+                )
+            else:
+                probabilities_2d = probabilities.reshape((ne, nv))
+                integral = np.zeros(nv)
+                
+                for i in range(nv):
+                    integrand = energies * probabilities_2d[:, i]
+                    spline = CubicSpline(ln_energies, integrand)
+                    integral[i] = np.log(spline.integrate(ln_emin, ln_emax))
+                
+                return CubicSpline(ln_velocities, integral, extrapolate=False)
+
+        ##################################################
+
+        def get_total_probability(self, points, orbitals=None, exclude_shells=None):
+            """
+            Calculate total probability summed over orbitals.
+            
+            Parameters
+            ----------
+            points : ndarray
+                2D array of shape (n, 2) with log(energy) and log(velocity)
+            orbitals : list of str, optional
+                List of orbitals to include. If None, use all orbitals.
+            exclude_shells : tuple of str, optional
+                Shell prefixes to exclude (e.g., ("5",) to exclude 5s, 5p)
+                
+            Returns
+            -------
+            ndarray
+                Total probabilities
+            """
+            if orbitals is None:
+                orbitals = self.ORBITALS.keys()
+            
+            if exclude_shells is not None:
+                orbitals = [orb for orb in orbitals if not orb.startswith(exclude_shells)]
+            
+            total = np.zeros(len(points))
+            for orbital in orbitals:
+                total += self.dpI1(points, orbital)
+            
+            return total
