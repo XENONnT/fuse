@@ -958,7 +958,8 @@ class MigdalYields(NestYields):
 
             if orbital not in self.ORBITALS:
                 raise KeyError(
-                    f"'{orbital}' is not a valid orbital. Valid orbitals: {list(self.ORBITALS.keys())}"
+                    f"'{orbital}' is not a valid orbital. "
+                    "Valid orbitals: {list(self.ORBITALS.keys())}"
                 )
 
             # Handle different interpolator types
