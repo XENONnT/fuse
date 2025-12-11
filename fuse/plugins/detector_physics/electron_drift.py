@@ -17,7 +17,7 @@ class ElectronDrift(FuseBasePlugin):
     time and observed position is calculated.
     """
 
-    __version__ = "0.3.0"
+    __version__ = "0.4.0"
 
     depends_on = "microphysics_summary"
     provides = "drifted_electrons"
@@ -178,6 +178,11 @@ class ElectronDrift(FuseBasePlugin):
         help="Distance between the gate and anode in cm",
     )
 
+    drift_speed_map = straxen.URLConfig(
+        cache=True,
+        help="Drift speed map",
+    )
+
     def setup(self):
         super().setup()
 
@@ -190,9 +195,16 @@ class ElectronDrift(FuseBasePlugin):
             self.drift_velocity_scaling = 1.0
             # Calculating drift velocity scaling to match total drift time
             # for R = 0 between cathode and gate
+            # if self.norm_drift_velocity:
+            #     norm_dvel = self.field_dependencies_map_tmp(
+            #         np.array([[0], [-self.tpc_length]]).T, map_name="drift_speed_map"
+            #     )[0]
+            #     norm_dvel *= 1e-4
+            #     self.drift_velocity_scaling = self.drift_velocity_liquid / norm_dvel
+
             if self.norm_drift_velocity:
-                norm_dvel = self.field_dependencies_map_tmp(
-                    np.array([[0], [-self.tpc_length]]).T, map_name="drift_speed_map"
+                norm_dvel = self.drift_speed_map(
+                    np.array([[0], [-self.tpc_length]]).T
                 )[0]
                 norm_dvel *= 1e-4
                 self.drift_velocity_scaling = self.drift_velocity_liquid / norm_dvel
@@ -414,8 +426,11 @@ class ElectronDrift(FuseBasePlugin):
             array of floats corresponding to average drift velocities
                 from given point to the gate.
         """
+
+        r = np.sqrt(xy[:, 0] ** 2 + xy[:, 1] ** 2)
+
         if self.enable_drift_velocity_map:
-            drift_v_LXe = self.field_dependencies_map(z, xy, map_name="drift_speed_map")  # mm/µs
+            drift_v_LXe = self.drift_speed_map(np.array([r, z]).T)  # mm/µs
             drift_v_LXe *= 1e-4  # cm/ns
             drift_v_LXe *= self.drift_velocity_scaling
         else:
