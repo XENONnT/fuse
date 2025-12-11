@@ -70,6 +70,7 @@ class EventTruth(strax.Plugin):
 
         return result
 
+
 @export
 class MigdalEventTruth(strax.Plugin):
     __version__ = "1.932.27"
@@ -81,10 +82,7 @@ class MigdalEventTruth(strax.Plugin):
     dtype = [
         (("Number of cluster containing a Migdal effect in event", "has_migdal"), np.uint8),
         (
-            (
-                "Number of photons at interaction position caused by Migdal effect", 
-                "migdal_photons"
-            ),
+            ("Number of photons at interaction position caused by Migdal effect", "migdal_photons"),
             np.int32,
         ),
         (
@@ -103,8 +101,11 @@ class MigdalEventTruth(strax.Plugin):
         ),
         (("Total deposited ER energy", "migdal_deposited_energy"), np.float32),
         (
-            ("Orbital of Migdal electron (first digit, n; second digit, l; sign, s=±1/2. "
-             "Shows only orbital of most energetic electron, if multiple", "migdal_orbital"), 
+            (
+                "Orbital of Migdal electron (first digit, n; second digit, l; sign, s=±1/2. "
+                "Shows only orbital of most energetic electron, if multiple",
+                "migdal_orbital",
+            ),
             np.int16,
         ),
     ] + strax.time_fields
@@ -122,9 +123,13 @@ class MigdalEventTruth(strax.Plugin):
             result["migdal_electrons"][event] = np.sum(interactions["migdal_electrons"])
             result["migdal_photons"][event] = np.sum(interactions["migdal_photons"])
             result["migdal_excitons"][event] = np.sum(interactions["migdal_excitons"])
-            result["migdal_deposited_energy"][event] = np.sum(interactions["migdal_deposited_energy"])
+            result["migdal_deposited_energy"][event] = np.sum(
+                interactions["migdal_deposited_energy"]
+            )
 
             max_migdal_energy_index = np.argmax(interactions["migdal_deposited_energy"])
-            result["migdal_orbital"][event] = interactions[max_migdal_energy_index]["migdal_orbital"]
-            
+            result["migdal_orbital"][event] = interactions[max_migdal_energy_index][
+                "migdal_orbital"
+            ]
+
         return result
