@@ -30,9 +30,9 @@ class CorrectedAreasMC(straxen.CorrectedAreas):
         if "cs2_wo_timecorr" in result.dtype.names:
             result["cs2"] = result["cs2_wo_timecorr"]
             result["alt_cs2"] = result["alt_cs2_wo_timecorr"]
-        elif "cs2_w_bias_xy_segee_pi_relcy" in result.dtype.names:
-            result["cs2"] = result["cs2_w_bias_xy_segee_pi_relcy"]
-            result["alt_cs2"] = result["alt_cs2_w_bias_xy_segee_pi_relcy"]
+        elif "cs2_w_bias_xy" in result.dtype.names:
+            result["cs2"] = result["cs2_w_bias_xy"]
+            result["alt_cs2"] = result["alt_cs2_w_bias_xy"]
         else:
             raise RuntimeError("Please check your straxen compatibility")
 
