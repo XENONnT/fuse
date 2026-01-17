@@ -1,3 +1,49 @@
+1.6.1 / 2026-01-05
+------------------
+* Be compatible with https://github.com/XENONnT/straxen/pull/1626 (https://github.com/XENONnT/fuse/pull/363)
+* Minor fix on https://github.com/XENONnT/fuse/pull/363 (https://github.com/XENONnT/fuse/pull/364)
+
+
+1.6.0 / 2025-09-25
+------------------
+* Use stable `sort` and `argsort` to avoid indeterministic result (https://github.com/XENONnT/fuse/pull/336)
+* Reduce `cut_delayed` to be much less than `np.iinfo(np.int64).max` (https://github.com/XENONnT/fuse/pull/338)
+* Save track id in `interaction_lineage` (https://github.com/XENONnT/fuse/pull/339)
+* Fix bug caused by event id time overlapping in `interaction_lineage ` (https://github.com/XENONnT/fuse/pull/340)
+* Refactor contexts (https://github.com/XENONnT/fuse/pull/303)
+* Assign nestid to photoNuclear gamma and primary neutron (https://github.com/XENONnT/fuse/pull/342)
+* Break lineage when neutron's `edproc` is Transportation (https://github.com/XENONnT/fuse/pull/343)
+* Make sure `clustered_interactions` is sorted (https://github.com/XENONnT/fuse/pull/344)
+* Save `t` in `clustered_interactions` and `microphysics_summary` (https://github.com/XENONnT/fuse/pull/345)
+* Update help (https://github.com/XENONnT/fuse/pull/347)
+* Optimize dbscan clustering peformance (https://github.com/XENONnT/fuse/pull/346)
+* Optimized merge lineage performance (https://github.com/XENONnT/fuse/pull/348)
+* Patch photoionization_modifier default value (https://github.com/XENONnT/fuse/pull/349)
+* Implement lce_from_pattern_map function directly in plugin (https://github.com/XENONnT/fuse/pull/350)
+* Per electron simulation (https://github.com/XENONnT/fuse/pull/264)
+* Add fuse cuts and selections (https://github.com/XENONnT/fuse/pull/193)
+
+1.5.6 / 2025-07-25
+------------------
+* Fix lineage_cluster ids in https://github.com/XENONnT/fuse/pull/331
+* Add untracked configs from file in https://github.com/XENONnT/fuse/pull/332
+* Add s2_pattern_map_interpolation_method in https://github.com/XENONnT/fuse/pull/334
+
+1.5.5 / 2025-07-22
+------------------
+* fix positrons cluster classification in MergeCluster.classify (https://github.com/XENONnT/fuse/pull/317)
+* Do not decorate `run_id=` by the default of plugin configs (https://github.com/XENONnT/fuse/pull/328)
+
+1.5.4 / 2025-07-14
+------------------
+* `storage` as string is enough for `strax.Context` (https://github.com/XENONnT/fuse/pull/323)
+* Allow None `corrections_run_id` (https://github.com/XENONnT/fuse/pull/326)
+
+1.5.3 / 2025-07-01
+------------------
+* Print warning message properly (https://github.com/XENONnT/fuse/pull/312)
+* Add back support of python 3.9 (https://github.com/XENONnT/fuse/pull/318)
+
 1.5.2 / 2025-05-26
 ------------------
 * Fix context to be compatible with new config formats (https://github.com/XENONnT/fuse/pull/310)
@@ -5,7 +51,6 @@
 1.5.1 / 2025-05-23
 ------------------
 * MC override in context config (https://github.com/XENONnT/fuse/pull/308)
-
 
 1.5.0 / 2025-05-21
 ------------------
@@ -24,7 +69,6 @@
 ------------------
 * Be compatible with straxen >= 3 (https://github.com/XENONnT/fuse/pull/282)
 * Remove CMT URLs, drop python 3.9 (https://github.com/XENONnT/fuse/pull/285)
-
 
 1.4.3 / 2025-01-13
 ------------------

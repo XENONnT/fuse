@@ -4,7 +4,7 @@ import numpy as np
 import strax
 import straxen
 
-from ...common import pmt_gains
+from ...common import stable_argsort, pmt_gains
 from ...plugin import FuseBasePlugin
 
 export, __all__ = strax.exporter()
@@ -15,17 +15,12 @@ class SecondaryScintillation(FuseBasePlugin):
     """Plugin to simulate the secondary scintillation process in the gas
     phase."""
 
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     result_name_photons = "s2_photons"
     result_name_photons_sum = "s2_photons_sum"
 
-    depends_on = (
-        "microphysics_summary",
-        "drifted_electrons",
-        "extracted_electrons",
-        "electron_time",
-    )
+    depends_on = ("microphysics_summary", "drifted_electrons", "extracted_electrons")
     provides = (result_name_photons, result_name_photons_sum)
     data_kind = {
         result_name_photons: "individual_electrons",
@@ -145,9 +140,11 @@ class SecondaryScintillation(FuseBasePlugin):
 
         self.pmt_mask = np.array(self.gains)
 
-    def compute(self, interactions_in_roi, individual_electrons):
+    def compute(self, individual_electrons, interactions_in_roi):
+
         # Just apply this to clusters with electrons
-        mask = interactions_in_roi["n_electron_extracted"] > 0
+        clusters_with_extracted_electrons = np.unique(individual_electrons["cluster_id"])
+        mask = np.in1d(interactions_in_roi["cluster_id"], clusters_with_extracted_electrons)
 
         if len(interactions_in_roi[mask]) == 0:
             empty_result = np.zeros(
@@ -161,7 +158,9 @@ class SecondaryScintillation(FuseBasePlugin):
                 self.result_name_photons_sum: empty_result,
             }
 
-        positions = np.array([individual_electrons["x"], individual_electrons["y"]]).T
+        positions = np.array(
+            [individual_electrons["x_interface"], individual_electrons["y_interface"]]
+        ).T
 
         electron_gains = self.get_s2_light_yield(positions=positions)
 
@@ -178,6 +177,7 @@ class SecondaryScintillation(FuseBasePlugin):
         grouped_result_photons, unique_cluster_id = group_result_photons_by_cluster_id(
             result_photons, individual_electrons["cluster_id"]
         )
+
         sum_photons_per_interaction = np.array(
             [np.sum(element["n_s2_photons"]) for element in grouped_result_photons]
         )
@@ -234,7 +234,7 @@ class SecondaryScintillation(FuseBasePlugin):
 def group_result_photons_by_cluster_id(result, cluster_id):
     """Function to group result_photons by cluster_id."""
 
-    sort_index = np.argsort(cluster_id)
+    sort_index = stable_argsort(cluster_id)
 
     cluster_id_sorted = cluster_id[sort_index]
     result_sorted = result[sort_index]
