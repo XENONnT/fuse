@@ -1,3 +1,8 @@
+1.6.2 / 2026-01-27
+------------------
+* Add elife to cs2 corrections (https://github.com/XENONnT/fuse/pull/368)
+
+
 1.6.1 / 2026-01-05
 ------------------
 * Be compatible with https://github.com/XENONnT/straxen/pull/1626 (https://github.com/XENONnT/fuse/pull/363)
