@@ -30,7 +30,7 @@ class CorrectedAreasMC(straxen.CorrectedAreas):
         if "cs2_wo_timecorr" in result.dtype.names:
             result["cs2"] = result["cs2_wo_timecorr"]
             result["alt_cs2"] = result["alt_cs2_wo_timecorr"]
-        elif "cs2_w_bias_xy" in result.dtype.names:
+        elif "cs2_w_bias_xy_elife" in result.dtype.names:
             result["cs2"] = result["cs2_w_bias_xy_elife"]
             result["alt_cs2"] = result["alt_cs2_w_bias_xy_elife"]
         else:
