@@ -508,23 +508,27 @@ class file_loader:
             entry_stop=stop_index,
         )
 
-        # Check if there are multiple primaries per event
-        n_primaries = ak.num(xyz_pri["x_pri"], axis=1)
-        n_multi = np.sum(n_primaries > 1)
+        # Handle both 1D (old format: one primary per event) and 2D jagged (new format:
+        # variable number of primaries per event) arrays for primary positions
+        if xyz_pri["x_pri"].ndim == 1:
+            # Old format: already flat, one primary per event
+            x_pri_first = xyz_pri["x_pri"]
+            y_pri_first = xyz_pri["y_pri"]
+            z_pri_first = xyz_pri["z_pri"]
+        else:
+            # New format: jagged array, may have multiple primaries per event
+            n_primaries = ak.num(xyz_pri["x_pri"], axis=1)
+            n_multi = ak.sum(n_primaries > 1)
 
-        if n_multi > 0:
-            self.log.warning(
-                f"Found {n_multi} events with more than one primary position. "
-                "Only the first (x_pri, y_pri, z_pri) set will be used."
-            )
+            if n_multi > 0:
+                self.log.warning(
+                    f"Found {n_multi} events with more than one primary particle. "
+                    "Only the first primary position (x_pri, y_pri, z_pri) will be used."
+                )
 
-        x_pri_first = ak.firsts(xyz_pri["x_pri"])
-        y_pri_first = ak.firsts(xyz_pri["y_pri"])
-        z_pri_first = ak.firsts(xyz_pri["z_pri"])
-
-        x_pri_first = ak.fill_none(x_pri_first, np.nan)
-        y_pri_first = ak.fill_none(y_pri_first, np.nan)
-        z_pri_first = ak.fill_none(z_pri_first, np.nan)
+            x_pri_first = ak.fill_none(ak.firsts(xyz_pri["x_pri"]), np.nan)
+            y_pri_first = ak.fill_none(ak.firsts(xyz_pri["y_pri"]), np.nan)
+            z_pri_first = ak.fill_none(ak.firsts(xyz_pri["z_pri"]), np.nan)
 
         interactions["x_pri"] = ak.broadcast_arrays(x_pri_first, interactions["x"])[0]
         interactions["y_pri"] = ak.broadcast_arrays(y_pri_first, interactions["x"])[0]
