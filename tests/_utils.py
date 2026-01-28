@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 test_root_file_name = "test_cryo_neutrons_tpc-nveto.root"
-test_simulation_config = "sr1_dev"
+test_simulation_config = "sr2_dev"
 
 
 def build_random_instructions(n):
