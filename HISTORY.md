@@ -1,3 +1,23 @@
+1.6.3 / 2026-01-29
+------------------
+* Add offset to noise sampling (https://github.com/XENONnT/fuse/pull/370)
+* Add cut name to volume selection CutPlugin (https://github.com/XENONnT/fuse/pull/366)
+* Modified load_root_file for supporting multiple primary positions in G4 (https://github.com/XENONnT/fuse/pull/361)
+* Added NR yields, updated defaut yields treatment (https://github.com/XENONnT/fuse/pull/357)
+* Make NR flag more flexible (https://github.com/XENONnT/fuse/pull/359)
+* Also provide energy truth for S1 and S2 (https://github.com/XENONnT/fuse/pull/371)
+
+1.6.2 / 2026-01-27
+------------------
+* Add elife to cs2 corrections (https://github.com/XENONnT/fuse/pull/368)
+
+
+1.6.1 / 2026-01-05
+------------------
+* Be compatible with https://github.com/XENONnT/straxen/pull/1626 (https://github.com/XENONnT/fuse/pull/363)
+* Minor fix on https://github.com/XENONnT/fuse/pull/363 (https://github.com/XENONnT/fuse/pull/364)
+
+
 1.6.0 / 2025-09-25
 ------------------
 * Use stable `sort` and `argsort` to avoid indeterministic result (https://github.com/XENONnT/fuse/pull/336)

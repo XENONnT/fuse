@@ -102,6 +102,8 @@ jobs:
         env:
           TEST_MONGO_URI: 'mongodb://localhost:27017/'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FUSE_TEST_SIMULATION_CONFIG: ${{ matrix.dependency-version == 'lowest' && 'sr1_dev' || 'sr2_dev' }}
+
         if: env.HAVE_ACCESS_TO_SECRETS != null
         run: |
           coverage run --source=fuse -m pytest --durations 0 -v
