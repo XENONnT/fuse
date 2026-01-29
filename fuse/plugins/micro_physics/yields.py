@@ -105,10 +105,8 @@ class NestYields(FuseBasePlugin):
         if self.nest_width_parameters is not None:
             for key, value in self.nest_width_parameters.items():
                 if key not in parameters_key_map:
-                    raise ValueError(
-                        f"Unknown NEST width parameter {key}.\
-                        Available parameters: {parameters_key_map.keys()}"
-                    )
+                    raise ValueError(f"Unknown NEST width parameter {key}.\
+                        Available parameters: {parameters_key_map.keys()}")
                 self.log.debug(f"Updating NEST width parameter {key} to {value}")
                 free_parameters[parameters_key_map[key]] = value
 
@@ -194,10 +192,8 @@ class NestYields(FuseBasePlugin):
             e_field = self.fix_gamma_yield_field
 
         if e_field < 0:
-            raise ValueError(
-                f"Negative electric field {e_field} V/cm not allowed. \
-                (no error will be raised by NEST)."
-            )
+            raise ValueError(f"Negative electric field {e_field} V/cm not allowed. \
+                (no error will be raised by NEST).")
 
         yields_result = self.nc.GetYields(
             interaction=nestpy.INTERACTION_TYPE(model),

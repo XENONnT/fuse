@@ -288,10 +288,8 @@ class LineageClustering(FuseBasePlugin):
                         )
 
                 else:
-                    raise ValueError(
-                        "There is no last particle interaction but we have seen \
-                        this particle before.... Makes no sense.."
-                    )
+                    raise ValueError("There is no last particle interaction but we have seen \
+                        this particle before.... Makes no sense..")
 
         tmp_result["main_cluster_type"] = main_cluster_type
 
