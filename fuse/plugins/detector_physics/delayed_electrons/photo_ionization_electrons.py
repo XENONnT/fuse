@@ -191,7 +191,9 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         electrons_per_interaction, unique_cluster_id = group_electrons_by_cluster_id(
             individual_electrons
         )
-        matching_index = np.searchsorted(unique_cluster_id, microphysics_summary[mask]["cluster_id"])
+        matching_index = np.searchsorted(
+            unique_cluster_id, microphysics_summary[mask]["cluster_id"]
+        )
 
         # In WFSim the part is calculated separatley for each interaction
         # We can do it vectorized!
