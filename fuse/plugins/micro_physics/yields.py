@@ -439,7 +439,6 @@ class BBF_quanta_generator:
 
         return 1.0 - np.log(1.0 + Ni * xi) / (Ni * xi)
 
-
     def safe_binomial(self, n, p, *, where=""):
         import warnings
 
@@ -457,7 +456,6 @@ class BBF_quanta_generator:
             warnings.warn(f"BBF safe_binomial sanitized inputs {where}", RuntimeWarning)
 
         return self.rng.binomial(n_safe, p_safe)
-        
 
     def get_ER_quanta(self, energy, field, par_dict):
         Nq_mean = energy / par_dict["W"]
