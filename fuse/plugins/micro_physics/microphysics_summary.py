@@ -9,7 +9,7 @@ class MicroPhysicsSummary(strax.MergeOnlyPlugin):
     into a single output."""
 
     depends_on = (
-        "interactions_in_roi",
+        "microphysics_summary",
         "quanta",
         "electric_field_values",
     )

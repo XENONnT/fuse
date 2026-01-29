@@ -13,7 +13,7 @@ class DriftedElectronsMerger(VerticalMergerPlugin):
     depends_on = ("drifted_electrons", "drifted_delayed_electrons")
 
     provides = "merged_drifted_electrons"
-    data_kind = "interactions_in_roi"
+    data_kind = "microphysics_summary"
     __version__ = "0.0.1"
 
 
@@ -61,7 +61,7 @@ class SecondaryScintillationPhotonSumMerger(VerticalMergerPlugin):
     depends_on = ("s2_photons_sum", "delayed_electrons_s2_photons_sum")
 
     provides = "merged_s2_photons_sum"
-    data_kind = "interactions_in_roi"
+    data_kind = "microphysics_summary"
     __version__ = "0.0.1"
 
 
@@ -73,7 +73,7 @@ class MicrophysicsSummaryMerger(VerticalMergerPlugin):
     depends_on = ("microphysics_summary", "photo_ionization_electrons")
 
     provides = "merged_microphysics_summary"
-    data_kind = "interactions_in_roi"
+    data_kind = "microphysics_summary"
     __version__ = "0.0.1"
 
 
@@ -85,5 +85,5 @@ class S1PhotonHitsMerger(VerticalMergerPlugin):
     depends_on = ("s1_photon_hits", "delayed_s1_photon_hits")
 
     provides = "merged_s1_photon_hits"
-    data_kind = "interactions_in_roi"
+    data_kind = "microphysics_summary"
     __version__ = "0.0.2"

@@ -30,7 +30,7 @@ class SelectionMerger(FuseBasePlugin):
     __version__ = "1.0.0"
     save_when = strax.SaveWhen.TARGET
     provides = "microphysics_summary"
-    data_kind = "interactions_in_roi"
+    data_kind = "microphysics_summary"
 
     selection_logic = "volume_selection"
 

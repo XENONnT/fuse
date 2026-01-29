@@ -16,7 +16,7 @@ class DelayedElectronsDrift(ElectronDrift):
 
     depends_on = "photo_ionization_electrons"
     provides = "drifted_delayed_electrons"
-    data_kind = "delayed_interactions_in_roi"
+    data_kind = "delayed_microphysics_summary"
 
     electron_lifetime_liquid_delayed_electrons = straxen.URLConfig(
         default=0,
@@ -27,5 +27,5 @@ class DelayedElectronsDrift(ElectronDrift):
         help="Electron lifetime in liquid xenon [ns] for delayed electrons",
     )
 
-    def compute(self, delayed_interactions_in_roi):
-        return super().compute(interactions_in_roi=delayed_interactions_in_roi)
+    def compute(self, delayed_microphysics_summary):
+        return super().compute(microphysics_summary=delayed_microphysics_summary)

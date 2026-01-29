@@ -133,7 +133,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
 
         return drift_time_max * 20
 
-    def compute(self, interactions_in_roi, propagated_photons, peaks):
+    def compute(self, microphysics_summary, propagated_photons, peaks):
         n_peaks = len(peaks)
 
         result = np.zeros(n_peaks, dtype=self.dtype)
@@ -149,8 +149,8 @@ class PeakTruth(strax.OverlapWindowPlugin):
         }
 
         for i in range(n_peaks):
-            contributing_clusters_s1 = np.zeros(0, dtype=interactions_in_roi.dtype)
-            contributing_clusters_s2 = np.zeros(0, dtype=interactions_in_roi.dtype)
+            contributing_clusters_s1 = np.zeros(0, dtype=microphysics_summary.dtype)
+            contributing_clusters_s2 = np.zeros(0, dtype=microphysics_summary.dtype)
             photons_per_cluster_s1 = np.zeros(0, dtype=int)
             photons_per_cluster_s2 = np.zeros(0, dtype=int)
 
@@ -186,7 +186,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
                         unique_contributing_clusters != 0
                     )
                     contributing_clusters_s1 = _get_cluster_information(
-                        interactions_in_roi, unique_contributing_clusters
+                        microphysics_summary, unique_contributing_clusters
                     )
                     photons_per_cluster_s1 = photons_per_cluster
                 elif photon_type == "s2":
@@ -197,7 +197,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
                         unique_contributing_clusters < 0
                     )
                     contributing_clusters_s2 = _get_cluster_information(
-                        interactions_in_roi, unique_contributing_clusters
+                        microphysics_summary, unique_contributing_clusters
                     )
                     photons_per_cluster_s2 = photons_per_cluster
 
@@ -246,9 +246,9 @@ class PeakTruth(strax.OverlapWindowPlugin):
         return result
 
 
-def _get_cluster_information(interactions_in_roi, unique_contributing_clusters):
-    contributing_cluster_informations = interactions_in_roi[
-        np.isin(interactions_in_roi["cluster_id"], unique_contributing_clusters)
+def _get_cluster_information(microphysics_summary, unique_contributing_clusters):
+    contributing_cluster_informations = microphysics_summary[
+        np.isin(microphysics_summary["cluster_id"], unique_contributing_clusters)
     ]
     sort_index = stable_argsort(contributing_cluster_informations["cluster_id"])
     return contributing_cluster_informations[sort_index]

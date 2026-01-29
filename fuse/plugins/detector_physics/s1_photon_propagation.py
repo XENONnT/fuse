@@ -156,9 +156,9 @@ class S1PhotonPropagationBase(FuseBasePlugin):
             self.photon_area_distribution
         )
 
-    def compute(self, interactions_in_roi):
+    def compute(self, microphysics_summary):
         # Just apply this to clusters with photons hitting a PMT
-        instruction = interactions_in_roi[interactions_in_roi["n_s1_photon_hits"] > 0]
+        instruction = microphysics_summary[microphysics_summary["n_s1_photon_hits"] > 0]
 
         if len(instruction) == 0:
             return np.zeros(0, self.dtype)

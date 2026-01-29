@@ -24,7 +24,7 @@ class SecondaryScintillation(FuseBasePlugin):
     provides = (result_name_photons, result_name_photons_sum)
     data_kind = {
         result_name_photons: "individual_electrons",
-        result_name_photons_sum: "interactions_in_roi",
+        result_name_photons_sum: "microphysics_summary",
     }
 
     dtype_photons = [
@@ -140,18 +140,18 @@ class SecondaryScintillation(FuseBasePlugin):
 
         self.pmt_mask = np.array(self.gains)
 
-    def compute(self, individual_electrons, interactions_in_roi):
+    def compute(self, individual_electrons, microphysics_summary):
 
         # Just apply this to clusters with electrons
         clusters_with_extracted_electrons = np.unique(individual_electrons["cluster_id"])
-        mask = np.in1d(interactions_in_roi["cluster_id"], clusters_with_extracted_electrons)
+        mask = np.in1d(microphysics_summary["cluster_id"], clusters_with_extracted_electrons)
 
-        if len(interactions_in_roi[mask]) == 0:
+        if len(microphysics_summary[mask]) == 0:
             empty_result = np.zeros(
-                len(interactions_in_roi), self.dtype[self.result_name_photons_sum]
+                len(microphysics_summary), self.dtype[self.result_name_photons_sum]
             )
-            empty_result["time"] = interactions_in_roi["time"]
-            empty_result["endtime"] = interactions_in_roi["endtime"]
+            empty_result["time"] = microphysics_summary["time"]
+            empty_result["endtime"] = microphysics_summary["endtime"]
 
             return {
                 self.result_name_photons: np.zeros(0, self.dtype[self.result_name_photons]),
@@ -182,19 +182,19 @@ class SecondaryScintillation(FuseBasePlugin):
             [np.sum(element["n_s2_photons"]) for element in grouped_result_photons]
         )
 
-        # Bring sum_photons_per_interaction into the same cluster order as interactions_in_roi
+        # Bring sum_photons_per_interaction into the same cluster order as microphysics_summary
         # Maybe this line is too complicated...
         sum_photons_per_interaction_reordered = [
             sum_photons_per_interaction[np.argwhere(unique_cluster_id == element)[0][0]]
-            for element in interactions_in_roi["cluster_id"][mask]
+            for element in microphysics_summary["cluster_id"][mask]
         ]
 
         result_sum_photons = np.zeros(
-            len(interactions_in_roi), dtype=self.dtype[self.result_name_photons_sum]
+            len(microphysics_summary), dtype=self.dtype[self.result_name_photons_sum]
         )
         result_sum_photons["sum_s2_photons"][mask] = sum_photons_per_interaction_reordered
-        result_sum_photons["time"] = interactions_in_roi["time"]
-        result_sum_photons["endtime"] = interactions_in_roi["endtime"]
+        result_sum_photons["time"] = microphysics_summary["time"]
+        result_sum_photons["endtime"] = microphysics_summary["endtime"]
 
         return {
             self.result_name_photons: result_photons,
