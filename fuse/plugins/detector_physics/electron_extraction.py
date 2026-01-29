@@ -97,9 +97,9 @@ class ElectronExtraction(FuseBasePlugin):
         help="Time scale electrons are trapped at the liquid gas interface",
     )
 
-    def compute(self, extracted_electrons):
+    def compute(self, individual_electrons):
 
-        N = extracted_electrons.shape[0]
+        N = individual_electrons.shape[0]
 
         # Fast path: scalar probability (no maps)
         if not self.ext_eff_from_map:
@@ -116,7 +116,7 @@ class ElectronExtraction(FuseBasePlugin):
             # Only build positions if we actually need maps
             # shape: (N, 2)
             position = np.column_stack(
-                (extracted_electrons["x_interface"], extracted_electrons["y_interface"])
+                (individual_electrons["x_interface"], individual_electrons["y_interface"])
             )
 
             # rel S2 correction (flatten for safety; maps sometimes return (N,1))
@@ -144,13 +144,13 @@ class ElectronExtraction(FuseBasePlugin):
         # Allocate result once and fill via np.take (one indexed gather per field)
         result = np.zeros(M, dtype=self.dtype)
 
-        times_sel = np.take(extracted_electrons["time"], idx)
+        times_sel = np.take(individual_electrons["time"], idx)
         result["time"] = self.extraction_delay(times_sel)
         result["endtime"] = result["time"]
 
-        result["x_interface"] = np.take(extracted_electrons["x_interface"], idx)
-        result["y_interface"] = np.take(extracted_electrons["y_interface"], idx)
-        result["cluster_id"] = np.take(extracted_electrons["cluster_id"], idx)
+        result["x_interface"] = np.take(individual_electrons["x_interface"], idx)
+        result["y_interface"] = np.take(individual_electrons["y_interface"], idx)
+        result["cluster_id"] = np.take(individual_electrons["cluster_id"], idx)
 
         return result
 
