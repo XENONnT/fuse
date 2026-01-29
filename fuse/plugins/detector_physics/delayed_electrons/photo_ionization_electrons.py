@@ -25,7 +25,6 @@ class PhotoIonizationElectrons(FuseBasePlugin):
 
     depends_on = (
         "s2_photons_sum",
-        "s2_photons",
         "extracted_electrons",
         "microphysics_summary",
     )
