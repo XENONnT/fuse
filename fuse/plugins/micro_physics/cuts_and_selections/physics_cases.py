@@ -172,6 +172,11 @@ def filter_events(mps, g1, g2, max_s1, max_s2):
             if _is_nr:
                 number_of_nr_interactions += 1
 
+        # Determine the end index for the current event
+        # If we broke, vertex_i points to the next event, so end is vertex_i
+        # If we didn't break, vertex_i is the last vertex, so end is vertex_i + 1
+        end_index = vertex_i if vertex_i < len(mps) and mps["eventid"][vertex_i] != event_i else vertex_i + 1
+
         # Check if the largest interaction is still within ROI:
         _is_in_nr_roi = (
             (max_photons * g1 < max_s1)
@@ -181,5 +186,5 @@ def filter_events(mps, g1, g2, max_s1, max_s2):
         )
 
         if not _is_in_nr_roi:
-            vertex_to_keep[start_index:vertex_i] = 0
+            vertex_to_keep[start_index:end_index] = 0
     return vertex_to_keep
