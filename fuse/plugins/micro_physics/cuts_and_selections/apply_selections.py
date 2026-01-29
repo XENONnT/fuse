@@ -89,3 +89,15 @@ class LowEnergySimulation(SelectionMerger):
     )
     __version__ = "1.0.1"
     selection_logic = "volume_selection & energy_range_cut"
+
+
+@export
+class NRSimulation(SelectionMerger):
+    depends_on = (
+        "clustered_interactions",
+        "volume_properties",
+        "volume_selection",
+        "nr_filter_cut",
+    )
+    __version__ = "1.0.1"
+    selection_logic = "volume_selection & nr_filter_cut"
