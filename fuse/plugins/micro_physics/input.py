@@ -31,7 +31,7 @@ class ChunkInput(FuseBasePlugin):
     and will create multiple chunks of data if needed.
     """
 
-    __version__ = "0.4.0"
+    __version__ = "0.4.1"
 
     depends_on: Tuple = tuple()
     provides = "geant4_interactions"
@@ -113,6 +113,13 @@ class ChunkInput(FuseBasePlugin):
     nr_only = straxen.URLConfig(
         default=False,
         type=bool,
+        help="Filter only nuclear recoil events "
+        "(maximum ER energy deposit according to maximal_er_energy)",
+    )
+
+    maximal_er_energy = straxen.URLConfig(
+        default=10,
+        type=(int, float),
         help="Filter only nuclear recoil events (maximum ER energy deposit 10 keV)",
     )
 
@@ -148,6 +155,7 @@ class ChunkInput(FuseBasePlugin):
             entry_stop=self.entry_stop,
             cut_by_eventid=self.cut_by_eventid,
             cut_nr_only=self.nr_only,
+            maximal_er_energy=self.maximal_er_energy,
             fixed_event_spacing=self.fixed_event_spacing,
             log=self.log,
         )
@@ -202,6 +210,7 @@ class file_loader:
         entry_stop=None,
         cut_by_eventid=False,
         cut_nr_only=False,
+        maximal_er_energy=10,
         fixed_event_spacing=False,
         log=None,
     ):
@@ -223,6 +232,7 @@ class file_loader:
         self.entry_stop = entry_stop
         self.cut_by_eventid = cut_by_eventid
         self.cut_nr_only = cut_nr_only
+        self.maximal_er_energy = maximal_er_energy
         self.fixed_event_spacing = fixed_event_spacing
         self.log = log
 
@@ -266,7 +276,7 @@ class file_loader:
             )
             e_dep_er = ak.sum(interactions[~m]["ed"], axis=1)
             e_dep_nr = ak.sum(interactions[m]["ed"], axis=1)
-            interactions = interactions[(e_dep_er < 10) & (e_dep_nr > 0)]
+            interactions = interactions[(e_dep_er < self.maximal_er_energy) & (e_dep_nr > 0)]
 
         # Removing all events with no interactions:
         m = ak.num(interactions["ed"]) > 0
