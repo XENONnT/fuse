@@ -88,12 +88,12 @@ class NRCut(strax.CutPlugin):
     g1_photon_yield = straxen.URLConfig(
         default=0.1,
         type=(int, float),
-        help="Scaled g1 x 0.8 to acocunt for corrections [pe/ph]",
+        help="Scaled g1 x 0.8 to account for corrections [pe/ph]",
     )
     g2_electron_yield = straxen.URLConfig(
         default=13.4,
         type=(int, float),
-        help="Scaled g2 x 0.8 to acocunt for corrections [pe/e]",
+        help="Scaled g2 x 0.8 to account for corrections [pe/e]",
     )
 
     max_s1_area = straxen.URLConfig(
