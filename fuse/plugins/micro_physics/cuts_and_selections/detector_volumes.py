@@ -14,6 +14,7 @@ class VolumeSelection(strax.CutPlugin):
 
     depends_on = "volume_properties"
     provides = "volume_selection"
+    cut_name = "volume_selection"
     __version__ = "0.0.1"
 
     accept_volumes = ["tpc", "below_cathode"]
