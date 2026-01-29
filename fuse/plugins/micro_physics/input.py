@@ -31,7 +31,7 @@ class ChunkInput(FuseBasePlugin):
     and will create multiple chunks of data if needed.
     """
 
-    __version__ = "0.3.4"
+    __version__ = "0.4.0"
 
     depends_on: Tuple = tuple()
     provides = "geant4_interactions"
@@ -508,9 +508,31 @@ class file_loader:
             entry_stop=stop_index,
         )
 
-        interactions["x_pri"] = ak.broadcast_arrays(xyz_pri["x_pri"], interactions["x"])[0]
-        interactions["y_pri"] = ak.broadcast_arrays(xyz_pri["y_pri"], interactions["x"])[0]
-        interactions["z_pri"] = ak.broadcast_arrays(xyz_pri["z_pri"], interactions["x"])[0]
+        # Handle both 1D (old format: one primary per event) and 2D jagged (new format:
+        # variable number of primaries per event) arrays for primary positions
+        if xyz_pri["x_pri"].ndim == 1:
+            # Old format: already flat, one primary per event
+            x_pri_first = xyz_pri["x_pri"]
+            y_pri_first = xyz_pri["y_pri"]
+            z_pri_first = xyz_pri["z_pri"]
+        else:
+            # New format: jagged array, may have multiple primaries per event
+            n_primaries = ak.num(xyz_pri["x_pri"], axis=1)
+            n_multi = ak.sum(n_primaries > 1)
+
+            if n_multi > 0:
+                self.log.warning(
+                    f"Found {n_multi} events with more than one primary particle. "
+                    "Only the first primary position (x_pri, y_pri, z_pri) will be used."
+                )
+
+            x_pri_first = ak.fill_none(ak.firsts(xyz_pri["x_pri"]), np.nan)
+            y_pri_first = ak.fill_none(ak.firsts(xyz_pri["y_pri"]), np.nan)
+            z_pri_first = ak.fill_none(ak.firsts(xyz_pri["z_pri"]), np.nan)
+
+        interactions["x_pri"] = ak.broadcast_arrays(x_pri_first, interactions["x"])[0]
+        interactions["y_pri"] = ak.broadcast_arrays(y_pri_first, interactions["x"])[0]
+        interactions["z_pri"] = ak.broadcast_arrays(z_pri_first, interactions["x"])[0]
 
         return interactions, n_simulated_events, start_index, stop_index
 
