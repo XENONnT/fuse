@@ -146,6 +146,7 @@ def filter_events(mps, g1, g2, max_s1, max_s2):
         prompt_photons = 0
         number_of_nr_interactions = 0
         start_time = mps["time"][vertex_i]
+        loop_broke = False
 
         for vertex_i in range(start_index, len(mps)):
             vertex = mps[vertex_i]
@@ -153,6 +154,7 @@ def filter_events(mps, g1, g2, max_s1, max_s2):
             _is_a_new_event = event_i < vertex["eventid"]
             if _is_a_new_event:
                 # Next event starts break for loop and check next event
+                loop_broke = True
                 break
 
             # Is prompt vertex:
@@ -175,7 +177,7 @@ def filter_events(mps, g1, g2, max_s1, max_s2):
         # Determine the end index for the current event
         # If we broke, vertex_i points to the next event, so end is vertex_i
         # If we didn't break, vertex_i is the last vertex, so end is vertex_i + 1
-        end_index = vertex_i if vertex_i < len(mps) and mps["eventid"][vertex_i] != event_i else vertex_i + 1
+        end_index = vertex_i if loop_broke else vertex_i + 1
 
         # Check if the largest interaction is still within ROI:
         _is_in_nr_roi = (
