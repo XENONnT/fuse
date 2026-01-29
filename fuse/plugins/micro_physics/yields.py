@@ -87,7 +87,7 @@ class NestYields(FuseBasePlugin):
 
         # Change NR and ER yields to best fit:
         if hasattr(self.nest_er_yields_parameters, "__len__"):
-            # Set the elements of the list 
+            # Set the elements of the list
             # so we do not run into problems with the vectorized function
             self.nest_er_yields_parameters_list = [
                 float(element) for element in self.nest_er_yields_parameters
