@@ -70,7 +70,6 @@ def group_interaction_energies_by_event_id(energy, event_id):
     return np.split(energy_sorted, split_position[1:]), unique_event_id
 
 
-@export
 class MicroPhysicsSummaryNRFilter(strax.CutPlugin):
     """Plugin which filters the microphysics summary for valid NR events."""
 
