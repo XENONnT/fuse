@@ -4,7 +4,9 @@ import numpy as np
 test_root_file_name = "test_cryo_neutrons_tpc-nveto.root"
 
 import os
+
 test_simulation_config = os.getenv("FUSE_TEST_SIMULATION_CONFIG", "sr2_dev")
+
 
 def build_random_instructions(n):
     df = pd.DataFrame()
