@@ -6,7 +6,7 @@ export, __all__ = strax.exporter()
 
 @export
 class EventTruth(strax.Plugin):
-    __version__ = "0.0.4"
+    __version__ = "0.0.5"
 
     depends_on = ("microphysics_summary", "photon_summary", "peak_truth", "event_basics")
     provides = "event_truth"
@@ -21,6 +21,8 @@ class EventTruth(strax.Plugin):
         ("z_obs_truth", np.float32),
         ("energy_of_main_peaks_truth", np.float32),
         ("total_energy_in_event_truth", np.float32),
+        ('s1_observable_energy_truth', np.float32),
+        ('s2_observable_energy_truth', np.float32),
     ] + strax.time_fields
 
     def compute(self, interactions_in_roi, propagated_photons, peaks, events):
@@ -55,6 +57,8 @@ class EventTruth(strax.Plugin):
                 ]
             )
 
+            result["s1_observable_energy_truth"][i] = s1["observable_energy_truth"]
+            result["s2_observable_energy_truth"][i] = s2["observable_energy_truth"]
             # Does this make any sense?
             result["energy_of_main_peaks_truth"][i] = np.mean(
                 [s2["observable_energy_truth"], s1["observable_energy_truth"]]
