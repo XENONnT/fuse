@@ -126,7 +126,7 @@ class NRCut(strax.CutPlugin):
 
 @numba.njit
 def filter_events(mps, g1, g2, max_s1, max_s2):
-    """Small function to filter microphysics for valide NR events.
+    """Small function to filter microphysics for valid NR events.
 
     We cut all events which are overshadowed by other events outside of
     our ROI excluding delayed deexcitations. To account for missing
