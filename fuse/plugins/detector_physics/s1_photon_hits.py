@@ -19,7 +19,7 @@ class S1PhotonHits(FuseBasePlugin):
 
     depends_on = "microphysics_summary"
     provides = "s1_photon_hits"
-    data_kind = "microphysics_summary"
+    data_kind = "interactions_in_roi"
 
     save_when = strax.SaveWhen.ALWAYS
 
@@ -112,20 +112,20 @@ class S1PhotonHits(FuseBasePlugin):
         lcemap.__init__(lcemap.data)
         self.s1_lce_correction_map = lcemap
 
-    def compute(self, microphysics_summary):
+    def compute(self, interactions_in_roi):
         # Just apply this to clusters with photons
-        mask = microphysics_summary["photons"] > 0
+        mask = interactions_in_roi["photons"] > 0
 
-        if len(microphysics_summary[mask]) == 0:
-            empty_result = np.zeros(len(microphysics_summary), self.dtype)
-            empty_result["time"] = microphysics_summary["time"]
-            empty_result["endtime"] = microphysics_summary["endtime"]
+        if len(interactions_in_roi[mask]) == 0:
+            empty_result = np.zeros(len(interactions_in_roi), self.dtype)
+            empty_result["time"] = interactions_in_roi["time"]
+            empty_result["endtime"] = interactions_in_roi["endtime"]
             return empty_result
 
-        x = microphysics_summary[mask]["x"]
-        y = microphysics_summary[mask]["y"]
-        z = microphysics_summary[mask]["z"]
-        n_photons = microphysics_summary[mask]["photons"].astype(np.int64)
+        x = interactions_in_roi[mask]["x"]
+        y = interactions_in_roi[mask]["y"]
+        z = interactions_in_roi[mask]["z"]
+        n_photons = interactions_in_roi[mask]["photons"].astype(np.int64)
 
         positions = np.array([x, y, z]).T
 
@@ -134,10 +134,10 @@ class S1PhotonHits(FuseBasePlugin):
             positions=positions,
         )
 
-        result = np.zeros(microphysics_summary.shape[0], dtype=self.dtype)
+        result = np.zeros(interactions_in_roi.shape[0], dtype=self.dtype)
 
-        result["time"] = microphysics_summary["time"]
-        result["endtime"] = microphysics_summary["endtime"]
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
 
         result["n_s1_photon_hits"][mask] = n_photon_hits
 

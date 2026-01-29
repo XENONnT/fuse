@@ -14,7 +14,7 @@ class ClusterTagging(strax.Plugin):
 
     depends_on = ("microphysics_summary", "photon_summary", "peak_basics", "event_basics")
     provides = "tagged_clusters"
-    data_kind = "microphysics_summary"
+    data_kind = "interactions_in_roi"
 
     dtype = [
         # Tags by events
@@ -38,18 +38,18 @@ class ClusterTagging(strax.Plugin):
         "Peaks' start and end times are extended by this window to find photons in them.",
     )
 
-    def compute(self, microphysics_summary, propagated_photons, peaks, events):
-        result = np.zeros(len(microphysics_summary), dtype=self.dtype)
-        result["time"] = microphysics_summary["time"]
-        result["endtime"] = microphysics_summary["endtime"]
+    def compute(self, interactions_in_roi, propagated_photons, peaks, events):
+        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
 
         # First we tag the clusters that are in a peak
         s1_peaks = peaks[peaks["type"] == 1]
         photons_in_peak = strax.split_touching_windows(
-            microphysics_summary, s1_peaks, window=self.photon_finding_window
+            interactions_in_roi, s1_peaks, window=self.photon_finding_window
         )
         for peak, photons in zip(s1_peaks, photons_in_peak):
-            mask = np.isin(microphysics_summary["cluster_id"], photons["cluster_id"])
+            mask = np.isin(interactions_in_roi["cluster_id"], photons["cluster_id"])
             result["has_s1"][mask] = True
             result["s1_tight_coincidence"][mask] = peak["tight_coincidence"]
 
@@ -82,12 +82,12 @@ class ClusterTagging(strax.Plugin):
                     )
 
                     matching_clusters = np.argwhere(
-                        np.isin(microphysics_summary["cluster_id"], contributing_clusters_of_peak)
+                        np.isin(interactions_in_roi["cluster_id"], contributing_clusters_of_peak)
                     )
                     result["in_" + peak_name_cluster][matching_clusters] = True
 
                     for cluster_i, photons_i in zip(contributing_clusters_of_peak, photons_in_peak):
-                        mask = microphysics_summary["cluster_id"] == cluster_i
+                        mask = interactions_in_roi["cluster_id"] == cluster_i
                         result["photons_in_" + peak_name_cluster][mask] = photons_i
 
         return result

@@ -15,7 +15,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
     photoionization in the liquid xenon using a phenomenological model.
 
     The plugin uses the number of S2 photons per energy deposit as input
-    and creates delayed_microphysics_summary. The simulation of delayed
+    and creates delayed_interactions_in_roi. The simulation of delayed
     electrons can be enabled or disabled using the config option
     enable_delayed_electrons. The amount of delayed electrons can be
     scaled using the config option photoionization_modifier.
@@ -30,7 +30,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         "microphysics_summary",
     )
     provides = "photo_ionization_electrons"
-    data_kind = "delayed_microphysics_summary"
+    data_kind = "delayed_interactions_in_roi"
 
     save_when = strax.SaveWhen.ALWAYS
 
@@ -177,12 +177,12 @@ class PhotoIonizationElectrons(FuseBasePlugin):
             self.photoionization_time_cutoff_mc / self.photoionization_time_constant
         )
 
-    def compute(self, microphysics_summary, individual_electrons):
+    def compute(self, interactions_in_roi, individual_electrons):
 
         # Just apply this to clusters with S2 photons
-        mask = microphysics_summary["sum_s2_photons"] > 0
+        mask = interactions_in_roi["sum_s2_photons"] > 0
 
-        if not self.enable_delayed_electrons or (len(microphysics_summary[mask]) == 0):
+        if not self.enable_delayed_electrons or (len(interactions_in_roi[mask]) == 0):
             self.log.debug(
                 "No interactions with S2 photons found or delayed electrons are disabled"
             )
@@ -191,14 +191,12 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         electrons_per_interaction, unique_cluster_id = group_electrons_by_cluster_id(
             individual_electrons
         )
-        matching_index = np.searchsorted(
-            unique_cluster_id, microphysics_summary[mask]["cluster_id"]
-        )
+        matching_index = np.searchsorted(unique_cluster_id, interactions_in_roi[mask]["cluster_id"])
 
         # In WFSim the part is calculated separatley for each interaction
         # We can do it vectorized!
         n_delayed_electrons = self.rng.poisson(
-            microphysics_summary[mask]["sum_s2_photons"]
+            interactions_in_roi[mask]["sum_s2_photons"]
             * self.photoionization_modifier
             / self.photoionization_scaling
         )
@@ -218,7 +216,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
         time_zero = []
         delayed_electrons_per_interaction = []
 
-        for i in range(len(microphysics_summary[mask])):
+        for i in range(len(interactions_in_roi[mask])):
             electrons_of_interaction = electrons_per_interaction[matching_index[i]]
             number_of_delayed_electrons = len(electron_delay[i])
 

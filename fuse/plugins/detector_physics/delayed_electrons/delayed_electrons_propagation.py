@@ -17,8 +17,8 @@ class DelayedElectronPropagation(ElectronPropagation):
     provides = "delayed_electrons_at_interface"
     data_kind = "delayed_individual_electrons"
 
-    def compute(self, delayed_microphysics_summary):
-        return super().compute(microphysics_summary=delayed_microphysics_summary)
+    def compute(self, delayed_interactions_in_roi):
+        return super().compute(interactions_in_roi=delayed_interactions_in_roi)
 
 
 @export
@@ -35,5 +35,5 @@ class DelayedElectronPropagationPerpWires(ElectronPropagationPerpWires):
     provides = "delayed_electrons_at_interface"
     data_kind = "delayed_individual_electrons"
 
-    def compute(self, delayed_microphysics_summary):
-        return super().compute(microphysics_summary=delayed_microphysics_summary)
+    def compute(self, delayed_interactions_in_roi):
+        return super().compute(interactions_in_roi=delayed_interactions_in_roi)

@@ -21,7 +21,7 @@ class ElectronDrift(FuseBasePlugin):
 
     depends_on = "microphysics_summary"
     provides = "drifted_electrons"
-    data_kind = "microphysics_summary"
+    data_kind = "interactions_in_roi"
 
     dtype = [
         (
@@ -219,20 +219,20 @@ class ElectronDrift(FuseBasePlugin):
         self.fdc_map_r_bounds = (rmin, rmax)
         self.fdc_map_z_bounds = (zmin, zmax)
 
-    def compute(self, microphysics_summary):
+    def compute(self, interactions_in_roi):
         # Just apply this to clusters with photons
-        mask = microphysics_summary["electrons"] > 0
+        mask = interactions_in_roi["electrons"] > 0
 
-        if len(microphysics_summary[mask]) == 0:
-            empty_result = np.zeros(len(microphysics_summary), self.dtype)
-            empty_result["time"] = microphysics_summary["time"]
-            empty_result["endtime"] = microphysics_summary["endtime"]
+        if len(interactions_in_roi[mask]) == 0:
+            empty_result = np.zeros(len(interactions_in_roi), self.dtype)
+            empty_result["time"] = interactions_in_roi["time"]
+            empty_result["endtime"] = interactions_in_roi["endtime"]
             return empty_result
 
-        x = microphysics_summary[mask]["x"]
-        y = microphysics_summary[mask]["y"]
-        z = microphysics_summary[mask]["z"]
-        n_electron = microphysics_summary[mask]["electrons"].astype(np.int64)
+        x = interactions_in_roi[mask]["x"]
+        y = interactions_in_roi[mask]["y"]
+        z = interactions_in_roi[mask]["z"]
+        n_electron = interactions_in_roi[mask]["electrons"].astype(np.int64)
 
         # Reverse engineering FDC
         if self.field_distortion_model == "inverse_fdc":
@@ -268,9 +268,9 @@ class ElectronDrift(FuseBasePlugin):
         else:
             self.log.debug("No electron lifetime applied")
 
-        result = np.zeros(len(microphysics_summary), dtype=self.dtype)
-        result["time"] = microphysics_summary["time"]
-        result["endtime"] = microphysics_summary["endtime"]
+        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
+        result["time"] = interactions_in_roi["time"]
+        result["endtime"] = interactions_in_roi["endtime"]
         result["n_electron_interface"][mask] = n_electron
         result["drift_time_mean"][mask] = drift_time_mean
         result["drift_time_spread"][mask] = drift_time_spread

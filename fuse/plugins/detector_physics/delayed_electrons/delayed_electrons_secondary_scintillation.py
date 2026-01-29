@@ -27,7 +27,7 @@ class DelayedElectronsSecondaryScintillation(SecondaryScintillation):
     provides = (result_name_photons, result_name_photons_sum)
     data_kind = {
         result_name_photons: "delayed_individual_electrons",
-        result_name_photons_sum: "delayed_microphysics_summary",
+        result_name_photons_sum: "delayed_interactions_in_roi",
     }
 
     dtype_photons = [
@@ -51,8 +51,8 @@ class DelayedElectronsSecondaryScintillation(SecondaryScintillation):
         {result_name_photons: strax.SaveWhen.TARGET, result_name_photons_sum: strax.SaveWhen.ALWAYS}
     )
 
-    def compute(self, delayed_microphysics_summary, delayed_individual_electrons):
+    def compute(self, delayed_interactions_in_roi, delayed_individual_electrons):
         return super().compute(
-            microphysics_summary=delayed_microphysics_summary,
+            interactions_in_roi=delayed_interactions_in_roi,
             individual_electrons=delayed_individual_electrons,
         )

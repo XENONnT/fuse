@@ -40,7 +40,7 @@ class ChunkCsvInput(FuseBasePlugin):
 
     depends_on: Tuple = tuple()
     provides = "microphysics_summary"
-    data_kind = "microphysics_summary"
+    data_kind = "interactions_in_roi"
 
     save_when = strax.SaveWhen.TARGET
 

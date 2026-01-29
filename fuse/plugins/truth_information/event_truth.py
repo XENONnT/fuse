@@ -23,7 +23,7 @@ class EventTruth(strax.Plugin):
         ("total_energy_in_event_truth", np.float32),
     ] + strax.time_fields
 
-    def compute(self, microphysics_summary, propagated_photons, peaks, events):
+    def compute(self, interactions_in_roi, propagated_photons, peaks, events):
         peaks_in_event = strax.split_by_containment(peaks, events)
         photons_per_event = strax.split_by_containment(propagated_photons, events)
 
@@ -61,8 +61,8 @@ class EventTruth(strax.Plugin):
             )
 
             # And lets get the total energy that is in the event
-            contributing_cluster_informations = microphysics_summary[
-                np.isin(microphysics_summary["cluster_id"], photons_per_event[i]["cluster_id"])
+            contributing_cluster_informations = interactions_in_roi[
+                np.isin(interactions_in_roi["cluster_id"], photons_per_event[i]["cluster_id"])
             ]
             result["total_energy_in_event_truth"][i] = np.sum(
                 contributing_cluster_informations["ed"]

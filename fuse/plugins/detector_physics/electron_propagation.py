@@ -68,28 +68,28 @@ class ElectronPropagation(FuseBasePlugin):
 
             self.field_dependencies_map = rz_map
 
-    def compute(self, microphysics_summary):
+    def compute(self, interactions_in_roi):
         # Just apply this to clusters with electrons reaching the interface
-        mask = microphysics_summary["n_electron_interface"] > 0
+        mask = interactions_in_roi["n_electron_interface"] > 0
 
-        if len(microphysics_summary[mask]) == 0:
+        if len(interactions_in_roi[mask]) == 0:
             return np.zeros(0, dtype=self.dtype)
 
         # Per-interaction electron counts
-        n_int = microphysics_summary[mask]["n_electron_interface"].astype(np.int64)
+        n_int = interactions_in_roi[mask]["n_electron_interface"].astype(np.int64)
 
         # Drift time per electron (ns)
         electron_drift_time = drift_time_in_tpc(
             n_int,
-            microphysics_summary[mask]["drift_time_mean"],
-            microphysics_summary[mask]["drift_time_spread"],
+            interactions_in_roi[mask]["drift_time_mean"],
+            interactions_in_roi[mask]["drift_time_spread"],
             self.rng,
         ).astype(np.float32)
         Ne = electron_drift_time.shape[0]
 
         # Per-interaction positions and angles
         positions = np.column_stack(
-            (microphysics_summary[mask]["x_obs"], microphysics_summary[mask]["y_obs"])
+            (interactions_in_roi[mask]["x_obs"], interactions_in_roi[mask]["y_obs"])
         ).astype(np.float32)
         theta = np.arctan2(positions[:, 1], positions[:, 0]).astype(np.float32)
 
@@ -97,13 +97,13 @@ class ElectronPropagation(FuseBasePlugin):
         if self.enable_diffusion_transverse_map:
             diffusion_constant_radial_int = (
                 self.field_dependencies_map(
-                    microphysics_summary[mask]["z_obs"], positions, map_name="diffusion_radial_map"
+                    interactions_in_roi[mask]["z_obs"], positions, map_name="diffusion_radial_map"
                 ).astype(np.float32)
                 * 1e-9
             )  # s -> ns
             diffusion_constant_azimuthal_int = (
                 self.field_dependencies_map(
-                    microphysics_summary[mask]["z_obs"],
+                    interactions_in_roi[mask]["z_obs"],
                     positions,
                     map_name="diffusion_azimuthal_map",
                 ).astype(np.float32)
@@ -151,7 +151,7 @@ class ElectronPropagation(FuseBasePlugin):
         # Now we have the positions of the electrons at the top of the LXe
         # Times at interface (ns)
         electron_times = np.repeat(
-            microphysics_summary[mask]["time"],
+            interactions_in_roi[mask]["time"],
             n_int,
             axis=0,
         ).astype(
@@ -164,7 +164,7 @@ class ElectronPropagation(FuseBasePlugin):
         )
 
         cluster_id = np.repeat(
-            microphysics_summary[mask]["cluster_id"],
+            interactions_in_roi[mask]["cluster_id"],
             n_int,
             axis=0,
         )
