@@ -17,5 +17,5 @@ class DelayedElectronsExtraction(ElectronExtraction):
     provides = "extracted_delayed_electrons"
     data_kind = "delayed_extracted_electrons"
 
-    def compute(self, delayed_individual_electrons):
-        return super().compute(individual_electrons=delayed_individual_electrons)
+    def compute(self, delayed_extracted_electrons):
+        return super().compute(individual_electrons=delayed_extracted_electrons)
