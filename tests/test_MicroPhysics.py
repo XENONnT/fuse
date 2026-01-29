@@ -114,5 +114,6 @@ class TestMicroPhysicsAlternativePlugins(TestMicroPhysicsBase):
         )
         self.test_context.make(self.run_number, "quanta")
 
+
 if __name__ == "__main__":
     unittest.main()
