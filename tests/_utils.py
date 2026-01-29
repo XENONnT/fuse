@@ -1,12 +1,11 @@
 import pandas as pd
 import numpy as np
+import os
 
 test_root_file_name = "test_cryo_neutrons_tpc-nveto.root"
 
-import os
-
+# This environment variable is set in the CI configuration
 test_simulation_config = os.getenv("FUSE_TEST_SIMULATION_CONFIG", "sr2_dev")
-
 
 def build_random_instructions(n):
     df = pd.DataFrame()
