@@ -9,6 +9,8 @@ from ....dtypes import (
     cluster_id_fields,
     cluster_misc_fields,
     volume_properties_fields,
+    quanta_fields,
+    electric_fields,
 )
 
 export, __all__ = strax.exporter()
@@ -38,6 +40,8 @@ class SelectionMerger(FuseBasePlugin):
         + cluster_misc_fields
         + primary_positions_fields
         + volume_properties_fields
+        + quanta_fields
+        + electric_fields
         + strax.time_fields
     )
 
