@@ -3,6 +3,7 @@ import strax
 import numpy as np
 import numba
 
+
 class EnergyCut(strax.CutPlugin):
     """Plugin evaluates if the sum of the events energy is below a
     threshold."""
