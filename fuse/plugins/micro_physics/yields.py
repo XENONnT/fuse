@@ -20,9 +20,13 @@ class NestYields(FuseBasePlugin):
 
     __version__ = "0.3.0"
 
-    depends_on = ("interactions_in_roi", "electric_field_values")
+    depends_on = (
+        "clustered_interactions", 
+        "electric_field_values",
+        "volume_properties",
+        )
     provides = "quanta"
-    data_kind = "interactions_in_roi"
+    data_kind = "clustered_interactions"
 
     dtype = quanta_fields + strax.time_fields
 
@@ -140,9 +144,9 @@ class NestYields(FuseBasePlugin):
 
         return free_parameters
 
-    def compute(self, interactions_in_roi):
+    def compute(self, clustered_interactions):
 
-        if len(interactions_in_roi) == 0:
+        if len(clustered_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
         # set the global nest random generator with self.short_seed
@@ -152,21 +156,21 @@ class NestYields(FuseBasePlugin):
         # increment the seed. Next chunk we will use the modified seed to generate random numbers
         self.short_seed += 1
 
-        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
-        result["time"] = interactions_in_roi["time"]
-        result["endtime"] = interactions_in_roi["endtime"]
+        result = np.zeros(len(clustered_interactions), dtype=self.dtype)
+        result["time"] = clustered_interactions["time"]
+        result["endtime"] = clustered_interactions["endtime"]
 
         # Generate quanta:
-        if len(interactions_in_roi) > 0:
+        if len(clustered_interactions) > 0:
 
             photons, electrons, excitons = self.vectorized_get_quanta(
-                interactions_in_roi["ed"],
-                interactions_in_roi["nestid"],
-                interactions_in_roi["e_field"],
-                interactions_in_roi["A"],
-                interactions_in_roi["Z"],
-                interactions_in_roi["create_S2"],
-                interactions_in_roi["xe_density"],
+                clustered_interactions["ed"],
+                clustered_interactions["nestid"],
+                clustered_interactions["e_field"],
+                clustered_interactions["A"],
+                clustered_interactions["Z"],
+                clustered_interactions["create_S2"],
+                clustered_interactions["xe_density"],
             )
             result["photons"] = photons
             result["electrons"] = electrons
@@ -264,7 +268,11 @@ class NestYields(FuseBasePlugin):
 class BBFYields(FuseBasePlugin):
     __version__ = "0.1.1"
 
-    depends_on = ("interactions_in_roi", "electric_field_values")
+    depends_on = (
+        "clustered_interactions", 
+        "electric_field_values", 
+        "volume_properties"
+    )
     provides = "quanta"
 
     dtype = quanta_fields + strax.time_fields
@@ -274,17 +282,17 @@ class BBFYields(FuseBasePlugin):
 
         self.bbfyields = BBF_quanta_generator(self.rng)
 
-    def compute(self, interactions_in_roi):
-        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
-        result["time"] = interactions_in_roi["time"]
-        result["endtime"] = interactions_in_roi["endtime"]
+    def compute(self, clustered_interactions):
+        result = np.zeros(len(clustered_interactions), dtype=self.dtype)
+        result["time"] = clustered_interactions["time"]
+        result["endtime"] = clustered_interactions["endtime"]
 
         # Generate quanta:
-        if len(interactions_in_roi) > 0:
+        if len(clustered_interactions) > 0:
             photons, electrons, excitons = self.bbfyields.get_quanta_vectorized(
-                energy=interactions_in_roi["ed"],
-                interaction=interactions_in_roi["nestid"],
-                field=interactions_in_roi["e_field"],
+                energy=clustered_interactions["ed"],
+                interaction=clustered_interactions["nestid"],
+                field=clustered_interactions["e_field"],
             )
 
             result["photons"] = photons

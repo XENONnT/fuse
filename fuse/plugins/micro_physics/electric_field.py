@@ -15,9 +15,9 @@ class ElectricField(FuseBasePlugin):
 
     __version__ = "0.2.2"
 
-    depends_on = "interactions_in_roi"
+    depends_on = "clustered_interactions"
     provides = "electric_field_values"
-    data_kind = "interactions_in_roi"
+    data_kind = "clustered_interactions"
 
     save_when = strax.SaveWhen.TARGET
 
@@ -34,16 +34,16 @@ class ElectricField(FuseBasePlugin):
         help="Map of the electric field in the detector",
     )
 
-    def compute(self, interactions_in_roi):
-        if len(interactions_in_roi) == 0:
+    def compute(self, clustered_interactions):
+        if len(clustered_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
-        electric_field_array = np.zeros(len(interactions_in_roi), dtype=self.dtype)
-        electric_field_array["time"] = interactions_in_roi["time"]
-        electric_field_array["endtime"] = interactions_in_roi["endtime"]
+        electric_field_array = np.zeros(len(clustered_interactions), dtype=self.dtype)
+        electric_field_array["time"] = clustered_interactions["time"]
+        electric_field_array["endtime"] = clustered_interactions["endtime"]
 
-        r = np.sqrt(interactions_in_roi["x"] ** 2 + interactions_in_roi["y"] ** 2)
-        positions = np.stack((r, interactions_in_roi["z"]), axis=1)
+        r = np.sqrt(clustered_interactions["x"] ** 2 + clustered_interactions["y"] ** 2)
+        positions = np.stack((r, clustered_interactions["z"]), axis=1)
         electric_field_array["e_field"] = self.efield_map(positions)
 
         # Clip negative values to 0

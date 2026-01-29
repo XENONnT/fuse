@@ -73,6 +73,8 @@ class DefaultSimulation(SelectionMerger):
     depends_on = (
         "clustered_interactions",
         "volume_properties",
+        "electric_field_values",
+        "quanta",
         "volume_selection",
     )
     __version__ = "1.0.2"
@@ -84,6 +86,8 @@ class LowEnergySimulation(SelectionMerger):
     depends_on = (
         "clustered_interactions",
         "volume_properties",
+        "electric_field_values",
+        "quanta",
         "volume_selection",
         "energy_range_cut",
     )
@@ -96,6 +100,8 @@ class NRSimulation(SelectionMerger):
     depends_on = (
         "clustered_interactions",
         "volume_properties",
+        "electric_field_values",
+        "quanta",
         "volume_selection",
         "nr_cut",
     )
