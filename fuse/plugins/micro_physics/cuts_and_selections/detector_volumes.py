@@ -7,7 +7,9 @@ from ....common import VOLUMES_IDS
 logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.micro_physics.detector_volumes")
 
+export, __all__ = strax.exporter()
 
+@export
 class VolumeSelection(strax.CutPlugin):
     """Plugin that evaluates if interactions are in a defined detector
     volume."""

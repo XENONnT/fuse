@@ -3,7 +3,9 @@ import strax
 import numpy as np
 import numba
 
+export, __all__ = strax.exporter()
 
+@export
 class EnergyCut(strax.CutPlugin):
     """Plugin evaluates if the sum of the events energy is below a
     threshold."""
@@ -70,19 +72,19 @@ def group_interaction_energies_by_event_id(energy, event_id):
     return np.split(energy_sorted, split_position[1:]), unique_event_id
 
 
-class MicroPhysicsSummaryNRFilter(strax.CutPlugin):
+@export
+class NRCut(strax.CutPlugin):
     """Plugin which filters the microphysics summary for valid NR events."""
 
-    depends_on = (
-        "interactions_in_roi",
-        "quanta",
-        "electric_field_values",
-    )
+    depends_on = [
+        "clustered_interactions",
+        "quanta"
+    ]
 
     __version__ = "0.0.2"
 
-    provides = "nr_filter_cut"
-    cut_name = "nr_filter_cut"
+    provides = "nr_cut"
+    cut_name = "nr_cut"
     cut_description = "Selects valid NR events in microphysics summary"
 
     g1_photon_yield = straxen.URLConfig(
@@ -107,17 +109,23 @@ class MicroPhysicsSummaryNRFilter(strax.CutPlugin):
         help="Max S2 area [pe] for NR roi",
     )
 
-    def cut_by(self, interactions_in_roi):
+    def cut_by(self, clustered_interactions):
 
         vertex_to_keep = filter_events(
-            interactions_in_roi,
+            clustered_interactions,
             self.g1_photon_yield,
             self.g2_electron_yield,
             self.max_s1_area,
             self.max_s2_area,
         )
 
-        return vertex_to_keep == 1
+        mask = vertex_to_keep.astype(bool)
+
+        self.log.info(
+            f"Keeping {np.sum(mask)} out of {len(mask)} interactions after NR cut"
+        )
+
+        return mask
 
 
 @numba.njit

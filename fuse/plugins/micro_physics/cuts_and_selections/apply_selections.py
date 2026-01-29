@@ -27,8 +27,8 @@ class SelectionMerger(FuseBasePlugin):
 
     __version__ = "1.0.0"
     save_when = strax.SaveWhen.TARGET
-    provides = "interactions_in_roi"
-    data_kind = "interactions_in_roi"
+    provides = "microphysics_summary"
+    data_kind = "microphysics_summary"
 
     selection_logic = "volume_selection"
 
@@ -97,7 +97,7 @@ class NRSimulation(SelectionMerger):
         "clustered_interactions",
         "volume_properties",
         "volume_selection",
-        "nr_filter_cut",
+        "nr_cut",
     )
     __version__ = "1.0.1"
-    selection_logic = "volume_selection & nr_filter_cut"
+    selection_logic = "volume_selection & nr_cut"
