@@ -493,6 +493,6 @@ class BBF_quanta_generator:
         if recomb < 0 or recomb > 1:
             return None, None
 
-        Ne = self.rng.binomial(Ni, 1.0 - recomb)
+        Ne = self.safe_binomial(Ni, 1.0 - recomb, where="get_NR_quanta")
         Nph = Ni + Nex - Ne
         return Nph, Ne, Nex
