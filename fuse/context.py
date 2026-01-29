@@ -43,11 +43,10 @@ microphysics_plugins_clustering = {
 # Plugins to simulate microphysics (remaining)
 microphysics_plugins_remaining = [
     fuse.micro_physics.cuts_and_selections.VolumeSelection,
-    fuse.micro_physics.cuts_and_selections.DefaultSimulation,
     fuse.micro_physics.ElectricField,
     fuse.micro_physics.NestYields,
-    fuse.micro_physics.MicroPhysicsSummary,
     fuse.micro_physics.VolumeProperties,
+    fuse.micro_physics.DefaultSimulation,
 ]
 
 # Plugins to simulate S1 signals
