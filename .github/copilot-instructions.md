@@ -5,7 +5,7 @@
 **fuse** (Framework for Unified Simulation of Events) is a scientific Python package for simulating particle physics events in the XENON dark matter detector. It unifies the XENONnT simulation chain (previously split between epix and WFSim) into a modular, plugin-based architecture built on the [strax framework](https://github.com/AxFoundation/strax).
 
 **Key technologies:**
-- Python 3.9+ (supports 3.9, 3.10, 3.11)
+- Python 3.9+ (package supports 3.9, 3.10, 3.11; CI actively tests 3.10 and 3.11)
 - strax/straxen framework for data processing pipelines
 - NumPy, Pandas, SciPy for numerical computing
 - Numba for performance optimization
@@ -48,7 +48,11 @@ pip install xenon-fuse
 
 **Development installation from source:**
 ```bash
+# SSH (requires SSH key setup):
 git clone git@github.com:XENONnT/fuse
+# Or HTTPS (easier for first-time users):
+git clone https://github.com/XENONnT/fuse.git
+
 cd fuse
 pip install -e .  # Editable mode for development
 ```
@@ -60,7 +64,7 @@ pip install pytest coverage coveralls
 
 ### Required Environment
 
-- Python 3.9, 3.10, or 3.11
+- Python 3.9, 3.10, or 3.11 (package claims 3.9+ support; CI tests 3.10 and 3.11)
 - MongoDB instance for integration tests (via docker or local install)
 - utilix configuration file at `~/.xenon_config` (for XENONnT-specific resources)
 
@@ -166,13 +170,15 @@ import numpy as np
 
 @strax.export  # Required for plugin discovery
 class MyPlugin(FuseBasePlugin):
-    """Brief description of what this plugin does.
+    """Brief description of what this plugin does (single-line for simple cases).
     
-    Detailed explanation of the physics/processing performed.
+    For multi-line docstrings, add a blank line after summary, then provide
+    detailed explanation of the physics/processing performed. Follow Google
+    style formatting guidelines.
     """
     
     # Required metadata
-    __version__ = "0.1.0"  # Semantic versioning
+    __version__ = "0.1.0"  # Semantic versioning (bump when plugin logic changes)
     depends_on = "input_data_name"  # Or tuple for multiple: ("data1", "data2")
     provides = "output_data_name"
     data_kind = "physics_stage"  # Optional: groups related data types
@@ -200,7 +206,8 @@ class MyPlugin(FuseBasePlugin):
     
     def setup(self):
         """Initialize plugin state."""
-        super().setup()  # MUST call this for seeding, logging
+        super().setup()  # MUST call this - initializes self.rng for deterministic 
+                        # random number generation and sets up debug logging
         # Custom initialization here
         # Access self.rng for random number generation
     
@@ -417,17 +424,17 @@ WARNING - Could not load a configuration file. You can create one at /home/user/
 NESTpy requires special installation steps due to submodule dependencies:
 
 ```bash
-# Clone and build nestpy with specific commit
+# Clone and build nestpy with specific commit (from CI workflow as of Jan 2026)
 git clone https://github.com/NESTCollaboration/nestpy.git
 cd nestpy
-git checkout fb3804e
+git checkout fb3804e  # Specific commit required for compatibility
 git submodule update --init --recursive
 cd lib/pybind11
 git fetch --tags
 git checkout v2.13.0
 cd ../../
 
-# Patch CMake version requirement
+# Patch CMake version requirement (may need updating for newer CMake versions)
 sed -i 's/cmake_minimum_required(VERSION 2.8.12)/cmake_minimum_required(VERSION 2.8.12...3.30)/' CMakeLists.txt
 
 # Install
@@ -436,13 +443,15 @@ cd ..
 rm -rf nestpy
 ```
 
-**Note:** This is handled automatically in CI but may be needed for local development if you encounter NESTpy issues.
+**Note:** This is handled automatically in CI but may be needed for local development if you encounter NESTpy issues. The specific commit and CMake version range are from the CI workflow and may need updates over time.
 
 ### 3. MongoDB for Testing
 
 Integration tests require a MongoDB instance. Use Docker:
 
 ```bash
+# Use the same version as CI (MongoDB 4.4.1 is specified in pytest.yml)
+# Note: MongoDB 4.4 reached EOL in Feb 2024; consider newer versions for new setups
 docker run -d -p 27017:27017 mongo:4.4.1
 export TEST_MONGO_URI='mongodb://localhost:27017/'
 ```
@@ -484,7 +493,7 @@ git commit --no-verify
 
 If you see numba-related import errors, ensure compatible versions:
 - numba >= 0.58.1
-- numpy compatible with numba (typically numpy >= 1.24, < 2.0)
+- numpy compatible with numba (check numba docs for your version; newer numba 0.60+ supports NumPy 2.0+)
 
 Check compatibility: https://numba.readthedocs.io/en/stable/user/installing.html
 
@@ -538,7 +547,7 @@ When submitting a PR:
 
 1. **pytest.yml** (main test workflow):
    - Runs on: Ubuntu-latest
-   - Python versions: 3.10, 3.11
+   - Python versions: 3.10, 3.11 (package claims 3.9+ support but CI doesn't test 3.9)
    - Dependency versions: latest, lowest (strax 1.6.0, straxen 2.2.3)
    - Tests with coverage reporting to coveralls.io
    - Requires MongoDB service
