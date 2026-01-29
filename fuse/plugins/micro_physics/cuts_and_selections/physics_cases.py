@@ -161,7 +161,7 @@ def filter_events(mps, g1, g2, max_s1, max_s2):
                 prompt_photons += vertex["photons"]
 
             # Ignore and drop vertex if too much delayed within event:
-            _vertex_is_delayed = (vertex["time"] - start_time) > 3_000_000  # ms
+            _vertex_is_delayed = (vertex["time"] - start_time) > 3_000_000  # ns (3 ms)
             if _vertex_is_delayed:
                 vertex_to_keep[vertex_i] = 0
                 continue
