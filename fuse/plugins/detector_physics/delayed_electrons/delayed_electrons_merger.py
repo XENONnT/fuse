@@ -37,8 +37,8 @@ class ExtractedElectronsMerger(VerticalMergerPlugin):
     depends_on = ("extracted_electrons", "extracted_delayed_electrons")
 
     provides = "merged_extracted_electrons"
-    data_kind = "individual_electrons"
-    __version__ = "0.0.2"
+    data_kind = "extracted_electrons"
+    __version__ = "0.0.3"
 
 
 @export
