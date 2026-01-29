@@ -140,10 +140,10 @@ class SecondaryScintillation(FuseBasePlugin):
 
         self.pmt_mask = np.array(self.gains)
 
-    def compute(self, individual_electrons, interactions_in_roi):
+    def compute(self, extracted_electrons, interactions_in_roi):
 
         # Just apply this to clusters with electrons
-        clusters_with_extracted_electrons = np.unique(individual_electrons["cluster_id"])
+        clusters_with_extracted_electrons = np.unique(extracted_electrons["cluster_id"])
         mask = np.in1d(interactions_in_roi["cluster_id"], clusters_with_extracted_electrons)
 
         if len(interactions_in_roi[mask]) == 0:
@@ -159,7 +159,7 @@ class SecondaryScintillation(FuseBasePlugin):
             }
 
         positions = np.array(
-            [individual_electrons["x_interface"], individual_electrons["y_interface"]]
+            [extracted_electrons["x_interface"], extracted_electrons["y_interface"]]
         ).T
 
         electron_gains = self.get_s2_light_yield(positions=positions)
@@ -170,12 +170,12 @@ class SecondaryScintillation(FuseBasePlugin):
             len(n_photons_per_ele), dtype=self.dtype[self.result_name_photons]
         )
         result_photons["n_s2_photons"] = n_photons_per_ele
-        result_photons["time"] = individual_electrons["time"]
-        result_photons["endtime"] = individual_electrons["endtime"]
+        result_photons["time"] = extracted_electrons["time"]
+        result_photons["endtime"] = extracted_electrons["endtime"]
 
         # Calculate the sum of photons per interaction
         grouped_result_photons, unique_cluster_id = group_result_photons_by_cluster_id(
-            result_photons, individual_electrons["cluster_id"]
+            result_photons, extracted_electrons["cluster_id"]
         )
 
         sum_photons_per_interaction = np.array(
