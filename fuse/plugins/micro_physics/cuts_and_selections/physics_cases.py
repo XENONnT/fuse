@@ -5,6 +5,7 @@ import numba
 
 export, __all__ = strax.exporter()
 
+
 @export
 class EnergyCut(strax.CutPlugin):
     """Plugin evaluates if the sum of the events energy is below a
@@ -76,10 +77,7 @@ def group_interaction_energies_by_event_id(energy, event_id):
 class NRCut(strax.CutPlugin):
     """Plugin which filters the microphysics summary for valid NR events."""
 
-    depends_on = [
-        "clustered_interactions",
-        "quanta"
-    ]
+    depends_on = ["clustered_interactions", "quanta"]
 
     __version__ = "0.0.2"
 
@@ -121,9 +119,7 @@ class NRCut(strax.CutPlugin):
 
         mask = vertex_to_keep.astype(bool)
 
-        self.log.info(
-            f"Keeping {np.sum(mask)} out of {len(mask)} interactions after NR cut"
-        )
+        self.log.info(f"Keeping {np.sum(mask)} out of {len(mask)} interactions after NR cut")
 
         return mask
 

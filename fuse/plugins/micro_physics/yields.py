@@ -21,10 +21,10 @@ class NestYields(FuseBasePlugin):
     __version__ = "0.3.0"
 
     depends_on = (
-        "clustered_interactions", 
+        "clustered_interactions",
         "electric_field_values",
         "volume_properties",
-        )
+    )
     provides = "quanta"
     data_kind = "clustered_interactions"
 
@@ -268,11 +268,7 @@ class NestYields(FuseBasePlugin):
 class BBFYields(FuseBasePlugin):
     __version__ = "0.1.1"
 
-    depends_on = (
-        "clustered_interactions", 
-        "electric_field_values", 
-        "volume_properties"
-    )
+    depends_on = ("clustered_interactions", "electric_field_values", "volume_properties")
     provides = "quanta"
 
     dtype = quanta_fields + strax.time_fields
