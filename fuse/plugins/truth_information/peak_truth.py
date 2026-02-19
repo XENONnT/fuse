@@ -1,3 +1,4 @@
+
 import numpy as np
 import strax
 import straxen
@@ -9,7 +10,7 @@ export, __all__ = strax.exporter()
 
 @export
 class PeakTruth(strax.OverlapWindowPlugin):
-    __version__ = "0.0.6"
+    __version__ = "0.0.7"
 
     depends_on = (
         "photon_summary",
@@ -118,6 +119,13 @@ class PeakTruth(strax.OverlapWindowPlugin):
         help="Drift velocity of electrons in the liquid xenon [cm/ns]",
     )
 
+    peak_truth_window_factor = straxen.URLConfig(
+        default=40,
+        type=int,
+        cache=True,
+        help="Safety factor multiplying max drift time to set overlap window.",
+    )
+
     def setup(self):
         super().setup()
 
@@ -129,9 +137,9 @@ class PeakTruth(strax.OverlapWindowPlugin):
         )
 
     def get_window_size(self):
-        drift_time_max = int(self.max_drift_length / self.drift_velocity_liquid)
-
-        return drift_time_max * 20
+        drift_time_max = float(self.max_drift_length) / float(self.drift_velocity_liquid)  # ns
+        window = int(drift_time_max * self.peak_truth_window_factor)
+        return window  # symmetric left=right
 
     def compute(self, interactions_in_roi, propagated_photons, peaks):
         n_peaks = len(peaks)
@@ -186,7 +194,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
                         unique_contributing_clusters != 0
                     )
                     contributing_clusters_s1 = _get_cluster_information(
-                        interactions_in_roi, unique_contributing_clusters
+                        interactions_in_roi, unique_contributing_clusters, "s1"
                     )
                     photons_per_cluster_s1 = photons_per_cluster
                 elif photon_type == "s2":
@@ -197,7 +205,7 @@ class PeakTruth(strax.OverlapWindowPlugin):
                         unique_contributing_clusters < 0
                     )
                     contributing_clusters_s2 = _get_cluster_information(
-                        interactions_in_roi, unique_contributing_clusters
+                        interactions_in_roi, unique_contributing_clusters, "s2"
                     )
                     photons_per_cluster_s2 = photons_per_cluster
 
@@ -246,12 +254,23 @@ class PeakTruth(strax.OverlapWindowPlugin):
         return result
 
 
-def _get_cluster_information(interactions_in_roi, unique_contributing_clusters):
-    contributing_cluster_informations = interactions_in_roi[
-        np.isin(interactions_in_roi["cluster_id"], unique_contributing_clusters)
-    ]
-    sort_index = stable_argsort(contributing_cluster_informations["cluster_id"])
-    return contributing_cluster_informations[sort_index]
+def _get_cluster_information(interactions_in_roi, unique_ids, kind):
+    mask = np.isin(interactions_in_roi["cluster_id"], unique_ids)
+    cl = interactions_in_roi[mask]
+
+    if len(cl) != len(unique_ids):
+        missing = unique_ids[~np.isin(unique_ids, interactions_in_roi["cluster_id"])]
+        tmin = interactions_in_roi["time"].min() if len(interactions_in_roi) else None
+        tmax = interactions_in_roi["time"].max() if len(interactions_in_roi) else None
+        raise ValueError(
+            f"PeakTruth: missing cluster_id(s) for {kind}. "
+            f"missing(sample)={missing[:10]} n_missing={len(missing)} "
+            f"interactions_in_roi time=[{tmin},{tmax}]. "
+            "This usually means the overlap window is too small OR interactions_in_roi is filtered "
+            "inconsistently w.r.t. propagated_photons. Try increasing peak_truth_window_factor."
+        )
+
+    return cl[stable_argsort(cl["cluster_id"])]
 
 
 def weighted_position_average(coord, contr_s1_cl, contr_s2_cl, ph_per_cl_s1, ph_per_cl_s2):
