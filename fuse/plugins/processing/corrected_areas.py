@@ -18,7 +18,7 @@ class CorrectedAreasMC(straxen.CorrectedAreas):
     data!
     """
 
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
     child_plugin = True
 
     def compute(self, events):
