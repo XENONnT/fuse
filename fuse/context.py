@@ -17,15 +17,6 @@ logging.basicConfig(handlers=[logging.StreamHandler()])
 log = logging.getLogger("fuse.context")
 log.setLevel("INFO")
 
-# Backward compatibility for straxen versions
-if hasattr(straxen.contexts, "xnt_common_opts"):
-    common_opts = straxen.contexts.xnt_common_opts
-    common_config = straxen.contexts.xnt_common_config
-else:
-    common_opts = straxen.contexts.common_opts
-    common_config = straxen.contexts.common_config
-
-
 # Plugins to simulate microphysics
 microphysics_plugins_clustering = {
     "dbscan": [
@@ -153,13 +144,25 @@ def xenonnt_fuse_full_chain_simulation(
     },
     run_without_proper_run_id=False,
     run_without_config_file=False,
+    _vanilla=False,
 ):
     """Create a context for the full chain simulation of XENONnT.
 
     This context includes all the necessary configs and plugins for the
     simulation.
     """
-
+    # Backward compatibility for straxen versions
+    if hasattr(straxen.contexts, "xnt_common_opts"):
+        common_opts = straxen.contexts.xnt_common_opts
+        common_config = straxen.contexts.xnt_common_config
+    else:
+        if not _vanilla:
+            common_opts = straxen.contexts.common_opts
+            common_config = straxen.contexts.common_config
+        else:
+            common_opts = straxen.contexts.common_opts_vanilla
+            common_config = straxen.contexts.common_config_vanilla
+        
     # Load config file
     if run_without_config_file:
         # Just a dummy name to avoid errors. We use this to setup context for the docs.
