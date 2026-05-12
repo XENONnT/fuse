@@ -27,7 +27,7 @@ class LineageClustering(FuseBasePlugin):
     and its parent.
     """
 
-    __version__ = "0.0.5"
+    __version__ = "0.0.6"
 
     depends_on = "geant4_interactions"
 
@@ -343,7 +343,16 @@ def precompute_parent_lookup(event):
 
 
 def get_parent(event_interactions, event_lineage, particle, parent_lookup):
-    """Returns the parent particle and its lineage of the given particle."""
+    """Returns the parent particle and its lineage of the given particle.
+
+    When multiple parent interactions share the same time tag (e.g. a fast
+    gamma that Compton-scatters and photoabsorbs within G4's sub-ns time-tag
+    precision), tie-break by spatial proximity to the daughter's creation
+    position. Without the spatial tie-break, the original time-cut + array-
+    last logic mis-attributes the daughter's parent to whichever same-time
+    step happens to be last in the array, even when that step is several cm
+    away at a different vertex (see e.g. K40 / Co60 single-gamma decays).
+    """
     parent_id = parent_lookup.get(particle["trackid"], None)
     if parent_id is None:
         return None, None
@@ -361,10 +370,25 @@ def get_parent(event_interactions, event_lineage, particle, parent_lookup):
         parent_to_return = np.argmin(abs(parent_interactions["t"] - particle["t"]))
         return parent_interactions[parent_to_return], parent_lineages[parent_to_return]
 
-    return (
-        parent_interactions[parent_interactions_time_cut][-1],
-        parent_lineages[parent_interactions_time_cut][-1],
+    # Among parents with t <= particle.t, pick the latest time and then
+    # tie-break by spatial proximity if multiple steps share that latest time.
+    candidates = parent_interactions[parent_interactions_time_cut]
+    candidate_lineages = parent_lineages[parent_interactions_time_cut]
+    t_max = candidates["t"].max()
+    same_time_mask = candidates["t"] == t_max
+    if same_time_mask.sum() == 1:
+        idx = int(np.where(same_time_mask)[0][0])
+        return candidates[idx], candidate_lineages[idx]
+
+    same_time = candidates[same_time_mask]
+    same_time_lineages = candidate_lineages[same_time_mask]
+    distances = np.sqrt(
+        (same_time["x"] - particle["x"]) ** 2
+        + (same_time["y"] - particle["y"]) ** 2
+        + (same_time["z"] - particle["z"]) ** 2
     )
+    nearest = int(np.argmin(distances))
+    return same_time[nearest], same_time_lineages[nearest]
 
 
 def is_particle_in_lineage(lineage):
