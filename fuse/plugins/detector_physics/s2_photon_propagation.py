@@ -427,7 +427,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             t1, t3 = 0, 0
 
         delay = self.rng.choice([t1, t3], size, replace=True, p=[singlet_ratio, 1 - singlet_ratio])
-        return self.rng.exponential(1, size) * delay
+        return (self.rng.exponential(1, size) * delay).astype(np.int64)
 
     def photon_timings(self, positions, n_photons, _photon_channels):
         raise NotImplementedError
@@ -798,4 +798,4 @@ def _luminescence_timings_simple(
         # linear interp on monotonic CDF y/y[-1] → t
         emission_time[s:e] = np.interp(probs, y / y[-1], t)
 
-    return emission_time
+    return emission_time.astype(np.int64)
