@@ -198,23 +198,28 @@ class LineageClustering(FuseBasePlugin):
         trackid_lookup = precompute_particle_lookup(event)
         parent_lookup = precompute_parent_lookup(event)
 
-        # Now iterate all interactions
+        # Now iterate all interactions. `visited_trackids` replaces the
+        # O(N²) `is_particle_in_lineage` check: a trackid is "in a lineage"
+        # iff we've already processed one of its rows. Rows of one trackid
+        # are contiguous after the (trackid, t) sort that `build_lineages`
+        # applied, so the first row of each trackid is the only one where
+        # the original `is_particle_in_lineage(particle_lineage)` could
+        # return False — control flow is identical.
         running_lineage_index = 0
+        visited_trackids = set()
         for i in range(len(event)):
 
-            # Get the particle information
-            particle, particle_lineage = get_particle(event, tmp_result, i, trackid_lookup)
-            # Is the particle already in a lineage?
-            particle_already_in_lineage = is_particle_in_lineage(particle_lineage)
-            # If the particle is not in a lineage, create a new lineage
-            if not particle_already_in_lineage:
-                # It is the first time we see this particle! Now we need to check if
-                # there is a parent particle.
-                parent, parent_lineage = get_parent(event, tmp_result, particle, parent_lookup)
-                # If there is a parent:
-                if parent is not None:
+            particle = event[i]
+            tid = particle["trackid"]
+            particle_indices = trackid_lookup[tid]
 
-                    # Evaluate if we have to break the lineage
+            if tid not in visited_trackids:
+                visited_trackids.add(tid)
+                # First time seeing this particle — check for parent.
+                parent, parent_lineage = get_parent(
+                    event, tmp_result, particle, parent_lookup, trackid_lookup
+                )
+                if parent is not None:
                     broken_lineage = is_lineage_broken(
                         particle,
                         parent,
@@ -222,11 +227,8 @@ class LineageClustering(FuseBasePlugin):
                         brem_distance_threshold,
                         time_threshold,
                     )
-
                     if broken_lineage:
-                        # The lineage is broken. We can start a new one!
                         running_lineage_index += 1
-
                         tmp_result = start_new_lineage(
                             particle,
                             tmp_result,
@@ -235,15 +237,11 @@ class LineageClustering(FuseBasePlugin):
                             classify_ic_as_gamma,
                             classify_phot_as_beta,
                         )
-
                     else:
-                        # The lineage is not broken. We can continue the parent lineage
                         tmp_result = continue_lineage(particle, tmp_result, i, parent_lineage)
-
                 else:
-                    # Particle without parent. Start a new lineage
+                    # Particle without parent — start a new lineage.
                     running_lineage_index += 1
-
                     tmp_result = start_new_lineage(
                         particle,
                         tmp_result,
@@ -254,13 +252,19 @@ class LineageClustering(FuseBasePlugin):
                     )
 
             else:
-                # We have seen this particle before. Now evaluate if we have to break the lineage
-                last_particle_interaction, last_particle_lineage = get_last_particle_interaction(
-                    event, particle, particle_lineage
+                # Already-seen trackid — find its most recent assigned interaction
+                # and decide whether to break vs continue the lineage.
+                particle_lineage = tmp_result[particle_indices]
+                last_particle_interaction, last_particle_lineage = (
+                    get_last_particle_interaction(event, particle_lineage, particle_indices)
                 )
 
-                # Evaluate if we have to break the lineage
-                if last_particle_interaction:
+                # `last_particle_interaction` is always a structured-record (the
+                # already-seen branch implies at least one prior row of this trackid
+                # has a non-zero lineage_index). The `is not None` check below mirrors
+                # the original code's truthiness guard; the else branch is unreachable
+                # under normal control flow but kept for defensive consistency.
+                if last_particle_interaction is not None:
                     broken_lineage = is_lineage_broken(
                         particle,
                         last_particle_interaction,
@@ -269,9 +273,7 @@ class LineageClustering(FuseBasePlugin):
                         time_threshold,
                     )
                     if broken_lineage:
-                        # New lineage!
                         running_lineage_index += 1
-
                         tmp_result = start_new_lineage(
                             particle,
                             tmp_result,
@@ -280,17 +282,14 @@ class LineageClustering(FuseBasePlugin):
                             classify_ic_as_gamma,
                             classify_phot_as_beta,
                         )
-
                     else:
-                        # The lineage is not broken. We can continue the particle lineage
                         tmp_result = continue_lineage(
                             particle, tmp_result, i, last_particle_lineage
                         )
-
                 else:
                     raise ValueError(
-                        "There is no last particle interaction but we have seen \
-                        this particle before.... Makes no sense.."
+                        "There is no last particle interaction but we have seen "
+                        "this particle before.... Makes no sense.."
                     )
 
         tmp_result["main_cluster_type"] = main_cluster_type
@@ -299,13 +298,23 @@ class LineageClustering(FuseBasePlugin):
 
 
 def precompute_particle_lookup(event):
-    """Precompute a lookup dictionary for particles by their trackid."""
-    trackid_to_idx = {}
-    for idx, trackid in enumerate(event["trackid"]):
-        if trackid not in trackid_to_idx:
-            trackid_to_idx[trackid] = []
-        trackid_to_idx[trackid].append(idx)
-    return trackid_to_idx
+    """Precompute a lookup dictionary mapping each trackid to a numpy int64 array
+    of row indices in `event`.
+
+    Returning numpy arrays (instead of Python lists) lets downstream callers fancy-index
+    `event_interactions[indices]` directly without a per-call `np.asarray` allocation.
+    """
+    trackids = event["trackid"]
+    counts = {}
+    for tid in trackids:
+        counts[tid] = counts.get(tid, 0) + 1
+    buffers = {tid: np.empty(n, dtype=np.int64) for tid, n in counts.items()}
+    cursor = {tid: 0 for tid in counts}
+    for idx in range(len(trackids)):
+        tid = trackids[idx]
+        buffers[tid][cursor[tid]] = idx
+        cursor[tid] += 1
+    return buffers
 
 
 def get_particle(event_interactions, event_lineage, index, trackid_lookup):
@@ -316,17 +325,18 @@ def get_particle(event_interactions, event_lineage, index, trackid_lookup):
     return event, event_lineage[particle_indices]
 
 
-def get_last_particle_interaction(event_interactions, particle, particle_lineage):
+def get_last_particle_interaction(event_interactions, particle_lineage, particle_indices):
     """Returns the last (previous in time) interaction of the particle that is
-    in the lineage."""
+    in the lineage.
 
-    # Get all interactions for the given particle
-    all_particle_interactions = event_interactions[
-        event_interactions["trackid"] == particle["trackid"]
-    ]
+    `particle_indices` is the precomputed `trackid_lookup[particle["trackid"]]` slice,
+    so we avoid re-scanning `event_interactions["trackid"] == particle["trackid"]`.
+    The nonzero check is made explicit on `lineage_index` (rather than relying on
+    numpy's structured-array logical-OR semantics).
+    """
+    all_particle_interactions = event_interactions[particle_indices]
 
-    # Find the last interaction already in the lineage
-    index_of_last_interaction = np.nonzero(particle_lineage)[0][-1]
+    index_of_last_interaction = np.nonzero(particle_lineage["lineage_index"])[0][-1]
 
     return (
         all_particle_interactions[index_of_last_interaction],
@@ -342,23 +352,25 @@ def precompute_parent_lookup(event):
     return parent_lookup
 
 
-def get_parent(event_interactions, event_lineage, particle, parent_lookup):
+def get_parent(event_interactions, event_lineage, particle, parent_lookup, trackid_lookup):
     """Returns the parent particle and its lineage of the given particle.
+
+    Uses the precomputed `trackid_lookup` (built once per event in
+    `precompute_particle_lookup`) to fetch the parent's row indices in O(1)
+    instead of re-scanning `event_interactions["trackid"] == parent_id`.
 
     When multiple parent interactions share the same time tag (e.g. a fast
     gamma that Compton-scatters and photoabsorbs within G4's sub-ns time-tag
     precision), tie-break by spatial proximity to the daughter's creation
-    position. Without the spatial tie-break, the original time-cut + array-
-    last logic mis-attributes the daughter's parent to whichever same-time
-    step happens to be last in the array, even when that step is several cm
-    away at a different vertex (see e.g. K40 / Co60 single-gamma decays).
+    position so the daughter is attributed to the nearest same-time vertex
+    rather than whichever step happens to be last in the array.
     """
     parent_id = parent_lookup.get(particle["trackid"], None)
     if parent_id is None:
         return None, None
 
-    parent_indices = np.where(event_interactions["trackid"] == parent_id)[0]
-    if len(parent_indices) == 0:
+    parent_indices = trackid_lookup.get(parent_id, None)
+    if parent_indices is None or len(parent_indices) == 0:
         return None, None
 
     parent_interactions = event_interactions[parent_indices]
