@@ -1,6 +1,5 @@
 import numpy as np
 from numba import njit
-from numba.typed import List
 from scipy.interpolate import interp1d
 import strax
 import straxen
@@ -230,8 +229,11 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
             photon_chunks.append(split_photons(propagated_photons[mask]))
 
         last_start = start
-        for i, (pulse_groups, photons) in enumerate(zip(pulse_window_chunks, photon_chunks)):
-            records = self.compute_chunk(photons, pulse_groups)
+        for i, (pulse_groups, photon_chunk) in enumerate(zip(pulse_window_chunks, photon_chunks)):
+            sorted_photons, photon_starts, photon_stops = photon_chunk
+            records = self.compute_chunk(
+                sorted_photons, photon_starts, photon_stops, pulse_groups
+            )
             if i < n_chunks - 1:
                 chunk_end = np.max(strax.endtime(records))
             else:
@@ -240,12 +242,8 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
             last_start = chunk_end
             yield chunk
 
-    def compute_chunk(self, photons, pulse_groups):
-        # convert photons to numba list for njit
-        _photons = List()
-        [_photons.append(x) for x in photons]
-
-        # sort pulse groups by pulse id same as photons
+    def compute_chunk(self, sorted_photons, photon_starts, photon_stops, pulse_groups):
+        # sort pulse groups by pulse id, same order as the photons
         pulse_groups = stable_sort(pulse_groups, order="pulse_id")
 
         # use an upper limit for the waveform buffer
@@ -259,9 +257,18 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         noise_len = self.noise_data["arr_0"].shape[0]
         noise_offset = self.rng.integers(0, noise_len)
 
+        # Hoist field views out of the @njit kernel — slicing
+        # ``sorted_photons[s:e]["time"]`` inside numba is fragile across versions;
+        # 1D field arrays are zero-copy views the kernel handles cleanly.
+        photon_time = sorted_photons["time"]
+        photon_gain = sorted_photons["photon_gain"]
+
         buffer_level = build_waveform(
             pulse_groups,
-            _photons,
+            photon_time,
+            photon_gain,
+            photon_starts,
+            photon_stops,
             waveform_buffer,
             self.dt,
             self._pmt_current_templates,
@@ -348,7 +355,10 @@ def find_split_index(pulses, gaps, file_size_limit, min_gap_length):
 @njit(cache=True)
 def build_waveform(
     pulse_windows,
-    photons,
+    photon_time,
+    photon_gain,
+    photon_starts,
+    photon_stops,
     waveform_buffer,
     dt,
     pmt_current_templates,
@@ -362,14 +372,21 @@ def build_waveform(
 ):
     buffer_level = 0
 
-    # Iterate over all pulses
-    for i, pulse in enumerate(pulse_windows):
+    # Iterate over all pulses. (photon_time, photon_gain) are flat 1D views of
+    # sorted-by-pulse_id photons; (photon_starts, photon_stops) bracket each
+    # pulse_window's photons. This replaces the per-pulse_id numba.typed.List
+    # the caller used to build — bit-identical and avoids the per-pulse Python
+    # boxing (~26 k typed.List.append calls per K40 chunk in vanilla).
+    for i in range(pulse_windows.shape[0]):
+        pulse = pulse_windows[i]
         pulse_length = pulse["length"]
         pulse_waveform_buffer = np.zeros(pulse_length)
 
+        s = photon_starts[i]
+        e = photon_stops[i]
         add_current(
-            photons[i]["time"],
-            photons[i]["photon_gain"],
+            photon_time[s:e],
+            photon_gain[s:e],
             pulse["time"] // dt,
             dt,
             pmt_current_templates,
@@ -572,11 +589,59 @@ def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
     return n_intervals
 
 
+@njit(cache=True, nogil=True)
+def _pulse_id_group_offsets(sorted_pulse_ids, n_pulse_groups):
+    """Given pulse_ids sorted ascending, return (starts, stops) per unique id.
+
+    `starts[k]` and `stops[k]` bracket the photons whose pulse_id equals the
+    k-th unique pulse_id in ``sorted_pulse_ids`` (sorted order). The caller is
+    responsible for confirming that the unique-pulse-id count matches the
+    pulse_groups it expects to iterate over (i.e. ``n_pulse_groups`` is the
+    expected number of distinct pulse_ids).
+    """
+    n = sorted_pulse_ids.shape[0]
+    starts = np.empty(n_pulse_groups, np.int64)
+    stops = np.empty(n_pulse_groups, np.int64)
+    if n == 0 or n_pulse_groups == 0:
+        return starts[:0], stops[:0]
+    starts[0] = 0
+    g = 0
+    for i in range(1, n):
+        if sorted_pulse_ids[i] != sorted_pulse_ids[i - 1]:
+            stops[g] = i
+            g += 1
+            if g < n_pulse_groups:
+                starts[g] = i
+    stops[g] = n
+    return starts[: g + 1], stops[: g + 1]
+
+
 def split_photons(propagated_photons):
+    """Sort photons by pulse_id and return (sorted_array, starts, stops).
+
+    The previous implementation returned ``list[structured_array]`` (one entry
+    per unique pulse_id). That required:
+      - Building a numba ``typed.List`` of structured arrays in compute_chunk
+        (per-pulse Python boxing — 337 k calls/K40-chunk).
+      - Calling ``np.split`` on the sorted struct array (extra reorder cost).
+    The new flat-array form lets ``build_waveform`` slice the sorted photons
+    directly via per-pulse (start, stop) offsets — no typed.List, no np.split.
+
+    Bit-identical to the original modulo Python representation: same photons,
+    same order within each pulse group, same number of groups.
+    """
     sort_index = stable_argsort(propagated_photons["pulse_id"])
-
     propagated_photons_sorted = propagated_photons[sort_index]
+    pulse_ids = propagated_photons_sorted["pulse_id"]
 
-    diff = np.diff(propagated_photons_sorted["pulse_id"])
-    split_position = np.argwhere(diff != 0).flatten() + 1
-    return np.split(propagated_photons_sorted, split_position)
+    # Count unique pulse_ids in one pass — feeds the kernel its output size.
+    n = pulse_ids.shape[0]
+    if n == 0:
+        empty = np.empty(0, np.int64)
+        return propagated_photons_sorted, empty, empty
+    n_groups = 1
+    for k in range(1, n):
+        if pulse_ids[k] != pulse_ids[k - 1]:
+            n_groups += 1
+    starts, stops = _pulse_id_group_offsets(pulse_ids, n_groups)
+    return propagated_photons_sorted, starts, stops
