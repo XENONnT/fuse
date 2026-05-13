@@ -1,4 +1,5 @@
 import numpy as np
+import numba
 import strax
 import straxen
 
@@ -16,7 +17,7 @@ NEST_ALPHA = (6, 4, 2)
 NEST_NR = (0, 0, 0)
 NEST_NONE = (12, 0, 0)
 
-# --- Phase 2: int-coded string fields ----------------------------------------
+# --- Int-coded string fields -------------------------------------------------
 # The hot path inside `build_lineage_for_event` previously did string compares
 # on `type`, `parenttype`, `creaproc`, `edproc` for every interaction. Here we
 # precompute an int8 code per row once at the top of `compute()`. Unknown
@@ -248,11 +249,11 @@ class LineageClustering(FuseBasePlugin):
     ):
         """Build the per-interaction lineage assignment for a single event.
 
-        Phase 2: every string comparison in the inner loop is replaced with an int
-        compare against the precomputed `codes` arrays. `start_new_lineage` and
-        `continue_lineage` are inlined as direct assignments into per-field views
-        of `tmp_result`, removing the structured-record-element overhead of
-        `tmp_result[i]["field"] = value`. Bit-identical to vanilla.
+        Thin wrapper around the numba kernel: builds CSR-style lookup tables
+        and hands the per-row arrays to `_build_lineage_for_event_kernel`.
+        `main_cluster_type` stays on the numpy path because numba handles
+        structured-string outputs poorly and it is not in the inner-loop hot
+        path.
         """
 
         tmp_dtype = [
@@ -264,146 +265,49 @@ class LineageClustering(FuseBasePlugin):
             ("main_cluster_type", np.dtype("U10")),
         ]
 
-        tmp_result = np.zeros(len(event), dtype=tmp_dtype)
+        n = len(event)
+        if n == 0:
+            return np.zeros(0, dtype=tmp_dtype)
 
         main_cluster_type = assign_main_cluster_type_to_event(event)
 
-        trackid_lookup = precompute_particle_lookup(event)
-        parent_lookup = precompute_parent_lookup(event)
+        trackid = event["trackid"].astype(np.int32, copy=False)
+        parentid = event["parentid"].astype(np.int32, copy=False)
+        unique_tid, offsets, indices, positions = _build_trackid_csr(trackid)
+        parent_pos = _build_parent_pos(parentid, unique_tid)
 
-        # Hoist event numeric fields and codes to local references.
-        x = event["x"]
-        y = event["y"]
-        z = event["z"]
-        t = event["t"]
-        trackid = event["trackid"]
-        type_code = codes["type_code"]
-        parenttype_code = codes["parenttype_code"]
-        creaproc_code = codes["creaproc_code"]
-        edproc_code = codes["edproc_code"]
-        type_has_digit = codes["type_has_digit"]
-        type_has_bracket = codes["type_has_bracket"]
-        ion_A_arr = codes["ion_A"]
-        ion_Z_arr = codes["ion_Z"]
+        li, lt, ltype, lA, lZ = _build_lineage_for_event_kernel(
+            trackid,
+            parentid,
+            codes["type_code"],
+            codes["parenttype_code"],
+            codes["creaproc_code"],
+            codes["edproc_code"],
+            codes["type_has_digit"],
+            codes["type_has_bracket"],
+            codes["ion_A"],
+            codes["ion_Z"],
+            event["x"].astype(np.float64, copy=False),
+            event["y"].astype(np.float64, copy=False),
+            event["z"].astype(np.float64, copy=False),
+            event["t"].astype(np.float64, copy=False),
+            offsets,
+            indices,
+            positions,
+            parent_pos,
+            float(gamma_distance_threshold),
+            float(brem_distance_threshold),
+            float(time_threshold),
+            bool(classify_ic_as_gamma),
+            bool(classify_phot_as_beta),
+        )
 
-        # Field-array views into tmp_result. Writing through these is faster than
-        # `tmp_result[i]["field"] = value` and is exactly equivalent.
-        out_lineage_index = tmp_result["lineage_index"]
-        out_lineage_trackid = tmp_result["lineage_trackid"]
-        out_lineage_type = tmp_result["lineage_type"]
-        out_lineage_A = tmp_result["lineage_A"]
-        out_lineage_Z = tmp_result["lineage_Z"]
-
-        running_lineage_index = 0
-        visited_trackids = set()
-        n = len(event)
-
-        for i in range(n):
-            tid = trackid[i]
-            particle_indices = trackid_lookup[tid]
-
-            if tid not in visited_trackids:
-                visited_trackids.add(tid)
-
-                # Find the parent's row index (-1 if no real parent exists).
-                # Logic mirrors the original `get_parent`: among the parent's rows
-                # in this event, pick the latest with t <= particle.t; fall back
-                # to argmin |t_parent - t_particle| if none satisfy the cut.
-                parent_idx = -1
-                parent_id = parent_lookup.get(tid)
-                if parent_id is not None:
-                    pids = trackid_lookup.get(parent_id)
-                    if pids is not None and len(pids) > 0:
-                        pt_arr = t[pids]
-                        cut = pt_arr <= t[i]
-                        cut_count = int(np.sum(cut))
-                        if cut_count > 0:
-                            valid_local = np.nonzero(cut)[0]
-                            parent_idx = int(pids[valid_local[-1]])
-                        else:
-                            parent_idx = int(pids[int(np.argmin(np.abs(pt_arr - t[i])))])
-
-                if parent_idx >= 0:
-                    broken = is_lineage_broken_coded(
-                        type_code[i], creaproc_code[i], edproc_code[i],
-                        t[i], x[i], y[i], z[i],
-                        type_code[parent_idx], edproc_code[parent_idx],
-                        t[parent_idx], x[parent_idx], y[parent_idx], z[parent_idx],
-                        type_has_digit[parent_idx], type_has_bracket[parent_idx],
-                        gamma_distance_threshold, brem_distance_threshold, time_threshold,
-                    )
-                    if broken:
-                        running_lineage_index += 1
-                        lt, lA, lZ = classify_lineage_coded(
-                            type_code[i], creaproc_code[i], edproc_code[i],
-                            parenttype_code[i],
-                            type_has_digit[i], type_has_bracket[i],
-                            ion_A_arr[i], ion_Z_arr[i],
-                            classify_ic_as_gamma, classify_phot_as_beta,
-                        )
-                        out_lineage_index[i] = running_lineage_index
-                        out_lineage_trackid[i] = tid
-                        out_lineage_type[i] = lt
-                        out_lineage_A[i] = lA
-                        out_lineage_Z[i] = lZ
-                    else:
-                        out_lineage_index[i] = out_lineage_index[parent_idx]
-                        out_lineage_trackid[i] = out_lineage_trackid[parent_idx]
-                        out_lineage_type[i] = out_lineage_type[parent_idx]
-                        out_lineage_A[i] = out_lineage_A[parent_idx]
-                        out_lineage_Z[i] = out_lineage_Z[parent_idx]
-                else:
-                    # No parent — start a new lineage.
-                    running_lineage_index += 1
-                    lt, lA, lZ = classify_lineage_coded(
-                        type_code[i], creaproc_code[i], edproc_code[i],
-                        parenttype_code[i],
-                        type_has_digit[i], type_has_bracket[i],
-                        ion_A_arr[i], ion_Z_arr[i],
-                        classify_ic_as_gamma, classify_phot_as_beta,
-                    )
-                    out_lineage_index[i] = running_lineage_index
-                    out_lineage_trackid[i] = tid
-                    out_lineage_type[i] = lt
-                    out_lineage_A[i] = lA
-                    out_lineage_Z[i] = lZ
-
-            else:
-                # Already-seen trackid — find this trackid's most recent assigned
-                # row (the equivalent of `get_last_particle_interaction`'s output).
-                li_local = out_lineage_index[particle_indices]
-                local_idx = int(np.nonzero(li_local)[0][-1])
-                last_idx = int(particle_indices[local_idx])
-
-                broken = is_lineage_broken_coded(
-                    type_code[i], creaproc_code[i], edproc_code[i],
-                    t[i], x[i], y[i], z[i],
-                    type_code[last_idx], edproc_code[last_idx],
-                    t[last_idx], x[last_idx], y[last_idx], z[last_idx],
-                    type_has_digit[last_idx], type_has_bracket[last_idx],
-                    gamma_distance_threshold, brem_distance_threshold, time_threshold,
-                )
-                if broken:
-                    running_lineage_index += 1
-                    lt, lA, lZ = classify_lineage_coded(
-                        type_code[i], creaproc_code[i], edproc_code[i],
-                        parenttype_code[i],
-                        type_has_digit[i], type_has_bracket[i],
-                        ion_A_arr[i], ion_Z_arr[i],
-                        classify_ic_as_gamma, classify_phot_as_beta,
-                    )
-                    out_lineage_index[i] = running_lineage_index
-                    out_lineage_trackid[i] = tid
-                    out_lineage_type[i] = lt
-                    out_lineage_A[i] = lA
-                    out_lineage_Z[i] = lZ
-                else:
-                    out_lineage_index[i] = out_lineage_index[last_idx]
-                    out_lineage_trackid[i] = out_lineage_trackid[last_idx]
-                    out_lineage_type[i] = out_lineage_type[last_idx]
-                    out_lineage_A[i] = out_lineage_A[last_idx]
-                    out_lineage_Z[i] = out_lineage_Z[last_idx]
-
+        tmp_result = np.zeros(n, dtype=tmp_dtype)
+        tmp_result["lineage_index"] = li
+        tmp_result["lineage_trackid"] = lt
+        tmp_result["lineage_type"] = ltype
+        tmp_result["lineage_A"] = lA
+        tmp_result["lineage_Z"] = lZ
         tmp_result["main_cluster_type"] = main_cluster_type
 
         return tmp_result
@@ -895,6 +799,343 @@ def build_codes(geant4_interactions):
 def slice_codes(codes, indices):
     """Apply a permutation, boolean mask, or index array to every entry in `codes`."""
     return {k: v[indices] for k, v in codes.items()}
+
+
+# --- Numba kernel for the per-particle loop ----------------------------------
+#
+# Replaces the Python loop in `build_lineage_for_event` with a single `@njit`
+# function. The Python wrapper builds CSR-style lookup tables for the per-event
+# trackid groups (numba.typed.Dict is much slower than CSR for this access
+# pattern) and hands the kernel only flat numpy arrays.
+
+
+def _build_trackid_csr(trackid):
+    """Build CSR-style lookup tables for an event's `trackid` array.
+
+    Returns four arrays:
+      `unique_tid` (int32)    sorted unique trackid values
+      `offsets`    (int64)    CSR row pointers; group `k` spans
+                              [offsets[k] : offsets[k+1]] in `indices`.
+      `indices`    (int64)    flat row indices in event, grouped by trackid
+                              and (because the event is pre-sorted by
+                              `(trackid, t)`) in time order within each group.
+      `positions`  (int64)    per-row index into `unique_tid` so the kernel
+                              can map `row -> trackid-group` in O(1).
+    """
+    n = len(trackid)
+    sort_idx = np.argsort(trackid, kind="stable")
+    sorted_tid = trackid[sort_idx]
+    unique_tid, starts = np.unique(sorted_tid, return_index=True)
+    offsets = np.concatenate([starts.astype(np.int64), np.array([n], dtype=np.int64)])
+    indices = sort_idx.astype(np.int64)
+    positions = np.searchsorted(unique_tid, trackid).astype(np.int64)
+    return unique_tid, offsets, indices, positions
+
+
+def _build_parent_pos(parentid, unique_tid):
+    """For each row, return the CSR position of its parent trackid in
+    `unique_tid`, or -1 if the parent trackid is not in this event."""
+    candidate = np.searchsorted(unique_tid, parentid)
+    out = np.full(len(parentid), -1, dtype=np.int64)
+    in_range = candidate < len(unique_tid)
+    matches = np.zeros(len(parentid), dtype=bool)
+    matches[in_range] = unique_tid[candidate[in_range]] == parentid[in_range]
+    out[matches] = candidate[matches]
+    return out
+
+
+@numba.njit(cache=True)
+def _classify_gamma_njit(p_ed, classify_phot_as_beta):
+    """Numba twin of `_classify_gamma_coded`. Returns (lineage_class, A, Z)."""
+    if p_ed == EDPROC_COMPT:
+        return np.int32(8), np.int16(0), np.int16(0)   # NEST_BETA
+    if p_ed == EDPROC_CONV:
+        return np.int32(8), np.int16(0), np.int16(0)
+    if p_ed == EDPROC_PHOT:
+        if classify_phot_as_beta:
+            return np.int32(8), np.int16(0), np.int16(0)
+        return np.int32(7), np.int16(0), np.int16(0)   # NEST_GAMMA
+    return np.int32(8), np.int16(0), np.int16(0)
+
+
+@numba.njit(cache=True)
+def _classify_njit(
+    p_type, p_crea, p_ed, p_parenttype,
+    p_has_digit, p_has_bracket,
+    ion_A, ion_Z,
+    classify_ic_as_gamma, classify_phot_as_beta,
+):
+    """Numba twin of `classify_lineage_coded`. Returns (lineage_class, A, Z)
+    as a fixed (int32, int16, int16) tuple."""
+    # Internal-conversion electrons (nucleus excitation, EM decay)
+    if p_has_bracket:
+        if classify_ic_as_gamma:
+            return np.int32(7), np.int16(0), np.int16(0)
+        return np.int32(8), np.int16(0), np.int16(0)
+
+    # NR interactions following a neutron
+    if p_parenttype == PARENTTYPE_NEUTRON and p_has_digit:
+        return np.int32(0), np.int16(0), np.int16(0)
+
+    # Neutron as primary particle (parent type empty/none/neutron AND particle is neutron)
+    if (p_parenttype == PARENTTYPE_EMPTY or p_parenttype == PARENTTYPE_NONE
+        or p_parenttype == PARENTTYPE_NEUTRON) and p_type == TYPE_NEUTRON:
+        return np.int32(0), np.int16(0), np.int16(0)
+
+    # Interactions following a gamma
+    if p_parenttype == PARENTTYPE_GAMMA:
+        if p_crea == CREA_COMPT:
+            return np.int32(8), np.int16(0), np.int16(0)
+        if p_crea == CREA_CONV:
+            return np.int32(8), np.int16(0), np.int16(0)
+        if p_crea == CREA_PHOT:
+            if classify_phot_as_beta:
+                return np.int32(8), np.int16(0), np.int16(0)
+            return np.int32(7), np.int16(0), np.int16(0)
+        if p_crea == CREA_PHOTONNUCLEAR:
+            if p_has_digit:
+                return np.int32(0), np.int16(0), np.int16(0)
+            if p_type == TYPE_NEUTRON:
+                return np.int32(0), np.int16(0), np.int16(0)
+            if p_type == TYPE_GAMMA:
+                return _classify_gamma_njit(p_ed, classify_phot_as_beta)
+            return np.int32(12), np.int16(0), np.int16(0)
+        return np.int32(12), np.int16(0), np.int16(0)
+
+    # Electrons or positrons not from a gamma
+    if p_type == TYPE_EM or p_type == TYPE_EP:
+        return np.int32(8), np.int16(0), np.int16(0)
+
+    # The gamma case
+    if p_type == TYPE_GAMMA:
+        return _classify_gamma_njit(p_ed, classify_phot_as_beta)
+
+    # Primaries and decay products
+    if p_crea == CREA_RDB or p_parenttype == PARENTTYPE_NONE:
+        if p_type == TYPE_ALPHA:
+            return np.int32(6), np.int16(4), np.int16(2)
+        if p_has_digit:
+            return np.int32(6), ion_A, ion_Z
+        return np.int32(12), np.int16(0), np.int16(0)
+
+    return np.int32(12), np.int16(0), np.int16(0)
+
+
+@numba.njit(cache=True)
+def _is_broken_njit(
+    p_type, p_crea, p_ed, p_t, p_x, p_y, p_z,
+    pa_type, pa_ed, pa_t, pa_x, pa_y, pa_z,
+    pa_has_digit, pa_has_bracket,
+    gamma_distance_threshold, brem_distance_threshold, time_threshold,
+):
+    """Numba twin of `is_lineage_broken_coded`."""
+    if p_crea == CREA_RDB and p_ed == EDPROC_RDB:
+        return True
+
+    if pa_has_digit and not pa_has_bracket:
+        return True
+
+    if p_type == TYPE_GAMMA:
+        if p_crea == CREA_PHOT and p_ed == EDPROC_PHOT:
+            return False
+        if pa_ed == EDPROC_TRANSPORTATION:
+            return True
+        dx = pa_x - p_x
+        dy = pa_y - p_y
+        dz = pa_z - p_z
+        distance = (dx * dx + dy * dy + dz * dz) ** 0.5
+        if p_crea == CREA_EBREM and distance < brem_distance_threshold:
+            return False
+        if distance > gamma_distance_threshold:
+            return True
+
+    if pa_type == TYPE_NEUTRON:
+        if (pa_ed == EDPROC_TRANSPORTATION or pa_ed == EDPROC_HADELASTIC
+            or pa_ed == EDPROC_NEUTRONINELASTIC or pa_ed == EDPROC_NCAPTURE):
+            return True
+
+    if (p_t - pa_t) > time_threshold:
+        return True
+
+    return False
+
+
+@numba.njit(cache=True)
+def _build_lineage_for_event_kernel(
+    trackid, parentid,
+    type_code, parenttype_code, creaproc_code, edproc_code,
+    type_has_digit, type_has_bracket,
+    ion_A_arr, ion_Z_arr,
+    x, y, z, t,
+    trackid_offsets, trackid_indices, trackid_pos, parent_pos,
+    gamma_distance_threshold, brem_distance_threshold, time_threshold,
+    classify_ic_as_gamma, classify_phot_as_beta,
+):
+    """The numba-compiled body of `build_lineage_for_event`.
+
+    Inputs are flat numpy arrays. The CSR encoding (`trackid_offsets`,
+    `trackid_indices`, `trackid_pos`) replaces the Python `trackid_lookup`
+    dict. `parent_pos[i]` is the CSR position of row i's parent trackid (-1
+    if not in this event), replacing `parent_lookup`. Returns five output
+    arrays which the Python wrapper assembles into the structured result.
+    """
+    n = trackid.shape[0]
+    n_unique = trackid_offsets.shape[0] - 1
+
+    lineage_index = np.zeros(n, dtype=np.int32)
+    lineage_trackid = np.zeros(n, dtype=np.int16)
+    lineage_type = np.zeros(n, dtype=np.int32)
+    lineage_A = np.zeros(n, dtype=np.int16)
+    lineage_Z = np.zeros(n, dtype=np.int16)
+
+    visited = np.zeros(n_unique, dtype=np.bool_)
+    running = np.int32(0)
+
+    for i in range(n):
+        tid = trackid[i]
+        pos = trackid_pos[i]
+
+        if not visited[pos]:
+            visited[pos] = True
+
+            # --- get_parent: find parent's row index ---
+            parent_idx = np.int64(-1)
+            ppos = parent_pos[i]
+            if ppos >= 0:
+                p_start = trackid_offsets[ppos]
+                p_end = trackid_offsets[ppos + 1]
+                t_i = t[i]
+                # Inlined parent-finding, matching `get_parent`:
+                #   (1) find t_max = max(t[idx] for idx in slice if t[idx] <= t_i)
+                #   (2) among entries with t[idx] == t_max, pick the one
+                #       spatially closest to (x[i], y[i], z[i]).
+                # If no entry has t[idx] <= t_i, fall back to nearest |t - t_i|.
+                # Squared distance is enough — argmin is the same as for sqrt.
+                t_max = np.float64(0.0)
+                has_le = False
+                for jj in range(p_start, p_end):
+                    idx = trackid_indices[jj]
+                    t_idx = t[idx]
+                    if t_idx <= t_i:
+                        if not has_le or t_idx > t_max:
+                            t_max = t_idx
+                            has_le = True
+                best_idx = np.int64(-1)
+                if has_le:
+                    best_d2 = np.float64(-1.0)
+                    x_i = x[i]
+                    y_i = y[i]
+                    z_i = z[i]
+                    for jj in range(p_start, p_end):
+                        idx = trackid_indices[jj]
+                        if t[idx] == t_max:
+                            dx = x[idx] - x_i
+                            dy = y[idx] - y_i
+                            dz = z[idx] - z_i
+                            d2 = dx * dx + dy * dy + dz * dz
+                            if best_d2 < 0 or d2 < best_d2:
+                                best_d2 = d2
+                                best_idx = idx
+                else:
+                    # Fall back to nearest |t - t_i|.
+                    min_diff = np.float64(-1.0)
+                    for jj in range(p_start, p_end):
+                        idx = trackid_indices[jj]
+                        diff = t[idx] - t_i
+                        if diff < 0:
+                            diff = -diff
+                        if min_diff < 0 or diff < min_diff:
+                            min_diff = diff
+                            best_idx = idx
+                parent_idx = best_idx
+
+            if parent_idx >= 0:
+                broken = _is_broken_njit(
+                    type_code[i], creaproc_code[i], edproc_code[i],
+                    t[i], x[i], y[i], z[i],
+                    type_code[parent_idx], edproc_code[parent_idx],
+                    t[parent_idx], x[parent_idx], y[parent_idx], z[parent_idx],
+                    type_has_digit[parent_idx], type_has_bracket[parent_idx],
+                    gamma_distance_threshold, brem_distance_threshold, time_threshold,
+                )
+                if broken:
+                    running += np.int32(1)
+                    lt, lA, lZ = _classify_njit(
+                        type_code[i], creaproc_code[i], edproc_code[i],
+                        parenttype_code[i],
+                        type_has_digit[i], type_has_bracket[i],
+                        ion_A_arr[i], ion_Z_arr[i],
+                        classify_ic_as_gamma, classify_phot_as_beta,
+                    )
+                    lineage_index[i] = running
+                    lineage_trackid[i] = np.int16(tid)
+                    lineage_type[i] = lt
+                    lineage_A[i] = lA
+                    lineage_Z[i] = lZ
+                else:
+                    lineage_index[i] = lineage_index[parent_idx]
+                    lineage_trackid[i] = lineage_trackid[parent_idx]
+                    lineage_type[i] = lineage_type[parent_idx]
+                    lineage_A[i] = lineage_A[parent_idx]
+                    lineage_Z[i] = lineage_Z[parent_idx]
+            else:
+                # No parent — start a new lineage.
+                running += np.int32(1)
+                lt, lA, lZ = _classify_njit(
+                    type_code[i], creaproc_code[i], edproc_code[i],
+                    parenttype_code[i],
+                    type_has_digit[i], type_has_bracket[i],
+                    ion_A_arr[i], ion_Z_arr[i],
+                    classify_ic_as_gamma, classify_phot_as_beta,
+                )
+                lineage_index[i] = running
+                lineage_trackid[i] = np.int16(tid)
+                lineage_type[i] = lt
+                lineage_A[i] = lA
+                lineage_Z[i] = lZ
+        else:
+            # Already-seen trackid — find this trackid's most recent assigned row
+            # (largest idx in the CSR slice with idx < i and lineage_index != 0).
+            tid_start = trackid_offsets[pos]
+            tid_end = trackid_offsets[pos + 1]
+            last_idx = np.int64(-1)
+            for jj in range(tid_start, tid_end):
+                idx = trackid_indices[jj]
+                if idx >= i:
+                    break
+                if lineage_index[idx] != 0:
+                    last_idx = idx
+
+            broken = _is_broken_njit(
+                type_code[i], creaproc_code[i], edproc_code[i],
+                t[i], x[i], y[i], z[i],
+                type_code[last_idx], edproc_code[last_idx],
+                t[last_idx], x[last_idx], y[last_idx], z[last_idx],
+                type_has_digit[last_idx], type_has_bracket[last_idx],
+                gamma_distance_threshold, brem_distance_threshold, time_threshold,
+            )
+            if broken:
+                running += np.int32(1)
+                lt, lA, lZ = _classify_njit(
+                    type_code[i], creaproc_code[i], edproc_code[i],
+                    parenttype_code[i],
+                    type_has_digit[i], type_has_bracket[i],
+                    ion_A_arr[i], ion_Z_arr[i],
+                    classify_ic_as_gamma, classify_phot_as_beta,
+                )
+                lineage_index[i] = running
+                lineage_trackid[i] = np.int16(tid)
+                lineage_type[i] = lt
+                lineage_A[i] = lA
+                lineage_Z[i] = lZ
+            else:
+                lineage_index[i] = lineage_index[last_idx]
+                lineage_trackid[i] = lineage_trackid[last_idx]
+                lineage_type[i] = lineage_type[last_idx]
+                lineage_A[i] = lineage_A[last_idx]
+                lineage_Z[i] = lineage_Z[last_idx]
+
+    return lineage_index, lineage_trackid, lineage_type, lineage_A, lineage_Z
 
 
 def assign_main_cluster_type_to_event(event):
