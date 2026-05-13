@@ -16,6 +16,61 @@ NEST_ALPHA = (6, 4, 2)
 NEST_NR = (0, 0, 0)
 NEST_NONE = (12, 0, 0)
 
+# --- Phase 2: int-coded string fields ----------------------------------------
+# The hot path inside `build_lineage_for_event` previously did string compares
+# on `type`, `parenttype`, `creaproc`, `edproc` for every interaction. Here we
+# precompute an int8 code per row once at the top of `compute()`. Unknown
+# strings encode as -1 so they never match any named constant.
+
+_TYPE_NAMES = ("alpha", "e-", "e+", "gamma", "neutron")
+_PARENTTYPE_NAMES = ("", "none", "neutron", "gamma")
+_CREAPROC_NAMES = (
+    "RadioactiveDecayBase", "compt", "conv", "phot",
+    "photonNuclear", "eBrem", "Transportation",
+)
+_EDPROC_NAMES = (
+    "RadioactiveDecayBase", "compt", "conv", "phot",
+    "Transportation", "hadElastic", "neutronInelastic", "nCapture", "ionIoni",
+)
+
+_TYPE_CODE = {name: i for i, name in enumerate(_TYPE_NAMES)}
+_PARENTTYPE_CODE = {name: i for i, name in enumerate(_PARENTTYPE_NAMES)}
+_CREAPROC_CODE = {name: i for i, name in enumerate(_CREAPROC_NAMES)}
+_EDPROC_CODE = {name: i for i, name in enumerate(_EDPROC_NAMES)}
+
+# Named constants used by the coded helpers (`is_lineage_broken_coded`,
+# `classify_lineage_coded`). Reading these is a single integer dereference.
+TYPE_ALPHA = _TYPE_CODE["alpha"]
+TYPE_EM = _TYPE_CODE["e-"]
+TYPE_EP = _TYPE_CODE["e+"]
+TYPE_GAMMA = _TYPE_CODE["gamma"]
+TYPE_NEUTRON = _TYPE_CODE["neutron"]
+
+PARENTTYPE_EMPTY = _PARENTTYPE_CODE[""]
+PARENTTYPE_NONE = _PARENTTYPE_CODE["none"]
+PARENTTYPE_NEUTRON = _PARENTTYPE_CODE["neutron"]
+PARENTTYPE_GAMMA = _PARENTTYPE_CODE["gamma"]
+
+CREA_RDB = _CREAPROC_CODE["RadioactiveDecayBase"]
+CREA_COMPT = _CREAPROC_CODE["compt"]
+CREA_CONV = _CREAPROC_CODE["conv"]
+CREA_PHOT = _CREAPROC_CODE["phot"]
+CREA_PHOTONNUCLEAR = _CREAPROC_CODE["photonNuclear"]
+CREA_EBREM = _CREAPROC_CODE["eBrem"]
+
+EDPROC_RDB = _EDPROC_CODE["RadioactiveDecayBase"]
+EDPROC_COMPT = _EDPROC_CODE["compt"]
+EDPROC_CONV = _EDPROC_CODE["conv"]
+EDPROC_PHOT = _EDPROC_CODE["phot"]
+EDPROC_TRANSPORTATION = _EDPROC_CODE["Transportation"]
+EDPROC_HADELASTIC = _EDPROC_CODE["hadElastic"]
+EDPROC_NEUTRONINELASTIC = _EDPROC_CODE["neutronInelastic"]
+EDPROC_NCAPTURE = _EDPROC_CODE["nCapture"]
+EDPROC_NEUTRON_BREAK = frozenset((
+    EDPROC_TRANSPORTATION, EDPROC_HADELASTIC, EDPROC_NEUTRONINELASTIC, EDPROC_NCAPTURE,
+))
+PARENTTYPE_NEUTRON_PRIMARY = frozenset((PARENTTYPE_EMPTY, PARENTTYPE_NONE, PARENTTYPE_NEUTRON))
+
 
 @export
 class LineageClustering(FuseBasePlugin):
@@ -100,8 +155,12 @@ class LineageClustering(FuseBasePlugin):
         undo_sort_index = stable_argsort(event_id_sort)
         interactions = geant4_interactions[event_id_sort]
 
+        # Pre-compute int-coded fields once on the full input, then permute
+        # the same way as `interactions`. Per-event slices below stay aligned.
+        codes = slice_codes(build_codes(geant4_interactions), event_id_sort)
+
         lineage_ids, lineage_trackids, lineage_types, lineage_A, lineage_Z, main_cluster_type = (
-            self.build_lineages(interactions)
+            self.build_lineages(interactions, codes)
         )
 
         # The lineage index is now unique per event. We need to make it unique for the whole run
@@ -128,6 +187,7 @@ class LineageClustering(FuseBasePlugin):
     def build_lineages(
         self,
         geant4_interactions,
+        codes,
     ):
 
         event_ids = np.unique(geant4_interactions["eventid"])
@@ -141,14 +201,18 @@ class LineageClustering(FuseBasePlugin):
 
         for event_id in event_ids:
 
-            event = geant4_interactions[geant4_interactions["eventid"] == event_id]
+            event_mask = geant4_interactions["eventid"] == event_id
+            event = geant4_interactions[event_mask]
+            event_codes = slice_codes(codes, event_mask)
 
             track_id_sort = stable_argsort(event[["trackid", "t"]])
             undo_sort_index = stable_argsort(track_id_sort)
             event = event[track_id_sort]
+            event_codes = slice_codes(event_codes, track_id_sort)
 
             lineage = self.build_lineage_for_event(
                 event,
+                event_codes,
                 self.gamma_distance_threshold,
                 self.brem_distance_threshold,
                 self.time_threshold,
@@ -175,12 +239,21 @@ class LineageClustering(FuseBasePlugin):
     @staticmethod
     def build_lineage_for_event(
         event,
+        codes,
         gamma_distance_threshold,
         brem_distance_threshold,
         time_threshold,
         classify_ic_as_gamma,
         classify_phot_as_beta,
     ):
+        """Build the per-interaction lineage assignment for a single event.
+
+        Phase 2: every string comparison in the inner loop is replaced with an int
+        compare against the precomputed `codes` arrays. `start_new_lineage` and
+        `continue_lineage` are inlined as direct assignments into per-field views
+        of `tmp_result`, removing the structured-record-element overhead of
+        `tmp_result[i]["field"] = value`. Bit-identical to vanilla.
+        """
 
         tmp_dtype = [
             ("lineage_index", np.int32),
@@ -198,99 +271,138 @@ class LineageClustering(FuseBasePlugin):
         trackid_lookup = precompute_particle_lookup(event)
         parent_lookup = precompute_parent_lookup(event)
 
-        # Now iterate all interactions. `visited_trackids` replaces the
-        # O(N²) `is_particle_in_lineage` check: a trackid is "in a lineage"
-        # iff we've already processed one of its rows. Rows of one trackid
-        # are contiguous after the (trackid, t) sort that `build_lineages`
-        # applied, so the first row of each trackid is the only one where
-        # the original `is_particle_in_lineage(particle_lineage)` could
-        # return False — control flow is identical.
+        # Hoist event numeric fields and codes to local references.
+        x = event["x"]
+        y = event["y"]
+        z = event["z"]
+        t = event["t"]
+        trackid = event["trackid"]
+        type_code = codes["type_code"]
+        parenttype_code = codes["parenttype_code"]
+        creaproc_code = codes["creaproc_code"]
+        edproc_code = codes["edproc_code"]
+        type_has_digit = codes["type_has_digit"]
+        type_has_bracket = codes["type_has_bracket"]
+        ion_A_arr = codes["ion_A"]
+        ion_Z_arr = codes["ion_Z"]
+
+        # Field-array views into tmp_result. Writing through these is faster than
+        # `tmp_result[i]["field"] = value` and is exactly equivalent.
+        out_lineage_index = tmp_result["lineage_index"]
+        out_lineage_trackid = tmp_result["lineage_trackid"]
+        out_lineage_type = tmp_result["lineage_type"]
+        out_lineage_A = tmp_result["lineage_A"]
+        out_lineage_Z = tmp_result["lineage_Z"]
+
         running_lineage_index = 0
         visited_trackids = set()
-        for i in range(len(event)):
+        n = len(event)
 
-            particle = event[i]
-            tid = particle["trackid"]
+        for i in range(n):
+            tid = trackid[i]
             particle_indices = trackid_lookup[tid]
 
             if tid not in visited_trackids:
                 visited_trackids.add(tid)
-                # First time seeing this particle — check for parent.
-                parent, parent_lineage = get_parent(
-                    event, tmp_result, particle, parent_lookup, trackid_lookup
-                )
-                if parent is not None:
-                    broken_lineage = is_lineage_broken(
-                        particle,
-                        parent,
-                        gamma_distance_threshold,
-                        brem_distance_threshold,
-                        time_threshold,
+
+                # Find the parent's row index (-1 if no real parent exists).
+                # Logic mirrors the original `get_parent`: among the parent's rows
+                # in this event, pick the latest with t <= particle.t; fall back
+                # to argmin |t_parent - t_particle| if none satisfy the cut.
+                parent_idx = -1
+                parent_id = parent_lookup.get(tid)
+                if parent_id is not None:
+                    pids = trackid_lookup.get(parent_id)
+                    if pids is not None and len(pids) > 0:
+                        pt_arr = t[pids]
+                        cut = pt_arr <= t[i]
+                        cut_count = int(np.sum(cut))
+                        if cut_count > 0:
+                            valid_local = np.nonzero(cut)[0]
+                            parent_idx = int(pids[valid_local[-1]])
+                        else:
+                            parent_idx = int(pids[int(np.argmin(np.abs(pt_arr - t[i])))])
+
+                if parent_idx >= 0:
+                    broken = is_lineage_broken_coded(
+                        type_code[i], creaproc_code[i], edproc_code[i],
+                        t[i], x[i], y[i], z[i],
+                        type_code[parent_idx], edproc_code[parent_idx],
+                        t[parent_idx], x[parent_idx], y[parent_idx], z[parent_idx],
+                        type_has_digit[parent_idx], type_has_bracket[parent_idx],
+                        gamma_distance_threshold, brem_distance_threshold, time_threshold,
                     )
-                    if broken_lineage:
+                    if broken:
                         running_lineage_index += 1
-                        tmp_result = start_new_lineage(
-                            particle,
-                            tmp_result,
-                            i,
-                            running_lineage_index,
-                            classify_ic_as_gamma,
-                            classify_phot_as_beta,
+                        lt, lA, lZ = classify_lineage_coded(
+                            type_code[i], creaproc_code[i], edproc_code[i],
+                            parenttype_code[i],
+                            type_has_digit[i], type_has_bracket[i],
+                            ion_A_arr[i], ion_Z_arr[i],
+                            classify_ic_as_gamma, classify_phot_as_beta,
                         )
+                        out_lineage_index[i] = running_lineage_index
+                        out_lineage_trackid[i] = tid
+                        out_lineage_type[i] = lt
+                        out_lineage_A[i] = lA
+                        out_lineage_Z[i] = lZ
                     else:
-                        tmp_result = continue_lineage(particle, tmp_result, i, parent_lineage)
+                        out_lineage_index[i] = out_lineage_index[parent_idx]
+                        out_lineage_trackid[i] = out_lineage_trackid[parent_idx]
+                        out_lineage_type[i] = out_lineage_type[parent_idx]
+                        out_lineage_A[i] = out_lineage_A[parent_idx]
+                        out_lineage_Z[i] = out_lineage_Z[parent_idx]
                 else:
-                    # Particle without parent — start a new lineage.
+                    # No parent — start a new lineage.
                     running_lineage_index += 1
-                    tmp_result = start_new_lineage(
-                        particle,
-                        tmp_result,
-                        i,
-                        running_lineage_index,
-                        classify_ic_as_gamma,
-                        classify_phot_as_beta,
+                    lt, lA, lZ = classify_lineage_coded(
+                        type_code[i], creaproc_code[i], edproc_code[i],
+                        parenttype_code[i],
+                        type_has_digit[i], type_has_bracket[i],
+                        ion_A_arr[i], ion_Z_arr[i],
+                        classify_ic_as_gamma, classify_phot_as_beta,
                     )
+                    out_lineage_index[i] = running_lineage_index
+                    out_lineage_trackid[i] = tid
+                    out_lineage_type[i] = lt
+                    out_lineage_A[i] = lA
+                    out_lineage_Z[i] = lZ
 
             else:
-                # Already-seen trackid — find its most recent assigned interaction
-                # and decide whether to break vs continue the lineage.
-                particle_lineage = tmp_result[particle_indices]
-                last_particle_interaction, last_particle_lineage = (
-                    get_last_particle_interaction(event, particle_lineage, particle_indices)
-                )
+                # Already-seen trackid — find this trackid's most recent assigned
+                # row (the equivalent of `get_last_particle_interaction`'s output).
+                li_local = out_lineage_index[particle_indices]
+                local_idx = int(np.nonzero(li_local)[0][-1])
+                last_idx = int(particle_indices[local_idx])
 
-                # `last_particle_interaction` is always a structured-record (the
-                # already-seen branch implies at least one prior row of this trackid
-                # has a non-zero lineage_index). The `is not None` check below mirrors
-                # the original code's truthiness guard; the else branch is unreachable
-                # under normal control flow but kept for defensive consistency.
-                if last_particle_interaction is not None:
-                    broken_lineage = is_lineage_broken(
-                        particle,
-                        last_particle_interaction,
-                        gamma_distance_threshold,
-                        brem_distance_threshold,
-                        time_threshold,
+                broken = is_lineage_broken_coded(
+                    type_code[i], creaproc_code[i], edproc_code[i],
+                    t[i], x[i], y[i], z[i],
+                    type_code[last_idx], edproc_code[last_idx],
+                    t[last_idx], x[last_idx], y[last_idx], z[last_idx],
+                    type_has_digit[last_idx], type_has_bracket[last_idx],
+                    gamma_distance_threshold, brem_distance_threshold, time_threshold,
+                )
+                if broken:
+                    running_lineage_index += 1
+                    lt, lA, lZ = classify_lineage_coded(
+                        type_code[i], creaproc_code[i], edproc_code[i],
+                        parenttype_code[i],
+                        type_has_digit[i], type_has_bracket[i],
+                        ion_A_arr[i], ion_Z_arr[i],
+                        classify_ic_as_gamma, classify_phot_as_beta,
                     )
-                    if broken_lineage:
-                        running_lineage_index += 1
-                        tmp_result = start_new_lineage(
-                            particle,
-                            tmp_result,
-                            i,
-                            running_lineage_index,
-                            classify_ic_as_gamma,
-                            classify_phot_as_beta,
-                        )
-                    else:
-                        tmp_result = continue_lineage(
-                            particle, tmp_result, i, last_particle_lineage
-                        )
+                    out_lineage_index[i] = running_lineage_index
+                    out_lineage_trackid[i] = tid
+                    out_lineage_type[i] = lt
+                    out_lineage_A[i] = lA
+                    out_lineage_Z[i] = lZ
                 else:
-                    raise ValueError(
-                        "There is no last particle interaction but we have seen "
-                        "this particle before.... Makes no sense.."
-                    )
+                    out_lineage_index[i] = out_lineage_index[last_idx]
+                    out_lineage_trackid[i] = out_lineage_trackid[last_idx]
+                    out_lineage_type[i] = out_lineage_type[last_idx]
+                    out_lineage_A[i] = out_lineage_A[last_idx]
+                    out_lineage_Z[i] = out_lineage_Z[last_idx]
 
         tmp_result["main_cluster_type"] = main_cluster_type
 
@@ -568,6 +680,116 @@ def is_lineage_broken(
     return False
 
 
+def is_lineage_broken_coded(
+    p_type_code, p_creaproc_code, p_edproc_code, p_t, p_x, p_y, p_z,
+    pa_type_code, pa_edproc_code, pa_t, pa_x, pa_y, pa_z,
+    pa_has_digit, pa_has_bracket,
+    gamma_distance_threshold, brem_distance_threshold, time_threshold,
+):
+    """Int-coded twin of `is_lineage_broken`. Same control flow, string
+    equality replaced with int compares against the named-constant codes."""
+    # Second step of a decay
+    if p_creaproc_code == CREA_RDB and p_edproc_code == EDPROC_RDB:
+        return True
+
+    # Parent is an ion (has digit) but not in excited state (no bracket)
+    if pa_has_digit and not pa_has_bracket:
+        return True
+
+    if p_type_code == TYPE_GAMMA:
+        if p_creaproc_code == CREA_PHOT and p_edproc_code == EDPROC_PHOT:
+            return False
+        if pa_edproc_code == EDPROC_TRANSPORTATION:
+            return True
+        dx = pa_x - p_x
+        dy = pa_y - p_y
+        dz = pa_z - p_z
+        distance = (dx * dx + dy * dy + dz * dz) ** 0.5
+        if p_creaproc_code == CREA_EBREM and distance < brem_distance_threshold:
+            return False
+        if distance > gamma_distance_threshold:
+            return True
+
+    if pa_type_code == TYPE_NEUTRON and pa_edproc_code in EDPROC_NEUTRON_BREAK:
+        return True
+
+    if (p_t - pa_t) > time_threshold:
+        return True
+
+    return False
+
+
+def _classify_gamma_coded(p_edproc_code, classify_phot_as_beta):
+    """Int-coded twin of the inner `classify_gamma`."""
+    if p_edproc_code == EDPROC_COMPT:
+        return NEST_BETA
+    if p_edproc_code == EDPROC_CONV:
+        return NEST_BETA
+    if p_edproc_code == EDPROC_PHOT:
+        return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
+    return NEST_BETA
+
+
+def classify_lineage_coded(
+    p_type_code, p_creaproc_code, p_edproc_code, p_parenttype_code,
+    p_has_digit, p_has_bracket,
+    ion_A, ion_Z,
+    classify_ic_as_gamma, classify_phot_as_beta,
+):
+    """Int-coded twin of `classify_lineage`. Returns the same (lineage_class,
+    lineage_A, lineage_Z) tuple. Ion (A, Z) is pre-resolved per unique type
+    string by `precompute_ion_AZ`, so the regex never fires in the hot path."""
+    # Internal-conversion electrons: nucleus excitation, EM decay
+    if p_has_bracket:
+        return NEST_GAMMA if classify_ic_as_gamma else NEST_BETA
+
+    # NR interactions following a neutron
+    if p_parenttype_code == PARENTTYPE_NEUTRON and p_has_digit:
+        return NEST_NR
+
+    # Neutron as primary particle
+    if (p_parenttype_code in PARENTTYPE_NEUTRON_PRIMARY) and (p_type_code == TYPE_NEUTRON):
+        return NEST_NR
+
+    # Interactions following a gamma
+    if p_parenttype_code == PARENTTYPE_GAMMA:
+        if p_creaproc_code == CREA_COMPT:
+            return NEST_BETA
+        if p_creaproc_code == CREA_CONV:
+            return NEST_BETA
+        if p_creaproc_code == CREA_PHOT:
+            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
+        if p_creaproc_code == CREA_PHOTONNUCLEAR:
+            if p_has_digit:
+                return NEST_NR
+            if p_type_code == TYPE_NEUTRON:
+                return NEST_NR
+            if p_type_code == TYPE_GAMMA:
+                return _classify_gamma_coded(p_edproc_code, classify_phot_as_beta)
+            return NEST_NONE
+        return NEST_NONE
+
+    # Electrons or positrons not from a gamma
+    if p_type_code == TYPE_EM or p_type_code == TYPE_EP:
+        return NEST_BETA
+
+    # The gamma case
+    if p_type_code == TYPE_GAMMA:
+        return _classify_gamma_coded(p_edproc_code, classify_phot_as_beta)
+
+    # Primaries and decay products
+    if p_creaproc_code == CREA_RDB or p_parenttype_code == PARENTTYPE_NONE:
+        if p_type_code == TYPE_ALPHA:
+            return NEST_ALPHA
+        if p_has_digit:
+            # Ion: (lineage_class=6, lineage_A=mass, lineage_Z=element_number)
+            return (6, ion_A, ion_Z)
+        return NEST_NONE
+
+    # No classification possible
+    return NEST_NONE
+
+
 def get_element_and_mass(particle_type):
     """Function to get the element and the mass number from the particle
     type."""
@@ -585,6 +807,94 @@ def get_element_and_mass(particle_type):
         mass = None
 
     return element_number, mass
+
+
+def _encode_field(strings, code_map):
+    """Convert a numpy array of strings into an int8 array via `code_map`.
+
+    Unknown strings encode as -1. Loops over the small set of known names rather
+    than the (potentially large) array of rows, so the cost is O(rows * unique_names)
+    of vectorised numpy equality.
+    """
+    out = np.full(len(strings), -1, dtype=np.int8)
+    for name, code in code_map.items():
+        out[strings == name] = code
+    return out
+
+
+def _has_digit_vectorised(strings):
+    """Per-row 'string contains a digit' check, computed once per unique value."""
+    unique, inverse = np.unique(strings, return_inverse=True)
+    flags = np.fromiter(
+        (any(c.isdigit() for c in s) for s in unique),
+        dtype=bool,
+        count=len(unique),
+    )
+    return flags[inverse]
+
+
+def _has_bracket_vectorised(strings):
+    """Per-row '[' check, vectorised through numpy.char."""
+    return np.char.find(np.asarray(strings, dtype=str), "[") >= 0
+
+
+def precompute_ion_AZ(geant4_interactions):
+    """For each row, look up A (mass) and Z (element number) if the `type`
+    string encodes an ion. Cached per unique type string so the regex +
+    periodictable lookup runs O(unique_types) instead of O(rows).
+
+    Non-ion rows get (0, 0), matching the implicit None -> 0 conversion in
+    the original code path where `tmp_result[i]["lineage_A"] = None` assigned
+    zero into the int16 field.
+    """
+    types = geant4_interactions["type"]
+    unique = np.unique(types)
+    A_map = {}
+    Z_map = {}
+    for s in unique:
+        if any(c.isdigit() for c in s):
+            element_number, mass = get_element_and_mass(s)
+            if element_number is not None and mass is not None:
+                A_map[s] = mass
+                Z_map[s] = element_number
+    ion_A = np.zeros(len(types), dtype=np.int16)
+    ion_Z = np.zeros(len(types), dtype=np.int16)
+    for s, a in A_map.items():
+        mask = types == s
+        ion_A[mask] = a
+        ion_Z[mask] = Z_map[s]
+    return ion_A, ion_Z
+
+
+def build_codes(geant4_interactions):
+    """Build the per-row int8 / bool / int16 arrays consumed by the coded
+    hot path in `build_lineage_for_event`.
+
+    Returns a dict keyed by field name; every value is a numpy array aligned
+    with `geant4_interactions` rows. Callers slice / permute the values the
+    same way they slice the input array (so the alignment is preserved
+    through the event sort and per-event track sort).
+    """
+    types = geant4_interactions["type"]
+    parents = geant4_interactions["parenttype"]
+    crea = geant4_interactions["creaproc"]
+    edpr = geant4_interactions["edproc"]
+    ion_A, ion_Z = precompute_ion_AZ(geant4_interactions)
+    return {
+        "type_code": _encode_field(types, _TYPE_CODE),
+        "parenttype_code": _encode_field(parents, _PARENTTYPE_CODE),
+        "creaproc_code": _encode_field(crea, _CREAPROC_CODE),
+        "edproc_code": _encode_field(edpr, _EDPROC_CODE),
+        "type_has_digit": _has_digit_vectorised(types),
+        "type_has_bracket": _has_bracket_vectorised(types),
+        "ion_A": ion_A,
+        "ion_Z": ion_Z,
+    }
+
+
+def slice_codes(codes, indices):
+    """Apply a permutation, boolean mask, or index array to every entry in `codes`."""
+    return {k: v[indices] for k, v in codes.items()}
 
 
 def assign_main_cluster_type_to_event(event):
