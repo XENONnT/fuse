@@ -590,30 +590,34 @@ def find_intervals_below_threshold(w, threshold, holdoff, result_buffer):
 
 
 @njit(cache=True, nogil=True)
-def _pulse_id_group_offsets(sorted_pulse_ids, n_pulse_groups):
+def _pulse_id_group_offsets(sorted_pulse_ids):
     """Given pulse_ids sorted ascending, return (starts, stops) per unique id.
 
-    `starts[k]` and `stops[k]` bracket the photons whose pulse_id equals the
-    k-th unique pulse_id in ``sorted_pulse_ids`` (sorted order). The caller is
-    responsible for confirming that the unique-pulse-id count matches the
-    pulse_groups it expects to iterate over (i.e. ``n_pulse_groups`` is the
-    expected number of distinct pulse_ids).
+    Two-pass single-kernel call: first pass counts unique runs, second pass
+    emits the (start, stop) offsets. Both passes execute in compiled code —
+    the previous Python-side counting loop was the daq-v1 regression on
+    Pb212/Co60 (millions of photons in a Python loop).
     """
     n = sorted_pulse_ids.shape[0]
-    starts = np.empty(n_pulse_groups, np.int64)
-    stops = np.empty(n_pulse_groups, np.int64)
-    if n == 0 or n_pulse_groups == 0:
-        return starts[:0], stops[:0]
+    if n == 0:
+        return np.empty(0, np.int64), np.empty(0, np.int64)
+
+    n_groups = 1
+    for i in range(1, n):
+        if sorted_pulse_ids[i] != sorted_pulse_ids[i - 1]:
+            n_groups += 1
+
+    starts = np.empty(n_groups, np.int64)
+    stops = np.empty(n_groups, np.int64)
     starts[0] = 0
     g = 0
     for i in range(1, n):
         if sorted_pulse_ids[i] != sorted_pulse_ids[i - 1]:
             stops[g] = i
             g += 1
-            if g < n_pulse_groups:
-                starts[g] = i
+            starts[g] = i
     stops[g] = n
-    return starts[: g + 1], stops[: g + 1]
+    return starts, stops
 
 
 def split_photons(propagated_photons):
@@ -632,16 +636,5 @@ def split_photons(propagated_photons):
     """
     sort_index = stable_argsort(propagated_photons["pulse_id"])
     propagated_photons_sorted = propagated_photons[sort_index]
-    pulse_ids = propagated_photons_sorted["pulse_id"]
-
-    # Count unique pulse_ids in one pass — feeds the kernel its output size.
-    n = pulse_ids.shape[0]
-    if n == 0:
-        empty = np.empty(0, np.int64)
-        return propagated_photons_sorted, empty, empty
-    n_groups = 1
-    for k in range(1, n):
-        if pulse_ids[k] != pulse_ids[k - 1]:
-            n_groups += 1
-    starts, stops = _pulse_id_group_offsets(pulse_ids, n_groups)
+    starts, stops = _pulse_id_group_offsets(propagated_photons_sorted["pulse_id"])
     return propagated_photons_sorted, starts, stops
