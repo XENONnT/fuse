@@ -26,12 +26,24 @@ NEST_NONE = (12, 0, 0)
 _TYPE_NAMES = ("alpha", "e-", "e+", "gamma", "neutron")
 _PARENTTYPE_NAMES = ("", "none", "neutron", "gamma")
 _CREAPROC_NAMES = (
-    "RadioactiveDecayBase", "compt", "conv", "phot",
-    "photonNuclear", "eBrem", "Transportation",
+    "RadioactiveDecayBase",
+    "compt",
+    "conv",
+    "phot",
+    "photonNuclear",
+    "eBrem",
+    "Transportation",
 )
 _EDPROC_NAMES = (
-    "RadioactiveDecayBase", "compt", "conv", "phot",
-    "Transportation", "hadElastic", "neutronInelastic", "nCapture", "ionIoni",
+    "RadioactiveDecayBase",
+    "compt",
+    "conv",
+    "phot",
+    "Transportation",
+    "hadElastic",
+    "neutronInelastic",
+    "nCapture",
+    "ionIoni",
 )
 
 _TYPE_CODE = {name: i for i, name in enumerate(_TYPE_NAMES)}
@@ -67,9 +79,14 @@ EDPROC_TRANSPORTATION = _EDPROC_CODE["Transportation"]
 EDPROC_HADELASTIC = _EDPROC_CODE["hadElastic"]
 EDPROC_NEUTRONINELASTIC = _EDPROC_CODE["neutronInelastic"]
 EDPROC_NCAPTURE = _EDPROC_CODE["nCapture"]
-EDPROC_NEUTRON_BREAK = frozenset((
-    EDPROC_TRANSPORTATION, EDPROC_HADELASTIC, EDPROC_NEUTRONINELASTIC, EDPROC_NCAPTURE,
-))
+EDPROC_NEUTRON_BREAK = frozenset(
+    (
+        EDPROC_TRANSPORTATION,
+        EDPROC_HADELASTIC,
+        EDPROC_NEUTRONINELASTIC,
+        EDPROC_NCAPTURE,
+    )
+)
 PARENTTYPE_NEUTRON_PRIMARY = frozenset((PARENTTYPE_EMPTY, PARENTTYPE_NONE, PARENTTYPE_NEUTRON))
 
 
@@ -314,8 +331,8 @@ class LineageClustering(FuseBasePlugin):
 
 
 def precompute_particle_lookup(event):
-    """Precompute a lookup dictionary mapping each trackid to a numpy int64 array
-    of row indices in `event`.
+    """Precompute a lookup dictionary mapping each trackid to a numpy int64
+    array of row indices in `event`.
 
     Returning numpy arrays (instead of Python lists) lets downstream callers fancy-index
     `event_interactions[indices]` directly without a per-call `np.asarray` allocation.
@@ -585,13 +602,30 @@ def is_lineage_broken(
 
 
 def is_lineage_broken_coded(
-    p_type_code, p_creaproc_code, p_edproc_code, p_t, p_x, p_y, p_z,
-    pa_type_code, pa_edproc_code, pa_t, pa_x, pa_y, pa_z,
-    pa_has_digit, pa_has_bracket,
-    gamma_distance_threshold, brem_distance_threshold, time_threshold,
+    p_type_code,
+    p_creaproc_code,
+    p_edproc_code,
+    p_t,
+    p_x,
+    p_y,
+    p_z,
+    pa_type_code,
+    pa_edproc_code,
+    pa_t,
+    pa_x,
+    pa_y,
+    pa_z,
+    pa_has_digit,
+    pa_has_bracket,
+    gamma_distance_threshold,
+    brem_distance_threshold,
+    time_threshold,
 ):
-    """Int-coded twin of `is_lineage_broken`. Same control flow, string
-    equality replaced with int compares against the named-constant codes."""
+    """Int-coded twin of `is_lineage_broken`.
+
+    Same control flow, string equality replaced with int compares
+    against the named-constant codes.
+    """
     # Second step of a decay
     if p_creaproc_code == CREA_RDB and p_edproc_code == EDPROC_RDB:
         return True
@@ -635,14 +669,23 @@ def _classify_gamma_coded(p_edproc_code, classify_phot_as_beta):
 
 
 def classify_lineage_coded(
-    p_type_code, p_creaproc_code, p_edproc_code, p_parenttype_code,
-    p_has_digit, p_has_bracket,
-    ion_A, ion_Z,
-    classify_ic_as_gamma, classify_phot_as_beta,
+    p_type_code,
+    p_creaproc_code,
+    p_edproc_code,
+    p_parenttype_code,
+    p_has_digit,
+    p_has_bracket,
+    ion_A,
+    ion_Z,
+    classify_ic_as_gamma,
+    classify_phot_as_beta,
 ):
-    """Int-coded twin of `classify_lineage`. Returns the same (lineage_class,
+    """Int-coded twin of `classify_lineage`.
+
+    Returns the same (lineage_class,
     lineage_A, lineage_Z) tuple. Ion (A, Z) is pre-resolved per unique type
-    string by `precompute_ion_AZ`, so the regex never fires in the hot path."""
+    string by `precompute_ion_AZ`, so the regex never fires in the hot path.
+    """
     # Internal-conversion electrons: nucleus excitation, EM decay
     if p_has_bracket:
         return NEST_GAMMA if classify_ic_as_gamma else NEST_BETA
@@ -716,9 +759,9 @@ def get_element_and_mass(particle_type):
 def _encode_field(strings, code_map):
     """Convert a numpy array of strings into an int8 array via `code_map`.
 
-    Unknown strings encode as -1. Loops over the small set of known names rather
-    than the (potentially large) array of rows, so the cost is O(rows * unique_names)
-    of vectorised numpy equality.
+    Unknown strings encode as -1. Loops over the small set of known
+    names rather than the (potentially large) array of rows, so the cost
+    is O(rows * unique_names) of vectorised numpy equality.
     """
     out = np.full(len(strings), -1, dtype=np.int8)
     for name, code in code_map.items():
@@ -727,7 +770,8 @@ def _encode_field(strings, code_map):
 
 
 def _has_digit_vectorised(strings):
-    """Per-row 'string contains a digit' check, computed once per unique value."""
+    """Per-row 'string contains a digit' check, computed once per unique
+    value."""
     unique, inverse = np.unique(strings, return_inverse=True)
     flags = np.fromiter(
         (any(c.isdigit() for c in s) for s in unique),
@@ -747,9 +791,9 @@ def precompute_ion_AZ(geant4_interactions):
     string encodes an ion. Cached per unique type string so the regex +
     periodictable lookup runs O(unique_types) instead of O(rows).
 
-    Non-ion rows get (0, 0), matching the implicit None -> 0 conversion in
-    the original code path where `tmp_result[i]["lineage_A"] = None` assigned
-    zero into the int16 field.
+    Non-ion rows get (0, 0), matching the implicit None -> 0 conversion
+    in the original code path where `tmp_result[i]["lineage_A"] = None`
+    assigned zero into the int16 field.
     """
     types = geant4_interactions["type"]
     unique = np.unique(types)
@@ -771,8 +815,8 @@ def precompute_ion_AZ(geant4_interactions):
 
 
 def build_codes(geant4_interactions):
-    """Build the per-row int8 / bool / int16 arrays consumed by the coded
-    hot path in `build_lineage_for_event`.
+    """Build the per-row int8 / bool / int16 arrays consumed by the coded hot
+    path in `build_lineage_for_event`.
 
     Returns a dict keyed by field name; every value is a numpy array aligned
     with `geant4_interactions` rows. Callers slice / permute the values the
@@ -797,7 +841,8 @@ def build_codes(geant4_interactions):
 
 
 def slice_codes(codes, indices):
-    """Apply a permutation, boolean mask, or index array to every entry in `codes`."""
+    """Apply a permutation, boolean mask, or index array to every entry in
+    `codes`."""
     return {k: v[indices] for k, v in codes.items()}
 
 
@@ -846,27 +891,39 @@ def _build_parent_pos(parentid, unique_tid):
 
 @numba.njit(cache=True)
 def _classify_gamma_njit(p_ed, classify_phot_as_beta):
-    """Numba twin of `_classify_gamma_coded`. Returns (lineage_class, A, Z)."""
+    """Numba twin of `_classify_gamma_coded`.
+
+    Returns (lineage_class, A, Z).
+    """
     if p_ed == EDPROC_COMPT:
-        return np.int32(8), np.int16(0), np.int16(0)   # NEST_BETA
+        return np.int32(8), np.int16(0), np.int16(0)  # NEST_BETA
     if p_ed == EDPROC_CONV:
         return np.int32(8), np.int16(0), np.int16(0)
     if p_ed == EDPROC_PHOT:
         if classify_phot_as_beta:
             return np.int32(8), np.int16(0), np.int16(0)
-        return np.int32(7), np.int16(0), np.int16(0)   # NEST_GAMMA
+        return np.int32(7), np.int16(0), np.int16(0)  # NEST_GAMMA
     return np.int32(8), np.int16(0), np.int16(0)
 
 
 @numba.njit(cache=True)
 def _classify_njit(
-    p_type, p_crea, p_ed, p_parenttype,
-    p_has_digit, p_has_bracket,
-    ion_A, ion_Z,
-    classify_ic_as_gamma, classify_phot_as_beta,
+    p_type,
+    p_crea,
+    p_ed,
+    p_parenttype,
+    p_has_digit,
+    p_has_bracket,
+    ion_A,
+    ion_Z,
+    classify_ic_as_gamma,
+    classify_phot_as_beta,
 ):
-    """Numba twin of `classify_lineage_coded`. Returns (lineage_class, A, Z)
-    as a fixed (int32, int16, int16) tuple."""
+    """Numba twin of `classify_lineage_coded`.
+
+    Returns (lineage_class, A, Z) as a fixed (int32, int16, int16)
+    tuple.
+    """
     # Internal-conversion electrons (nucleus excitation, EM decay)
     if p_has_bracket:
         if classify_ic_as_gamma:
@@ -878,8 +935,11 @@ def _classify_njit(
         return np.int32(0), np.int16(0), np.int16(0)
 
     # Neutron as primary particle (parent type empty/none/neutron AND particle is neutron)
-    if (p_parenttype == PARENTTYPE_EMPTY or p_parenttype == PARENTTYPE_NONE
-        or p_parenttype == PARENTTYPE_NEUTRON) and p_type == TYPE_NEUTRON:
+    if (
+        p_parenttype == PARENTTYPE_EMPTY
+        or p_parenttype == PARENTTYPE_NONE
+        or p_parenttype == PARENTTYPE_NEUTRON
+    ) and p_type == TYPE_NEUTRON:
         return np.int32(0), np.int16(0), np.int16(0)
 
     # Interactions following a gamma
@@ -923,10 +983,24 @@ def _classify_njit(
 
 @numba.njit(cache=True)
 def _is_broken_njit(
-    p_type, p_crea, p_ed, p_t, p_x, p_y, p_z,
-    pa_type, pa_ed, pa_t, pa_x, pa_y, pa_z,
-    pa_has_digit, pa_has_bracket,
-    gamma_distance_threshold, brem_distance_threshold, time_threshold,
+    p_type,
+    p_crea,
+    p_ed,
+    p_t,
+    p_x,
+    p_y,
+    p_z,
+    pa_type,
+    pa_ed,
+    pa_t,
+    pa_x,
+    pa_y,
+    pa_z,
+    pa_has_digit,
+    pa_has_bracket,
+    gamma_distance_threshold,
+    brem_distance_threshold,
+    time_threshold,
 ):
     """Numba twin of `is_lineage_broken_coded`."""
     if p_crea == CREA_RDB and p_ed == EDPROC_RDB:
@@ -950,8 +1024,12 @@ def _is_broken_njit(
             return True
 
     if pa_type == TYPE_NEUTRON:
-        if (pa_ed == EDPROC_TRANSPORTATION or pa_ed == EDPROC_HADELASTIC
-            or pa_ed == EDPROC_NEUTRONINELASTIC or pa_ed == EDPROC_NCAPTURE):
+        if (
+            pa_ed == EDPROC_TRANSPORTATION
+            or pa_ed == EDPROC_HADELASTIC
+            or pa_ed == EDPROC_NEUTRONINELASTIC
+            or pa_ed == EDPROC_NCAPTURE
+        ):
             return True
 
     if (p_t - pa_t) > time_threshold:
@@ -962,14 +1040,29 @@ def _is_broken_njit(
 
 @numba.njit(cache=True)
 def _build_lineage_for_event_kernel(
-    trackid, parentid,
-    type_code, parenttype_code, creaproc_code, edproc_code,
-    type_has_digit, type_has_bracket,
-    ion_A_arr, ion_Z_arr,
-    x, y, z, t,
-    trackid_offsets, trackid_indices, trackid_pos, parent_pos,
-    gamma_distance_threshold, brem_distance_threshold, time_threshold,
-    classify_ic_as_gamma, classify_phot_as_beta,
+    trackid,
+    parentid,
+    type_code,
+    parenttype_code,
+    creaproc_code,
+    edproc_code,
+    type_has_digit,
+    type_has_bracket,
+    ion_A_arr,
+    ion_Z_arr,
+    x,
+    y,
+    z,
+    t,
+    trackid_offsets,
+    trackid_indices,
+    trackid_pos,
+    parent_pos,
+    gamma_distance_threshold,
+    brem_distance_threshold,
+    time_threshold,
+    classify_ic_as_gamma,
+    classify_phot_as_beta,
 ):
     """The numba-compiled body of `build_lineage_for_event`.
 
@@ -1051,21 +1144,38 @@ def _build_lineage_for_event_kernel(
 
             if parent_idx >= 0:
                 broken = _is_broken_njit(
-                    type_code[i], creaproc_code[i], edproc_code[i],
-                    t[i], x[i], y[i], z[i],
-                    type_code[parent_idx], edproc_code[parent_idx],
-                    t[parent_idx], x[parent_idx], y[parent_idx], z[parent_idx],
-                    type_has_digit[parent_idx], type_has_bracket[parent_idx],
-                    gamma_distance_threshold, brem_distance_threshold, time_threshold,
+                    type_code[i],
+                    creaproc_code[i],
+                    edproc_code[i],
+                    t[i],
+                    x[i],
+                    y[i],
+                    z[i],
+                    type_code[parent_idx],
+                    edproc_code[parent_idx],
+                    t[parent_idx],
+                    x[parent_idx],
+                    y[parent_idx],
+                    z[parent_idx],
+                    type_has_digit[parent_idx],
+                    type_has_bracket[parent_idx],
+                    gamma_distance_threshold,
+                    brem_distance_threshold,
+                    time_threshold,
                 )
                 if broken:
                     running += np.int32(1)
                     lt, lA, lZ = _classify_njit(
-                        type_code[i], creaproc_code[i], edproc_code[i],
+                        type_code[i],
+                        creaproc_code[i],
+                        edproc_code[i],
                         parenttype_code[i],
-                        type_has_digit[i], type_has_bracket[i],
-                        ion_A_arr[i], ion_Z_arr[i],
-                        classify_ic_as_gamma, classify_phot_as_beta,
+                        type_has_digit[i],
+                        type_has_bracket[i],
+                        ion_A_arr[i],
+                        ion_Z_arr[i],
+                        classify_ic_as_gamma,
+                        classify_phot_as_beta,
                     )
                     lineage_index[i] = running
                     lineage_trackid[i] = np.int16(tid)
@@ -1082,11 +1192,16 @@ def _build_lineage_for_event_kernel(
                 # No parent — start a new lineage.
                 running += np.int32(1)
                 lt, lA, lZ = _classify_njit(
-                    type_code[i], creaproc_code[i], edproc_code[i],
+                    type_code[i],
+                    creaproc_code[i],
+                    edproc_code[i],
                     parenttype_code[i],
-                    type_has_digit[i], type_has_bracket[i],
-                    ion_A_arr[i], ion_Z_arr[i],
-                    classify_ic_as_gamma, classify_phot_as_beta,
+                    type_has_digit[i],
+                    type_has_bracket[i],
+                    ion_A_arr[i],
+                    ion_Z_arr[i],
+                    classify_ic_as_gamma,
+                    classify_phot_as_beta,
                 )
                 lineage_index[i] = running
                 lineage_trackid[i] = np.int16(tid)
@@ -1107,21 +1222,38 @@ def _build_lineage_for_event_kernel(
                     last_idx = idx
 
             broken = _is_broken_njit(
-                type_code[i], creaproc_code[i], edproc_code[i],
-                t[i], x[i], y[i], z[i],
-                type_code[last_idx], edproc_code[last_idx],
-                t[last_idx], x[last_idx], y[last_idx], z[last_idx],
-                type_has_digit[last_idx], type_has_bracket[last_idx],
-                gamma_distance_threshold, brem_distance_threshold, time_threshold,
+                type_code[i],
+                creaproc_code[i],
+                edproc_code[i],
+                t[i],
+                x[i],
+                y[i],
+                z[i],
+                type_code[last_idx],
+                edproc_code[last_idx],
+                t[last_idx],
+                x[last_idx],
+                y[last_idx],
+                z[last_idx],
+                type_has_digit[last_idx],
+                type_has_bracket[last_idx],
+                gamma_distance_threshold,
+                brem_distance_threshold,
+                time_threshold,
             )
             if broken:
                 running += np.int32(1)
                 lt, lA, lZ = _classify_njit(
-                    type_code[i], creaproc_code[i], edproc_code[i],
+                    type_code[i],
+                    creaproc_code[i],
+                    edproc_code[i],
                     parenttype_code[i],
-                    type_has_digit[i], type_has_bracket[i],
-                    ion_A_arr[i], ion_Z_arr[i],
-                    classify_ic_as_gamma, classify_phot_as_beta,
+                    type_has_digit[i],
+                    type_has_bracket[i],
+                    ion_A_arr[i],
+                    ion_Z_arr[i],
+                    classify_ic_as_gamma,
+                    classify_phot_as_beta,
                 )
                 lineage_index[i] = running
                 lineage_trackid[i] = np.int16(tid)
