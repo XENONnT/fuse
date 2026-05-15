@@ -345,13 +345,14 @@ def precompute_parent_lookup(event):
 def get_parent(event_interactions, event_lineage, particle, parent_lookup):
     """Returns the parent particle and its lineage of the given particle.
 
-    When multiple parent interactions share the same time tag (e.g. a fast
-    gamma that Compton-scatters and photoabsorbs within G4's sub-ns time-tag
-    precision), tie-break by spatial proximity to the daughter's creation
-    position. Without the spatial tie-break, the original time-cut + array-
-    last logic mis-attributes the daughter's parent to whichever same-time
-    step happens to be last in the array, even when that step is several cm
-    away at a different vertex (see e.g. K40 / Co60 single-gamma decays).
+    When multiple parent interactions share the same time tag (e.g. a
+    fast gamma that Compton-scatters and photoabsorbs within G4's sub-ns
+    time-tag precision), tie-break by spatial proximity to the
+    daughter's creation position. Without the spatial tie-break, the
+    original time-cut + array- last logic mis-attributes the daughter's
+    parent to whichever same-time step happens to be last in the array,
+    even when that step is several cm away at a different vertex (see
+    e.g. K40 / Co60 single-gamma decays).
     """
     parent_id = parent_lookup.get(particle["trackid"], None)
     if parent_id is None:
