@@ -51,8 +51,8 @@ _PARENTTYPE_CODE = {name: i for i, name in enumerate(_PARENTTYPE_NAMES)}
 _CREAPROC_CODE = {name: i for i, name in enumerate(_CREAPROC_NAMES)}
 _EDPROC_CODE = {name: i for i, name in enumerate(_EDPROC_NAMES)}
 
-# Named constants used by the coded helpers (`is_lineage_broken_coded`,
-# `classify_lineage_coded`). Reading these is a single integer dereference.
+# Named constants used by the numba kernels (`_is_broken_njit`,
+# `_classify_njit`). Reading these is a single integer dereference.
 TYPE_ALPHA = _TYPE_CODE["alpha"]
 TYPE_EM = _TYPE_CODE["e-"]
 TYPE_EP = _TYPE_CODE["e+"]
@@ -330,413 +330,6 @@ class LineageClustering(FuseBasePlugin):
         return tmp_result
 
 
-def precompute_particle_lookup(event):
-    """Precompute a lookup dictionary mapping each trackid to a numpy int64
-    array of row indices in `event`.
-
-    Returning numpy arrays (instead of Python lists) lets downstream callers fancy-index
-    `event_interactions[indices]` directly without a per-call `np.asarray` allocation.
-    """
-    trackids = event["trackid"]
-    counts = {}
-    for tid in trackids:
-        counts[tid] = counts.get(tid, 0) + 1
-    buffers = {tid: np.empty(n, dtype=np.int64) for tid, n in counts.items()}
-    cursor = {tid: 0 for tid in counts}
-    for idx in range(len(trackids)):
-        tid = trackids[idx]
-        buffers[tid][cursor[tid]] = idx
-        cursor[tid] += 1
-    return buffers
-
-
-def get_particle(event_interactions, event_lineage, index, trackid_lookup):
-    """Returns the particle at the index and the lineage of all interactions of
-    the same particle."""
-    event = event_interactions[index]
-    particle_indices = trackid_lookup[event["trackid"]]
-    return event, event_lineage[particle_indices]
-
-
-def get_last_particle_interaction(event_interactions, particle_lineage, particle_indices):
-    """Returns the last (previous in time) interaction of the particle that is
-    in the lineage.
-
-    `particle_indices` is the precomputed `trackid_lookup[particle["trackid"]]` slice,
-    so we avoid re-scanning `event_interactions["trackid"] == particle["trackid"]`.
-    The nonzero check is made explicit on `lineage_index` (rather than relying on
-    numpy's structured-array logical-OR semantics).
-    """
-    all_particle_interactions = event_interactions[particle_indices]
-
-    index_of_last_interaction = np.nonzero(particle_lineage["lineage_index"])[0][-1]
-
-    return (
-        all_particle_interactions[index_of_last_interaction],
-        particle_lineage[index_of_last_interaction],
-    )
-
-
-def precompute_parent_lookup(event):
-    """Precompute a lookup dictionary for parent relationships."""
-    parent_lookup = {}
-    for idx, (trackid, parentid) in enumerate(zip(event["trackid"], event["parentid"])):
-        parent_lookup[trackid] = parentid
-    return parent_lookup
-
-
-def get_parent(event_interactions, event_lineage, particle, parent_lookup, trackid_lookup):
-    """Returns the parent particle and its lineage of the given particle.
-
-    Uses the precomputed `trackid_lookup` (built once per event in
-    `precompute_particle_lookup`) to fetch the parent's row indices in O(1)
-    instead of re-scanning `event_interactions["trackid"] == parent_id`.
-
-    When multiple parent interactions share the same time tag (e.g. a fast
-    gamma that Compton-scatters and photoabsorbs within G4's sub-ns time-tag
-    precision), tie-break by spatial proximity to the daughter's creation
-    position so the daughter is attributed to the nearest same-time vertex
-    rather than whichever step happens to be last in the array.
-    """
-    parent_id = parent_lookup.get(particle["trackid"], None)
-    if parent_id is None:
-        return None, None
-
-    parent_indices = trackid_lookup.get(parent_id, None)
-    if parent_indices is None or len(parent_indices) == 0:
-        return None, None
-
-    parent_interactions = event_interactions[parent_indices]
-    parent_lineages = event_lineage[parent_indices]
-
-    parent_interactions_time_cut = parent_interactions["t"] <= particle["t"]
-
-    if np.sum(parent_interactions_time_cut) == 0:
-        parent_to_return = np.argmin(abs(parent_interactions["t"] - particle["t"]))
-        return parent_interactions[parent_to_return], parent_lineages[parent_to_return]
-
-    # Among parents with t <= particle.t, pick the latest time and then
-    # tie-break by spatial proximity if multiple steps share that latest time.
-    candidates = parent_interactions[parent_interactions_time_cut]
-    candidate_lineages = parent_lineages[parent_interactions_time_cut]
-    t_max = candidates["t"].max()
-    same_time_mask = candidates["t"] == t_max
-    if same_time_mask.sum() == 1:
-        idx = int(np.where(same_time_mask)[0][0])
-        return candidates[idx], candidate_lineages[idx]
-
-    same_time = candidates[same_time_mask]
-    same_time_lineages = candidate_lineages[same_time_mask]
-    distances = np.sqrt(
-        (same_time["x"] - particle["x"]) ** 2
-        + (same_time["y"] - particle["y"]) ** 2
-        + (same_time["z"] - particle["z"]) ** 2
-    )
-    nearest = int(np.argmin(distances))
-    return same_time[nearest], same_time_lineages[nearest]
-
-
-def is_particle_in_lineage(lineage):
-    """Function to check if a particle is already in a lineage."""
-
-    # All particles in the lineage have not been added to a lineage yet
-    if np.all(lineage["lineage_index"] == 0):
-        return False
-    else:
-        return True
-
-
-def num_there(s):
-    return any(i.isdigit() for i in s)
-
-
-def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_as_beta):
-    """Function to classify a new lineage based on the particle and its parent
-    information."""
-
-    def classify_gamma(particle_interaction):
-        if particle_interaction["edproc"] == "compt":
-            return NEST_BETA
-        elif particle_interaction["edproc"] == "conv":
-            return NEST_BETA
-        elif particle_interaction["edproc"] == "phot":
-            # This is gamma photoabsorption. Return gamma
-            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
-        else:
-            # could be rayleigh scattering or something else. Classify it as gamma...
-            return NEST_BETA
-
-    # If [ in type, it is a nucleus excitation, decaying electromagnetically
-    # this will become the lineage of internal conversion electrons
-    if "[" in particle_interaction["type"]:
-        return NEST_GAMMA if classify_ic_as_gamma else NEST_BETA
-
-    # NR interactions
-    if (particle_interaction["parenttype"] == "neutron") & (
-        num_there(particle_interaction["type"])
-    ):
-        return NEST_NR
-
-    # Neutron as primary particle
-    elif (particle_interaction["parenttype"] in ["", "none", "neutron"]) & (
-        particle_interaction["type"] == "neutron"
-    ):
-        return NEST_NR
-
-    # Interactions following a gamma
-    elif particle_interaction["parenttype"] == "gamma":
-        if particle_interaction["creaproc"] == "compt":
-            return NEST_BETA
-        elif particle_interaction["creaproc"] == "conv":
-            return NEST_BETA
-        elif particle_interaction["creaproc"] == "phot":
-            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
-        elif particle_interaction["creaproc"] == "photonNuclear":
-            # nuclear recoil after photonuclear interaction
-            if num_there(particle_interaction["type"]):
-                return NEST_NR
-            elif particle_interaction["type"] == "neutron":
-                return NEST_NR
-            # gamma ray after photonuclear interaction
-            elif particle_interaction["type"] == "gamma":
-                return classify_gamma(particle_interaction)
-            else:
-                return NEST_NONE
-        else:
-            # This case should not happen? Classify it as none type
-            return NEST_NONE
-
-    # Electrons or positrons that are not created by a gamma.
-    elif (particle_interaction["type"] == "e-") | (particle_interaction["type"] == "e+"):
-        return NEST_BETA
-
-    # The gamma case
-    elif particle_interaction["type"] == "gamma":
-        return classify_gamma(particle_interaction)
-
-    # Primaries and decay products
-    elif (particle_interaction["creaproc"] == "RadioactiveDecayBase") or (
-        particle_interaction["parenttype"] == "none"
-    ):
-        # Alpha particles
-        if particle_interaction["type"] == "alpha":
-            return NEST_ALPHA
-
-        # Ions
-        elif num_there(particle_interaction["type"]):
-            element_number, mass = get_element_and_mass(particle_interaction["type"])
-            return 6, mass, element_number
-
-        else:
-            # This case should not happen? Classify it as NONE
-            return NEST_NONE
-
-    else:
-        # No classification possible. Classify it as nontype
-        return NEST_NONE
-
-
-def is_lineage_broken(
-    particle,
-    parent,
-    gamma_distance_threshold,
-    brem_distance_threshold,
-    time_threshold,
-):
-    """Function to check if the lineage is broken."""
-
-    # second step of a decay. We want to split the lineage
-    if (
-        particle["creaproc"] == "RadioactiveDecayBase"
-        and particle["edproc"] == "RadioactiveDecayBase"
-    ):
-        return True
-
-    # In the nest code: lineage is always broken if the parent is an ion
-    # this breaks the lineage for all ions, also for alpha decays (we need it)
-    # but if it's via an excited nuclear state, we want to keep the lineage
-    if (num_there(parent["type"])) and ("[" not in parent["type"]):
-        return True
-
-    # For gamma rays, check the distance between the parent and the particle
-    if particle["type"] == "gamma":
-
-        if particle["creaproc"] == "phot" and particle["edproc"] == "phot":
-            # We do not want to split a photo absorption into two clusters
-            # The second photo absorption (that we see) could be x rays
-            return False
-
-        # Break the lineage for these transportation gammas
-        # Transportations is a special case. They are not real gammas.
-        # They are just used to transport the energy
-        # to another volume in the detector (teflon, gas, etc.)
-        if parent["edproc"] == "Transportation":
-            return True
-
-        particle_position = np.array([particle["x"], particle["y"], particle["z"]])
-        parent_position = np.array([parent["x"], parent["y"], parent["z"]])
-        distance = np.sqrt(np.sum((parent_position - particle_position) ** 2, axis=0))
-
-        if particle["creaproc"] == "eBrem":
-            # we do not want to split a bremsstrahlung into two clusters
-            # if the distance is really small, it is most likely the same interaction
-            if distance < brem_distance_threshold:
-                return False
-
-        if distance > gamma_distance_threshold:
-            return True
-
-    # break neutron lineage
-    if parent["type"] == "neutron":
-        if parent["edproc"] in ["Transportation", "hadElastic", "neutronInelastic", "nCapture"]:
-            return True
-
-    # I also want to break the lineage if the interaction happens way after the parent interaction
-    time_difference = particle["t"] - parent["t"]
-
-    if time_difference > time_threshold:
-        return True
-
-    # Otherwise the lineage is not broken
-    return False
-
-
-def is_lineage_broken_coded(
-    p_type_code,
-    p_creaproc_code,
-    p_edproc_code,
-    p_t,
-    p_x,
-    p_y,
-    p_z,
-    pa_type_code,
-    pa_edproc_code,
-    pa_t,
-    pa_x,
-    pa_y,
-    pa_z,
-    pa_has_digit,
-    pa_has_bracket,
-    gamma_distance_threshold,
-    brem_distance_threshold,
-    time_threshold,
-):
-    """Int-coded twin of `is_lineage_broken`.
-
-    Same control flow, string equality replaced with int compares
-    against the named-constant codes.
-    """
-    # Second step of a decay
-    if p_creaproc_code == CREA_RDB and p_edproc_code == EDPROC_RDB:
-        return True
-
-    # Parent is an ion (has digit) but not in excited state (no bracket)
-    if pa_has_digit and not pa_has_bracket:
-        return True
-
-    if p_type_code == TYPE_GAMMA:
-        if p_creaproc_code == CREA_PHOT and p_edproc_code == EDPROC_PHOT:
-            return False
-        if pa_edproc_code == EDPROC_TRANSPORTATION:
-            return True
-        dx = pa_x - p_x
-        dy = pa_y - p_y
-        dz = pa_z - p_z
-        distance = (dx * dx + dy * dy + dz * dz) ** 0.5
-        if p_creaproc_code == CREA_EBREM and distance < brem_distance_threshold:
-            return False
-        if distance > gamma_distance_threshold:
-            return True
-
-    if pa_type_code == TYPE_NEUTRON and pa_edproc_code in EDPROC_NEUTRON_BREAK:
-        return True
-
-    if (p_t - pa_t) > time_threshold:
-        return True
-
-    return False
-
-
-def _classify_gamma_coded(p_edproc_code, classify_phot_as_beta):
-    """Int-coded twin of the inner `classify_gamma`."""
-    if p_edproc_code == EDPROC_COMPT:
-        return NEST_BETA
-    if p_edproc_code == EDPROC_CONV:
-        return NEST_BETA
-    if p_edproc_code == EDPROC_PHOT:
-        return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
-    return NEST_BETA
-
-
-def classify_lineage_coded(
-    p_type_code,
-    p_creaproc_code,
-    p_edproc_code,
-    p_parenttype_code,
-    p_has_digit,
-    p_has_bracket,
-    ion_A,
-    ion_Z,
-    classify_ic_as_gamma,
-    classify_phot_as_beta,
-):
-    """Int-coded twin of `classify_lineage`.
-
-    Returns the same (lineage_class,
-    lineage_A, lineage_Z) tuple. Ion (A, Z) is pre-resolved per unique type
-    string by `precompute_ion_AZ`, so the regex never fires in the hot path.
-    """
-    # Internal-conversion electrons: nucleus excitation, EM decay
-    if p_has_bracket:
-        return NEST_GAMMA if classify_ic_as_gamma else NEST_BETA
-
-    # NR interactions following a neutron
-    if p_parenttype_code == PARENTTYPE_NEUTRON and p_has_digit:
-        return NEST_NR
-
-    # Neutron as primary particle
-    if (p_parenttype_code in PARENTTYPE_NEUTRON_PRIMARY) and (p_type_code == TYPE_NEUTRON):
-        return NEST_NR
-
-    # Interactions following a gamma
-    if p_parenttype_code == PARENTTYPE_GAMMA:
-        if p_creaproc_code == CREA_COMPT:
-            return NEST_BETA
-        if p_creaproc_code == CREA_CONV:
-            return NEST_BETA
-        if p_creaproc_code == CREA_PHOT:
-            return NEST_BETA if classify_phot_as_beta else NEST_GAMMA
-        if p_creaproc_code == CREA_PHOTONNUCLEAR:
-            if p_has_digit:
-                return NEST_NR
-            if p_type_code == TYPE_NEUTRON:
-                return NEST_NR
-            if p_type_code == TYPE_GAMMA:
-                return _classify_gamma_coded(p_edproc_code, classify_phot_as_beta)
-            return NEST_NONE
-        return NEST_NONE
-
-    # Electrons or positrons not from a gamma
-    if p_type_code == TYPE_EM or p_type_code == TYPE_EP:
-        return NEST_BETA
-
-    # The gamma case
-    if p_type_code == TYPE_GAMMA:
-        return _classify_gamma_coded(p_edproc_code, classify_phot_as_beta)
-
-    # Primaries and decay products
-    if p_creaproc_code == CREA_RDB or p_parenttype_code == PARENTTYPE_NONE:
-        if p_type_code == TYPE_ALPHA:
-            return NEST_ALPHA
-        if p_has_digit:
-            # Ion: (lineage_class=6, lineage_A=mass, lineage_Z=element_number)
-            return (6, ion_A, ion_Z)
-        return NEST_NONE
-
-    # No classification possible
-    return NEST_NONE
-
-
 def get_element_and_mass(particle_type):
     """Function to get the element and the mass number from the particle
     type."""
@@ -891,7 +484,7 @@ def _build_parent_pos(parentid, unique_tid):
 
 @numba.njit(cache=True)
 def _classify_gamma_njit(p_ed, classify_phot_as_beta):
-    """Numba twin of `_classify_gamma_coded`.
+    """Numba kernel for the gamma end-process sub-classification.
 
     Returns (lineage_class, A, Z).
     """
@@ -919,7 +512,7 @@ def _classify_njit(
     classify_ic_as_gamma,
     classify_phot_as_beta,
 ):
-    """Numba twin of `classify_lineage_coded`.
+    """Numba kernel assigning the NEST lineage class from int-coded fields.
 
     Returns (lineage_class, A, Z) as a fixed (int32, int16, int16)
     tuple.
@@ -1002,7 +595,7 @@ def _is_broken_njit(
     brem_distance_threshold,
     time_threshold,
 ):
-    """Numba twin of `is_lineage_broken_coded`."""
+    """Numba kernel deciding whether a lineage is broken from int-coded fields."""
     if p_crea == CREA_RDB and p_ed == EDPROC_RDB:
         return True
 
@@ -1091,14 +684,14 @@ def _build_lineage_for_event_kernel(
         if not visited[pos]:
             visited[pos] = True
 
-            # --- get_parent: find parent's row index ---
+            # --- find parent's row index ---
             parent_idx = np.int64(-1)
             ppos = parent_pos[i]
             if ppos >= 0:
                 p_start = trackid_offsets[ppos]
                 p_end = trackid_offsets[ppos + 1]
                 t_i = t[i]
-                # Inlined parent-finding, matching `get_parent`:
+                # Parent-finding among the parent trackid's interactions:
                 #   (1) find t_max = max(t[idx] for idx in slice if t[idx] <= t_i)
                 #   (2) among entries with t[idx] == t_max, pick the one
                 #       spatially closest to (x[i], y[i], z[i]).
@@ -1323,30 +916,3 @@ def assign_main_cluster_type_to_event(event):
     propagate_mega_type("beta_brem")
 
     return main_cluster_types
-
-
-def start_new_lineage(
-    particle, tmp_result, i, running_lineage_index, classify_ic_as_gamma, classify_phot_as_beta
-):
-
-    lineage_class, lineage_A, lineage_Z = classify_lineage(
-        particle, classify_ic_as_gamma, classify_phot_as_beta
-    )
-    tmp_result[i]["lineage_index"] = running_lineage_index
-    tmp_result[i]["lineage_trackid"] = particle["trackid"]
-    tmp_result[i]["lineage_type"] = lineage_class
-    tmp_result[i]["lineage_A"] = lineage_A
-    tmp_result[i]["lineage_Z"] = lineage_Z
-
-    return tmp_result
-
-
-def continue_lineage(particle, tmp_result, i, parent_lineage):
-
-    tmp_result[i]["lineage_index"] = parent_lineage["lineage_index"]
-    tmp_result[i]["lineage_trackid"] = parent_lineage["lineage_trackid"]
-    tmp_result[i]["lineage_type"] = parent_lineage["lineage_type"]
-    tmp_result[i]["lineage_A"] = parent_lineage["lineage_A"]
-    tmp_result[i]["lineage_Z"] = parent_lineage["lineage_Z"]
-
-    return tmp_result
