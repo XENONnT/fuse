@@ -595,7 +595,8 @@ def _is_broken_njit(
     brem_distance_threshold,
     time_threshold,
 ):
-    """Numba kernel deciding whether a lineage is broken from int-coded fields."""
+    """Numba kernel deciding whether a lineage is broken from int-coded
+    fields."""
     if p_crea == CREA_RDB and p_ed == EDPROC_RDB:
         return True
 
