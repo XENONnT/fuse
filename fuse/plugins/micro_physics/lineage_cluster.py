@@ -90,7 +90,6 @@ class LineageClustering(FuseBasePlugin):
         Returns:
             np.ndarray: An array of cluster IDs with corresponding time and endtime values.
         """
-
         self.log.debug(f"Building lineages for {len(geant4_interactions)} interactions")
 
         if len(geant4_interactions) == 0:
@@ -288,10 +287,9 @@ class LineageClustering(FuseBasePlugin):
                         )
 
                 else:
-                    raise ValueError(
-                        "There is no last particle interaction but we have seen \
-                        this particle before.... Makes no sense.."
-                    )
+                    raise ValueError(\
+                                     "There is no last particle interaction but we have seen \
+                        this particle before.... Makes no sense..")
 
         tmp_result["main_cluster_type"] = main_cluster_type
 
@@ -319,7 +317,6 @@ def get_particle(event_interactions, event_lineage, index, trackid_lookup):
 def get_last_particle_interaction(event_interactions, particle, particle_lineage):
     """Returns the last (previous in time) interaction of the particle that is
     in the lineage."""
-
     # Get all interactions for the given particle
     all_particle_interactions = event_interactions[
         event_interactions["trackid"] == particle["trackid"]
@@ -394,7 +391,6 @@ def get_parent(event_interactions, event_lineage, particle, parent_lookup):
 
 def is_particle_in_lineage(lineage):
     """Function to check if a particle is already in a lineage."""
-
     # All particles in the lineage have not been added to a lineage yet
     if np.all(lineage["lineage_index"] == 0):
         return False
@@ -409,7 +405,6 @@ def num_there(s):
 def classify_lineage(particle_interaction, classify_ic_as_gamma, classify_phot_as_beta):
     """Function to classify a new lineage based on the particle and its parent
     information."""
-
     def classify_gamma(particle_interaction):
         if particle_interaction["edproc"] == "compt":
             return NEST_BETA
@@ -500,7 +495,6 @@ def is_lineage_broken(
     time_threshold,
 ):
     """Function to check if the lineage is broken."""
-
     # second step of a decay. We want to split the lineage
     if (
         particle["creaproc"] == "RadioactiveDecayBase"
@@ -560,7 +554,6 @@ def is_lineage_broken(
 def get_element_and_mass(particle_type):
     """Function to get the element and the mass number from the particle
     type."""
-
     pattern_match = re.match(r"([a-z]+)([0-9]+)", particle_type, re.I)
 
     if pattern_match:
