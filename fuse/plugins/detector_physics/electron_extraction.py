@@ -12,11 +12,11 @@ class ElectronExtraction(FuseBasePlugin):
     """Plugin to simulate the loss of electrons during the extraction of
     drifted electrons from the liquid into the gas phase."""
 
-    __version__ = "0.3.0"
+    __version__ = "0.4.0"
 
     depends_on = "electrons_at_interface"
     provides = "extracted_electrons"
-    data_kind = "individual_electrons"
+    data_kind = "extracted_electrons"
 
     save_when = strax.SaveWhen.TARGET
 

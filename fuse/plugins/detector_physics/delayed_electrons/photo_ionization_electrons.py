@@ -25,7 +25,6 @@ class PhotoIonizationElectrons(FuseBasePlugin):
 
     depends_on = (
         "s2_photons_sum",
-        "s2_photons",
         "extracted_electrons",
         "microphysics_summary",
     )
@@ -148,7 +147,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
 
     def infer_dtype(self):
         # Thake the same dtype as microphysics_summary
-        dtype = self.deps["s2_photons"].deps["microphysics_summary"].dtype
+        dtype = self.deps["microphysics_summary"].dtype
 
         return dtype
 
@@ -177,7 +176,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
             self.photoionization_time_cutoff_mc / self.photoionization_time_constant
         )
 
-    def compute(self, interactions_in_roi, individual_electrons):
+    def compute(self, interactions_in_roi, extracted_electrons):
 
         # Just apply this to clusters with S2 photons
         mask = interactions_in_roi["sum_s2_photons"] > 0
@@ -189,7 +188,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
             return np.zeros(0, self.dtype)
 
         electrons_per_interaction, unique_cluster_id = group_electrons_by_cluster_id(
-            individual_electrons
+            extracted_electrons
         )
         matching_index = np.searchsorted(unique_cluster_id, interactions_in_roi[mask]["cluster_id"])
 

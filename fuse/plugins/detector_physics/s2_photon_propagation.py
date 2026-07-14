@@ -241,25 +241,25 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         self._mem_cap_bytes = int(256 * 1024**2)  # ~256 MB for Ne×C scratch
         self._max_electrons_block = None  # computed lazily per chunk
 
-    def compute(self, individual_electrons, start, end):
+    def compute(self, extracted_electrons, start, end):
 
-        if len(individual_electrons) == 0:
+        if len(extracted_electrons) == 0:
             yield self.chunk(start=start, end=end, data=np.zeros(0, dtype=self.dtype))
             return
 
         # Downchunking (logic unchanged)
-        electron_time_gaps = individual_electrons["time"][1:] - individual_electrons["time"][:-1]
+        electron_time_gaps = extracted_electrons["time"][1:] - extracted_electrons["time"][:-1]
         electron_time_gaps = np.append(electron_time_gaps, 0)
 
         split_index = find_electron_split_index(
-            individual_electrons,
+            extracted_electrons,
             electron_time_gaps,
             file_size_limit=self.propagated_s2_photons_file_size_target,
             min_gap_length=self.min_electron_gap_length_for_splitting,
             mean_n_photons_per_electron=self.s2_secondary_sc_gain_mc,
         )
 
-        electron_chunks = np.array_split(individual_electrons, split_index)
+        electron_chunks = np.array_split(extracted_electrons, split_index)
 
         n_chunks = len(electron_chunks)
         if n_chunks > 1:
