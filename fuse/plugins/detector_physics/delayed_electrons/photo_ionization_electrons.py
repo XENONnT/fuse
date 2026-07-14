@@ -147,7 +147,7 @@ class PhotoIonizationElectrons(FuseBasePlugin):
 
     def infer_dtype(self):
         # Thake the same dtype as microphysics_summary
-        dtype = self.deps["s2_photons"].deps["microphysics_summary"].dtype
+        dtype = self.deps["microphysics_summary"].dtype
 
         return dtype
 
