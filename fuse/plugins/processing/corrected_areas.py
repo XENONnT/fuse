@@ -18,7 +18,7 @@ class CorrectedAreasMC(straxen.CorrectedAreas):
     data!
     """
 
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
     child_plugin = True
 
     def compute(self, events):
@@ -35,5 +35,19 @@ class CorrectedAreasMC(straxen.CorrectedAreas):
             result["alt_cs2"] = result["alt_cs2_w_bias_xy_elife"]
         else:
             raise RuntimeError("Please check your straxen compatibility")
+
+        # For MC we want to avoid injecting data-driven top/bottom XY corrections into AFT.
+        # So we redefine it from uncorrected variables + PI correction (that's usually 1 by default)
+        pi_corr_bottom = self.cs2_bottom_top_ratio_correction
+
+        s2_area = events["s2_area"]
+        aft = events["s2_area_fraction_top"]
+
+        s2_area_top = s2_area * aft
+        s2_area_bottom = s2_area * (1 - aft)
+
+        result["cs2_area_fraction_top"] = s2_area_top / (
+            s2_area_top + s2_area_bottom * pi_corr_bottom
+        )
 
         return result
