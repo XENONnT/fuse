@@ -115,6 +115,17 @@ def modify_s2_pattern_map(
     return s2_pattern_map
 
 
+@URLConfig.register("lce_from_pattern_map")
+def lce_from_pattern_map(map, pmt_mask):
+    """Build a S1 lce correction map from a S1 pattern map."""
+
+    lcemap = deepcopy(map)
+    lcemap.data["map"] = np.sum(lcemap.data["map"][:][:][:], axis=3, keepdims=True, where=pmt_mask)
+    lcemap.__init__(lcemap.data)
+    return lcemap
+
+
+
 # Probably not needed!
 @URLConfig.register("simple_load")
 def load(data):
@@ -130,15 +141,24 @@ def from_config(config_name, key):
         raise ValueError(f"Key {key} not found in {config_name}")
     return config[key]
 
-
 class DummyMap:
     """Return constant results with length equal to that of the input and
     second dimensions (constand correction) user-defined."""
 
     def __init__(self, const, shape=()):
-        self.const = float(const)
-        self.shape = shape
-        self.data = {"map": np.ones(shape)}
+
+        # The normal case where the user provides a single number for the constant correction
+        if isinstance(const, str):
+            self.const = float(const)
+            self.shape = shape
+            self.data = {"map": np.ones(shape) * self.const}
+
+        # The case where the map was modified outside, e.g. to build a LCE map from s1 pattern map
+        if isinstance(const, dict):
+            # Just pick the first value of map as the constant, since all values should be the same after modification
+            self.const = const["map"].flat[0]
+            self.shape = const["map"].shape
+            self.data = {"map": const["map"]}
 
     def __call__(self, x, **kwargs):
         shape = [len(x)] + list(self.shape)
