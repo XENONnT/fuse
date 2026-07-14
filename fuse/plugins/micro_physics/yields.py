@@ -20,9 +20,13 @@ class NestYields(FuseBasePlugin):
 
     __version__ = "0.3.0"
 
-    depends_on = ("interactions_in_roi", "electric_field_values")
+    depends_on = (
+        "clustered_interactions",
+        "electric_field_values",
+        "volume_properties",
+    )
     provides = "quanta"
-    data_kind = "interactions_in_roi"
+    data_kind = "clustered_interactions"
 
     dtype = quanta_fields + strax.time_fields
 
@@ -140,9 +144,9 @@ class NestYields(FuseBasePlugin):
 
         return free_parameters
 
-    def compute(self, interactions_in_roi):
+    def compute(self, clustered_interactions):
 
-        if len(interactions_in_roi) == 0:
+        if len(clustered_interactions) == 0:
             return np.zeros(0, dtype=self.dtype)
 
         # set the global nest random generator with self.short_seed
@@ -152,21 +156,21 @@ class NestYields(FuseBasePlugin):
         # increment the seed. Next chunk we will use the modified seed to generate random numbers
         self.short_seed += 1
 
-        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
-        result["time"] = interactions_in_roi["time"]
-        result["endtime"] = interactions_in_roi["endtime"]
+        result = np.zeros(len(clustered_interactions), dtype=self.dtype)
+        result["time"] = clustered_interactions["time"]
+        result["endtime"] = clustered_interactions["endtime"]
 
         # Generate quanta:
-        if len(interactions_in_roi) > 0:
+        if len(clustered_interactions) > 0:
 
             photons, electrons, excitons = self.vectorized_get_quanta(
-                interactions_in_roi["ed"],
-                interactions_in_roi["nestid"],
-                interactions_in_roi["e_field"],
-                interactions_in_roi["A"],
-                interactions_in_roi["Z"],
-                interactions_in_roi["create_S2"],
-                interactions_in_roi["xe_density"],
+                clustered_interactions["ed"],
+                clustered_interactions["nestid"],
+                clustered_interactions["e_field"],
+                clustered_interactions["A"],
+                clustered_interactions["Z"],
+                clustered_interactions["create_S2"],
+                clustered_interactions["xe_density"],
             )
             result["photons"] = photons
             result["electrons"] = electrons
@@ -264,8 +268,9 @@ class NestYields(FuseBasePlugin):
 class BBFYields(FuseBasePlugin):
     __version__ = "0.1.1"
 
-    depends_on = ("interactions_in_roi", "electric_field_values")
+    depends_on = ("clustered_interactions", "electric_field_values", "volume_properties")
     provides = "quanta"
+    data_kind = "clustered_interactions"
 
     dtype = quanta_fields + strax.time_fields
 
@@ -274,17 +279,17 @@ class BBFYields(FuseBasePlugin):
 
         self.bbfyields = BBF_quanta_generator(self.rng)
 
-    def compute(self, interactions_in_roi):
-        result = np.zeros(len(interactions_in_roi), dtype=self.dtype)
-        result["time"] = interactions_in_roi["time"]
-        result["endtime"] = interactions_in_roi["endtime"]
+    def compute(self, clustered_interactions):
+        result = np.zeros(len(clustered_interactions), dtype=self.dtype)
+        result["time"] = clustered_interactions["time"]
+        result["endtime"] = clustered_interactions["endtime"]
 
         # Generate quanta:
-        if len(interactions_in_roi) > 0:
+        if len(clustered_interactions) > 0:
             photons, electrons, excitons = self.bbfyields.get_quanta_vectorized(
-                energy=interactions_in_roi["ed"],
-                interaction=interactions_in_roi["nestid"],
-                field=interactions_in_roi["e_field"],
+                energy=clustered_interactions["ed"],
+                interaction=clustered_interactions["nestid"],
+                field=clustered_interactions["e_field"],
             )
 
             result["photons"] = photons
@@ -434,19 +439,37 @@ class BBF_quanta_generator:
 
         return 1.0 - np.log(1.0 + Ni * xi) / (Ni * xi)
 
+    def safe_binomial(self, n, p, *, where=""):
+        import warnings
+
+        # Make p safe for numpy binomial
+        p_safe = np.nan_to_num(p, nan=0.0, posinf=1.0, neginf=0.0)
+        p_safe = np.clip(p_safe, 0.0, 1.0)
+
+        # Make n safe too (binomial needs integer n >= 0)
+        n_safe = np.asarray(n)
+        n_safe = np.where(np.isfinite(n_safe), n_safe, 0)
+        n_safe = np.clip(n_safe, 0, None).astype(np.int64)
+
+        # Warn if we had to change anything (compact, informative)
+        if np.any(p_safe != p) or np.any(n_safe != n):
+            warnings.warn(f"BBF safe_binomial sanitized inputs {where}", RuntimeWarning)
+
+        return self.rng.binomial(n_safe, p_safe)
+
     def get_ER_quanta(self, energy, field, par_dict):
         Nq_mean = energy / par_dict["W"]
         Nq = np.clip(
             np.round(self.rng.normal(Nq_mean, np.sqrt(Nq_mean * par_dict["fano"]))), 0, np.inf
         ).astype(np.int64)
 
-        Ni = self.rng.binomial(Nq, 1.0 / (1.0 + par_dict["Nex/Ni"]))
+        Ni = self.safe_binomial(Nq, 1.0 / (1.0 + par_dict["Nex/Ni"]), where="get_ER_quanta")
 
         recomb = self.ER_recomb(energy, field, par_dict)
         drecomb = self.ER_drecomb(energy, par_dict)
         true_recomb = np.clip(self.rng.normal(recomb, drecomb), 0.0, 1.0)
 
-        Ne = self.rng.binomial(Ni, 1.0 - true_recomb)
+        Ne = self.safe_binomial(Ni, 1.0 - true_recomb, where="get_ER_quanta")
         Nph = Nq - Ne
         Nex = Nq - Ni
         return Nph, Ne, Nex
@@ -458,18 +481,18 @@ class BBF_quanta_generator:
         )
 
         quenching = self.NR_quenching(energy, par_dict)
-        Nq = self.rng.binomial(Nq, quenching)
+        Nq = self.safe_binomial(Nq, quenching, where="get_NR_quanta")
 
         ExIonRatio = self.NR_ExIonRatio(energy, field, par_dict)
-        Ni = self.rng.binomial(Nq, ExIonRatio / (1.0 + ExIonRatio))
+        Ni = self.safe_binomial(Nq, ExIonRatio / (1.0 + ExIonRatio), where="get_NR_quanta")
 
         penning_quenching = self.NR_Penning_quenching(energy, par_dict)
-        Nex = self.rng.binomial(Nq - Ni, penning_quenching)
+        Nex = self.safe_binomial(Nq - Ni, penning_quenching, where="get_NR_quanta")
 
         recomb = self.NR_recomb(energy, field, par_dict)
         if recomb < 0 or recomb > 1:
             return None, None
 
-        Ne = self.rng.binomial(Ni, 1.0 - recomb)
+        Ne = self.safe_binomial(Ni, 1.0 - recomb, where="get_NR_quanta")
         Nph = Ni + Nex - Ne
         return Nph, Ne, Nex

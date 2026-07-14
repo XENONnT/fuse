@@ -60,10 +60,6 @@ class TestMicroPhysics(TestMicroPhysicsBase):
     def test_MergeCluster(self):
         self.test_context.make(self.run_number, "clustered_interactions")
 
-    @timeout_decorator.timeout(TIMEOUT, exception_message="VolumesMerger timed out")
-    def test_VolumesMerger(self):
-        self.test_context.make(self.run_number, "interactions_in_roi")
-
     @timeout_decorator.timeout(TIMEOUT, exception_message="ElectricField timed out")
     def test_ElectricField(self):
         self.test_context.make(self.run_number, "electric_field_values")

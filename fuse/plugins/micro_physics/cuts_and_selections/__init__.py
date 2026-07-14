@@ -1,6 +1,3 @@
-from . import apply_selections
-from .apply_selections import *
-
 from . import detector_volumes
 from .detector_volumes import *
 
