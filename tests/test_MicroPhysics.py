@@ -98,6 +98,22 @@ class TestMicroPhysicsAlternativePlugins(TestMicroPhysicsBase):
         )
         self.test_context.make(self.run_number, "quanta")
 
+    @timeout_decorator.timeout(TIMEOUT, exception_message="BBFYields timed out")
+    def test_MigdalYields(self):
+
+        self.test_context = fuse.context.microphysics_context(
+            self.temp_dir.name,
+            extra_plugins=[fuse.plugins.MigdalYields],
+        )
+        self.test_context.set_config(
+            {
+                "path": self.temp_dir.name,
+                "file_name": test_root_file_name,
+                "entry_stop": 25,
+            }
+        )
+        self.test_context.make(self.run_number, "quanta")
+
 
 if __name__ == "__main__":
     unittest.main()
