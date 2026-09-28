@@ -129,10 +129,8 @@ class NestYields(FuseBasePlugin):
         if self.nest_width_parameters is not None:
             for key, value in self.nest_width_parameters.items():
                 if key not in parameters_key_map:
-                    raise ValueError(
-                        f"Unknown NEST width parameter {key}.\
-                        Available parameters: {parameters_key_map.keys()}"
-                    )
+                    raise ValueError(f"Unknown NEST width parameter {key}.\
+                        Available parameters: {parameters_key_map.keys()}")
                 self.log.debug(f"Updating NEST width parameter {key} to {value}")
                 free_parameters[parameters_key_map[key]] = value
 
@@ -183,7 +181,6 @@ class NestYields(FuseBasePlugin):
 
     def get_quanta(self, en, model, e_field, A, Z, create_s2, density):
         """Function to get quanta for given parameters using NEST."""
-
         yields_result = self.get_yields_from_NEST(en, model, e_field, A, Z, density)
 
         return self.process_yields(yields_result, create_s2)
@@ -191,7 +188,6 @@ class NestYields(FuseBasePlugin):
     def get_yields_from_NEST(self, en, model, e_field, A, Z, density):
         """Function which uses NEST to yield photons and electrons for a given
         set of parameters."""
-
         # Fix for Kr83m events
         max_allowed_energy_difference = 1  # keV
         if model == 11:
@@ -218,10 +214,8 @@ class NestYields(FuseBasePlugin):
             e_field = self.fix_gamma_yield_field
 
         if e_field < 0:
-            raise ValueError(
-                f"Negative electric field {e_field} V/cm not allowed. \
-                (no error will be raised by NEST)."
-            )
+            raise ValueError(f"Negative electric field {e_field} V/cm not allowed. \
+                (no error will be raised by NEST).")
 
         yields_result = self.nc.GetYields(
             interaction=nestpy.INTERACTION_TYPE(model),
@@ -238,7 +232,6 @@ class NestYields(FuseBasePlugin):
 
     def process_yields(self, yields_result, create_s2):
         """Process the yields with NEST to get actual quanta."""
-
         # Density argument is not used in function...
         event_quanta = self.nc.GetQuanta(
             yields_result, free_parameters=self.updated_nest_width_parameters
