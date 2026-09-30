@@ -114,7 +114,7 @@ processing_plugins = [fuse.processing.CorrectedAreasMC]
 
 def microphysics_context(
     output_folder="./fuse_data",
-    simulation_config_file="fuse_config_nt_sr1_dev.json",
+    simulation_config_file="fuse_config_nt_sr2_dev.json",
     clustering_method="dbscan",
     extra_plugins=[],
 ):

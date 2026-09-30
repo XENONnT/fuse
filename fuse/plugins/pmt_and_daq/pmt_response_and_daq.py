@@ -22,7 +22,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
     length (if needed). Finally the data is saved as raw_records.
     """
 
-    __version__ = "0.1.5"
+    __version__ = "0.1.6"
 
     depends_on = ("photon_summary", "pulse_ids", "pulse_windows")
 
@@ -254,6 +254,11 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         )
         waveform_buffer = np.zeros(length_waveform_buffer, dtype=self.dtype)
 
+        # Generate a random offset for noise sampling to avoid systematic biases
+        # when using fixed event spacing (where events at the same time would get identical noise)
+        noise_len = self.noise_data["arr_0"].shape[0]
+        noise_offset = self.rng.integers(0, noise_len)
+
         buffer_level = build_waveform(
             pulse_groups,
             _photons,
@@ -266,6 +271,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
             self.digitizer_reference_baseline,
             self.thresholds,
             self.trigger_window,
+            noise_offset,
         )
 
         records = waveform_buffer[:buffer_level]
@@ -352,6 +358,7 @@ def build_waveform(
     digitizer_reference_baseline,
     thresholds,
     trigger_window,
+    noise_offset=0,
 ):
     buffer_level = 0
 
@@ -374,7 +381,7 @@ def build_waveform(
         if enable_noise:
             # Remember to transpose the noise...
             pulse_waveform_buffer = add_noise(
-                pulse_waveform_buffer, pulse["time"], noise_data[pulse["channel"]]
+                pulse_waveform_buffer, pulse["time"], noise_data[pulse["channel"]], noise_offset
             )
 
         add_baseline(pulse_waveform_buffer, digitizer_reference_baseline)
@@ -394,13 +401,13 @@ def build_waveform(
 
 
 @njit(cache=True)
-def add_noise(array, time, noise_in_channel):
+def add_noise(array, time, noise_in_channel, noise_offset=0):
     time = np.int64(time / 10)
 
     len_data = len(array)
     len_noise = len(noise_in_channel)
 
-    index = (time + np.arange(len_data) + 1) % len_noise
+    index = (time + noise_offset + np.arange(len_data) + 1) % len_noise
 
     return array + noise_in_channel[index]
 

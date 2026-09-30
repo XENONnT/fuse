@@ -18,15 +18,22 @@ class CorrectedAreasMC(straxen.CorrectedAreas):
     data!
     """
 
-    __version__ = "0.0.1"
+    __version__ = "0.0.3"
     child_plugin = True
 
     def compute(self, events):
         result = super().compute(events)
-        result["cs1"] = result["cs1_wo_timecorr"]
-        result["cs2"] = result["cs2_wo_timecorr"]
 
+        result["cs1"] = result["cs1_wo_timecorr"]
         result["alt_cs1"] = result["alt_cs1_wo_timecorr"]
-        result["alt_cs2"] = result["alt_cs2_wo_timecorr"]
+
+        if "cs2_wo_timecorr" in result.dtype.names:
+            result["cs2"] = result["cs2_wo_timecorr"]
+            result["alt_cs2"] = result["alt_cs2_wo_timecorr"]
+        elif "cs2_w_bias_xy_elife" in result.dtype.names:
+            result["cs2"] = result["cs2_w_bias_xy_elife"]
+            result["alt_cs2"] = result["alt_cs2_w_bias_xy_elife"]
+        else:
+            raise RuntimeError("Please check your straxen compatibility")
 
         return result
