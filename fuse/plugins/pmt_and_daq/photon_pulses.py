@@ -13,8 +13,8 @@ class PulseWindow(FuseBasePlugin):
     """Plugin to compute time intervals (called ``pulse_windows``) in which the
     PMT response of photons can overlap.
 
-    Additionally a ``pulse_id`` is computed
-    for each propagated photon to identify the pulse window it belongs to.
+    Additionally a ``pulse_id`` is computed for each propagated photon
+    to identify the pulse window it belongs to.
     """
 
     __version__ = "0.2.1"
