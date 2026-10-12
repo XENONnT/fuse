@@ -154,9 +154,7 @@ class ElectronPropagation(FuseBasePlugin):
             interactions_in_roi[mask]["time"],
             n_int,
             axis=0,
-        ).astype(
-            np.int64
-        ) + electron_drift_time.astype(np.int64)
+        ).astype(np.int64) + electron_drift_time.astype(np.int64)
 
         # Simulation of wire effects -> time shift + position shift
         positions_shifted, electron_times = self.apply_perpendicular_wire_effects(

@@ -119,7 +119,6 @@ def microphysics_context(
     extra_plugins=[],
 ):
     """Function to create a fuse microphysics simulation context."""
-
     st = strax.Context(storage=output_folder, **common_opts)
     st.set_config(dict(check_raw_record_overlaps=True, **common_config))
 
@@ -159,7 +158,6 @@ def xenonnt_fuse_full_chain_simulation(
     This context includes all the necessary configs and plugins for the
     simulation.
     """
-
     # Load config file
     if run_without_config_file:
         # Just a dummy name to avoid errors. We use this to setup context for the docs.
@@ -308,7 +306,6 @@ def public_config_context(
     clustering_method="dbscan",
 ):
     """Create a context for the use of fuse with public XENONnT configs."""
-
     st = strax.Context(storage=output_folder, **straxen.contexts.common_opts)
     st.simulation_config_file = simulation_config_file
     st.config.update(dict(check_raw_record_overlaps=True, **straxen.contexts.common_config))

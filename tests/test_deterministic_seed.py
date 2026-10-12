@@ -58,7 +58,6 @@ class TestDeterministicSeed(unittest.TestCase):
     def test_MicroPhysics_SameSeed(self):
         """Test that the same run_number and lineage produce the same random
         seed and thus the same output."""
-
         self.test_context_0.make(self.run_number_0, "microphysics_summary")
         self.test_context_1.make(self.run_number_1, "microphysics_summary")
 
@@ -75,7 +74,6 @@ class TestDeterministicSeed(unittest.TestCase):
     def test_MicroPhysics_DifferentSeed(self):
         """Test that a different run_number produce a different random seed and
         thus different output."""
-
         self.test_context_0.make(self.run_number_0, "microphysics_summary")
         self.test_context_1.make(self.run_number_1, "microphysics_summary")
 
@@ -92,7 +90,6 @@ class TestDeterministicSeed(unittest.TestCase):
     def test_FullChain_SameSeed(self):
         """Test that the same run_number and lineage produce the same random
         seed and thus the same output."""
-
         self.test_context_0.make(self.run_number_0, "raw_records")
         self.test_context_1.make(self.run_number_1, "raw_records")
 
@@ -109,7 +106,6 @@ class TestDeterministicSeed(unittest.TestCase):
     def test_FullChain_DifferentSeed(self):
         """Test that a different run_number produce a different random seed and
         thus different output."""
-
         self.test_context_0.make(self.run_number_0, "raw_records")
         self.test_context_1.make(self.run_number_1, "raw_records")
 
