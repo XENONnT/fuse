@@ -332,17 +332,18 @@ def _ap_select_kernel(
 ):
     """Selection pass for the per-element afterpulse scheme.
 
-    For each row k of ``rU0``: divide by ``pmt_ap_modifier`` (and halve if
-    the row is flagged as a DPE photon) in place, compare against the
+    For each row k of ``rU0``: divide by ``pmt_ap_modifier`` (and halve
+    if the row is flagged as a DPE photon) in place, compare against the
     per-channel probability ceiling ``delaytime_cdf[channel, -1]``, and
     if the scaled value passes the cut, record the row index. The kernel
-    also returns the maximum per-row probability ceiling for the caller's
-    > 0.5 warning check.
+    also returns the maximum per-row probability ceiling for the
+    caller's > 0.5 warning check.
 
-    Modifies ``rU0`` in place. Writes the indices that pass the selection
-    into ``sel_out[:n_sel]`` and returns ``(n_sel, prob_max)``. Each row's
-    float ops (scalar division, halving, scalar compare) follow the same
-    IEEE-754 sequence as the equivalent numpy expression.
+    Modifies ``rU0`` in place. Writes the indices that pass the
+    selection into ``sel_out[:n_sel]`` and returns ``(n_sel,
+    prob_max)``. Each row's float ops (scalar division, halving, scalar
+    compare) follow the same IEEE-754 sequence as the equivalent numpy
+    expression.
     """
     n = rU0.shape[0]
     K_last = delaytime_cdf.shape[1] - 1

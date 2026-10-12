@@ -71,7 +71,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
         help="PMT circuit load resistor [kg m^2/(s^3 A)]",
     )
     digitizer_bits = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?" "&fmt=json&take=digitizer_bits",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?"  "&fmt=json&take=digitizer_bits",
         type=(int, float),
         cache=True,
         help="Number of bits of the digitizer boards",
@@ -529,13 +529,13 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
     child_plugin = True
 
     pressure = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?" "&fmt=json&take=pressure",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?"  "&fmt=json&take=pressure",
         type=(int, float),
         cache=True,
         help="Pressure of liquid xenon [bar/e]",
     )
     temperature = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?" "&fmt=json&take=temperature",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?"  "&fmt=json&take=temperature",
         type=(int, float),
         cache=True,
         help="Temperature of liquid xenon [K]",
@@ -575,7 +575,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         help="anode_field_domination_distance",
     )
     anode_wire_radius = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?" "&fmt=json&take=anode_wire_radius",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?"  "&fmt=json&take=anode_wire_radius",
         type=(int, float),
         cache=True,
         help="anode_wire_radius",
@@ -588,7 +588,7 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
         help="Top of gate to bottom of anode [cm]",
     )
     anode_voltage = straxen.URLConfig(
-        default="take://resource://SIMULATION_CONFIG_FILE.json?" "&fmt=json&take=anode_voltage",
+        default="take://resource://SIMULATION_CONFIG_FILE.json?"  "&fmt=json&take=anode_voltage",
         type=(int, float),
         cache=True,
         help="Voltage of anode [V]",
