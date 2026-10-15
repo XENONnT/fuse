@@ -8,7 +8,12 @@ import pandas as pd
 import strax
 import straxen
 
-from ...dtypes import g4_fields, primary_positions_fields, deposit_positions_fields
+from ...dtypes import (
+    g4_fields,
+    g4_int_fields,
+    primary_positions_fields,
+    deposit_positions_fields,
+)
 from ...common import (
     stable_sort,
     stable_argsort,
@@ -36,7 +41,13 @@ class ChunkInput(FuseBasePlugin):
     depends_on: Tuple = tuple()
     provides = "geant4_interactions"
 
-    dtype = deposit_positions_fields + g4_fields + primary_positions_fields + strax.time_fields
+    dtype = (
+        deposit_positions_fields
+        + g4_fields
+        + g4_int_fields
+        + primary_positions_fields
+        + strax.time_fields
+    )
 
     save_when = strax.SaveWhen.TARGET
 
@@ -242,7 +253,10 @@ class file_loader:
         self.columns = list(np.dtype(self.dtype).names)
         # Remove eventid as it is not in the usual root or csv file
         self.columns.remove("eventid")
-        self.dtype += primary_positions_fields + strax.time_fields
+        # Optional integer copies of the string fields (mc >= #381). Read only
+        # when the file has all of them; otherwise they stay 0 in the output.
+        self.int_columns = list(np.dtype(g4_int_fields).names)
+        self.dtype += g4_int_fields + primary_positions_fields + strax.time_fields
 
         # Prepare cut for root and csv case
         if self.outer_cylinder:
@@ -499,9 +513,15 @@ class file_loader:
             "t": "time*10**9",
         }
 
+        columns = self.columns
+        if all(c in ttree.keys() for c in self.int_columns):
+            columns = columns + self.int_columns
+        elif self.arg_debug:
+            self.log.debug("Input file has no integer type/process branches, leaving them at 0")
+
         # Read in data, convert mm to cm and perform a first cut if specified:
         interactions = ttree.arrays(
-            self.columns,
+            columns,
             self.cut_string,
             aliases=alias,
             entry_start=start_index,

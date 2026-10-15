@@ -155,6 +155,18 @@ class LineageClustering(FuseBasePlugin):
         (if False, classify as gamma particles)",
     )
 
+    # track=False: an implementation switch with identical output, kept out of
+    # the lineage so it does not change the deterministic seeds downstream.
+    use_g4_int_fields = straxen.URLConfig(
+        default=True,
+        type=bool,
+        track=False,
+        help="Build the particle/process codes from the integer PDG and Geant4 \
+        process branches (mc >= #381) when the input provides them for every row \
+        and all particles are covered by the mapping. Falls back to the string \
+        fields otherwise. Output is identical either way.",
+    )
+
     def compute(self, geant4_interactions):
         """
         Args:
@@ -175,7 +187,12 @@ class LineageClustering(FuseBasePlugin):
 
         # Pre-compute int-coded fields once on the full input, then permute
         # the same way as `interactions`. Per-event slices below stay aligned.
-        codes = slice_codes(build_codes(geant4_interactions), event_id_sort)
+        codes = None
+        if self.use_g4_int_fields:
+            codes = build_codes_from_ints(geant4_interactions, log=self.log)
+        if codes is None:
+            codes = build_codes(geant4_interactions)
+        codes = slice_codes(codes, event_id_sort)
 
         lineage_ids, lineage_trackids, lineage_types, lineage_A, lineage_Z, main_cluster_type = (
             self.build_lineages(interactions, codes)
@@ -428,6 +445,133 @@ def build_codes(geant4_interactions):
         "edproc_code": _encode_field(edpr, _EDPROC_CODE),
         "type_has_digit": _has_digit_vectorised(types),
         "type_has_bracket": _has_bracket_vectorised(types),
+        "ion_A": ion_A,
+        "ion_Z": ion_Z,
+    }
+
+
+# --- g4int-v1: the same codes from the integer branches of mc >= #381 --------
+#
+# `type_pdg`/`parenttype_pdg` hold PDG codes (ions: 100ZZZAAAI, I = isomer level,
+# 9 = generic excited state, 0 = ground state; -1 = no parent) and the process
+# fields hold Geant4 (G4ProcessType, subtype) pairs. Several names share a pair
+# (e.g. eIoni/ionIoni, hadElastic/ionElastic), so the mapping below uses the
+# particle or parent PDG wherever the string code is consumed in a context that
+# needs it. The vanilla string rules are reproduced exactly, including that
+# "has a digit in its name" is what makes a particle an ion: alpha, deuteron and
+# triton are not, He3 is.
+
+PDG_ELECTRON = 11
+PDG_POSITRON = -11
+PDG_GAMMA = 22
+PDG_NEUTRON = 2112
+PDG_ALPHA = 1000020040
+PDG_DEUTERON = 1000010020
+PDG_TRITON = 1000010030
+PDG_HE3 = 1000020030
+PDG_ION_MIN = 1000000000
+
+# Non-ion particles whose Geant4 names contain no digit. Any other non-ion PDG
+# code sends the chunk back to the string path (e.g. pi0 / kaon0L have digits).
+_PDG_NO_DIGIT_NAME = np.array(
+    [11, -11, 22, 2112, -2112, 2212, -2212, 12, -12, 14, -14, 16, -16, 13, -13, 211, -211,
+     PDG_ALPHA, PDG_DEUTERON, PDG_TRITON]
+)
+
+_TYPE_PDG = {"alpha": PDG_ALPHA, "e-": PDG_ELECTRON, "e+": PDG_POSITRON,
+             "gamma": PDG_GAMMA, "neutron": PDG_NEUTRON}
+
+G4_TRANSPORTATION = (1, 91)
+G4_IONISATION = (2, 2)
+G4_BREMSSTRAHLUNG = (2, 3)
+G4_PHOT = (2, 12)
+G4_COMPT = (2, 13)
+G4_CONV = (2, 14)
+G4_HAD_ELASTIC = (4, 111)
+G4_HAD_INELASTIC = (4, 121)
+G4_N_CAPTURE = (4, 131)
+G4_RADIOACTIVE_DECAY = (6, 210)
+
+
+def _is_pair(ptype, psubtype, pair):
+    return (ptype == pair[0]) & (psubtype == pair[1])
+
+
+def build_codes_from_ints(geant4_interactions, log=None):
+    """Integer-branch twin of `build_codes`. Returns None when the strings
+    must be used instead: no integer fields, rows without a PDG code (input
+    file predates mc #381), or particles outside the mapping."""
+    names = geant4_interactions.dtype.names
+    if "type_pdg" not in names:
+        return None
+    pdg = geant4_interactions["type_pdg"]
+    if len(pdg) == 0 or np.any(pdg == 0):
+        return None
+    is_ion = (pdg >= PDG_ION_MIN) & ~np.isin(pdg, [PDG_ALPHA, PDG_DEUTERON, PDG_TRITON])
+    unknown = ~is_ion & ~np.isin(pdg, _PDG_NO_DIGIT_NAME)
+    if np.any(unknown):
+        if log is not None:
+            log.warning(
+                "PDG codes outside the integer mapping "
+                f"{np.unique(pdg[unknown]).tolist()}, using the string fields"
+            )
+        return None
+
+    parent = geant4_interactions["parenttype_pdg"]
+    c_t = geant4_interactions["creaproc_type"]
+    c_s = geant4_interactions["creaproc_subtype"]
+    e_t = geant4_interactions["edproc_type"]
+    e_s = geant4_interactions["edproc_subtype"]
+    n = len(pdg)
+
+    type_code = np.full(n, -1, dtype=np.int8)
+    for name, code in _TYPE_CODE.items():
+        type_code[pdg == _TYPE_PDG[name]] = code
+
+    parenttype_code = np.full(n, -1, dtype=np.int8)
+    parenttype_code[parent == -1] = PARENTTYPE_NONE
+    parenttype_code[parent == PDG_NEUTRON] = PARENTTYPE_NEUTRON
+    parenttype_code[parent == PDG_GAMMA] = PARENTTYPE_GAMMA
+
+    parent_is_e = (parent == PDG_ELECTRON) | (parent == PDG_POSITRON)
+    creaproc_code = np.full(n, -1, dtype=np.int8)
+    creaproc_code[_is_pair(c_t, c_s, G4_RADIOACTIVE_DECAY)] = CREA_RDB
+    creaproc_code[_is_pair(c_t, c_s, G4_COMPT)] = CREA_COMPT
+    creaproc_code[_is_pair(c_t, c_s, G4_CONV)] = CREA_CONV
+    creaproc_code[_is_pair(c_t, c_s, G4_PHOT)] = CREA_PHOT
+    creaproc_code[_is_pair(c_t, c_s, G4_HAD_INELASTIC) & (parent == PDG_GAMMA)] = (
+        CREA_PHOTONNUCLEAR
+    )
+    creaproc_code[_is_pair(c_t, c_s, G4_BREMSSTRAHLUNG) & parent_is_e] = CREA_EBREM
+    creaproc_code[_is_pair(c_t, c_s, G4_TRANSPORTATION)] = _CREAPROC_CODE["Transportation"]
+
+    is_neutron = pdg == PDG_NEUTRON
+    edproc_code = np.full(n, -1, dtype=np.int8)
+    edproc_code[_is_pair(e_t, e_s, G4_RADIOACTIVE_DECAY)] = EDPROC_RDB
+    edproc_code[_is_pair(e_t, e_s, G4_COMPT)] = EDPROC_COMPT
+    edproc_code[_is_pair(e_t, e_s, G4_CONV)] = EDPROC_CONV
+    edproc_code[_is_pair(e_t, e_s, G4_PHOT)] = EDPROC_PHOT
+    edproc_code[_is_pair(e_t, e_s, G4_TRANSPORTATION)] = EDPROC_TRANSPORTATION
+    edproc_code[_is_pair(e_t, e_s, G4_HAD_ELASTIC) & is_neutron] = EDPROC_HADELASTIC
+    edproc_code[_is_pair(e_t, e_s, G4_HAD_INELASTIC) & is_neutron] = EDPROC_NEUTRONINELASTIC
+    edproc_code[_is_pair(e_t, e_s, G4_N_CAPTURE) & is_neutron] = EDPROC_NCAPTURE
+    edproc_code[
+        _is_pair(e_t, e_s, G4_IONISATION) & (is_ion | (pdg == PDG_ALPHA))
+    ] = _EDPROC_CODE["ionIoni"]
+
+    ion_A = np.zeros(n, dtype=np.int16)
+    ion_Z = np.zeros(n, dtype=np.int16)
+    ion_A[is_ion] = (pdg[is_ion] // 10) % 1000
+    ion_Z[is_ion] = (pdg[is_ion] // 10000) % 1000
+
+    return {
+        "type_code": type_code,
+        "parenttype_code": parenttype_code,
+        "creaproc_code": creaproc_code,
+        "edproc_code": edproc_code,
+        # He3 is the one light ion whose name has a digit and no level digit.
+        "type_has_digit": is_ion,
+        "type_has_bracket": is_ion & (pdg % 10 != 0),
         "ion_A": ion_A,
         "ion_Z": ion_Z,
     }
