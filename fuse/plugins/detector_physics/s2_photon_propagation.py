@@ -9,6 +9,7 @@ from scipy import constants
 from ...dtypes import propagated_photons_fields
 from ...common import (
     stable_argsort,
+    sort_by_time,
     pmt_gains,
     build_photon_propagation_output,
     init_spe_scaling_factor_distributions,
@@ -328,7 +329,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             photon_type=2,
         )
         res = res[res["channel"] >= 0]
-        res = strax.sort_by_time(res)
+        res = sort_by_time(res)
         return res
 
     def photon_channels(self, positions, n_photons):

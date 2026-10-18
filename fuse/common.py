@@ -1,6 +1,7 @@
 import numpy as np
 import awkward as ak
 import numba
+import strax
 
 from scipy.interpolate import interp1d
 from numba.extending import register_jitable
@@ -369,3 +370,52 @@ def stable_argsort(arr, kind="mergesort"):
     if kind != "mergesort":
         raise SortingError(UNSTABLE_SORT_MESSAGE)
     return np.argsort(arr, kind="mergesort")
+
+
+@numba.njit(nogil=True, cache=True)
+def _is_sorted_by_time_and_channel(time, channel):
+    for i in range(1, len(time)):
+        if time[i] < time[i - 1] or (time[i] == time[i - 1] and channel[i] < channel[i - 1]):
+            return False
+    return True
+
+
+@numba.njit(nogil=True, cache=True)
+def _is_sorted_by_time(time):
+    for i in range(1, len(time)):
+        if time[i] < time[i - 1]:
+            return False
+    return True
+
+
+def sort_by_time(x):
+    """Drop-in for `strax.sort_by_time` with identical output, but cheaper.
+
+    `strax.sort_by_time` is a stable sort on the key (time, channel). So:
+      - input already in that order is returned as is (a stable sort would not
+        move anything);
+      - otherwise the same key is sorted with numpy's stable argsort (timsort),
+        which gives the same permutation and is faster on input made of a few
+        sorted runs, e.g. the concatenation done by VerticalMergerPlugin.
+    Falls back to `strax.sort_by_time` without a channel field or when the key
+    could overflow.
+    """
+    if len(x) == 0:
+        return x
+    if "channel" not in x.dtype.names:
+        if _is_sorted_by_time(x["time"]):
+            return x
+        return strax.sort_by_time(x)
+    if _is_sorted_by_time_and_channel(x["time"], x["channel"]):
+        return x
+
+    channel = x["channel"].astype(np.int64)
+    min_channel = channel.min()
+    if min_channel < 0:
+        channel -= min_channel
+    n_channels = channel.max() + 1
+    t_min = x["time"].min()
+    if (x["time"].max() - t_min) > (np.iinfo(np.int64).max - 10) / n_channels:
+        return strax.sort_by_time(x)
+    key = (x["time"] - t_min) * n_channels + channel
+    return x[np.argsort(key, kind="stable")]

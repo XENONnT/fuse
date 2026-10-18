@@ -4,6 +4,7 @@ import numpy as np
 from itertools import groupby
 
 from .plugin import FuseBasePlugin
+from .common import sort_by_time
 
 
 class VerticalMergerPlugin(FuseBasePlugin):
@@ -26,7 +27,8 @@ class VerticalMergerPlugin(FuseBasePlugin):
     def compute(self, **kwargs):
         merged_data = np.concatenate([kwargs[x] for x in kwargs])
 
-        return strax.sort_by_time(merged_data)
+        # The inputs are each sorted already, which sort_by_time exploits
+        return sort_by_time(merged_data)
 
     @staticmethod
     def all_equal(iterable):
