@@ -231,9 +231,7 @@ class PMTResponseAndDAQ(FuseBaseDownChunkingPlugin):
         last_start = start
         for i, (pulse_groups, photon_chunk) in enumerate(zip(pulse_window_chunks, photon_chunks)):
             sorted_photons, photon_starts, photon_stops = photon_chunk
-            records = self.compute_chunk(
-                sorted_photons, photon_starts, photon_stops, pulse_groups
-            )
+            records = self.compute_chunk(sorted_photons, photon_starts, photon_stops, pulse_groups)
             if i < n_chunks - 1:
                 chunk_end = np.max(strax.endtime(records))
             else:

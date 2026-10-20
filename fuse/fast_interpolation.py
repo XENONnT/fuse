@@ -19,6 +19,7 @@ Float-op order is preserved within each output row (ascending j on the
 contracted axis), so output agrees with vanilla to within a single ULP
 of round-off.
 """
+
 import numpy as np
 import numba
 import straxen
@@ -155,7 +156,8 @@ class FastInterpolatingMap(straxen.InterpolatingMap):
 
 
 def install_global_patch():
-    """Install ``FastInterpolatingMap`` as the global ``straxen.InterpolatingMap``.
+    """Install ``FastInterpolatingMap`` as the global
+    ``straxen.InterpolatingMap``.
 
     Both ``straxen.InterpolatingMap`` and ``straxen.itp_map.InterpolatingMap``
     are replaced so the ``itp_map://`` and ``pattern_map://`` URLConfig
@@ -165,6 +167,7 @@ def install_global_patch():
     straxen.InterpolatingMap = FastInterpolatingMap
     try:
         import straxen.itp_map as _itp
+
         _itp.InterpolatingMap = FastInterpolatingMap
     except Exception:
         pass

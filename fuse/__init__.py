@@ -5,6 +5,7 @@ __version__ = "1.6.3"
 # `itp_map://` or `pattern_map://` URL resolved by straxen builds a
 # FastInterpolatingMap instance, not the vanilla one.
 from . import fast_interpolation
+
 fast_interpolation.install_global_patch()
 
 from . import dtypes

@@ -474,12 +474,37 @@ PDG_ION_MIN = 1000000000
 # Non-ion particles whose Geant4 names contain no digit. Any other non-ion PDG
 # code sends the chunk back to the string path (e.g. pi0 / kaon0L have digits).
 _PDG_NO_DIGIT_NAME = np.array(
-    [11, -11, 22, 2112, -2112, 2212, -2212, 12, -12, 14, -14, 16, -16, 13, -13, 211, -211,
-     PDG_ALPHA, PDG_DEUTERON, PDG_TRITON]
+    [
+        11,
+        -11,
+        22,
+        2112,
+        -2112,
+        2212,
+        -2212,
+        12,
+        -12,
+        14,
+        -14,
+        16,
+        -16,
+        13,
+        -13,
+        211,
+        -211,
+        PDG_ALPHA,
+        PDG_DEUTERON,
+        PDG_TRITON,
+    ]
 )
 
-_TYPE_PDG = {"alpha": PDG_ALPHA, "e-": PDG_ELECTRON, "e+": PDG_POSITRON,
-             "gamma": PDG_GAMMA, "neutron": PDG_NEUTRON}
+_TYPE_PDG = {
+    "alpha": PDG_ALPHA,
+    "e-": PDG_ELECTRON,
+    "e+": PDG_POSITRON,
+    "gamma": PDG_GAMMA,
+    "neutron": PDG_NEUTRON,
+}
 
 G4_TRANSPORTATION = (1, 91)
 G4_IONISATION = (2, 2)
@@ -498,9 +523,12 @@ def _is_pair(ptype, psubtype, pair):
 
 
 def build_codes_from_ints(geant4_interactions, log=None):
-    """Integer-branch twin of `build_codes`. Returns None when the strings
+    """Integer-branch twin of `build_codes`.
+
+    Returns None when the strings
     must be used instead: no integer fields, rows without a PDG code (input
-    file predates mc #381), or particles outside the mapping."""
+    file predates mc #381), or particles outside the mapping.
+    """
     names = geant4_interactions.dtype.names
     if "type_pdg" not in names:
         return None
@@ -539,9 +567,7 @@ def build_codes_from_ints(geant4_interactions, log=None):
     creaproc_code[_is_pair(c_t, c_s, G4_COMPT)] = CREA_COMPT
     creaproc_code[_is_pair(c_t, c_s, G4_CONV)] = CREA_CONV
     creaproc_code[_is_pair(c_t, c_s, G4_PHOT)] = CREA_PHOT
-    creaproc_code[_is_pair(c_t, c_s, G4_HAD_INELASTIC) & (parent == PDG_GAMMA)] = (
-        CREA_PHOTONNUCLEAR
-    )
+    creaproc_code[_is_pair(c_t, c_s, G4_HAD_INELASTIC) & (parent == PDG_GAMMA)] = CREA_PHOTONNUCLEAR
     creaproc_code[_is_pair(c_t, c_s, G4_BREMSSTRAHLUNG) & parent_is_e] = CREA_EBREM
     creaproc_code[_is_pair(c_t, c_s, G4_TRANSPORTATION)] = _CREAPROC_CODE["Transportation"]
 
@@ -555,9 +581,9 @@ def build_codes_from_ints(geant4_interactions, log=None):
     edproc_code[_is_pair(e_t, e_s, G4_HAD_ELASTIC) & is_neutron] = EDPROC_HADELASTIC
     edproc_code[_is_pair(e_t, e_s, G4_HAD_INELASTIC) & is_neutron] = EDPROC_NEUTRONINELASTIC
     edproc_code[_is_pair(e_t, e_s, G4_N_CAPTURE) & is_neutron] = EDPROC_NCAPTURE
-    edproc_code[
-        _is_pair(e_t, e_s, G4_IONISATION) & (is_ion | (pdg == PDG_ALPHA))
-    ] = _EDPROC_CODE["ionIoni"]
+    edproc_code[_is_pair(e_t, e_s, G4_IONISATION) & (is_ion | (pdg == PDG_ALPHA))] = _EDPROC_CODE[
+        "ionIoni"
+    ]
 
     ion_A = np.zeros(n, dtype=np.int16)
     ion_Z = np.zeros(n, dtype=np.int16)

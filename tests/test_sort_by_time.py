@@ -16,7 +16,8 @@ def _photons(n, rng, n_channels=494, t_span=10_000, min_channel=0):
 
 
 class TestSortByTime(unittest.TestCase):
-    """fuse.common.sort_by_time must give byte-identical output to strax.sort_by_time."""
+    """fuse.common.sort_by_time must give byte-identical output to
+    strax.sort_by_time."""
 
     def assert_same(self, x):
         ref = strax.sort_by_time(x.copy())

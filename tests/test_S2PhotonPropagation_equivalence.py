@@ -15,6 +15,7 @@ Re-generation is gated: it refuses to overwrite the baseline if
 ``fuse/plugins/detector_physics/s2_photon_propagation.py`` differs from
 origin/main, OR if it has uncommitted changes. Bypass with ``--force``.
 """
+
 import os
 import shutil
 import subprocess
@@ -31,7 +32,6 @@ import utilix
 
 from _utils import test_root_file_name
 from _utils import test_simulation_config
-
 
 TIMEOUT = 600
 
@@ -93,7 +93,9 @@ class TestS2PhotonPropagationEquivalence(unittest.TestCase):
         shutil.rmtree(self.temp_dir.name)
         os.makedirs(self.temp_dir.name)
 
-    @timeout_decorator.timeout(TIMEOUT, exception_message="S2PhotonPropagation equivalence timed out")
+    @timeout_decorator.timeout(
+        TIMEOUT, exception_message="S2PhotonPropagation equivalence timed out"
+    )
     def test_equivalence(self):
         if not BASELINE_PATH.exists():
             self.skipTest(
@@ -105,9 +107,7 @@ class TestS2PhotonPropagationEquivalence(unittest.TestCase):
         baseline = np.load(BASELINE_PATH)
 
         missing = [f for f in FIELDS if f not in baseline.files]
-        self.assertEqual(
-            missing, [], msg=f"baseline npz is missing fields: {missing}"
-        )
+        self.assertEqual(missing, [], msg=f"baseline npz is missing fields: {missing}")
 
         self.assertEqual(
             len(data),
@@ -131,11 +131,15 @@ def _regen_guard(force=False):
         return
 
     try:
-        diff = subprocess.check_output(
-            ["git", "status", "--porcelain", plugin_rel],
-            cwd=str(repo),
-            stderr=subprocess.STDOUT,
-        ).decode().strip()
+        diff = (
+            subprocess.check_output(
+                ["git", "status", "--porcelain", plugin_rel],
+                cwd=str(repo),
+                stderr=subprocess.STDOUT,
+            )
+            .decode()
+            .strip()
+        )
     except subprocess.CalledProcessError as e:
         raise SystemExit(
             f"git status failed: {e.output.decode() if e.output else e}; "
@@ -150,16 +154,24 @@ def _regen_guard(force=False):
         )
 
     try:
-        head_sha = subprocess.check_output(
-            ["git", "rev-parse", f"HEAD:{plugin_rel}"],
-            cwd=str(repo),
-            stderr=subprocess.DEVNULL,
-        ).decode().strip()
-        main_sha = subprocess.check_output(
-            ["git", "rev-parse", f"origin/main:{plugin_rel}"],
-            cwd=str(repo),
-            stderr=subprocess.DEVNULL,
-        ).decode().strip()
+        head_sha = (
+            subprocess.check_output(
+                ["git", "rev-parse", f"HEAD:{plugin_rel}"],
+                cwd=str(repo),
+                stderr=subprocess.DEVNULL,
+            )
+            .decode()
+            .strip()
+        )
+        main_sha = (
+            subprocess.check_output(
+                ["git", "rev-parse", f"origin/main:{plugin_rel}"],
+                cwd=str(repo),
+                stderr=subprocess.DEVNULL,
+            )
+            .decode()
+            .strip()
+        )
     except subprocess.CalledProcessError:
         head_sha = main_sha = None
 

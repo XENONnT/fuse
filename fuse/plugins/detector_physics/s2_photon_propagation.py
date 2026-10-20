@@ -428,7 +428,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
                     n_k = int(n_per_e[ii])
                     if n_k == 0:
                         continue
-                    u_blk[cursor:cursor + n_k] = self.rng.random(n_k)  # vanilla call
+                    u_blk[cursor : cursor + n_k] = self.rng.random(n_k)  # vanilla call
                     cursor += n_k
 
                 out_lo = int(starts[i0])
