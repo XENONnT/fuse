@@ -13,6 +13,19 @@ g4_fields = [
 ]
 
 
+# Integer copies of the string fields above, written by XENONnT/mc >= #381
+# (`/analysis/settings/setStoreHashedStrings true`). Left at 0 when the input
+# file does not provide them; 0 is not a valid PDG code, so consumers can tell.
+g4_int_fields = [
+    (("PDG code of the particle", "type_pdg"), np.int32),
+    (("PDG code of the parent particle (-1: no parent)", "parenttype_pdg"), np.int32),
+    (("Geant4 process type creating the particle", "creaproc_type"), np.int16),
+    (("Geant4 process subtype creating the particle", "creaproc_subtype"), np.int16),
+    (("Geant4 process type of the energy deposit", "edproc_type"), np.int16),
+    (("Geant4 process subtype of the energy deposit", "edproc_subtype"), np.int16),
+]
+
+
 primary_positions_fields = [
     (("x position of the primary particle [cm]", "x_pri"), np.float32),
     (("y position of the primary particle [cm]", "y_pri"), np.float32),

@@ -4,6 +4,7 @@ import strax
 import straxen
 
 from ...plugin import FuseBasePlugin
+from ...common import sort_by_time
 
 export, __all__ = strax.exporter()
 
@@ -135,8 +136,9 @@ class PulseWindow(FuseBasePlugin):
         self.pulse_ids_seen += photon_id.max()
 
         return {
-            "pulse_windows": strax.sort_by_time(photon_pulses),
-            "pulse_ids": strax.sort_by_time(pulse_ids),
+            "pulse_windows": sort_by_time(photon_pulses),
+            # times copied from the sorted photons: no actual sort needed
+            "pulse_ids": sort_by_time(pulse_ids),
         }
 
 

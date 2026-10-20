@@ -9,6 +9,7 @@ from scipy import constants
 from ...dtypes import propagated_photons_fields
 from ...common import (
     stable_argsort,
+    sort_by_time,
     pmt_gains,
     build_photon_propagation_output,
     init_spe_scaling_factor_distributions,
@@ -328,7 +329,7 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             photon_type=2,
         )
         res = res[res["channel"] >= 0]
-        res = strax.sort_by_time(res)
+        res = sort_by_time(res)
         return res
 
     def photon_channels(self, positions, n_photons):
@@ -406,15 +407,33 @@ class S2PhotonPropagationBase(FuseBaseDownChunkingPlugin):
             np.cumsum(pattern, axis=1, out=pattern)
             pattern[:, -1] = 1.0  # exact
 
-            # 5) per-electron sampling into global 'out'
-            for ii in range(i0, i1):
-                s = starts[ii]
-                e = stops[ii]
-                if s == e:
-                    continue
-                u = self.rng.random(e - s)  # [0,1)
-                row = pattern[ii - i0]
-                out[s:e] = np.searchsorted(row, u, side="left")
+            # 5) per-electron sampling
+            #
+            # The vanilla per-electron loop did `rng.random(n_k)` + `searchsorted`
+            # per electron — ~300 k iterations per chunk on K40, dominant in the
+            # cProfile (3.4 M rng/searchsorted calls). Refactor:
+            #   (a) draw the same per-electron uniforms in vanilla order (skip on
+            #       empty electrons — PCG64 sequence is bit-identity-load-bearing);
+            #   (b) batch the searchsorted into a single numba kernel call.
+            n_blk = i1 - i0
+            n_per_e = np.empty(n_blk, dtype=np.int64)
+            for ii in range(n_blk):
+                n_per_e[ii] = int(stops[i0 + ii] - starts[i0 + ii])
+            total_blk = int(n_per_e.sum())
+
+            if total_blk:
+                u_blk = np.empty(total_blk, dtype=np.float64)
+                cursor = 0
+                for ii in range(n_blk):
+                    n_k = int(n_per_e[ii])
+                    if n_k == 0:
+                        continue
+                    u_blk[cursor : cursor + n_k] = self.rng.random(n_k)  # vanilla call
+                    cursor += n_k
+
+                out_lo = int(starts[i0])
+                out_hi = out_lo + total_blk
+                _s2_channel_sample(pattern, n_per_e, u_blk, out[out_lo:out_hi])
 
         return out
 
@@ -682,6 +701,38 @@ class S2PhotonPropagationSimple(S2PhotonPropagationBase):
             )
 
         return prop_time
+
+
+@njit(cache=True, nogil=True)
+def _s2_channel_sample(pattern_cdf, n_per_e, uniforms, out):
+    """Vectorised replacement for the per-electron `np.searchsorted` loop.
+
+    For each electron i, write ``np.searchsorted(pattern_cdf[i], uniforms[s:e],
+    side='left')`` into ``out[s:e]``. ``s, e`` are implicit prefix offsets over
+    ``n_per_e``. Empty electrons (``n_per_e[i] == 0``) are skipped — the caller
+    must not have drawn uniforms for them, exactly as vanilla does.
+
+    Bit-identical to numpy's ``searchsorted(..., side='left')`` for monotonic
+    non-decreasing rows: ties resolve to the leftmost index via the strict
+    ``cdf[mid] < u`` (vs ``<=``) bisect.
+    """
+    n_e, C = pattern_cdf.shape
+    cursor = 0
+    for i in range(n_e):
+        n_k = n_per_e[i]
+        if n_k == 0:
+            continue
+        for k in range(n_k):
+            u = uniforms[cursor + k]
+            lo, hi = 0, C
+            while lo < hi:
+                mid = (lo + hi) >> 1
+                if pattern_cdf[i, mid] < u:
+                    lo = mid + 1
+                else:
+                    hi = mid
+            out[cursor + k] = lo
+        cursor += n_k
 
 
 @njit(cache=True)
