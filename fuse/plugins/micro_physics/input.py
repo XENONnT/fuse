@@ -31,7 +31,7 @@ class ChunkInput(FuseBasePlugin):
     and will create multiple chunks of data if needed.
     """
 
-    __version__ = "0.4.1"
+    __version__ = "0.4.2"
 
     depends_on: Tuple = tuple()
     provides = "geant4_interactions"
@@ -310,8 +310,15 @@ class file_loader:
                 )  # ns
             else:
                 self.log.info("Using random event times.")
-                event_times = self.rng.uniform(
-                    low=start / self.event_rate, high=stop / self.event_rate, size=num_interactions
+                # Same 1 s offset as the fixed spacing: an event drawn within
+                # first_chunk_left of 0 would make the first chunk start before 0
+                event_times = (
+                    self.rng.uniform(
+                        low=start / self.event_rate,
+                        high=stop / self.event_rate,
+                        size=num_interactions,
+                    )
+                    + 1e9
                 ).astype(np.int64)
                 event_times = stable_sort(event_times)
 

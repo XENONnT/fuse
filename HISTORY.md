@@ -1,3 +1,7 @@
+Unreleased
+----------
+* Offset random event times by 1 s so the first chunk never starts before 0 (ChunkInput 0.4.2)
+
 1.6.3 / 2026-01-29
 ------------------
 * Add offset to noise sampling (https://github.com/XENONnT/fuse/pull/370)
