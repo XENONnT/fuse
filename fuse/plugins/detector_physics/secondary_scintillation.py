@@ -144,7 +144,7 @@ class SecondaryScintillation(FuseBasePlugin):
 
         # Just apply this to clusters with electrons
         clusters_with_extracted_electrons = np.unique(individual_electrons["cluster_id"])
-        mask = np.in1d(interactions_in_roi["cluster_id"], clusters_with_extracted_electrons)
+        mask = np.isin(interactions_in_roi["cluster_id"], clusters_with_extracted_electrons)
 
         if len(interactions_in_roi[mask]) == 0:
             empty_result = np.zeros(

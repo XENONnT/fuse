@@ -1,6 +1,7 @@
 Unreleased
 ----------
 * Offset random event times by 1 s so the first chunk never starts before 0 (ChunkInput 0.4.2)
+* Replace `np.in1d`, removed in NumPy 2.4, with `np.isin`
 
 1.6.3 / 2026-01-29
 ------------------
