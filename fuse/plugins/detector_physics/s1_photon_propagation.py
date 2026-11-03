@@ -247,7 +247,7 @@ class S1PhotonPropagationBase(FuseBasePlugin):
         map returns nested array with photon channels."""
         channels = np.arange(self.n_tpc_pmts)  # +1 for the channel map
         p_per_channel = self.s1_pattern_map(positions)
-        p_per_channel[:, np.in1d(channels, self.turned_off_pmts)] = 0
+        p_per_channel[:, np.isin(channels, self.turned_off_pmts)] = 0
 
         _photon_channels = []
         for ppc, n in zip(p_per_channel, n_photon_hits):

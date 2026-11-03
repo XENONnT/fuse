@@ -615,7 +615,7 @@ def assign_main_cluster_type_to_event(event):
             previous_assigned_tracks = assigned
 
             # Find all tracks that are children of the assigned tracks
-            children_mask = np.in1d(parents, list(assigned))
+            children_mask = np.isin(parents, list(assigned))
 
             # Assign the mega type to the children
             main_cluster_types[children_mask] = mega_type
